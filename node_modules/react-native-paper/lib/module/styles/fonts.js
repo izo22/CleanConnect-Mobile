@@ -69,23 +69,17 @@ function configureV3Fonts(config) {
   }
   const isFlatConfig = Object.keys(config).every(key => typeof config[key] !== 'object');
   if (isFlatConfig) {
-    return Object.fromEntries(Object.entries(typescale).map(_ref => {
-      let [variantName, variantProperties] = _ref;
-      return [variantName, {
-        ...variantProperties,
-        ...config
-      }];
-    }));
+    return Object.fromEntries(Object.entries(typescale).map(([variantName, variantProperties]) => [variantName, {
+      ...variantProperties,
+      ...config
+    }]));
   }
-  return Object.assign({}, typescale, ...Object.entries(config).map(_ref2 => {
-    let [variantName, variantProperties] = _ref2;
-    return {
-      [variantName]: {
-        ...typescale[variantName],
-        ...variantProperties
-      }
-    };
-  }));
+  return Object.assign({}, typescale, ...Object.entries(config).map(([variantName, variantProperties]) => ({
+    [variantName]: {
+      ...typescale[variantName],
+      ...variantProperties
+    }
+  })));
 }
 
 // eslint-disable-next-line no-redeclare

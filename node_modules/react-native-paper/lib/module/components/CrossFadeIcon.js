@@ -2,14 +2,13 @@ import * as React from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import Icon, { isEqualIcon, isValidIcon } from './Icon';
 import { useInternalTheme } from '../core/theming';
-const CrossFadeIcon = _ref => {
-  let {
-    color,
-    size,
-    source,
-    theme: themeOverrides,
-    testID = 'cross-fade-icon'
-  } = _ref;
+const CrossFadeIcon = ({
+  color,
+  size,
+  source,
+  theme: themeOverrides,
+  testID = 'cross-fade-icon'
+}) => {
   const theme = useInternalTheme(themeOverrides);
   const [currentIcon, setCurrentIcon] = React.useState(() => source);
   const [previousIcon, setPreviousIcon] = React.useState(null);

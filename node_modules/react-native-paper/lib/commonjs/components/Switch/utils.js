@@ -7,12 +7,11 @@ exports.getSwitchColor = void 0;
 var _reactNative = require("react-native");
 var _color = _interopRequireDefault(require("color"));
 var _colors = require("../../styles/themes/v2/colors");
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-const getCheckedColor = _ref => {
-  let {
-    theme,
-    color
-  } = _ref;
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+const getCheckedColor = ({
+  theme,
+  color
+}) => {
   if (color) {
     return color;
   }
@@ -21,13 +20,12 @@ const getCheckedColor = _ref => {
   }
   return theme.colors.accent;
 };
-const getThumbTintColor = _ref2 => {
-  let {
-    theme,
-    disabled,
-    value,
-    checkedColor
-  } = _ref2;
+const getThumbTintColor = ({
+  theme,
+  disabled,
+  value,
+  checkedColor
+}) => {
   const isIOS = _reactNative.Platform.OS === 'ios';
   if (isIOS) {
     return undefined;
@@ -46,13 +44,12 @@ const getThumbTintColor = _ref2 => {
   }
   return _colors.grey50;
 };
-const getOnTintColor = _ref3 => {
-  let {
-    theme,
-    disabled,
-    value,
-    checkedColor
-  } = _ref3;
+const getOnTintColor = ({
+  theme,
+  disabled,
+  value,
+  checkedColor
+}) => {
   const isIOS = _reactNative.Platform.OS === 'ios';
   if (isIOS) {
     return checkedColor;
@@ -74,13 +71,12 @@ const getOnTintColor = _ref3 => {
   }
   return 'rgb(178, 175, 177)';
 };
-const getSwitchColor = _ref4 => {
-  let {
-    theme,
-    disabled,
-    value,
-    color
-  } = _ref4;
+const getSwitchColor = ({
+  theme,
+  disabled,
+  value,
+  color
+}) => {
   const checkedColor = getCheckedColor({
     theme,
     color

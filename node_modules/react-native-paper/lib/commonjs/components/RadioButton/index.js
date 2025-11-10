@@ -9,7 +9,7 @@ var _RadioButtonAndroid = _interopRequireDefault(require("./RadioButtonAndroid")
 var _RadioButtonGroup = _interopRequireDefault(require("./RadioButtonGroup"));
 var _RadioButtonIOS = _interopRequireDefault(require("./RadioButtonIOS"));
 var _RadioButtonItem = _interopRequireDefault(require("./RadioButtonItem"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 const RadioButton = Object.assign(
 // @component ./RadioButton.tsx
 _RadioButton.default, {
@@ -22,6 +22,5 @@ _RadioButton.default, {
   // @component ./RadioButtonItem.tsx
   Item: _RadioButtonItem.default
 });
-var _default = RadioButton;
-exports.default = _default;
+var _default = exports.default = RadioButton;
 //# sourceMappingURL=index.js.map

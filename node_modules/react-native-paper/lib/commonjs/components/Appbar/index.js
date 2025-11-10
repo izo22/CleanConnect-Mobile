@@ -9,7 +9,7 @@ var _AppbarAction = _interopRequireDefault(require("./AppbarAction"));
 var _AppbarBackAction = _interopRequireDefault(require("./AppbarBackAction"));
 var _AppbarContent = _interopRequireDefault(require("./AppbarContent"));
 var _AppbarHeader = _interopRequireDefault(require("./AppbarHeader"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 const Appbar = Object.assign(
 // @component ./Appbar.tsx
 _Appbar.default, {
@@ -22,6 +22,5 @@ _Appbar.default, {
   // @component ./AppbarHeader.tsx
   Header: _AppbarHeader.default
 });
-var _default = Appbar;
-exports.default = _default;
+var _default = exports.default = Appbar;
 //# sourceMappingURL=index.js.map

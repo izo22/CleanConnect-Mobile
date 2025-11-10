@@ -5,13 +5,10 @@ const SHADOW_COLOR = MD2Colors.black;
 const SHADOW_OPACITY = 0.24;
 const MD3_SHADOW_OPACITY = 0.3;
 const MD3_SHADOW_COLOR = MD3Colors.primary0;
-export default function shadow() {
-  let elevation = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
-  let isV3 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+export default function shadow(elevation = 0, isV3 = false) {
   return isV3 ? v3Shadow(elevation) : v2Shadow(elevation);
 }
-function v2Shadow() {
-  let elevation = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+function v2Shadow(elevation = 0) {
   if (elevation instanceof Animated.Value) {
     const inputRange = [0, 1, 2, 3, 8, 24];
     return {
@@ -62,8 +59,7 @@ function v2Shadow() {
     };
   }
 }
-function v3Shadow() {
-  let elevation = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+function v3Shadow(elevation = 0) {
   const inputRange = [0, 1, 2, 3, 4, 5];
   const shadowHeight = [0, 1, 2, 4, 6, 8];
   const shadowRadius = [0, 3, 6, 8, 10, 12];

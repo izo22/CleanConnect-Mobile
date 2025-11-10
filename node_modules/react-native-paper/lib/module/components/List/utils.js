@@ -57,13 +57,12 @@ const styles = StyleSheet.create({
     marginRight: 0
   }
 });
-export const getAccordionColors = _ref => {
+export const getAccordionColors = ({
+  theme,
+  isExpanded,
+  customRippleColor
+}) => {
   var _theme$colors;
-  let {
-    theme,
-    isExpanded,
-    customRippleColor
-  } = _ref;
   const titleColor = theme.isV3 ? theme.colors.onSurface : color(theme.colors.text).alpha(0.87).rgb().string();
   const descriptionColor = theme.isV3 ? theme.colors.onSurfaceVariant : color(theme.colors.text).alpha(0.54).rgb().string();
   const titleTextColor = isExpanded ? (_theme$colors = theme.colors) === null || _theme$colors === void 0 ? void 0 : _theme$colors.primary : titleColor;

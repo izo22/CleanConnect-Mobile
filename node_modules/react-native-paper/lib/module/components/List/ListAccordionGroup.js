@@ -34,12 +34,11 @@ export const ListAccordionGroupContext = /*#__PURE__*/React.createContext(null);
  * export default MyComponent;
  *```
  */
-const ListAccordionGroup = _ref => {
-  let {
-    expandedId: expandedIdProp,
-    onAccordionPress,
-    children
-  } = _ref;
+const ListAccordionGroup = ({
+  expandedId: expandedIdProp,
+  onAccordionPress,
+  children
+}) => {
   const [expandedId, setExpandedId] = React.useState(undefined);
   const onAccordionPressDefault = newExpandedId => {
     setExpandedId(currentExpandedId => currentExpandedId === newExpandedId ? undefined : newExpandedId);

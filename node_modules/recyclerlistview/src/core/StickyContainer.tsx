@@ -19,6 +19,16 @@ import { ReactElement } from "react";
 import { ComponentCompat } from "../utils/ComponentCompat";
 import { WindowCorrection } from "./ViewabilityTracker";
 
+// Constant to check if React version is 19 or higher
+const isReact19OrHigher: boolean = (() => {
+    // Check React version by examining React.version if available
+    if (React.version) {
+        const majorVersion = parseInt(React.version.split(".")[0], 10);
+        return majorVersion >= 19;
+    }
+    return false;
+})();
+
 export interface StickyContainerProps {
     children: RecyclerChild;
     stickyHeaderIndices?: number[];
@@ -126,9 +136,10 @@ export default class StickyContainer<P extends StickyContainerProps> extends Com
 
     private _getRecyclerRef = (recycler: any) => {
         this._recyclerRef = recycler as (RecyclerListView<RecyclerListViewProps, RecyclerListViewState> | undefined);
-        if (this.props.children.ref) {
-            if (typeof this.props.children.ref === "function") {
-                (this.props.children).ref(recycler);
+        const childRef = isReact19OrHigher ? this.props.children.props.ref : this.props.children.ref;
+        if (childRef) {
+            if (typeof childRef === "function") {
+                childRef(recycler);
             } else {
                 throw new CustomError(RecyclerListViewExceptions.refNotAsFunctionException);
             }

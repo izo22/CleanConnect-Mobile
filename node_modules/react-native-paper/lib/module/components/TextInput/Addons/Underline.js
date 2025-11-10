@@ -1,17 +1,16 @@
 import * as React from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import { useInternalTheme } from '../../../core/theming';
-export const Underline = _ref => {
-  let {
-    parentState,
-    error,
-    colors,
-    activeColor,
-    underlineColorCustom,
-    hasActiveOutline,
-    style,
-    theme: themeOverrides
-  } = _ref;
+export const Underline = ({
+  parentState,
+  error,
+  colors,
+  activeColor,
+  underlineColorCustom,
+  hasActiveOutline,
+  style,
+  theme: themeOverrides
+}) => {
   const {
     isV3
   } = useInternalTheme(themeOverrides);

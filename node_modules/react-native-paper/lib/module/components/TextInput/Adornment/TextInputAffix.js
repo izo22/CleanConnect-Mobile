@@ -12,19 +12,18 @@ const AffixContext = /*#__PURE__*/React.createContext({
   topPosition: null,
   side: AdornmentSide.Left
 });
-const AffixAdornment = _ref => {
-  let {
-    affix,
-    side,
-    textStyle,
-    topPosition,
-    onLayout,
-    visible,
-    paddingHorizontal,
-    maxFontSizeMultiplier,
-    testID,
-    disabled
-  } = _ref;
+const AffixAdornment = ({
+  affix,
+  side,
+  textStyle,
+  topPosition,
+  onLayout,
+  visible,
+  paddingHorizontal,
+  maxFontSizeMultiplier,
+  testID,
+  disabled
+}) => {
   return /*#__PURE__*/React.createElement(AffixContext.Provider, {
     value: {
       side,
@@ -65,15 +64,14 @@ const AffixAdornment = _ref => {
  * ```
  */
 
-const TextInputAffix = _ref2 => {
-  let {
-    text,
-    textStyle: labelStyle,
-    theme: themeOverrides,
-    onLayout: onTextLayout,
-    onPress,
-    accessibilityLabel = text
-  } = _ref2;
+const TextInputAffix = ({
+  text,
+  textStyle: labelStyle,
+  theme: themeOverrides,
+  onLayout: onTextLayout,
+  onPress,
+  accessibilityLabel = text
+}) => {
   const theme = useInternalTheme(themeOverrides);
   const {
     AFFIX_OFFSET

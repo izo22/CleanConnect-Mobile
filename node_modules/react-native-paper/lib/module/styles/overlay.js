@@ -2,9 +2,7 @@ import { Animated } from 'react-native';
 import color from 'color';
 import { MD2DarkTheme } from './themes/v2/DarkTheme';
 export const isAnimatedValue = it => it instanceof Animated.Value;
-export default function overlay(elevation) {
-  var _MD2DarkTheme$colors;
-  let surfaceColor = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : (_MD2DarkTheme$colors = MD2DarkTheme.colors) === null || _MD2DarkTheme$colors === void 0 ? void 0 : _MD2DarkTheme$colors.surface;
+export default function overlay(elevation, surfaceColor = (_MD2DarkTheme$colors => (_MD2DarkTheme$colors = MD2DarkTheme.colors) === null || _MD2DarkTheme$colors === void 0 ? void 0 : _MD2DarkTheme$colors.surface)()) {
   if (isAnimatedValue(elevation)) {
     const inputRange = [0, 1, 2, 3, 8, 24];
 
@@ -20,8 +18,7 @@ export default function overlay(elevation) {
   // @ts-expect-error: TS doesn't seem to refine the type correctly
   return calculateColor(surfaceColor, elevation);
 }
-function calculateColor(surfaceColor) {
-  let elevation = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+function calculateColor(surfaceColor, elevation = 1) {
   let overlayTransparency;
   if (elevation >= 1 && elevation <= 24) {
     overlayTransparency = elevationOverlayTransparency[elevation];

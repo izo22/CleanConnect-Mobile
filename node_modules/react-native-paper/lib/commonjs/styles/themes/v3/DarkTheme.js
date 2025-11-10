@@ -7,12 +7,12 @@ exports.MD3DarkTheme = void 0;
 var _color = _interopRequireDefault(require("color"));
 var _LightTheme = require("./LightTheme");
 var _tokens = require("./tokens");
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 const {
   palette,
   opacity
 } = _tokens.tokens.md.ref;
-const MD3DarkTheme = {
+const MD3DarkTheme = exports.MD3DarkTheme = {
   ..._LightTheme.MD3LightTheme,
   dark: true,
   mode: 'adaptive',
@@ -68,5 +68,4 @@ const MD3DarkTheme = {
     }
   }
 };
-exports.MD3DarkTheme = MD3DarkTheme;
 //# sourceMappingURL=DarkTheme.js.map

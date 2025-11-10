@@ -51,17 +51,16 @@ const DIALOG_ELEVATION = 24;
  * export default MyComponent;
  * ```
  */
-const Dialog = _ref => {
-  let {
-    children,
-    dismissable = true,
-    dismissableBackButton = dismissable,
-    onDismiss,
-    visible = false,
-    style,
-    theme: themeOverrides,
-    testID
-  } = _ref;
+const Dialog = ({
+  children,
+  dismissable = true,
+  dismissableBackButton = dismissable,
+  onDismiss,
+  visible = false,
+  style,
+  theme: themeOverrides,
+  testID
+}) => {
   const {
     right,
     left

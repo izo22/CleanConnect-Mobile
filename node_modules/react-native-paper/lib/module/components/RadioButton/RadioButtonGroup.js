@@ -31,21 +31,18 @@ export const RadioButtonContext = /*#__PURE__*/React.createContext(null);
  * export default MyComponent;
  *```
  */
-const RadioButtonGroup = _ref => {
-  let {
+const RadioButtonGroup = ({
+  value,
+  onValueChange,
+  children
+}) => /*#__PURE__*/React.createElement(RadioButtonContext.Provider, {
+  value: {
     value,
-    onValueChange,
-    children
-  } = _ref;
-  return /*#__PURE__*/React.createElement(RadioButtonContext.Provider, {
-    value: {
-      value,
-      onValueChange
-    }
-  }, /*#__PURE__*/React.createElement(View, {
-    accessibilityRole: "radiogroup"
-  }, children));
-};
+    onValueChange
+  }
+}, /*#__PURE__*/React.createElement(View, {
+  accessibilityRole: "radiogroup"
+}, children));
 RadioButtonGroup.displayName = 'RadioButton.Group';
 export default RadioButtonGroup;
 

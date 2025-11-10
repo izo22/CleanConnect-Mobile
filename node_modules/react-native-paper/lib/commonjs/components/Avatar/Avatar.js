@@ -24,5 +24,5 @@ Object.defineProperty(exports, "Text", {
 var _AvatarIcon = _interopRequireDefault(require("./AvatarIcon"));
 var _AvatarImage = _interopRequireDefault(require("./AvatarImage"));
 var _AvatarText = _interopRequireDefault(require("./AvatarText"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 //# sourceMappingURL=Avatar.js.map

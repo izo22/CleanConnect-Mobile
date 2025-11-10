@@ -37,7 +37,13 @@ export type Props = React.ComponentPropsWithRef<typeof NativeTextInput> & {
    * This component render TextInputOutlined or TextInputFlat based on that props
    */
   mode?: 'flat' | 'outlined';
+  /**
+   * The adornment placed on the left side of the input. It can be either `TextInput.Icon` or `TextInput.Affix`.
+   */
   left?: React.ReactNode;
+  /**
+   * The adornment placed on the right side of the input. It can be either `TextInput.Icon` or `TextInput.Affix`.
+   */
   right?: React.ReactNode;
   /**
    * If true, user won't be able to interact with the component.
@@ -184,7 +190,7 @@ interface CompoundedComponent
 
 type TextInputHandles = Pick<
   NativeTextInput,
-  'focus' | 'clear' | 'blur' | 'isFocused' | 'setNativeProps'
+  'focus' | 'clear' | 'blur' | 'isFocused' | 'setNativeProps' | 'setSelection'
 >;
 
 const DefaultRenderer = (props: RenderProps) => <NativeTextInput {...props} />;
@@ -281,9 +287,8 @@ const TextInput = forwardRef<TextInputHandles, Props>(
       height: null,
     });
 
-    const timer = React.useRef<NodeJS.Timeout | undefined>();
-
-    const root = React.useRef<NativeTextInput | undefined | null>();
+    const timer = React.useRef<NodeJS.Timeout | undefined>(undefined);
+    const root = React.useRef<NativeTextInput | undefined | null>(null);
 
     const { scale } = theme.animation;
 
@@ -294,6 +299,8 @@ const TextInput = forwardRef<TextInputHandles, Props>(
       isFocused: () => root.current?.isFocused() || false,
       blur: () => root.current?.blur(),
       forceFocus: () => root.current?.focus(),
+      setSelection: (start: number, end: number) =>
+        root.current?.setSelection(start, end),
     }));
 
     React.useEffect(() => {

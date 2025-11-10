@@ -1,10 +1,9 @@
 import color from 'color';
-export function getTextColor(_ref) {
+export function getTextColor({
+  theme,
+  disabled
+}) {
   var _theme$colors;
-  let {
-    theme,
-    disabled
-  } = _ref;
   if (theme.isV3) {
     if (disabled) {
       return theme.colors.onSurfaceDisabled;
@@ -13,13 +12,12 @@ export function getTextColor(_ref) {
   }
   return color((_theme$colors = theme.colors) === null || _theme$colors === void 0 ? void 0 : _theme$colors.text).alpha(theme.dark ? 0.7 : 0.54).rgb().string();
 }
-export function getIconColor(_ref2) {
-  let {
-    theme,
-    isTextInputFocused,
-    disabled,
-    customColor
-  } = _ref2;
+export function getIconColor({
+  theme,
+  isTextInputFocused,
+  disabled,
+  customColor
+}) {
   if (typeof customColor === 'function') {
     return customColor(isTextInputFocused);
   }

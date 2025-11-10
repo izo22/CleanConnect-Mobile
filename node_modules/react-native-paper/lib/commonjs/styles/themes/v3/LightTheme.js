@@ -7,12 +7,12 @@ exports.MD3LightTheme = void 0;
 var _color = _interopRequireDefault(require("color"));
 var _tokens = require("./tokens");
 var _fonts = _interopRequireDefault(require("../../fonts"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 const {
   palette,
   opacity
 } = _tokens.tokens.md.ref;
-const MD3LightTheme = {
+const MD3LightTheme = exports.MD3LightTheme = {
   dark: false,
   roundness: 4,
   version: 3,
@@ -66,11 +66,9 @@ const MD3LightTheme = {
       level5: 'rgb(233, 227, 241)' // palette.primary40, alpha 0.14
     }
   },
-
   fonts: (0, _fonts.default)(),
   animation: {
     scale: 1.0
   }
 };
-exports.MD3LightTheme = MD3LightTheme;
 //# sourceMappingURL=LightTheme.js.map

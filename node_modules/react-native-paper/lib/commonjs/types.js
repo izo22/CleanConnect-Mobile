@@ -5,7 +5,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.MD3TypescaleKey = exports.ElevationLevels = void 0;
 // MD3 types
-let MD3TypescaleKey = /*#__PURE__*/function (MD3TypescaleKey) {
+let MD3TypescaleKey = exports.MD3TypescaleKey = /*#__PURE__*/function (MD3TypescaleKey) {
   MD3TypescaleKey["displayLarge"] = "displayLarge";
   MD3TypescaleKey["displayMedium"] = "displayMedium";
   MD3TypescaleKey["displaySmall"] = "displaySmall";
@@ -23,8 +23,7 @@ let MD3TypescaleKey = /*#__PURE__*/function (MD3TypescaleKey) {
   MD3TypescaleKey["bodySmall"] = "bodySmall";
   return MD3TypescaleKey;
 }({});
-exports.MD3TypescaleKey = MD3TypescaleKey;
-let ElevationLevels = /*#__PURE__*/function (ElevationLevels) {
+let ElevationLevels = exports.ElevationLevels = /*#__PURE__*/function (ElevationLevels) {
   ElevationLevels[ElevationLevels["level0"] = 0] = "level0";
   ElevationLevels[ElevationLevels["level1"] = 1] = "level1";
   ElevationLevels[ElevationLevels["level2"] = 2] = "level2";
@@ -33,5 +32,4 @@ let ElevationLevels = /*#__PURE__*/function (ElevationLevels) {
   ElevationLevels[ElevationLevels["level5"] = 5] = "level5";
   return ElevationLevels;
 }({});
-exports.ElevationLevels = ElevationLevels;
 //# sourceMappingURL=types.js.map

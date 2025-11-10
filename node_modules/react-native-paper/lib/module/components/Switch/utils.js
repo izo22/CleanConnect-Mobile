@@ -1,11 +1,10 @@
 import { Platform } from 'react-native';
 import setColor from 'color';
 import { grey400, grey800, grey50, grey700, white, black } from '../../styles/themes/v2/colors';
-const getCheckedColor = _ref => {
-  let {
-    theme,
-    color
-  } = _ref;
+const getCheckedColor = ({
+  theme,
+  color
+}) => {
   if (color) {
     return color;
   }
@@ -14,13 +13,12 @@ const getCheckedColor = _ref => {
   }
   return theme.colors.accent;
 };
-const getThumbTintColor = _ref2 => {
-  let {
-    theme,
-    disabled,
-    value,
-    checkedColor
-  } = _ref2;
+const getThumbTintColor = ({
+  theme,
+  disabled,
+  value,
+  checkedColor
+}) => {
   const isIOS = Platform.OS === 'ios';
   if (isIOS) {
     return undefined;
@@ -39,13 +37,12 @@ const getThumbTintColor = _ref2 => {
   }
   return grey50;
 };
-const getOnTintColor = _ref3 => {
-  let {
-    theme,
-    disabled,
-    value,
-    checkedColor
-  } = _ref3;
+const getOnTintColor = ({
+  theme,
+  disabled,
+  value,
+  checkedColor
+}) => {
   const isIOS = Platform.OS === 'ios';
   if (isIOS) {
     return checkedColor;
@@ -67,13 +64,12 @@ const getOnTintColor = _ref3 => {
   }
   return 'rgb(178, 175, 177)';
 };
-export const getSwitchColor = _ref4 => {
-  let {
-    theme,
-    disabled,
-    value,
-    color
-  } = _ref4;
+export const getSwitchColor = ({
+  theme,
+  disabled,
+  value,
+  color
+}) => {
   const checkedColor = getCheckedColor({
     theme,
     color

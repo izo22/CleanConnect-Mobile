@@ -1,10 +1,9 @@
 import * as React from 'react';
 import { Keyboard, Platform } from 'react-native';
-export default function useIsKeyboardShown(_ref) {
-  let {
-    onShow,
-    onHide
-  } = _ref;
+export default function useIsKeyboardShown({
+  onShow,
+  onHide
+}) {
   React.useEffect(() => {
     let willShowSubscription;
     let willHideSubscription;

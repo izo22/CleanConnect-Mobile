@@ -117,7 +117,7 @@ const mediumType = {
   letterSpacing: 0.15,
   fontWeight: ref.typeface.weightMedium
 };
-const typescale = {
+const typescale = exports.typescale = {
   displayLarge: {
     ...regularType,
     lineHeight: 64,
@@ -209,8 +209,7 @@ const typescale = {
     ...regularType
   }
 };
-exports.typescale = typescale;
-const tokens = {
+const tokens = exports.tokens = {
   md: {
     ref,
     sys: {
@@ -218,7 +217,5 @@ const tokens = {
     }
   }
 };
-exports.tokens = tokens;
-const MD3Colors = ref.palette;
-exports.MD3Colors = MD3Colors;
+const MD3Colors = exports.MD3Colors = ref.palette;
 //# sourceMappingURL=tokens.js.map

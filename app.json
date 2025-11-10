@@ -10,9 +10,6 @@
       "resizeMode": "contain",
       "backgroundColor": "#2E86C1"
     },
-    "updates": {
-      "fallbackToCacheTimeout": 0
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -23,7 +20,8 @@
       "adaptiveIcon": {
         "foregroundImage": null,
         "backgroundColor": "#2E86C1"
-      }
+      },
+      "package": "com.cleanconnect18.cleanconnect"
     },
     "web": {
       "favicon": null

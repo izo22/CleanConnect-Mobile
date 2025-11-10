@@ -1,10 +1,9 @@
 import color from 'color';
-export const getActiveTintColor = _ref => {
-  let {
-    activeColor,
-    defaultColor,
-    theme
-  } = _ref;
+export const getActiveTintColor = ({
+  activeColor,
+  defaultColor,
+  theme
+}) => {
   if (typeof activeColor === 'string') {
     return activeColor;
   }
@@ -13,12 +12,11 @@ export const getActiveTintColor = _ref => {
   }
   return defaultColor;
 };
-export const getInactiveTintColor = _ref2 => {
-  let {
-    inactiveColor,
-    defaultColor,
-    theme
-  } = _ref2;
+export const getInactiveTintColor = ({
+  inactiveColor,
+  defaultColor,
+  theme
+}) => {
   if (typeof inactiveColor === 'string') {
     return inactiveColor;
   }
@@ -27,14 +25,13 @@ export const getInactiveTintColor = _ref2 => {
   }
   return color(defaultColor).alpha(0.5).rgb().string();
 };
-export const getLabelColor = _ref3 => {
-  let {
-    tintColor,
-    hasColor,
-    focused,
-    defaultColor,
-    theme
-  } = _ref3;
+export const getLabelColor = ({
+  tintColor,
+  hasColor,
+  focused,
+  defaultColor,
+  theme
+}) => {
   if (hasColor) {
     return tintColor;
   }

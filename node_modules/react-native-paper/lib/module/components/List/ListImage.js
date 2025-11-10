@@ -19,13 +19,12 @@ import { useInternalTheme } from '../../core/theming';
  * export default MyComponent;
  * ```
  */
-const ListImage = _ref => {
-  let {
-    style,
-    source,
-    variant = 'image',
-    theme: themeOverrides
-  } = _ref;
+const ListImage = ({
+  style,
+  source,
+  variant = 'image',
+  theme: themeOverrides
+}) => {
   const theme = useInternalTheme(themeOverrides);
   const getStyles = () => {
     if (variant === 'video') {

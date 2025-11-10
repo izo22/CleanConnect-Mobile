@@ -26,25 +26,24 @@ const LEFT_SIZE = 40;
  * export default MyComponent;
  * ```
  */
-const CardTitle = _ref => {
-  let {
-    title,
-    titleStyle,
-    titleNumberOfLines = 1,
-    titleVariant = 'bodyLarge',
-    titleMaxFontSizeMultiplier,
-    subtitle,
-    subtitleStyle,
-    subtitleNumberOfLines = 1,
-    subtitleVariant = 'bodyMedium',
-    subtitleMaxFontSizeMultiplier,
-    left,
-    leftStyle,
-    right,
-    rightStyle,
-    style,
-    theme: themeOverrides
-  } = _ref;
+const CardTitle = ({
+  title,
+  titleStyle,
+  titleNumberOfLines = 1,
+  titleVariant = 'bodyLarge',
+  titleMaxFontSizeMultiplier,
+  subtitle,
+  subtitleStyle,
+  subtitleNumberOfLines = 1,
+  subtitleVariant = 'bodyMedium',
+  subtitleMaxFontSizeMultiplier,
+  left,
+  leftStyle,
+  right,
+  rightStyle,
+  style,
+  theme: themeOverrides
+}) => {
   const theme = useInternalTheme(themeOverrides);
   const TitleComponent = theme.isV3 ? Text : Title;
   const SubtitleComponent = theme.isV3 ? Text : Caption;

@@ -1,10 +1,9 @@
 import color from 'color';
-const getUnderlayColor = _ref => {
-  let {
-    theme,
-    calculatedRippleColor,
-    underlayColor
-  } = _ref;
+const getUnderlayColor = ({
+  theme,
+  calculatedRippleColor,
+  underlayColor
+}) => {
   if (underlayColor != null) {
     return underlayColor;
   }
@@ -13,11 +12,10 @@ const getUnderlayColor = _ref => {
   }
   return color(calculatedRippleColor).fade(0.5).rgb().string();
 };
-const getRippleColor = _ref2 => {
-  let {
-    theme,
-    rippleColor
-  } = _ref2;
+const getRippleColor = ({
+  theme,
+  rippleColor
+}) => {
   if (rippleColor) {
     return rippleColor;
   }
@@ -29,12 +27,11 @@ const getRippleColor = _ref2 => {
   }
   return color(theme.colors.text).alpha(0.2).rgb().string();
 };
-export const getTouchableRippleColors = _ref3 => {
-  let {
-    theme,
-    rippleColor,
-    underlayColor
-  } = _ref3;
+export const getTouchableRippleColors = ({
+  theme,
+  rippleColor,
+  underlayColor
+}) => {
   const calculatedRippleColor = getRippleColor({
     theme,
     rippleColor

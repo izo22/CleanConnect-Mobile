@@ -59,7 +59,6 @@ export const MD3LightTheme = {
       level5: 'rgb(233, 227, 241)' // palette.primary40, alpha 0.14
     }
   },
-
   fonts: configureFonts(),
   animation: {
     scale: 1.0

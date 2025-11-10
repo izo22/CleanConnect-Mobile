@@ -1,9 +1,8 @@
 import color from 'color';
-const getBorderColor = _ref => {
-  let {
-    theme,
-    disabled
-  } = _ref;
+const getBorderColor = ({
+  theme,
+  disabled
+}) => {
   if (theme.isV3) {
     if (disabled) {
       return theme.colors.surfaceDisabled;
@@ -12,14 +11,13 @@ const getBorderColor = _ref => {
   }
   return undefined;
 };
-const getBackgroundColor = _ref2 => {
-  let {
-    theme,
-    isMode,
-    disabled,
-    selected,
-    customContainerColor
-  } = _ref2;
+const getBackgroundColor = ({
+  theme,
+  isMode,
+  disabled,
+  selected,
+  customContainerColor
+}) => {
   if (theme.isV3) {
     if (disabled) {
       if (isMode('contained') || isMode('contained-tonal')) {
@@ -52,14 +50,13 @@ const getBackgroundColor = _ref2 => {
   }
   return undefined;
 };
-const getIconColor = _ref3 => {
-  let {
-    theme,
-    isMode,
-    disabled,
-    selected,
-    customIconColor
-  } = _ref3;
+const getIconColor = ({
+  theme,
+  isMode,
+  disabled,
+  selected,
+  customIconColor
+}) => {
   if (theme.isV3) {
     if (disabled) {
       return theme.colors.onSurfaceDisabled;
@@ -95,12 +92,11 @@ const getIconColor = _ref3 => {
   }
   return theme.colors.text;
 };
-const getRippleColor = _ref4 => {
-  let {
-    theme,
-    iconColor,
-    customRippleColor
-  } = _ref4;
+const getRippleColor = ({
+  theme,
+  iconColor,
+  customRippleColor
+}) => {
   if (customRippleColor) {
     return customRippleColor;
   }
@@ -109,16 +105,15 @@ const getRippleColor = _ref4 => {
   }
   return color(iconColor).alpha(0.32).rgb().string();
 };
-export const getIconButtonColor = _ref5 => {
-  let {
-    theme,
-    disabled,
-    mode,
-    selected,
-    customIconColor,
-    customContainerColor,
-    customRippleColor
-  } = _ref5;
+export const getIconButtonColor = ({
+  theme,
+  disabled,
+  mode,
+  selected,
+  customIconColor,
+  customContainerColor,
+  customRippleColor
+}) => {
   const isMode = modeToCompare => {
     return mode === modeToCompare;
   };

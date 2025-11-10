@@ -29,19 +29,16 @@ React.createContext(null);
  * export default MyComponent;
  *```
  */
-const ToggleButtonGroup = _ref => {
-  let {
+const ToggleButtonGroup = ({
+  value,
+  onValueChange,
+  children
+}) => /*#__PURE__*/React.createElement(ToggleButtonGroupContext.Provider, {
+  value: {
     value,
-    onValueChange,
-    children
-  } = _ref;
-  return /*#__PURE__*/React.createElement(ToggleButtonGroupContext.Provider, {
-    value: {
-      value,
-      onValueChange
-    }
-  }, children);
-};
+    onValueChange
+  }
+}, children);
 ToggleButtonGroup.displayName = 'ToggleButton.Group';
 export default ToggleButtonGroup;
 

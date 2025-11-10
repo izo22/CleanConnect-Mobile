@@ -6,12 +6,11 @@ Object.defineProperty(exports, "__esModule", {
 exports.getToggleButtonColor = void 0;
 var _color = _interopRequireDefault(require("color"));
 var _tokens = require("../../styles/themes/v3/tokens");
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-const getToggleButtonColor = _ref => {
-  let {
-    theme,
-    checked
-  } = _ref;
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+const getToggleButtonColor = ({
+  theme,
+  checked
+}) => {
   if (checked) {
     if (theme.isV3) {
       return (0, _color.default)(theme.colors.onSecondaryContainer).alpha(_tokens.tokens.md.ref.opacity.level2).rgb().string();

@@ -8,10 +8,7 @@
  * - After that there will be a style object for each filter you passed in the same order as the matching filters
  * - A style property will exist in a single style object, the first filter it matched
  */
-export function splitStyles(styles) {
-  for (var _len = arguments.length, filters = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    filters[_key - 1] = arguments[_key];
-  }
+export function splitStyles(styles, ...filters) {
   if (process.env.NODE_ENV !== 'production' && filters.length === 0) {
     console.error('No filters were passed when calling splitStyles');
   }

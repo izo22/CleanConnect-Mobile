@@ -25,13 +25,12 @@ import ToggleButtonGroup from './ToggleButtonGroup';
  *
  *```
  */
-const ToggleButtonRow = _ref => {
-  let {
-    value,
-    onValueChange,
-    children,
-    style
-  } = _ref;
+const ToggleButtonRow = ({
+  value,
+  onValueChange,
+  children,
+  style
+}) => {
   const count = React.Children.count(children);
   return /*#__PURE__*/React.createElement(ToggleButtonGroup, {
     value: value,

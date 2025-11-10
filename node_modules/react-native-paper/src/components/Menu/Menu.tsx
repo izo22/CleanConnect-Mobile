@@ -4,7 +4,6 @@ import {
   Dimensions,
   Easing,
   EmitterSubscription,
-  findNodeHandle,
   I18nManager,
   Keyboard,
   KeyboardEvent as RNKeyboardEvent,
@@ -20,8 +19,9 @@ import {
   Pressable,
 } from 'react-native';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import MenuItem from './MenuItem';
-import { APPROX_STATUSBAR_HEIGHT } from '../../constants';
 import { useInternalTheme } from '../../core/theming';
 import type { MD3Elevation, ThemeProp } from '../../types';
 import { ElevationLevels } from '../../types';
@@ -116,13 +116,12 @@ const focusFirstDOMNode = (el: View | null | undefined) => {
     // When in the browser, we want to focus the first focusable item on toggle
     // For example, when menu is shown, focus the first item in the menu
     // And when menu is dismissed, send focus back to the button to resume tabbing
-    const node: any = findNodeHandle(el);
-    const focusableNode = node.querySelector(
-      // This is a rough list of selectors that can be focused
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-
-    focusableNode?.focus();
+    if (el instanceof HTMLElement) {
+      el.querySelector<HTMLElement>(
+        // This is a rough list of selectors that can be focused
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )?.focus();
+    }
   }
 };
 
@@ -182,7 +181,7 @@ const isBrowser = () => Platform.OS === 'web' && 'document' in global;
 
 const Menu = ({
   visible,
-  statusBarHeight = APPROX_STATUSBAR_HEIGHT,
+  statusBarHeight,
   overlayAccessibilityLabel = 'Close menu',
   testID = 'menu',
   anchor,
@@ -197,6 +196,7 @@ const Menu = ({
   keyboardShouldPersistTaps,
 }: Props) => {
   const theme = useInternalTheme(themeOverrides);
+  const insets = useSafeAreaInsets();
   const [rendered, setRendered] = React.useState(visible);
   const [left, setLeft] = React.useState(0);
   const [top, setTop] = React.useState(0);
@@ -227,19 +227,19 @@ const Menu = ({
     keyboardHeightRef.current = 0;
   }, []);
 
-  const keyboardDidShowListenerRef: React.MutableRefObject<
+  const keyboardDidShowListenerRef: React.RefObject<
     EmitterSubscription | undefined
-  > = React.useRef();
-  const keyboardDidHideListenerRef: React.MutableRefObject<
+  > = React.useRef(undefined);
+  const keyboardDidHideListenerRef: React.RefObject<
     EmitterSubscription | undefined
-  > = React.useRef();
+  > = React.useRef(undefined);
 
-  const backHandlerSubscriptionRef: React.MutableRefObject<
+  const backHandlerSubscriptionRef: React.RefObject<
     NativeEventSubscription | undefined
-  > = React.useRef();
-  const dimensionsSubscriptionRef: React.MutableRefObject<
+  > = React.useRef(undefined);
+  const dimensionsSubscriptionRef: React.RefObject<
     NativeEventSubscription | undefined
-  > = React.useRef();
+  > = React.useRef(undefined);
 
   const handleDismiss = React.useCallback(() => {
     if (visible) {
@@ -394,16 +394,17 @@ const Menu = ({
       await Promise.resolve().then(() => {
         if (display && !prevRendered.current) {
           show();
-        } else {
-          if (rendered) {
-            hide();
-          }
+          return;
+        }
+
+        if (!display && prevRendered.current) {
+          hide();
         }
 
         return;
       });
     },
-    [hide, show, rendered]
+    [hide, show]
   );
 
   React.useEffect(() => {
@@ -443,7 +444,7 @@ const Menu = ({
 
   // I don't know why but on Android measure function is wrong by 24
   const additionalVerticalValue = Platform.select({
-    android: statusBarHeight,
+    android: statusBarHeight ?? insets.top,
     default: 0,
   });
 
@@ -627,7 +628,12 @@ const Menu = ({
   const pointerEvents = visible ? 'box-none' : 'none';
 
   return (
-    <View ref={(ref) => (anchorRef.current = ref)} collapsable={false}>
+    <View
+      ref={(ref) => {
+        anchorRef.current = ref;
+      }}
+      collapsable={false}
+    >
       {isCoordinate(anchor) ? null : anchor}
       {rendered ? (
         <Portal>
@@ -638,7 +644,9 @@ const Menu = ({
             style={styles.pressableOverlay}
           />
           <View
-            ref={(ref) => (menuRef.current = ref)}
+            ref={(ref) => {
+              menuRef.current = ref;
+            }}
             collapsable={false}
             accessibilityViewIsModal={visible}
             style={[styles.wrapper, positionStyle, style]}
@@ -667,6 +675,7 @@ const Menu = ({
                 {...(theme.isV3 && { elevation })}
                 testID={`${testID}-surface`}
                 theme={theme}
+                container
               >
                 {(scrollableMenuHeight && (
                   <ScrollView

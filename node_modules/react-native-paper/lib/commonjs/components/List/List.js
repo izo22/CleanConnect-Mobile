@@ -52,5 +52,5 @@ var _ListItem = _interopRequireDefault(require("./ListItem"));
 var _ListSection = _interopRequireDefault(require("./ListSection"));
 var _ListSubheader = _interopRequireDefault(require("./ListSubheader"));
 var _ListImage = _interopRequireDefault(require("./ListImage"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 //# sourceMappingURL=List.js.map

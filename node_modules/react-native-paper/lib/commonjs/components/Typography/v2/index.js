@@ -38,5 +38,5 @@ var _Headline = _interopRequireDefault(require("./Headline"));
 var _Paragraph = _interopRequireDefault(require("./Paragraph"));
 var _Subheading = _interopRequireDefault(require("./Subheading"));
 var _Title = _interopRequireDefault(require("./Title"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 //# sourceMappingURL=index.js.map

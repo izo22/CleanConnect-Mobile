@@ -1,9 +1,8 @@
 import color from 'color';
-const getAndroidCheckedColor = _ref => {
-  let {
-    theme,
-    customColor
-  } = _ref;
+const getAndroidCheckedColor = ({
+  theme,
+  customColor
+}) => {
   if (customColor) {
     return customColor;
   }
@@ -12,11 +11,10 @@ const getAndroidCheckedColor = _ref => {
   }
   return theme.colors.accent;
 };
-const getAndroidUncheckedColor = _ref2 => {
-  let {
-    theme,
-    customUncheckedColor
-  } = _ref2;
+const getAndroidUncheckedColor = ({
+  theme,
+  customUncheckedColor
+}) => {
   if (customUncheckedColor) {
     return customUncheckedColor;
   }
@@ -28,12 +26,11 @@ const getAndroidUncheckedColor = _ref2 => {
   }
   return color(theme.colors.text).alpha(0.54).rgb().string();
 };
-const getAndroidRippleColor = _ref3 => {
-  let {
-    theme,
-    checkedColor,
-    disabled
-  } = _ref3;
+const getAndroidRippleColor = ({
+  theme,
+  checkedColor,
+  disabled
+}) => {
   if (disabled) {
     if (theme.isV3) {
       return color(theme.colors.onSurface).alpha(0.16).rgb().string();
@@ -42,14 +39,13 @@ const getAndroidRippleColor = _ref3 => {
   }
   return color(checkedColor).fade(0.32).rgb().string();
 };
-const getAndroidControlColor = _ref4 => {
-  let {
-    theme,
-    checked,
-    disabled,
-    checkedColor,
-    uncheckedColor
-  } = _ref4;
+const getAndroidControlColor = ({
+  theme,
+  checked,
+  disabled,
+  checkedColor,
+  uncheckedColor
+}) => {
   if (disabled) {
     if (theme.isV3) {
       return theme.colors.onSurfaceDisabled;
@@ -61,14 +57,13 @@ const getAndroidControlColor = _ref4 => {
   }
   return uncheckedColor;
 };
-export const getAndroidSelectionControlColor = _ref5 => {
-  let {
-    theme,
-    disabled,
-    checked,
-    customColor,
-    customUncheckedColor
-  } = _ref5;
+export const getAndroidSelectionControlColor = ({
+  theme,
+  disabled,
+  checked,
+  customColor,
+  customUncheckedColor
+}) => {
   const checkedColor = getAndroidCheckedColor({
     theme,
     customColor
@@ -92,12 +87,11 @@ export const getAndroidSelectionControlColor = _ref5 => {
     })
   };
 };
-const getIOSCheckedColor = _ref6 => {
-  let {
-    theme,
-    disabled,
-    customColor
-  } = _ref6;
+const getIOSCheckedColor = ({
+  theme,
+  disabled,
+  customColor
+}) => {
   if (disabled) {
     if (theme.isV3) {
       return theme.colors.onSurfaceDisabled;
@@ -112,12 +106,11 @@ const getIOSCheckedColor = _ref6 => {
   }
   return theme.colors.accent;
 };
-const getIOSRippleColor = _ref7 => {
-  let {
-    theme,
-    checkedColor,
-    disabled
-  } = _ref7;
+const getIOSRippleColor = ({
+  theme,
+  checkedColor,
+  disabled
+}) => {
   if (disabled) {
     if (theme.isV3) {
       return color(theme.colors.onSurface).alpha(0.16).rgb().string();
@@ -126,12 +119,11 @@ const getIOSRippleColor = _ref7 => {
   }
   return color(checkedColor).fade(0.32).rgb().string();
 };
-export const getSelectionControlIOSColor = _ref8 => {
-  let {
-    theme,
-    disabled,
-    customColor
-  } = _ref8;
+export const getSelectionControlIOSColor = ({
+  theme,
+  disabled,
+  customColor
+}) => {
   const checkedColor = getIOSCheckedColor({
     theme,
     disabled,

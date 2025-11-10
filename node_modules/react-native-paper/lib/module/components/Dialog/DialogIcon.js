@@ -39,13 +39,12 @@ import Icon from '../Icon';
  * export default MyComponent;
  * ```
  */
-const DialogIcon = _ref => {
-  let {
-    size = 24,
-    color,
-    icon,
-    theme: themeOverrides
-  } = _ref;
+const DialogIcon = ({
+  size = 24,
+  color,
+  icon,
+  theme: themeOverrides
+}) => {
   const theme = useInternalTheme(themeOverrides);
   if (!theme.isV3) {
     return null;

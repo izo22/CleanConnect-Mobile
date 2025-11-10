@@ -23,13 +23,12 @@ const ICON_SIZE = 24;
  * export default MyComponent;
  * ```
  */
-const ListIcon = _ref => {
-  let {
-    icon,
-    color: iconColor,
-    style,
-    theme: themeOverrides
-  } = _ref;
+const ListIcon = ({
+  icon,
+  color: iconColor,
+  style,
+  theme: themeOverrides
+}) => {
   const theme = useInternalTheme(themeOverrides);
   return /*#__PURE__*/React.createElement(View, {
     style: [theme.isV3 ? styles.itemV3 : styles.item, style],

@@ -3,16 +3,16 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.getButtonColors = void 0;
+exports.getButtonTouchableRippleStyle = exports.getButtonColors = void 0;
 var _reactNative = require("react-native");
 var _color = _interopRequireDefault(require("color"));
 var _colors = require("../../styles/themes/v2/colors");
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-const isDark = _ref => {
-  let {
-    dark,
-    backgroundColor
-  } = _ref;
+var _splitStyles = require("../../utils/splitStyles");
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+const isDark = ({
+  dark,
+  backgroundColor
+}) => {
   if (typeof dark === 'boolean') {
     return dark;
   }
@@ -24,13 +24,12 @@ const isDark = _ref => {
   }
   return false;
 };
-const getButtonBackgroundColor = _ref2 => {
-  let {
-    isMode,
-    theme,
-    disabled,
-    customButtonColor
-  } = _ref2;
+const getButtonBackgroundColor = ({
+  isMode,
+  theme,
+  disabled,
+  customButtonColor
+}) => {
   if (customButtonColor && !disabled) {
     return customButtonColor;
   }
@@ -59,15 +58,14 @@ const getButtonBackgroundColor = _ref2 => {
   }
   return 'transparent';
 };
-const getButtonTextColor = _ref3 => {
-  let {
-    isMode,
-    theme,
-    disabled,
-    customTextColor,
-    backgroundColor,
-    dark
-  } = _ref3;
+const getButtonTextColor = ({
+  isMode,
+  theme,
+  disabled,
+  customTextColor,
+  backgroundColor,
+  dark
+}) => {
   if (customTextColor && !disabled) {
     return customTextColor;
   }
@@ -104,12 +102,11 @@ const getButtonTextColor = _ref3 => {
   }
   return theme.colors.primary;
 };
-const getButtonBorderColor = _ref4 => {
-  let {
-    isMode,
-    disabled,
-    theme
-  } = _ref4;
+const getButtonBorderColor = ({
+  isMode,
+  disabled,
+  theme
+}) => {
   if (theme.isV3) {
     if (disabled && isMode('outlined')) {
       return theme.colors.surfaceDisabled;
@@ -123,11 +120,10 @@ const getButtonBorderColor = _ref4 => {
   }
   return 'transparent';
 };
-const getButtonBorderWidth = _ref5 => {
-  let {
-    isMode,
-    theme
-  } = _ref5;
+const getButtonBorderWidth = ({
+  isMode,
+  theme
+}) => {
   if (theme.isV3) {
     if (isMode('outlined')) {
       return 1;
@@ -138,15 +134,14 @@ const getButtonBorderWidth = _ref5 => {
   }
   return 0;
 };
-const getButtonColors = _ref6 => {
-  let {
-    theme,
-    mode,
-    customButtonColor,
-    customTextColor,
-    disabled,
-    dark
-  } = _ref6;
+const getButtonColors = ({
+  theme,
+  mode,
+  customButtonColor,
+  customTextColor,
+  disabled,
+  dark
+}) => {
   const isMode = modeToCompare => {
     return mode === modeToCompare;
   };
@@ -181,4 +176,19 @@ const getButtonColors = _ref6 => {
   };
 };
 exports.getButtonColors = getButtonColors;
+const getButtonTouchableRippleStyle = (style, borderWidth = 0) => {
+  if (!style) return {};
+  const touchableRippleStyle = {};
+  const [, borderRadiusStyles] = (0, _splitStyles.splitStyles)(style, style => style.startsWith('border') && style.endsWith('Radius'));
+  Object.keys(borderRadiusStyles).forEach(key => {
+    const value = style[key];
+    if (typeof value === 'number') {
+      // Only subtract borderWidth if value is greater than 0
+      const radius = value > 0 ? value - borderWidth : 0;
+      touchableRippleStyle[key] = radius;
+    }
+  });
+  return touchableRippleStyle;
+};
+exports.getButtonTouchableRippleStyle = getButtonTouchableRippleStyle;
 //# sourceMappingURL=utils.js.map

@@ -7,8 +7,8 @@ exports.MD2LightTheme = void 0;
 var _color = _interopRequireDefault(require("color"));
 var _colors = require("./colors");
 var _fonts = _interopRequireDefault(require("../../fonts"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-const MD2LightTheme = {
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+const MD2LightTheme = exports.MD2LightTheme = {
   dark: false,
   roundness: 4,
   version: 2,
@@ -34,5 +34,4 @@ const MD2LightTheme = {
     scale: 1.0
   }
 };
-exports.MD2LightTheme = MD2LightTheme;
 //# sourceMappingURL=LightTheme.js.map

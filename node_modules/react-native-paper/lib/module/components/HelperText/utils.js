@@ -1,11 +1,10 @@
 import color from 'color';
-export function getTextColor(_ref) {
+export function getTextColor({
+  theme,
+  disabled,
+  type
+}) {
   var _theme$colors;
-  let {
-    theme,
-    disabled,
-    type
-  } = _ref;
   const {
     colors,
     dark

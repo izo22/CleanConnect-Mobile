@@ -8,11 +8,10 @@ const getDisabledColor = theme => {
   }
   return color(theme.dark ? white : black).alpha(0.32).rgb().string();
 };
-const getTitleColor = _ref => {
-  let {
-    theme,
-    disabled
-  } = _ref;
+const getTitleColor = ({
+  theme,
+  disabled
+}) => {
   if (disabled) {
     return getDisabledColor(theme);
   }
@@ -21,11 +20,10 @@ const getTitleColor = _ref => {
   }
   return color(theme.colors.text).alpha(0.87).rgb().string();
 };
-const getIconColor = _ref2 => {
-  let {
-    theme,
-    disabled
-  } = _ref2;
+const getIconColor = ({
+  theme,
+  disabled
+}) => {
   if (disabled) {
     return getDisabledColor(theme);
   }
@@ -34,11 +32,10 @@ const getIconColor = _ref2 => {
   }
   return color(theme.colors.text).alpha(0.54).rgb().string();
 };
-const getRippleColor = _ref3 => {
-  let {
-    theme,
-    customRippleColor
-  } = _ref3;
+const getRippleColor = ({
+  theme,
+  customRippleColor
+}) => {
   if (customRippleColor) {
     return customRippleColor;
   }
@@ -47,12 +44,11 @@ const getRippleColor = _ref3 => {
   }
   return undefined;
 };
-export const getMenuItemColor = _ref4 => {
-  let {
-    theme,
-    disabled,
-    customRippleColor
-  } = _ref4;
+export const getMenuItemColor = ({
+  theme,
+  disabled,
+  customRippleColor
+}) => {
   return {
     titleColor: getTitleColor({
       theme,
@@ -68,13 +64,12 @@ export const getMenuItemColor = _ref4 => {
     })
   };
 };
-export const getContentMaxWidth = _ref5 => {
-  let {
-    isV3,
-    iconWidth,
-    leadingIcon,
-    trailingIcon
-  } = _ref5;
+export const getContentMaxWidth = ({
+  isV3,
+  iconWidth,
+  leadingIcon,
+  trailingIcon
+}) => {
   if (isV3) {
     if (leadingIcon && trailingIcon) {
       return MAX_WIDTH - (2 * iconWidth + 24);

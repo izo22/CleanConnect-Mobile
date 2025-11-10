@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = useAnimatedValue;
 var _reactNative = require("react-native");
 var _useLazyRef = _interopRequireDefault(require("./useLazyRef"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 function useAnimatedValue(initialValue) {
   const {
     current

@@ -5,13 +5,12 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.getTouchableRippleColors = void 0;
 var _color = _interopRequireDefault(require("color"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-const getUnderlayColor = _ref => {
-  let {
-    theme,
-    calculatedRippleColor,
-    underlayColor
-  } = _ref;
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+const getUnderlayColor = ({
+  theme,
+  calculatedRippleColor,
+  underlayColor
+}) => {
   if (underlayColor != null) {
     return underlayColor;
   }
@@ -20,11 +19,10 @@ const getUnderlayColor = _ref => {
   }
   return (0, _color.default)(calculatedRippleColor).fade(0.5).rgb().string();
 };
-const getRippleColor = _ref2 => {
-  let {
-    theme,
-    rippleColor
-  } = _ref2;
+const getRippleColor = ({
+  theme,
+  rippleColor
+}) => {
   if (rippleColor) {
     return rippleColor;
   }
@@ -36,12 +34,11 @@ const getRippleColor = _ref2 => {
   }
   return (0, _color.default)(theme.colors.text).alpha(0.2).rgb().string();
 };
-const getTouchableRippleColors = _ref3 => {
-  let {
-    theme,
-    rippleColor,
-    underlayColor
-  } = _ref3;
+const getTouchableRippleColors = ({
+  theme,
+  rippleColor,
+  underlayColor
+}) => {
   const calculatedRippleColor = getRippleColor({
     theme,
     rippleColor
