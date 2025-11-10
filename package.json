@@ -19,6 +19,7 @@
     "axios": "^1.4.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "expo": "^49.0.23",
     "expo-linear-gradient": "~12.3.0",
