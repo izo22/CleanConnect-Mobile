@@ -161,7 +161,6 @@ const EditAvailabilityScreen = ({ route }) => {
       Alert.alert('Succès', 'Vos disponibilités ont été mises à jour avec succès');
       navigation.goBack();
     } catch (error) {
-      console.error('Erreur lors de la mise à jour des disponibilités:', error);
       Alert.alert(
         'Erreur',
         'Une erreur est survenue lors de la mise à jour de vos disponibilités'

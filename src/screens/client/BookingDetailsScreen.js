@@ -58,14 +58,12 @@ const BookingDetailsScreen = () => {
     try {
       // PRIORITÉ 1 : Adresse du currentBooking (si modifiée via AddressSelection)
       if (currentBooking?.address) {
-        console.log('✅ Adresse depuis currentBooking:', currentBooking.address.fullAddress);
         setDisplayAddress(currentBooking.address.fullAddress);
         return;
       }
       
       // PRIORITÉ 2 : Adresse du booking spécifique
       if (booking?.address) {
-        console.log('✅ Adresse depuis booking:', booking.address.fullAddress);
         setDisplayAddress(booking.address.fullAddress);
         return;
       }
@@ -74,13 +72,11 @@ const BookingDetailsScreen = () => {
       const userData = await AsyncStorage.getItem('userData');
       if (userData) {
         const user = JSON.parse(userData);
-        console.log('✅ Adresse d\'inscription:', user.address);
         setDisplayAddress(user.address || 'Adresse non renseignée');
       } else {
         setDisplayAddress('Adresse non disponible');
       }
     } catch (error) {
-      console.error('❌ Erreur détermination adresse:', error);
       setDisplayAddress('Adresse non disponible');
     }
   };
@@ -88,7 +84,6 @@ const BookingDetailsScreen = () => {
   // ✅ RECHARGER L'ADRESSE QUAND ON REVIENT À L'ÉCRAN
   useFocusEffect(
     React.useCallback(() => {
-      console.log('📍 Écran BookingDetails focus - Rechargement adresse');
       determineDisplayAddress();
     }, [currentBooking?.address, booking?.address])
   );
@@ -136,7 +131,6 @@ const BookingDetailsScreen = () => {
         });
       }
     } catch (error) {
-      console.error('Erreur lors du chargement de la réservation', error);
       Alert.alert(
         'Erreur',
         'Impossible de charger les détails de la réservation. Veuillez réessayer.'
@@ -224,7 +218,6 @@ const BookingDetailsScreen = () => {
         );
       }
     } catch (error) {
-      console.error('Erreur lors de l\'annulation', error);
       Alert.alert(
         'Erreur',
         'Une erreur inattendue est survenue. Veuillez réessayer.'
@@ -254,7 +247,6 @@ const BookingDetailsScreen = () => {
         'Votre évaluation a été enregistrée avec succès.'
       );
     } catch (error) {
-      console.error('Erreur lors de l\'enregistrement de l\'évaluation', error);
       Alert.alert(
         'Erreur',
         'Une erreur est survenue lors de l\'enregistrement de votre évaluation.'

@@ -26,7 +26,6 @@ const RequestsScreen = ({ navigation }) => {
   // Cela recharge les données à chaque fois que l'écran devient visible
   useFocusEffect(
     React.useCallback(() => {
-      console.log("🔄 RequestsScreen - Écran devient visible, rechargement...");
       loadRequests();
     }, [])
   );
@@ -34,39 +33,28 @@ const RequestsScreen = ({ navigation }) => {
   // Charger les demandes depuis AsyncStorage
   const loadRequests = async () => {
     try {
-      console.log("🔍 DEBUG - Début loadRequests");
       
       // Récupérer l'ID du prestataire depuis l'API (comme le Dashboard)
       const response = await providerService.getProviderProfile();
-      console.log("🔍 DEBUG - Réponse API:", response);
       const providerId = response.data._id;
-      console.log("🔍 DEBUG - Provider ID:", providerId);
       
       if (!providerId) {
-        console.log("❌ Pas d'ID prestataire disponible");
         setLoading(false);
         return;
       }
 
-      console.log("🟡 REQUESTS - Chargement des demandes pour:", providerId);
       
       // Récupérer les demandes depuis AsyncStorage
       const providerRequestsKey = `provider_requests_${providerId}`;
-      console.log("🟡 REQUESTS - Clé recherchée:", providerRequestsKey);
       const savedRequests = await AsyncStorage.getItem(providerRequestsKey);
-      console.log("🟡 REQUESTS - Données brutes trouvées:", savedRequests);
       
       if (savedRequests) {
         const requestsData = JSON.parse(savedRequests);
-        console.log("🟡 REQUESTS - Nombre de demandes trouvées:", requestsData.length);
-        console.log("🟡 REQUESTS - Détails des demandes:", requestsData);
         setRequests(requestsData);
       } else {
-        console.log("🟡 REQUESTS - Aucune demande trouvée dans AsyncStorage");
         setRequests([]);
       }
     } catch (error) {
-      console.error("❌ Erreur lors du chargement des demandes:", error);
       setRequests([]);
     } finally {
       setLoading(false);
@@ -83,22 +71,18 @@ const RequestsScreen = ({ navigation }) => {
   // Accepter une demande
   const acceptRequest = async (requestId) => {
     try {
-      console.log("✅ Acceptation de la demande:", requestId);
       await updateRequestStatus(requestId, 'accepted');
       await loadRequests(); // Recharger la liste
     } catch (error) {
-      console.error("❌ Erreur lors de l'acceptation:", error);
     }
   };
 
   // Refuser une demande
   const declineRequest = async (requestId) => {
     try {
-      console.log("❌ Refus de la demande:", requestId);
       await updateRequestStatus(requestId, 'declined');
       await loadRequests(); // Recharger la liste
     } catch (error) {
-      console.error("❌ Erreur lors du refus:", error);
     }
   };
 
@@ -111,7 +95,6 @@ const RequestsScreen = ({ navigation }) => {
       
       if (!providerId) return;
 
-      console.log(`🔄 Mise à jour statut ${requestId}: ${newStatus}`);
 
       // 1. Mettre à jour côté prestataire
       const providerRequestsKey = `provider_requests_${providerId}`;
@@ -123,7 +106,6 @@ const RequestsScreen = ({ navigation }) => {
           req._id === requestId ? { ...req, status: newStatus } : req
         );
         await AsyncStorage.setItem(providerRequestsKey, JSON.stringify(updatedRequests));
-        console.log("✅ Demandes mises à jour côté prestataire");
       }
 
       // 2. Mettre à jour côté client (synchronisation bidirectionnelle)
@@ -132,9 +114,7 @@ const RequestsScreen = ({ navigation }) => {
         await syncStatusToClient(request.clientId, requestId, newStatus);
       }
 
-      console.log(`✅ Statut mis à jour: ${newStatus}`);
     } catch (error) {
-      console.error("❌ Erreur updateRequestStatus:", error);
     }
   };
 
@@ -151,10 +131,8 @@ const RequestsScreen = ({ navigation }) => {
           booking._id === requestId ? { ...booking, status: newStatus } : booking
         );
         await AsyncStorage.setItem(clientBookingsKey, JSON.stringify(updatedBookings));
-        console.log(`🔄 Statut synchronisé côté client: ${newStatus}`);
       }
     } catch (error) {
-      console.error("❌ Erreur syncStatusToClient:", error);
     }
   };
 

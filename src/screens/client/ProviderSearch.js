@@ -35,7 +35,6 @@ const ProviderSearch = ({ navigation }) => {
 
   // ✅ FILTRAGE AUTOMATIQUE PAR VILLE DU CLIENT
   useEffect(() => {
-    console.log('🔍 Filtrage des prestataires par ville du client...');
     
     if (!providers || providers.length === 0) {
       setFilteredProviders([]);
@@ -45,15 +44,11 @@ const ProviderSearch = ({ navigation }) => {
     // Récupérer la ville du client
     const clientCity = currentBooking?.address?.city || userInfo?.city || 'Tel Aviv';
     
-    console.log('📍 Ville du client:', clientCity);
-    console.log('👥 Nombre total de prestataires:', providers.length);
     
     if (!clientCity) {
-      console.log('⚠️ Pas de ville client - Affichage de tous les prestataires');
       // Filtrer quand même par type de service
       let filtered = filterByServiceType(providers);
       setFilteredProviders(filtered);
-      console.log('✅ Prestataires après filtrage service:', filtered.length);
       return;
     }
     
@@ -61,7 +56,6 @@ const ProviderSearch = ({ navigation }) => {
     let filtered = providers.filter(provider => {
       // Vérifier si le prestataire a des villes configurées
       if (!provider.serviceCities || !Array.isArray(provider.serviceCities)) {
-        console.log(`⚠️ Prestataire ${provider.firstName} ${provider.lastName} n'a pas de serviceCities`);
         return false;
       }
       
@@ -69,20 +63,16 @@ const ProviderSearch = ({ navigation }) => {
       const coversCity = provider.serviceCities.includes(clientCity);
       
       if (coversCity) {
-        console.log(`✅ ${provider.firstName} ${provider.lastName} couvre ${clientCity}`);
       } else {
-        console.log(`❌ ${provider.firstName} ${provider.lastName} ne couvre pas ${clientCity} (couvre: ${provider.serviceCities.join(', ')})`);
       }
       
       return coversCity;
     });
     
-    console.log(`📊 ${filtered.length} prestataires couvrent ${clientCity}`);
     
     // Filtrer aussi par type de service
     filtered = filterByServiceType(filtered);
     
-    console.log(`✅ Prestataires finaux après filtrage service: ${filtered.length}`);
     
     setFilteredProviders(filtered);
   }, [providers, currentBooking, userInfo, serviceType]);
@@ -117,13 +107,10 @@ const ProviderSearch = ({ navigation }) => {
       setLoading(true);
       setError(null);
       
-      console.log('📡 Chargement de tous les prestataires...');
       const data = await providerService.getAllProviders();
       
-      console.log(`✅ ${data.length} prestataires chargés`);
       setProviders(data);
     } catch (err) {
-      console.error('❌ Erreur lors du chargement des prestataires:', err);
       setError('Impossible de charger les prestataires');
       Alert.alert('Erreur', 'Impossible de charger les prestataires');
     } finally {
@@ -133,7 +120,6 @@ const ProviderSearch = ({ navigation }) => {
 
   // ✅ CORRECTION : Navigation vers ScheduleScreen
   const handleSelectProvider = (provider) => {
-    console.log('👤 Prestataire sélectionné:', provider.firstName, provider.lastName);
     
     // ✅ Vérifier que selectProvider existe et est une fonction
     if (selectProvider && typeof selectProvider === 'function') {
@@ -146,16 +132,13 @@ const ProviderSearch = ({ navigation }) => {
         hourlyRate: provider.hourlyRate
       });
       
-      console.log('✅ Navigation vers ScheduleScreen avec providerId:', provider._id);
     } else {
-      console.error('❌ selectProvider n\'est pas une fonction dans BookingContext');
       Alert.alert(
         'Erreur de configuration',
         'La fonction de sélection du prestataire n\'est pas disponible. Veuillez vérifier le BookingContext.',
         [
           {
             text: 'OK',
-            onPress: () => console.log('BookingContext doit définir selectProvider comme une fonction')
           }
         ]
       );

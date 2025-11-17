@@ -33,10 +33,8 @@ export const BookingProvider = ({ children }) => {
         const savedBookings = await AsyncStorage.getItem(STORAGE_KEYS.USER_BOOKINGS);
         if (savedBookings) {
           setUserBookings(JSON.parse(savedBookings));
-          console.log("Réservations chargées depuis le stockage local:", JSON.parse(savedBookings).length);
         }
       } catch (error) {
-        console.log('Erreur lors du chargement des réservations sauvegardées', error);
       }
     };
     
@@ -45,7 +43,6 @@ export const BookingProvider = ({ children }) => {
 
   useEffect(() => {
     if (userBookings.length === 0) {
-      console.log("Ajout d'une réservation de test");
       const testBooking = {
         _id: 'test-booking-' + Date.now(),
         serviceType: 'home',
@@ -75,9 +72,7 @@ export const BookingProvider = ({ children }) => {
     const saveBookings = async () => {
       try {
         await AsyncStorage.setItem(STORAGE_KEYS.USER_BOOKINGS, JSON.stringify(userBookings));
-        console.log("Réservations sauvegardées dans le stockage local:", userBookings.length);
       } catch (error) {
-        console.log('Erreur lors de la sauvegarde des réservations', error);
       }
     };
     
@@ -92,8 +87,6 @@ export const BookingProvider = ({ children }) => {
 
   // ✅ NOUVELLE FONCTION - Sélectionner un prestataire
   const selectProvider = useCallback((provider) => {
-    console.log('✅ Prestataire sélectionné dans le contexte:', provider.firstName, provider.lastName);
-    console.log('📊 Données du prestataire:', {
       id: provider._id,
       name: `${provider.firstName} ${provider.lastName}`,
       hourlyRate: provider.hourlyRate,
@@ -105,7 +98,6 @@ export const BookingProvider = ({ children }) => {
       selectedProvider: provider,
     }));
     
-    console.log('✅ currentBooking mis à jour avec le prestataire');
   }, []);
 
   const resetBooking = useCallback(() => {
@@ -173,7 +165,6 @@ export const BookingProvider = ({ children }) => {
       
       return { success: true, providers: mockProviders };
     } catch (error) {
-      console.log('Erreur lors du chargement des prestataires disponibles', error);
       setBookingError('Impossible de charger les prestataires disponibles');
       return { success: false, message: error.response?.data?.message || 'Erreur de chargement' };
     }
@@ -209,13 +200,10 @@ export const BookingProvider = ({ children }) => {
         }
       }
       
-      console.log('💰 Tarif horaire du prestataire:', hourlyRate);
-      console.log('⏱️ Durée:', currentBooking.duration);
       
       // Calcul du prix en fonction de la durée
       let price = hourlyRate * currentBooking.duration;
       
-      console.log('💵 Prix avant réduction:', price);
       
       // Appliquer des réductions pour les fréquences régulières
       if (currentBooking.frequency === 'weekly') {
@@ -226,12 +214,10 @@ export const BookingProvider = ({ children }) => {
         price = price * 0.97; // 3% de réduction
       }
       
-      console.log('💵 Prix après réduction:', price);
       
       // Arrondir à 2 décimales
       price = Math.round(price * 100) / 100;
       
-      console.log('✅ Prix final du service:', price);
       
       // Simuler un délai réseau
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -240,23 +226,17 @@ export const BookingProvider = ({ children }) => {
       updateBooking({ price });
       return price;
     } catch (error) {
-      console.log('Erreur lors du calcul du prix', error);
       return 0;
     }
   }, [currentBooking.serviceType, currentBooking.duration, currentBooking.frequency, currentBooking.selectedProvider, updateBooking]);
 
   const syncBookingToProvider = useCallback(async (booking) => {
     try {
-      console.log("🔵 SYNC - DÉBUT de syncBookingToProvider");
       const providerRequestsKey = `provider_requests_${booking.selectedProvider._id}`;
-      console.log("🔵 SYNC - Clé utilisée:", providerRequestsKey);
-      console.log("🔵 SYNC - Booking à synchroniser:", booking);
       
-      console.log("🔵 SYNC - Lecture AsyncStorage...");
       const existingRequests = await AsyncStorage.getItem(providerRequestsKey);
       const requests = existingRequests ? JSON.parse(existingRequests) : [];
       
-      console.log("🔵 SYNC - Demandes existantes:", requests.length);
       
       const providerRequest = {
         _id: booking._id,
@@ -273,24 +253,16 @@ export const BookingProvider = ({ children }) => {
       };
       
       requests.unshift(providerRequest);
-      console.log("🔵 SYNC - Demande créée:", providerRequest);
       
-      console.log("🔵 SYNC - Écriture dans AsyncStorage...");
       await AsyncStorage.setItem(providerRequestsKey, JSON.stringify(requests));
-      console.log("🔵 SYNC - Sauvegardé avec succès, total:", requests.length);
-      console.log("🔵 SYNC - FIN de syncBookingToProvider ✅");
       
     } catch (error) {
-      console.error("🔴 SYNC - Erreur:", error);
-      console.error("🔴 SYNC - Stack:", error.stack);
     }
   }, [userInfo]);
 
   const addBooking = useCallback((newBooking) => {
-    console.log("📌 ADD BOOKING - Ajout d'une nouvelle réservation:", newBooking);
     setUserBookings(prevBookings => {
       const updatedBookings = [newBooking, ...prevBookings];
-      console.log("📌 ADD BOOKING - Nombre total de réservations après ajout:", updatedBookings.length);
       return updatedBookings;
     });
     return { success: true, booking: newBooking };
@@ -298,32 +270,20 @@ export const BookingProvider = ({ children }) => {
 
   const createBooking = useCallback(async () => {
     try {
-      console.log("🔷 ÉTAPE 1 - Début de createBooking");
-      console.log("🔷 ÉTAPE 1.1 - userToken:", userToken ? "✅ Présent" : "❌ Absent");
-      console.log("🔷 ÉTAPE 1.2 - currentBooking:", JSON.stringify(currentBooking, null, 2));
       
       if (!userToken) {
-        console.log("❌ ERREUR - Pas de token d'authentification");
         setBookingError('Veuillez vous connecter pour réserver un service');
         return { success: false, message: 'Authentification requise' };
       }
 
-      console.log("🔷 ÉTAPE 2 - Vérification des données obligatoires");
-      console.log("🔷 ÉTAPE 2.1 - serviceType:", currentBooking.serviceType);
-      console.log("🔷 ÉTAPE 2.2 - selectedProvider:", currentBooking.selectedProvider);
-      console.log("🔷 ÉTAPE 2.3 - dateTime:", currentBooking.dateTime);
 
       if (!currentBooking.serviceType || !currentBooking.selectedProvider || !currentBooking.dateTime) {
-        console.log("❌ ERREUR - Données incomplètes");
         setBookingError('Veuillez remplir tous les champs obligatoires');
         return { success: false, message: 'Informations incomplètes' };
       }
 
-      console.log("🔷 ÉTAPE 3 - Création du booking ID");
       const bookingId = 'booking-' + Date.now();
-      console.log("🔷 ÉTAPE 3.1 - ID généré:", bookingId);
       
-      console.log("🔷 ÉTAPE 4 - Création de l'objet newBooking");
       const newBooking = {
         _id: bookingId,
         serviceType: currentBooking.serviceType,
@@ -346,30 +306,18 @@ export const BookingProvider = ({ children }) => {
         created: new Date().toISOString(),
       };
       
-      console.log("🔷 ÉTAPE 4.1 - newBooking créé:", JSON.stringify(newBooking, null, 2));
       
-      console.log("🔷 ÉTAPE 5 - Appel de addBooking");
       const result = addBooking(newBooking);
-      console.log("🔷 ÉTAPE 5.1 - addBooking terminé, résultat:", result);
       
-      console.log("🔷 ÉTAPE 6 - Début de syncBookingToProvider");
       await syncBookingToProvider(newBooking);
-      console.log("🔷 ÉTAPE 6.1 - syncBookingToProvider terminé ✅");
       
-      console.log("🔷 ÉTAPE 7 - Début du délai de 1 seconde");
       await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log("🔷 ÉTAPE 7.1 - Délai terminé");
       
-      console.log("🔷 ÉTAPE 8 - Appel de resetBooking");
       resetBooking();
-      console.log("🔷 ÉTAPE 8.1 - resetBooking terminé");
       
-      console.log("🔷 ÉTAPE 9 - Retour du succès");
       return { success: true, booking: newBooking };
 
     } catch (error) {
-      console.error('❌ ERREUR FATALE dans createBooking:', error);
-      console.error('❌ Stack trace:', error.stack);
       const message = error.response?.data?.message || 'Erreur lors de la création de la réservation';
       setBookingError(message);
       return { success: false, message };
@@ -383,25 +331,21 @@ export const BookingProvider = ({ children }) => {
     setBookingError(null);
     
     try {
-      console.log("📱 CLIENT - Chargement des réservations depuis AsyncStorage");
       
       const savedBookings = await AsyncStorage.getItem(STORAGE_KEYS.USER_BOOKINGS);
       
       if (savedBookings) {
         const bookingsData = JSON.parse(savedBookings);
-        console.log("📱 CLIENT - Réservations trouvées:", bookingsData.length);
         
         setUserBookings([...bookingsData]);
         setIsLoadingBookings(false);
         return bookingsData;
       } else {
-        console.log("📱 CLIENT - Aucune réservation trouvée");
         setUserBookings([]);
         setIsLoadingBookings(false);
         return [];
       }
     } catch (error) {
-      console.error('❌ Erreur lors du chargement des réservations', error);
       setBookingError('Impossible de charger vos réservations');
       setUserBookings([]);
       return [];
@@ -426,7 +370,6 @@ export const BookingProvider = ({ children }) => {
       
       return { success: true, booking: updatedBooking };
     } catch (error) {
-      console.log('Erreur lors de la mise à jour du statut', error);
       return { success: false, message: error.response?.data?.message || 'Erreur de mise à jour' };
     }
   }, [userBookings]);
@@ -445,7 +388,6 @@ export const BookingProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
-      console.log('Erreur lors de l\'annulation', error);
       return { success: false, message: error.response?.data?.message || 'Erreur lors de l\'annulation' };
     }
   }, []);
@@ -454,10 +396,8 @@ export const BookingProvider = ({ children }) => {
     try {
       await AsyncStorage.removeItem(STORAGE_KEYS.USER_BOOKINGS);
       setUserBookings([]);
-      console.log("Toutes les réservations ont été effacées");
       return { success: true };
     } catch (error) {
-      console.log('Erreur lors de la suppression des réservations', error);
       return { success: false, message: 'Erreur lors de la suppression des réservations' };
     }
   }, []);

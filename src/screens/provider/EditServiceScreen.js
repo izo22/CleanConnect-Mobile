@@ -86,7 +86,6 @@ const EditServiceScreen = ({ route }) => {
 
       navigation.goBack();
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde du service:', error);
       Alert.alert(
         'Erreur',
         'Une erreur est survenue lors de la sauvegarde du service'

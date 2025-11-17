@@ -9,7 +9,6 @@ const providerService = {
    */
   getAllProviders: async () => {
     try {
-      console.log('📡 Appel API: GET /providers');
       
       const response = await fetch(`${API_URL}/providers`, {
         method: 'GET',
@@ -18,7 +17,6 @@ const providerService = {
         },
       });
 
-      console.log('📥 Réponse API:', response.status);
 
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status}`);
@@ -29,11 +27,9 @@ const providerService = {
       // ✅ FIX: Extraire le tableau 'data' de la réponse
       const data = result.data || result;
       
-      console.log(`✅ ${data.length} prestataires récupérés`);
       
       return data;
     } catch (error) {
-      console.error('❌ Erreur lors de la récupération des prestataires:', error);
       throw error;
     }
   },
@@ -43,7 +39,6 @@ const providerService = {
    */
   getProviderById: async (providerId) => {
     try {
-      console.log('📡 Appel API: GET /providers/' + providerId);
       
       const response = await fetch(`${API_URL}/providers/${providerId}`, {
         method: 'GET',
@@ -59,11 +54,9 @@ const providerService = {
       const result = await response.json();
       const data = result.data || result;
       
-      console.log('✅ Prestataire récupéré:', data.firstName, data.lastName);
       
       return data;
     } catch (error) {
-      console.error('❌ Erreur lors de la récupération du prestataire:', error);
       throw error;
     }
   },
@@ -73,7 +66,6 @@ const providerService = {
    */
   searchProvidersByCity: async (city) => {
     try {
-      console.log('📡 Recherche prestataires pour la ville:', city);
       
       const response = await fetch(`${API_URL}/providers/search?city=${encodeURIComponent(city)}`, {
         method: 'GET',
@@ -89,11 +81,9 @@ const providerService = {
       const result = await response.json();
       const data = result.data || result;
       
-      console.log(`✅ ${data.length} prestataires trouvés pour ${city}`);
       
       return data;
     } catch (error) {
-      console.error('❌ Erreur lors de la recherche de prestataires:', error);
       throw error;
     }
   },
@@ -103,7 +93,6 @@ const providerService = {
    */
   searchProvidersByService: async (serviceType) => {
     try {
-      console.log('📡 Recherche prestataires pour le service:', serviceType);
       
       const response = await fetch(`${API_URL}/providers/search?serviceType=${encodeURIComponent(serviceType)}`, {
         method: 'GET',
@@ -119,11 +108,9 @@ const providerService = {
       const result = await response.json();
       const data = result.data || result;
       
-      console.log(`✅ ${data.length} prestataires trouvés pour ${serviceType}`);
       
       return data;
     } catch (error) {
-      console.error('❌ Erreur lors de la recherche de prestataires:', error);
       throw error;
     }
   },

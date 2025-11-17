@@ -52,13 +52,11 @@ const loadJobDetails = async () => {
         jobData = response;
       }
       
-      console.log('Détails de la mission chargés');
       setJob(jobData);
     } else {
       throw new Error(response.message || 'Échec du chargement des détails');
     }
   } catch (err) {
-    console.error('Erreur lors du chargement des détails de la mission:', err);
     setError('Impossible de charger les détails de la mission.');
   } finally {
     setLoading(false);
@@ -97,7 +95,6 @@ const loadJobDetails = async () => {
           return Linking.openURL(googleMapsUrl);
         }
       })
-      .catch((error) => console.error('Erreur lors de l\'ouverture de l\'application de navigation', error));
   };
 
   // Appeler le client
@@ -111,7 +108,6 @@ const loadJobDetails = async () => {
           Alert.alert('Erreur', 'Impossible de passer un appel depuis cet appareil');
         }
       })
-      .catch((error) => console.error('Erreur lors de l\'appel', error));
   };
 
   // Envoyer un message au client
@@ -125,7 +121,6 @@ const loadJobDetails = async () => {
           Alert.alert('Erreur', 'Impossible d\'envoyer un message depuis cet appareil');
         }
       })
-      .catch((error) => console.error('Erreur lors de l\'envoi du message', error));
   };
 
   // Confirmer la mission avec l'API
@@ -150,7 +145,6 @@ const loadJobDetails = async () => {
                 'La mission a été confirmée avec succès.'
               );
             } catch (err) {
-              console.error('Erreur lors de la confirmation de la mission:', err);
               Alert.alert(
                 'Erreur',
                 'Impossible de confirmer la mission. Veuillez réessayer.'
@@ -185,7 +179,6 @@ const loadJobDetails = async () => {
                 'La mission a été annulée avec succès.'
               );
             } catch (err) {
-              console.error('Erreur lors de l\'annulation de la mission:', err);
               Alert.alert(
                 'Erreur',
                 'Impossible d\'annuler la mission. Veuillez réessayer.'
@@ -219,7 +212,6 @@ const loadJobDetails = async () => {
                 'La mission a été marquée comme terminée avec succès.'
               );
             } catch (err) {
-              console.error('Erreur lors de la complétion de la mission:', err);
               Alert.alert(
                 'Erreur',
                 'Impossible de terminer la mission. Veuillez réessayer.'

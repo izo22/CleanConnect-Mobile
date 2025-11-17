@@ -49,14 +49,12 @@ const AddressSelectionScreen = ({ navigation }) => {
   const loadUserAddresses = async () => {
     setIsLoading(true);
     try {
-      console.log('📍 Chargement des adresses utilisateur...');
       
       // Récupérer les données utilisateur depuis AsyncStorage
       const userData = await AsyncStorage.getItem('userData');
       
       if (userData) {
         const user = JSON.parse(userData);
-        console.log('👤 User data:', user);
         
         // Créer l'adresse principale depuis l'inscription
         const mainAddress = {
@@ -81,12 +79,9 @@ const AddressSelectionScreen = ({ navigation }) => {
           setSelectedAddressId('main-address');
         }
         
-        console.log('✅ Adresses chargées:', allAddresses.length);
       } else {
-        console.log('⚠️ Aucune donnée utilisateur trouvée');
       }
     } catch (error) {
-      console.error('❌ Erreur lors du chargement des adresses:', error);
       Alert.alert('Erreur', 'Impossible de charger vos adresses');
     } finally {
       setIsLoading(false);
@@ -122,10 +117,8 @@ const AddressSelectionScreen = ({ navigation }) => {
           `user_addresses_${user.id}`,
           JSON.stringify(additionalAddresses)
         );
-        console.log('💾 Adresses supplémentaires sauvegardées');
       }
     } catch (error) {
-      console.error('❌ Erreur lors de la sauvegarde des adresses:', error);
     }
   };
   

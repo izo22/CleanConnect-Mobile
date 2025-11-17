@@ -87,25 +87,20 @@ const ScheduleScreen = ({ route, navigation }) => {
   const handleDurationChange = useCallback((newDuration) => {
     // 🛡️ Bloquer les clics multiples rapides
     if (isUpdating) {
-      console.warn('⚠️ Mise à jour en cours, veuillez patientez');
       return;
     }
     
-    console.log(`🔄 handleDurationChange: ${localDuration}h → ${newDuration}h`);
     
     // 🛡️ Validation complète
     if (typeof newDuration !== 'number' || isNaN(newDuration)) {
-      console.error('❌ Durée invalide (NaN):', newDuration);
       return;
     }
     
     if (newDuration < 1) {
-      console.warn('⚠️ Durée < 1h bloquée');
       return;
     }
     
     if (newDuration > 50) {
-      console.warn('⚠️ Durée > 50h bloquée');
       return;
     }
     
@@ -124,7 +119,6 @@ const ScheduleScreen = ({ route, navigation }) => {
       // ✅ Désactiver le flag après un délai
       setTimeout(() => {
         setIsUpdating(false);
-        console.log('✅ Durée mise à jour:', validDuration);
       }, 100);
     });
   }, [updateBooking, localDuration, isUpdating]);
@@ -144,13 +138,10 @@ const ScheduleScreen = ({ route, navigation }) => {
       if (savedData) {
         const parsedData = JSON.parse(savedData);
         setAvailabilities(parsedData);
-        console.log(`📱 CLIENT - ${parsedData.length} disponibilités chargées`);
       } else {
         setAvailabilities([]);
-        console.log('📱 CLIENT - Aucune disponibilité trouvée');
       }
     } catch (error) {
-      console.error('❌ CLIENT - Erreur chargement:', error);
       setAvailabilities([]);
     } finally {
       setIsLoadingData(false);
@@ -173,12 +164,10 @@ const ScheduleScreen = ({ route, navigation }) => {
           status: req.status
         }));
         setExistingBookings(bookings);
-        console.log(`📚 ${bookings.length} réservations existantes chargées`);
       } else {
         setExistingBookings([]);
       }
     } catch (error) {
-      console.error('❌ Erreur chargement réservations:', error);
       setExistingBookings([]);
     }
   }, [providerId]);
@@ -204,7 +193,6 @@ const ScheduleScreen = ({ route, navigation }) => {
 
   // ⏰ CALCUL CRÉNEAUX - ✅ CORRECTION COMPLÈTE
   const calculateSlots = useCallback((targetDate, currentDuration) => {
-    console.log('🔍 calculateSlots:', { 
       date: targetDate?.toLocaleDateString('fr-FR'), 
       duration: currentDuration,
       availabilitiesCount: availabilities.length,
@@ -213,12 +201,10 @@ const ScheduleScreen = ({ route, navigation }) => {
     
     // 🛡️ Validation d'entrée
     if (!targetDate) {
-      console.warn('⚠️ Pas de date sélectionnée');
       return [];
     }
     
     if (!currentDuration || currentDuration < 1) {
-      console.warn('⚠️ Durée invalide:', currentDuration);
       return [];
     }
     
@@ -234,7 +220,6 @@ const ScheduleScreen = ({ route, navigation }) => {
       }
     });
     
-    console.log(`📅 ${dayAvailabilities.length} disponibilités trouvées pour ${formattedDate}`);
     
     if (dayAvailabilities.length === 0) {
       return [];
@@ -247,7 +232,6 @@ const ScheduleScreen = ({ route, navigation }) => {
              booking.status !== 'cancelled';
     });
     
-    console.log(`📚 ${dateBookings.length} réservations existantes pour ${formattedDate}`);
     
     // ⏰ Générer tous les créneaux possibles
     const allSlots = [];
@@ -294,14 +278,12 @@ const ScheduleScreen = ({ route, navigation }) => {
     // Trier par heure
     allSlots.sort((a, b) => a.minutes - b.minutes);
     
-    console.log(`✅ ${allSlots.length} créneaux disponibles calculés`);
     return allSlots;
   }, [availabilities, existingBookings]);
 
   // 🔄 Recalculer créneaux quand durée, date ou données changent
   useEffect(() => {
     if (selectedDate && localDuration) {
-      console.log('🔄 Recalcul créneaux:', { date: selectedDate.toLocaleDateString(), duration: localDuration });
       const slots = calculateSlots(selectedDate, localDuration);
       setAvailableSlots(slots);
     } else {
@@ -351,7 +333,6 @@ const ScheduleScreen = ({ route, navigation }) => {
     
     setSelectedDate(day.date);
     setSelectedTime(null);
-    console.log('📅 Date sélectionnée:', day.date.toLocaleDateString('fr-FR'));
   };
 
   // ➡️ Continuer vers récapitulatif
@@ -372,7 +353,6 @@ const ScheduleScreen = ({ route, navigation }) => {
       duration: localDuration // S'assurer que la durée est bien enregistrée
     });
     
-    console.log('✅ Navigation vers Summary avec:', {
       dateTime: dateTime.toISOString(),
       duration: localDuration,
       providerId,

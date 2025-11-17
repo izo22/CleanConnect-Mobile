@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
           setIsFirstLaunch(false);
         }
       } catch (err) {
-        console.error('Erreur lors de la vérification du premier lancement:', err);
+        // Erreur silencieuse
         setIsFirstLaunch(false);
       }
     };
@@ -56,18 +56,11 @@ export const AuthProvider = ({ children }) => {
           setUserRole(role);
           setUserInfo(JSON.parse(userData));
           
-          // Optionnel: Vérifier la validité du token côté serveur
-          try {
-            await authService.getMe();
-          } catch (err) {
-            // Si le token n'est plus valide, déconnecter l'utilisateur
-            if (err.status === 401) {
-              await logout();
-            }
-          }
+          // ✅ NE PAS vérifier le token au démarrage - ça crash si le serveur est lent
+          // La vérification se fera quand l'utilisateur fait une action qui nécessite l'API
         }
       } catch (e) {
-        console.error('Erreur lors du chargement des données d\'authentification:', e);
+        // Erreur silencieuse - on continue simplement sans authentification
       } finally {
         setIsLoading(false);
       }
@@ -86,7 +79,6 @@ export const AuthProvider = ({ children }) => {
       const credentials = { 
         email, 
         password
-        // Le paramètre 'role' est retiré pour permettre au backend de chercher dans les deux collections
       };
       
       const response = await authService.login(credentials);
@@ -115,7 +107,6 @@ export const AuthProvider = ({ children }) => {
 
   // Fonction de déconnexion améliorée
   const logout = async () => {
-    console.log("Fonction logout appelée dans AuthContext");
     setError(null);
     try {
       setIsLoading(true);
@@ -123,27 +114,21 @@ export const AuthProvider = ({ children }) => {
       // Tenter d'appeler le service de déconnexion
       try {
         await authService.logout();
-        console.log("authService.logout() exécuté avec succès");
       } catch (serviceError) {
-        console.warn("Avertissement dans authService.logout():", serviceError);
         // Continuer malgré l'erreur
       }
       
       // Nettoyer le stockage local
-      console.log("Nettoyage complet de AsyncStorage");
       await AsyncStorage.clear();
       
       // Réinitialiser les états
-      console.log("Réinitialisation des états d'authentification");
       setUserToken(null);
       setUserInfo(null);
       setUserRole(null);
       
-      console.log("Déconnexion réussie");
       return { success: true };
     } catch (err) {
       const errorMessage = err.message || 'Erreur lors de la déconnexion';
-      console.error("Erreur de déconnexion:", errorMessage);
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -151,25 +136,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ INSCRIPTION D'UN CLIENT CORRIGÉE
+  // Inscription d'un client
   const registerClient = async (userData) => {
     setError(null);
     try {
       setIsLoading(true);
-      console.log('📝 Données envoyées au backend:', userData);
       
       const response = await authService.registerClient(userData);
       
       if (response.token) {
-        // ✅ MERGER les données envoyées avec les données reçues
-        // pour s'assurer que l'adresse est sauvegardée même si le backend ne la retourne pas
+        // Merger les données envoyées avec les données reçues
         const completeUserData = {
-          ...response.user,           // Données du backend (id, firstName, lastName, email, role)
-          address: userData.address,  // ✅ AJOUT de l'adresse depuis le formulaire
-          phone: userData.phone       // ✅ AJOUT du téléphone au cas où
+          ...response.user,
+          address: userData.address,
+          phone: userData.phone
         };
-        
-        console.log('✅ Données complètes à sauvegarder:', completeUserData);
         
         // Stocker dans AsyncStorage
         await AsyncStorage.setItem('token', response.token);
@@ -180,8 +161,6 @@ export const AuthProvider = ({ children }) => {
         setUserToken(response.token);
         setUserInfo(completeUserData);
         setUserRole('client');
-        
-        console.log('💾 Données sauvegardées dans AsyncStorage avec succès');
       }
       
       return response;
@@ -349,9 +328,9 @@ export const AuthProvider = ({ children }) => {
     error,
     isFirstLaunch,
     setIsFirstLaunch,
-    setUserToken,  // Exposer cette fonction pour permettre la déconnexion
-    setUserInfo,   // Exposer cette fonction pour permettre la déconnexion
-    setUserRole,   // Exposer cette fonction pour permettre la déconnexion
+    setUserToken,
+    setUserInfo,
+    setUserRole,
     login,
     logout,
     registerClient,

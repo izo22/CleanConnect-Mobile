@@ -32,7 +32,6 @@ const HomeScreen = ({ navigation }) => {
   const { updateBooking } = useBooking(); // Ajouté cette ligne
   
   // Log pour débogage
-  console.log("UserInfo dans HomeScreen:", userInfo);
   
   const serviceOptions = [
     {
@@ -59,7 +58,6 @@ const HomeScreen = ({ navigation }) => {
   ];
 
   const navigateToService = (serviceType) => {
-    console.log('Navigation vers ProviderSearch avec type:', serviceType);
     
     // Mettre à jour le contexte de réservation
     updateBooking({ 

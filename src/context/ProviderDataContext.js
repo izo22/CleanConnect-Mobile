@@ -51,7 +51,6 @@ export const ProviderDataProvider = ({ children }) => {
       }
       
     } catch (error) {
-      console.error('Erreur dans getProviders:', error);
       setError('Erreur lors de la récupération des prestataires: ' + error.message);
       setLoading(false);
       throw error;

@@ -53,7 +53,6 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
           });
         }
       } catch (error) {
-        console.error('Erreur lors du chargement de la réservation', error);
       } finally {
         setIsLoading(false);
       }

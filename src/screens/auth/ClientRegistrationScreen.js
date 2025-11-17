@@ -106,7 +106,6 @@ const ClientRegistrationScreen = ({ navigation }) => {
         password,
       };
 
-      console.log('📝 Données d\'inscription client:', userData);
 
       // Appel au service d'inscription
       await registerClient(userData);

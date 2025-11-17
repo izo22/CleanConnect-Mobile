@@ -101,15 +101,11 @@ const CalendarScreen = ({ navigation, route }) => {
         
         if (userData) {
           const user = JSON.parse(userData);
-          console.log('🔍 CALENDAR DEBUG - userData:', user);
-          console.log('🔍 CALENDAR DEBUG - userRole:', role);
-          console.log('🔍 CALENDAR DEBUG - providerId:', user.id);
           
           setProviderId(user.id);
           setUserRole(role);
         }
       } catch (error) {
-        console.error('❌ Erreur lors du chargement des données utilisateur:', error);
       } finally {
         setIsAuthLoading(false);
       }
@@ -125,21 +121,17 @@ const CalendarScreen = ({ navigation, route }) => {
     setIsLoadingAvailabilities(true);
     try {
       const storageKey = getStorageKey('provider_availabilities');
-      console.log('📱 PRESTATAIRE - Chargement des disponibilités avec la clé:', storageKey);
       
       const savedAvailabilities = await AsyncStorage.getItem(storageKey);
       
       if (savedAvailabilities) {
         const parsedAvailabilities = JSON.parse(savedAvailabilities);
-        console.log('📱 PRESTATAIRE - Disponibilités trouvées:', parsedAvailabilities.length);
         setAvailabilities(parsedAvailabilities);
       } else {
-        console.log('📱 PRESTATAIRE - Nouveau prestataire, calendrier vide');
         // ✅ CORRECTION : Nouveau prestataire = calendrier vide (pas de sauvegarde automatique)
         setAvailabilities([]);
       }
     } catch (error) {
-      console.error('❌ Erreur lors du chargement des disponibilités:', error);
       setAvailabilities([]);
     } finally {
       setIsLoadingAvailabilities(false);
@@ -160,9 +152,7 @@ const CalendarScreen = ({ navigation, route }) => {
     try {
       const storageKey = getStorageKey('provider_availabilities');
       await AsyncStorage.setItem(storageKey, JSON.stringify(newAvailabilities));
-      console.log('💾 PRESTATAIRE - Disponibilités sauvegardées:', newAvailabilities.length);
     } catch (error) {
-      console.error('❌ Erreur lors de la sauvegarde:', error);
     }
   };
 
@@ -202,7 +192,6 @@ const CalendarScreen = ({ navigation, route }) => {
   useEffect(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    console.log('🗓️ useEffect calendrier - Génération des jours pour:', getMonthName(month), year);
     setCalendarDays(getDaysInMonth(year, month));
   }, [currentDate]);
 
@@ -288,7 +277,6 @@ const CalendarScreen = ({ navigation, route }) => {
     setEndTime('17:00');
     setIsRecurring(false);
     
-    console.log('✅ PRESTATAIRE - Nouvelle disponibilité ajoutée:', newAvailability);
     Alert.alert('Succès', 'Disponibilité ajoutée avec succès. Elle sera visible pour les clients.');
   };
 
@@ -306,7 +294,6 @@ const CalendarScreen = ({ navigation, route }) => {
             const updatedAvailabilities = availabilities.filter(av => av.id !== availabilityId);
             await saveAvailabilities(updatedAvailabilities);
             setAvailabilities(updatedAvailabilities);
-            console.log('🗑️ PRESTATAIRE - Disponibilité supprimée:', availabilityId);
           }
         }
       ]
@@ -317,7 +304,6 @@ const CalendarScreen = ({ navigation, route }) => {
   const goToPreviousMonth = () => {
     const previousMonth = new Date(currentDate);
     previousMonth.setMonth(previousMonth.getMonth() - 1);
-    console.log('⬅️ Mois précédent:', getMonthName(previousMonth.getMonth()), previousMonth.getFullYear());
     setCurrentDate(previousMonth);
     setSelectedDate(null); // Reset la date sélectionnée
   };
@@ -325,14 +311,12 @@ const CalendarScreen = ({ navigation, route }) => {
   const goToNextMonth = () => {
     const nextMonth = new Date(currentDate);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
-    console.log('➡️ Mois suivant:', getMonthName(nextMonth.getMonth()), nextMonth.getFullYear());
     setCurrentDate(nextMonth);
     setSelectedDate(null); // Reset la date sélectionnée
   };
 
   const goToCurrentMonth = () => {
     const today = new Date();
-    console.log('📅 Retour au mois actuel:', getMonthName(today.getMonth()), today.getFullYear());
     setCurrentDate(today);
     setSelectedDate(today);
   };

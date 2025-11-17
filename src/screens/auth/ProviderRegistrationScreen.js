@@ -269,7 +269,6 @@ const ProviderRegistrationScreen = ({ navigation }) => {
         services: selectedServices
       };
       
-      console.log('📝 Données d\'inscription prestataire:', userData);
       
       // Appeler la fonction d'inscription du contexte d'authentification
       registerProvider(userData)

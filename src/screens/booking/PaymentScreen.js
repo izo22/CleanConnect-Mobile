@@ -239,7 +239,6 @@ const PaymentScreen = ({ navigation }) => {
       }
       
     } catch (error) {
-      console.error('Erreur lors de la réservation:', error);
       
       Alert.alert('Erreur', error.message, [
         { text: 'OK', onPress: () => setIsProcessing(false) }

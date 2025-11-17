@@ -21,21 +21,16 @@ const ProviderDashboardScreen = () => {
         const response = await providerService.getProviderProfile();
         let providerData = response.data;
         
-        console.log("🟡 PROVIDER - ID du prestataire:", providerData._id);
         
         // ✅ NOUVEAU : Récupérer les demandes synchronisées depuis AsyncStorage
         const providerRequestsKey = `provider_requests_${providerData._id}`;
-        console.log("🟡 PROVIDER - Clé recherchée:", providerRequestsKey);
         
         const savedRequests = await AsyncStorage.getItem(providerRequestsKey);
-        console.log("🟡 PROVIDER - Données trouvées:", savedRequests);
         
         if (savedRequests) {
           providerData.requests = JSON.parse(savedRequests);
-          console.log("🟡 PROVIDER - Nombre de demandes chargées:", providerData.requests.length);
         } else {
           providerData.requests = [];
-          console.log("🟡 PROVIDER - Aucune demande trouvée dans AsyncStorage");
         }
         
         setProvider(providerData);
@@ -43,7 +38,6 @@ const ProviderDashboardScreen = () => {
       } catch (err) {
         setError('Impossible de charger les données du prestataire');
         setLoading(false);
-        console.error(err);
       }
     };
 

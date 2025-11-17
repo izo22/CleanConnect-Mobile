@@ -34,7 +34,6 @@ const ProviderProfileScreen = () => {
       setError(null);
     } catch (err) {
       setError('Impossible de charger les données du prestataire');
-      console.error('Erreur lors du chargement du profil:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -95,7 +94,6 @@ const ProviderProfileScreen = () => {
         }
       }
     } catch (error) {
-      console.error('Erreur lors du téléchargement de l\'image:', error);
       Alert.alert('Erreur', 'Impossible de mettre à jour votre photo de profil.');
     } finally {
       setLoading(false);
@@ -106,7 +104,6 @@ const ProviderProfileScreen = () => {
  // Version avec logs de débogage
 
  const handleLogoutDirect = async () => {
-    console.log("Déconnexion directe déclenchée");
     try {
       setLoading(true);
       
@@ -127,9 +124,7 @@ const ProviderProfileScreen = () => {
         index: 0,
         routes: [{ name: 'Welcome' }],
       });
-      console.log("Navigation réinitialisée");
     } catch (error) {
-      console.error("Erreur lors de la déconnexion:", error);
       Alert.alert("Erreur", "Impossible de vous déconnecter. Veuillez fermer et relancer l'application.");
     } finally {
       setLoading(false);

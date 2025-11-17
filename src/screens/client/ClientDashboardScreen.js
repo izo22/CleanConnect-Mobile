@@ -58,7 +58,6 @@ const ClientDashboardScreen = () => {
   // Recharger les réservations quand l'écran est affiché
   useFocusEffect(
     React.useCallback(() => {
-      console.log("Écran Dashboard affiché - Rechargement des réservations");
       loadBookings();
       
       // DEBUG : Vérifier le contenu d'AsyncStorage
@@ -67,9 +66,7 @@ const ClientDashboardScreen = () => {
           const savedBookings = await AsyncStorage.getItem('userBookings');
           if (savedBookings) {
             const bookingsData = JSON.parse(savedBookings);
-            console.log("🔍 DEBUG - Toutes les réservations AsyncStorage:");
             bookingsData.forEach((booking, index) => {
-              console.log(`Réservation ${index + 1}:`, {
                 id: booking._id,
                 status: booking.status,
                 clientName: booking.selectedProvider?.name
@@ -77,7 +74,6 @@ const ClientDashboardScreen = () => {
             });
           }
         } catch (error) {
-          console.error("Erreur debug AsyncStorage:", error);
         }
       };
       debugAsyncStorage();
@@ -88,9 +84,7 @@ const ClientDashboardScreen = () => {
           const savedBookings = await AsyncStorage.getItem('user_bookings');
           if (savedBookings) {
             const bookingsData = JSON.parse(savedBookings);
-            console.log("🔍 DÉTAIL - Toutes les réservations user_bookings:");
             bookingsData.forEach((booking, index) => {
-              console.log(`Réservation ${index + 1}:`, {
                 id: booking._id,
                 status: booking.status,
                 dateTime: booking.dateTime,
@@ -104,14 +98,11 @@ const ClientDashboardScreen = () => {
             acceptedIds.forEach(id => {
               const booking = bookingsData.find(b => b._id === id);
               if (booking) {
-                console.log(`🎯 STATUT ${id}: ${booking.status}`);
               } else {
-                console.log(`❌ BOOKING ${id} NOT FOUND`);
               }
             });
           }
         } catch (error) {
-          console.error("Erreur debug détaillé:", error);
         }
       };
       debugDetailedBookings();
@@ -123,9 +114,7 @@ const ClientDashboardScreen = () => {
   // Fonction pour charger/recharger les réservations
   const loadBookings = async () => {
     setRefreshing(true);
-    console.log("Chargement des réservations...");
     await fetchUserBookings();
-    console.log("Nombre de réservations chargées:", userBookings.length);
     setRefreshing(false);
   };
   
@@ -217,7 +206,6 @@ const ClientDashboardScreen = () => {
   // Rendu des réservations
   const renderBookings = () => {
     const filteredBookings = getFilteredBookings();
-    console.log("Réservations filtrées:", filteredBookings.length);
     
     if (filteredBookings.length === 0) {
       // Messages personnalisés selon l'onglet actif

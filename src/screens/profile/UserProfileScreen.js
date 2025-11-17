@@ -47,7 +47,6 @@ const ProfileSection = ({ title, children }) => {
 
 const UserProfileScreen = () => {
   const authContext = useContext(AuthContext);
-  console.log("authContext:", authContext);
   const navigation = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -96,17 +95,14 @@ const UserProfileScreen = () => {
 
   // Fonction de déconnexion améliorée
   const handleLogout = () => {
-    console.log("Bouton déconnexion cliqué");
     Alert.alert(
       'Déconnexion',
       'Voulez-vous vraiment vous déconnecter ?',
       [
-        { text: 'Annuler', style: 'cancel', onPress: () => console.log("Annulation de déconnexion") },
         {
           text: 'Confirmer',
           style: 'destructive',
           onPress: async () => {
-            console.log("Confirmation de déconnexion cliquée");
             try {
               setIsLoading(true);
               await authContext.logout();
@@ -114,9 +110,7 @@ const UserProfileScreen = () => {
                 index: 0,
                 routes: [{ name: 'Welcome' }],
               });
-              console.log("Navigation réinitialisée");
             } catch (error) {
-              console.error("Erreur lors de la déconnexion:", error);
               Alert.alert("Erreur", "Impossible de vous déconnecter. Veuillez fermer et relancer l'application.");
             } finally {
               setIsLoading(false);
@@ -128,7 +122,6 @@ const UserProfileScreen = () => {
   };
   
   const handleLogoutDirect = async () => {
-    console.log("Déconnexion directe déclenchée");
     try {
       setIsLoading(true);
       await authContext.logout();
@@ -136,9 +129,7 @@ const UserProfileScreen = () => {
         index: 0,
         routes: [{ name: 'Welcome' }],
       });
-      console.log("Navigation réinitialisée");
     } catch (error) {
-      console.error("Erreur lors de la déconnexion:", error);
     } finally {
       setIsLoading(false);
     }

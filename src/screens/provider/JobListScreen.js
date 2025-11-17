@@ -35,7 +35,6 @@ const JobListScreen = ({ navigation }) => {
 
   // 🔧 NOUVELLE FONCTION - Lecture synchronisée avec RequestsScreen
   const loadJobs = async () => {
-    console.log('🟢 MISSIONS - Début loadJobs');
     setLoading(true);
     setError(null);
     
@@ -55,10 +54,8 @@ const JobListScreen = ({ navigation }) => {
         if (response.ok) {
           const data = await response.json();
           providerId = data.data?._id;
-          console.log('🟢 MISSIONS - ID prestataire depuis API:', providerId);
         }
       } catch (apiError) {
-        console.log('🟡 MISSIONS - API non disponible, fallback AsyncStorage');
       }
       
       // Méthode 2 : Fallback AsyncStorage
@@ -67,7 +64,6 @@ const JobListScreen = ({ navigation }) => {
         if (userData) {
           const user = JSON.parse(userData);
           providerId = user.id || user._id;
-          console.log('🟢 MISSIONS - ID prestataire depuis AsyncStorage:', providerId);
         }
       }
       
@@ -77,16 +73,13 @@ const JobListScreen = ({ navigation }) => {
 
       // 🔄 ÉTAPE 2 : Lire les demandes depuis AsyncStorage (même source que RequestsScreen)
       const storageKey = `provider_requests_${providerId}`;
-      console.log('🟢 MISSIONS - Clé de stockage:', storageKey);
       
       const savedRequests = await AsyncStorage.getItem(storageKey);
       
       let allRequests = [];
       if (savedRequests) {
         allRequests = JSON.parse(savedRequests);
-        console.log('🟢 MISSIONS - Demandes trouvées dans AsyncStorage:', allRequests.length);
       } else {
-        console.log('🟢 MISSIONS - Aucune demande dans AsyncStorage');
       }
 
       // 🔄 ÉTAPE 3 : Filtrer SEULEMENT les demandes acceptées/confirmées comme missions
@@ -94,9 +87,7 @@ const JobListScreen = ({ navigation }) => {
         ['accepted', 'confirmed', 'in-progress'].includes(request.status)
       );
       
-      console.log('🟢 MISSIONS - Missions actives trouvées:', activeMissions.length);
       activeMissions.forEach((mission, index) => {
-        console.log(`🟢 MISSIONS - Mission ${index + 1}:`, {
           id: mission._id,
           client: mission.clientName,
           status: mission.status,
@@ -122,12 +113,10 @@ const JobListScreen = ({ navigation }) => {
       // 🔄 ÉTAPE 5 : Trier par date (les plus récentes d'abord)
       const sortedJobs = formattedJobs.sort((a, b) => new Date(b.date) - new Date(a.date));
       
-      console.log(`🟢 MISSIONS - ${sortedJobs.length} mission(s) chargée(s) et formatée(s)`);
       setJobs(sortedJobs);
       setFilteredJobs(sortedJobs);
       
     } catch (err) {
-      console.error('❌ MISSIONS - Erreur lors du chargement:', err);
       setError('Impossible de charger les missions. Vérifiez vos demandes acceptées.');
       setJobs([]);
       setFilteredJobs([]);
