@@ -12,13 +12,12 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 secondes maximum pour la requête
+  timeout: 90000, // 90 secondes pour gérer les cold starts de Render
 });
 
 // Intercepteur pour ajouter le token d'authentification et journaliser les requêtes
 api.interceptors.request.use(
   async (config) => {
-    console.log('Requête envoyée à :', config.url, 'avec les données :', config.data);
     
     const token = await AsyncStorage.getItem('token');
     if (token) {
@@ -27,7 +26,6 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('Erreur de requête :', error);
     return Promise.reject(error);
   }
 );
@@ -35,16 +33,11 @@ api.interceptors.request.use(
 // Intercepteur pour journaliser les réponses
 api.interceptors.response.use(
   response => {
-    console.log('Réponse reçue de :', response.config.url, 'statut :', response.status);
     return response;
   },
   error => {
-    console.error('Erreur de réponse :', error.message);
     if (error.response) {
-      console.error('Statut :', error.response.status);
-      console.error('Données d\'erreur :', error.response.data);
     } else if (error.request) {
-      console.error('Pas de réponse reçue, problème de réseau probable');
     }
     return Promise.reject(error);
   }
