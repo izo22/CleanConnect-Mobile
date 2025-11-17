@@ -1,20 +1,15 @@
 // src/services/api.js
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-import { API_URL } from '@env';
 
 // Créer une instance axios avec la configuration de base
 const api = axios.create({
-  baseURL: Platform.OS === 'web' 
-    ? 'http://localhost:5000/api'  // Pour le web
-    : API_URL || 'http://10.0.2.2:5000/api', // Pour mobile
+  baseURL: 'https://cleanconnect-backend-tulh.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 90000, // 90 secondes pour gérer les cold starts de Render
 });
-
 // Intercepteur pour ajouter le token d'authentification et journaliser les requêtes
 api.interceptors.request.use(
   async (config) => {

@@ -2,7 +2,7 @@
 // ✅ AJOUT DU SYSTÈME DE VILLES
 
 // URL de l'API
-export const API_URL = 'http://localhost:5000/api';
+export const API_URL = 'https://cleanconnect-backend-tulh.onrender.com/api';
 
 // ✅ FRAIS PLATEFORME - SYSTÈME MIXTE
 export const PLATFORM_FEES = {
