@@ -87,19 +87,16 @@ export const BookingProvider = ({ children }) => {
 
   // ✅ NOUVELLE FONCTION - Sélectionner un prestataire
   const selectProvider = useCallback((provider) => {
-      id: provider._id,
-      name: `${provider.firstName} ${provider.lastName}`,
-      hourlyRate: provider.hourlyRate,
-      rating: provider.rating,
-    });
-    
     setCurrentBooking(prev => ({
       ...prev,
-      selectedProvider: provider,
+      selectedProvider: {
+        _id: provider._id,
+        name: `${provider.firstName} ${provider.lastName}`,
+        hourlyRate: provider.hourlyRate,
+        rating: provider.rating,
+      },
     }));
-    
   }, []);
-
   const resetBooking = useCallback(() => {
     setCurrentBooking({
       serviceType: null,
