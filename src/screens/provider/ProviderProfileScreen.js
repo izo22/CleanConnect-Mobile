@@ -15,11 +15,9 @@ import { AuthContext } from '../../context/AuthContext';
 import { providerService } from '../../services/api';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import * as RootNavigation from '../../navigation/RootNavigation';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProviderProfileScreen = () => {
-  const authContext = useContext(AuthContext); // Récupérer le contexte complet
+  const { logout } = useContext(AuthContext); // ✅ Récupérer la fonction logout du contexte
   const navigation = useNavigation();
   const [provider, setProvider] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -100,47 +98,34 @@ const ProviderProfileScreen = () => {
     }
   };
 
-  // Fonction de déconnexion
- // Version avec logs de débogage
-
- const handleLogoutDirect = async () => {
-    try {
-      setLoading(true);
-      
-      // Nettoyage direct d'AsyncStorage (méthode la plus fiable)
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('userRole');
-      await AsyncStorage.removeItem('userData');
-      
-      // Réinitialiser l'état global si accessible
-      if (authContext) {
-        if (authContext.setUserToken) authContext.setUserToken(null);
-        if (authContext.setUserInfo) authContext.setUserInfo(null);
-        if (authContext.setUserRole) authContext.setUserRole(null);
-      }
-      
-      // Navigation vers l'écran d'accueil
-      RootNavigation.reset({
-        index: 0,
-        routes: [{ name: 'Welcome' }],
-      });
-    } catch (error) {
-      Alert.alert("Erreur", "Impossible de vous déconnecter. Veuillez fermer et relancer l'application.");
-    } finally {
-      setLoading(false);
-    }
+  // ✅ FONCTION DE DÉCONNEXION CORRIGÉE
+  const handleLogout = async () => {
+    Alert.alert(
+      'Déconnexion',
+      'Voulez-vous vraiment vous déconnecter ?',
+      [
+        {
+          text: 'Annuler',
+          style: 'cancel'
+        },
+        {
+          text: 'Déconnexion',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await logout(); // ✅ Utiliser la fonction logout du contexte
+              // La navigation sera gérée automatiquement par AppNavigator
+            } catch (error) {
+              Alert.alert('Erreur', 'Impossible de vous déconnecter. Veuillez réessayer.');
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
   };
-  
-  // Remplacez le bouton de déconnexion par celui-ci dans le JSX
-  <Button 
-    mode="outlined" 
-    icon="logout"
-    onPress={handleLogoutDirect}  // Utilisez handleLogoutDirect à la place de handleLogout
-    style={[styles.actionButton, styles.logoutButton]}
-    labelStyle={{ color: '#FF6B6B' }}
-  >
-    Déconnexion
-  </Button>
+
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>

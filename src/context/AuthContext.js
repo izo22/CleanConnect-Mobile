@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
     checkFirstLaunch();
   }, []);
 
-  // Charger les données d'authentification au démarrage
+  // ✅ CORRECTION : Charger les données d'authentification au démarrage SANS auto-login
   useEffect(() => {
     const bootstrapAsync = async () => {
       try {
@@ -51,14 +51,33 @@ export const AuthProvider = ({ children }) => {
         const role = await AsyncStorage.getItem('userRole');
         const userData = await AsyncStorage.getItem('userData');
         
+        // ✅ DÉSACTIVER L'AUTO-LOGIN - Décommentez les lignes ci-dessous pour réactiver
+        // if (token && userData) {
+        //   setUserToken(token);
+        //   setUserRole(role);
+        //   setUserInfo(JSON.parse(userData));
+        // }
+        
+        // ✅ OPTION : Pour activer l'auto-login uniquement après vérification du token
+        // Décommentez ce bloc et commentez les lignes ci-dessus
+        /*
         if (token && userData) {
-          setUserToken(token);
-          setUserRole(role);
-          setUserInfo(JSON.parse(userData));
-          
-          // ✅ NE PAS vérifier le token au démarrage - ça crash si le serveur est lent
-          // La vérification se fera quand l'utilisateur fait une action qui nécessite l'API
+          try {
+            // Vérifier que le token est toujours valide
+            const response = await authService.getMe();
+            if (response && response.data) {
+              setUserToken(token);
+              setUserRole(role);
+              setUserInfo(JSON.parse(userData));
+            }
+          } catch (err) {
+            // Token invalide, nettoyer le stockage
+            await AsyncStorage.removeItem('token');
+            await AsyncStorage.removeItem('userRole');
+            await AsyncStorage.removeItem('userData');
+          }
         }
+        */
       } catch (e) {
         // Erreur silencieuse - on continue simplement sans authentification
       } finally {
@@ -105,7 +124,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Fonction de déconnexion améliorée
+  // ✅ FONCTION DE DÉCONNEXION CORRIGÉE
   const logout = async () => {
     setError(null);
     try {
@@ -115,11 +134,14 @@ export const AuthProvider = ({ children }) => {
       try {
         await authService.logout();
       } catch (serviceError) {
-        // Continuer malgré l'erreur
+        // Continuer malgré l'erreur du backend
+        console.log('Erreur backend lors de la déconnexion (ignorée):', serviceError);
       }
       
-      // Nettoyer le stockage local
-      await AsyncStorage.clear();
+      // ✅ CORRECTION : Nettoyer uniquement les données d'authentification (pas tout AsyncStorage)
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('userRole');
+      await AsyncStorage.removeItem('userData');
       
       // Réinitialiser les états
       setUserToken(null);

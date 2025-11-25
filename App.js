@@ -11,20 +11,29 @@ import theme from './src/config/theme';
 import { navigationRef } from './src/navigation/RootNavigation';
 
 export default function App() {
-  // Effet pour nettoyer le stockage d'authentification au démarrage
+  // ✅ OPTION DE RESET POUR LES TESTS
+  // Décommentez la ligne ci-dessous pour effacer toutes les données au démarrage
+  // IMPORTANT : Remettez en commentaire après avoir testé !
+  
   useEffect(() => {
     const clearAuthStorage = async () => {
       try {
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('userRole');
-        await AsyncStorage.removeItem('userData');
+        // ⚠️ DÉCOMMENTEZ CETTE LIGNE POUR RÉINITIALISER L'APP
+         await AsyncStorage.clear();
+        
+        // OU pour nettoyer uniquement les données d'authentification :
+        // await AsyncStorage.removeItem('token');
+        // await AsyncStorage.removeItem('userRole');
+        // await AsyncStorage.removeItem('userData');
+        
+        console.log('✅ Données d\'authentification nettoyées (si activé)');
       } catch (error) {
-        // Erreur silencieuse - ne pas crasher l'app
+        console.error('❌ Erreur lors du nettoyage:', error);
       }
     };
     
-    // Décommentez cette ligne si vous voulez effectivement nettoyer le stockage
-    // clearAuthStorage();
+    // Appeler la fonction au démarrage
+    clearAuthStorage();
   }, []);
 
   return (

@@ -87,14 +87,7 @@ const JobListScreen = ({ navigation }) => {
         ['accepted', 'confirmed', 'in-progress'].includes(request.status)
       );
       
-      activeMissions.forEach((mission, index) => {
-          id: mission._id,
-          client: mission.clientName,
-          status: mission.status,
-          date: mission.dateTime
-        });
-      });
-
+     
       // 🔄 ÉTAPE 4 : Transformer le format pour compatibilité avec JobCard
       const formattedJobs = activeMissions.map(mission => ({
         id: mission._id,

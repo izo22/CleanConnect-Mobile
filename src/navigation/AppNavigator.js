@@ -15,9 +15,9 @@ import ProviderRegistrationScreen from '../screens/auth/ProviderRegistrationScre
 
 // Écrans prestataires
 import ProviderDashboardScreen from '../screens/provider/ProviderDashboardScreen';
-import ProviderProfileScreen from '../screens/provider/ProviderProfileScreen'; // Nouveau
-import EditServiceScreen from '../screens/provider/EditServiceScreen'; // Nouveau
-import EditAvailabilityScreen from '../screens/provider/EditAvailabilityScreen'; // Nouveau
+import ProviderProfileScreen from '../screens/provider/ProviderProfileScreen';
+import EditServiceScreen from '../screens/provider/EditServiceScreen';
+import EditAvailabilityScreen from '../screens/provider/EditAvailabilityScreen';
 import JobListScreen from '../screens/provider/JobListScreen';
 import JobDetailsScreen from '../screens/provider/JobDetailsScreen';
 import CalendarScreen from '../screens/provider/CalendarScreen';
@@ -27,8 +27,8 @@ import RequestsScreen from '../screens/provider/RequestsScreen';
 
 // Écrans client
 import HomeScreen from '../screens/client/HomeScreen';
-import ServiceDetailsScreen from '../screens/client/ServiceDetails';  // Notez l'absence du "Screen" à la fin
-import ProviderSearchScreen from '../screens/client/ProviderSearch';  // Notez l'absence du "Screen" à la fin
+import ServiceDetailsScreen from '../screens/client/ServiceDetails';
+import ProviderSearchScreen from '../screens/client/ProviderSearch';
 import ClientDashboardScreen from '../screens/client/ClientDashboardScreen';
 import BookingDetailsScreen from '../screens/client/BookingDetailsScreen';
 
@@ -62,7 +62,7 @@ const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const ProviderStack = createStackNavigator();
 const ClientStack = createStackNavigator();
-const ProviderProfileStack = createStackNavigator(); // Nouveau pour le profil prestataire
+const ProviderProfileStack = createStackNavigator();
 
 // Options d'en-tête standard sans bouton de déconnexion
 const getHeaderOptions = (title) => ({
@@ -203,7 +203,7 @@ const ClientTabs = () => {
   );
 };
 
-// Nouveau navigateur pour les écrans de profil prestataire
+// Navigateur pour les écrans de profil prestataire
 const ProviderProfileNavigator = () => {
   return (
     <ProviderProfileStack.Navigator
@@ -321,7 +321,7 @@ const ProviderTabs = () => {
       />
       <Tab.Screen
         name="Profile"
-        component={ProviderProfileNavigator} // Changement ici pour utiliser le nouveau navigateur
+        component={ProviderProfileNavigator}
         options={{
           title: 'Profil',
         }}
@@ -368,15 +368,25 @@ const ProviderJobsNavigator = () => {
   );
 };
 
-// Navigation principale de l'application
+// ✅ Navigation principale de l'application CORRIGÉE
 const AppNavigator = () => {
-  const { userToken, userRole } = useContext(AuthContext);
-  const testMode = false; // Désactivé pour utiliser la vraie authentification
-  const isLoggedIn = testMode ? true : !!userToken;
+  const { userToken, userRole, isLoading } = useContext(AuthContext);
+  
+  // ✅ Afficher un écran de chargement pendant l'initialisation
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Chargement...</Text>
+      </View>
+    );
+  }
+  
+  // ✅ Logique de navigation basée sur l'état d'authentification
+  const isAuthenticated = !!userToken;
   
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isLoggedIn ? (
+      {isAuthenticated ? (
         // Routes authentifiées
         userRole === "provider" ? (
           // Interface prestataire
@@ -393,7 +403,6 @@ const AppNavigator = () => {
           <Stack.Screen name="ClientRegistration" component={ClientRegistrationScreen} />
           <Stack.Screen name="ProviderRegistration" component={ProviderRegistrationScreen} />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          
         </>
       )}
     </Stack.Navigator>

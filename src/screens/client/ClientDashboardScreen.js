@@ -59,54 +59,6 @@ const ClientDashboardScreen = () => {
   useFocusEffect(
     React.useCallback(() => {
       loadBookings();
-      
-      // DEBUG : Vérifier le contenu d'AsyncStorage
-      const debugAsyncStorage = async () => {
-        try {
-          const savedBookings = await AsyncStorage.getItem('userBookings');
-          if (savedBookings) {
-            const bookingsData = JSON.parse(savedBookings);
-            bookingsData.forEach((booking, index) => {
-                id: booking._id,
-                status: booking.status,
-                clientName: booking.selectedProvider?.name
-              });
-            });
-          }
-        } catch (error) {
-        }
-      };
-      debugAsyncStorage();
-
-      // Debug pour vérifier les deux clés
-      const debugDetailedBookings = async () => {
-        try {
-          const savedBookings = await AsyncStorage.getItem('user_bookings');
-          if (savedBookings) {
-            const bookingsData = JSON.parse(savedBookings);
-            bookingsData.forEach((booking, index) => {
-                id: booking._id,
-                status: booking.status,
-                dateTime: booking.dateTime,
-                provider: booking.selectedProvider?.name,
-                price: booking.price
-              });
-            });
-            
-            // Vérifier spécifiquement les IDs des réservations du prestataire
-            const acceptedIds = ['booking-1757415656372', 'booking-1757415463294', 'booking-1757331763652'];
-            acceptedIds.forEach(id => {
-              const booking = bookingsData.find(b => b._id === id);
-              if (booking) {
-              } else {
-              }
-            });
-          }
-        } catch (error) {
-        }
-      };
-      debugDetailedBookings();
-      
       return () => {};
     }, [])
   );

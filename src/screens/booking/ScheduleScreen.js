@@ -66,7 +66,7 @@ const ScheduleScreen = ({ route, navigation }) => {
   const [existingBookings, setExistingBookings] = useState([]);
   const [selectedTime, setSelectedTime] = useState(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false); // Protection contre clics rapides
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // ✅ FIX CRASH: État local pour affichage immédiat + sync avec contexte
   const [localDuration, setLocalDuration] = useState(() => {
@@ -89,7 +89,6 @@ const ScheduleScreen = ({ route, navigation }) => {
     if (isUpdating) {
       return;
     }
-    
     
     // 🛡️ Validation complète
     if (typeof newDuration !== 'number' || isNaN(newDuration)) {
@@ -193,12 +192,6 @@ const ScheduleScreen = ({ route, navigation }) => {
 
   // ⏰ CALCUL CRÉNEAUX - ✅ CORRECTION COMPLÈTE
   const calculateSlots = useCallback((targetDate, currentDuration) => {
-      date: targetDate?.toLocaleDateString('fr-FR'), 
-      duration: currentDuration,
-      availabilitiesCount: availabilities.length,
-      bookingsCount: existingBookings.length
-    });
-    
     // 🛡️ Validation d'entrée
     if (!targetDate) {
       return [];
@@ -220,7 +213,6 @@ const ScheduleScreen = ({ route, navigation }) => {
       }
     });
     
-    
     if (dayAvailabilities.length === 0) {
       return [];
     }
@@ -231,7 +223,6 @@ const ScheduleScreen = ({ route, navigation }) => {
       return bookingDate.toDateString() === targetDate.toDateString() && 
              booking.status !== 'cancelled';
     });
-    
     
     // ⏰ Générer tous les créneaux possibles
     const allSlots = [];
@@ -350,13 +341,7 @@ const ScheduleScreen = ({ route, navigation }) => {
     
     updateBooking({ 
       dateTime: dateTime.toISOString(),
-      duration: localDuration // S'assurer que la durée est bien enregistrée
-    });
-    
-      dateTime: dateTime.toISOString(),
-      duration: localDuration,
-      providerId,
-      providerName
+      duration: localDuration
     });
     
     setTimeout(() => {
@@ -459,7 +444,7 @@ const ScheduleScreen = ({ route, navigation }) => {
           </Card.Content>
         </Card>
 
-        {/* SÉLECTEUR DURÉE - ✅ FIX BUG #1, #2, #3 */}
+        {/* SÉLECTEUR DURÉE */}
         <Card style={styles.durationCard}>
           <Card.Content>
             <Title style={styles.sectionTitle}>Durée du service</Title>
@@ -498,7 +483,7 @@ const ScheduleScreen = ({ route, navigation }) => {
           </Card.Content>
         </Card>
 
-        {/* CRÉNEAUX DISPONIBLES - ✅ AFFICHAGE DYNAMIQUE */}
+        {/* CRÉNEAUX DISPONIBLES */}
         {selectedDate && (
           <Card style={styles.timesCard}>
             <Card.Content>
