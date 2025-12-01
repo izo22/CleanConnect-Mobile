@@ -4,9 +4,9 @@
     "slug": "cleanconnect",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": null,
+    "icon": "./assets/icon.png",
     "splash": {
-      "image": null,
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#2E86C1"
     },
@@ -14,22 +14,32 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": null,
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2E86C1"
       },
-      "package": "com.cleanconnect18.cleanconnect"
+      "package": "com.cleanconnect18.cleanconnect",
+      "runtimeVersion": "1.0.0"
     },
     "web": {
-      "favicon": null
+      "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
         "projectId": "af7a1ce0-1a74-4d89-8876-ba0ed01e1b8b"
       }
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "updates": {
+      "url": "https://u.expo.dev/af7a1ce0-1a74-4d89-8876-ba0ed01e1b8b"
     }
   }
 }

@@ -1,12 +1,14 @@
 // src/screens/booking/BookingSummaryScreen.js
-// ✅ MODIFIÉ - Intégration du nouveau système de pricing avec PriceBreakdown
+// ✅ VERSION AVEC AFFICHAGE DES MÉDIAS (PHOTOS/VIDÉOS)
 
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Image, TouchableOpacity } from 'react-native';
 import { Text, Card, Title, Paragraph, Button, Divider, List, ActivityIndicator, useTheme } from 'react-native-paper';
 import { useBooking } from '../../context/BookingContext';
 import { SERVICE_TYPE_LABELS, CLEANING_FREQUENCY_LABELS, calculatePlatformFees } from '../../config/constants';
 import PriceBreakdown from '../../components/PriceBreakdown';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Video } from 'expo-av';
 
 const BookingSummaryScreen = ({ navigation }) => {
   const theme = useTheme();
@@ -46,6 +48,15 @@ const BookingSummaryScreen = ({ navigation }) => {
   // Fonction pour formater le prix
   const formatPrice = (price) => {
     return `${price.toFixed(2)} ₪`;
+  };
+  
+  // Fonction pour formater la taille de fichier
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
   
   // Couleur associée au type de service
@@ -96,6 +107,43 @@ const BookingSummaryScreen = ({ navigation }) => {
       currentBooking.selectedProvider &&
       currentBooking.dateTime &&
       currentBooking.address
+    );
+  };
+  
+  // ✅ NOUVEAU: Rendu d'un média dans le récapitulatif
+  const renderMediaPreview = (mediaItem, index) => {
+    return (
+      <View key={mediaItem.id || index} style={styles.mediaPreviewItem}>
+        {mediaItem.type === 'image' ? (
+          <Image 
+            source={{ uri: mediaItem.uri }} 
+            style={styles.mediaPreviewThumbnail}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.videoPreviewContainer}>
+            <Video
+              source={{ uri: mediaItem.uri }}
+              style={styles.mediaPreviewThumbnail}
+              resizeMode="cover"
+              shouldPlay={false}
+            />
+            <View style={styles.videoPreviewOverlay}>
+              <Icon name="play-circle" size={30} color="white" />
+            </View>
+          </View>
+        )}
+        <View style={styles.mediaPreviewInfo}>
+          <Icon 
+            name={mediaItem.type === 'video' ? 'video' : 'image'} 
+            size={14} 
+            color={serviceColor}
+          />
+          <Text style={styles.mediaPreviewSize}>
+            {formatFileSize(mediaItem.size)}
+          </Text>
+        </View>
+      </View>
     );
   };
   
@@ -185,10 +233,37 @@ const BookingSummaryScreen = ({ navigation }) => {
               </Button>
             </View>
           )}
+          
+          {/* ✅ NOUVELLE SECTION: Affichage des médias */}
+          {currentBooking.media && currentBooking.media.length > 0 && (
+            <>
+              <Divider style={styles.divider} />
+              
+              <View style={styles.mediaSectionHeader}>
+                <Title style={styles.sectionTitle}>Photos et Vidéos</Title>
+                <TouchableOpacity onPress={handleAddNotes}>
+                  <Icon name="pencil" size={20} color={serviceColor} />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.mediaGrid}>
+                {currentBooking.media.map((mediaItem, index) => 
+                  renderMediaPreview(mediaItem, index)
+                )}
+              </View>
+              
+              <View style={styles.mediaCountBadge}>
+                <Icon name="attachment" size={16} color={serviceColor} />
+                <Text style={styles.mediaCountText}>
+                  {currentBooking.media.length} fichier{currentBooking.media.length > 1 ? 's' : ''} joint{currentBooking.media.length > 1 ? 's' : ''}
+                </Text>
+              </View>
+            </>
+          )}
         </Card.Content>
       </Card>
       
-      {/* ✅ NOUVEAU - Composant PriceBreakdown */}
+      {/* ✅ Composant PriceBreakdown */}
       {isCalculatingPrice ? (
         <View style={styles.loadingPrice}>
           <ActivityIndicator size="large" color={serviceColor} />
@@ -272,6 +347,77 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 5,
   },
+  
+  // ✅ NOUVEAUX STYLES POUR LES MÉDIAS
+  mediaSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  mediaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 10,
+    marginBottom: 10,
+    marginHorizontal: -5,
+  },
+  mediaPreviewItem: {
+    width: '31%',
+    marginHorizontal: '1%',
+    marginBottom: 10,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#f0f0f0',
+    elevation: 2,
+  },
+  mediaPreviewThumbnail: {
+    width: '100%',
+    height: 100,
+    backgroundColor: '#e0e0e0',
+  },
+  videoPreviewContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 100,
+  },
+  videoPreviewOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  mediaPreviewInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 6,
+    backgroundColor: 'white',
+  },
+  mediaPreviewSize: {
+    fontSize: 10,
+    color: '#666',
+    marginLeft: 4,
+  },
+  mediaCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E3F2FD',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+  },
+  mediaCountText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 6,
+    fontWeight: '500',
+  },
+  
   priceBreakdownContainer: {
     marginHorizontal: 15,
     marginVertical: 10,

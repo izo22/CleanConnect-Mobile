@@ -1,4 +1,11 @@
+// App.js
+// ✅ VERSION AVEC i18n INTÉGRÉ
+
+// ⚠️ IMPORTANT : Importer i18n.config EN PREMIER
+import './i18n.config';
+
 import React, { useEffect } from 'react';
+import { I18nManager } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -6,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from './src/context/AuthContext';
 import { BookingProvider } from './src/context/BookingContext';
 import { ProviderDataProvider } from './src/context/ProviderDataContext';
+import { LanguageProvider } from './src/context/LanguageContext'; // ✅ NOUVEAU
 import AppNavigator from './src/navigation/AppNavigator';
 import theme from './src/config/theme';
 import { navigationRef } from './src/navigation/RootNavigation';
@@ -19,7 +27,7 @@ export default function App() {
     const clearAuthStorage = async () => {
       try {
         // ⚠️ DÉCOMMENTEZ CETTE LIGNE POUR RÉINITIALISER L'APP
-         await AsyncStorage.clear();
+        // await AsyncStorage.clear();
         
         // OU pour nettoyer uniquement les données d'authentification :
         // await AsyncStorage.removeItem('token');
@@ -36,19 +44,27 @@ export default function App() {
     clearAuthStorage();
   }, []);
 
+  // ✅ NOUVEAU : Activer le support RTL pour l'hébreu
+  useEffect(() => {
+    I18nManager.allowRTL(true);
+  }, []);
+
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <BookingProvider>
-          <ProviderDataProvider>
-            <PaperProvider theme={theme}>
-              <NavigationContainer ref={navigationRef}>
-                <AppNavigator />
-              </NavigationContainer>
-            </PaperProvider>
-          </ProviderDataProvider>
-        </BookingProvider>
-      </AuthProvider>
+      {/* ✅ NOUVEAU : LanguageProvider doit entourer TOUT */}
+      <LanguageProvider>
+        <AuthProvider>
+          <BookingProvider>
+            <ProviderDataProvider>
+              <PaperProvider theme={theme}>
+                <NavigationContainer ref={navigationRef}>
+                  <AppNavigator />
+                </NavigationContainer>
+              </PaperProvider>
+            </ProviderDataProvider>
+          </BookingProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </SafeAreaProvider>
   );
 }
