@@ -6,17 +6,23 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "node": "22.11.0",
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
     },
     "preview": {
       "distribution": "internal",
+      "node": "22.11.0",
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
     },
     "production": {
+      "node": "22.11.0",
+      "android": {
+        "image": "latest"
+      },
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
