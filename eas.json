@@ -7,6 +7,9 @@
       "developmentClient": true,
       "distribution": "internal",
       "node": "22.11.0",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
@@ -14,6 +17,9 @@
     "preview": {
       "distribution": "internal",
       "node": "22.11.0",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
@@ -21,6 +27,7 @@
     "production": {
       "node": "22.11.0",
       "android": {
+        "buildType": "aab",
         "image": "latest"
       },
       "env": {
