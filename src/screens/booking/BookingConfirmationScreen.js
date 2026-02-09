@@ -1,43 +1,43 @@
 // src/screens/booking/BookingConfirmationScreen.js
+// ✅ גרסה מתורגמת לעברית עם תמיכה ב-RTL
+// ✅ תוקן: נוסף תמיכה ב-Airbnb עם צבע #FF5A5F
+// 🐛 תוקן: החלפת Button ב-TouchableOpacity לפתרון שגיאת labelLarge
+
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Card, Title, Button, Divider, List, Avatar, useTheme, ActivityIndicator } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert, I18nManager, TouchableOpacity } from 'react-native';
+import { Text, Card, Title, Divider, List, Avatar, useTheme, ActivityIndicator } from 'react-native-paper';
 import { useBooking } from '../../context/BookingContext';
-import { SERVICE_TYPE_LABELS, CLEANING_FREQUENCY_LABELS } from '../../config/constants';
+import { SERVICE_TYPE_LABELS, CLEANING_FREQUENCY_LABELS, getServiceColor } from '../../config/constants';  // ✅ Import getServiceColor
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const BookingConfirmationScreen = ({ route, navigation }) => {
   const theme = useTheme();
-  const { userBookings, fetchUserBookings, addBooking, currentBooking } = useBooking();
+  const { userBookings, fetchUserBookings, currentBooking } = useBooking();
   const { bookingId, requestType = 'payment' } = route.params || {};
   
   const [booking, setBooking] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isRTL = true; // תמיד RTL לעברית
   
-  // Charger les détails de la réservation
+  // טעינת פרטי ההזמנה
   useEffect(() => {
     const loadBookingDetails = async () => {
       setIsLoading(true);
       
       try {
-        // Récupérer toutes les réservations de l'utilisateur
         await fetchUserBookings();
-        
-        // Trouver la réservation spécifique par ID
         const foundBooking = userBookings.find(b => b._id === bookingId);
         
         if (foundBooking) {
           setBooking(foundBooking);
         } else {
-          // Simuler une réservation pour la démonstration
-          // (À remplacer par un appel API spécifique en production)
+          // סימולציה של הזמנה להדגמה
           setBooking({
             _id: bookingId || 'temp-booking-id',
             serviceType: currentBooking.serviceType || 'home',
             status: requestType === 'pending' ? 'pending' : 'confirmed',
             dateTime: currentBooking.dateTime || new Date().toISOString(),
-            duration: currentBooking.duration || 2, // Utilise la durée du contexte actuel
+            duration: currentBooking.duration || 2,
             frequency: currentBooking.frequency || 'one_time',
             price: currentBooking.price || 199.99,
             provider: {
@@ -47,12 +47,13 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
               phone: '+972 50 123 4567',
             },
             address: currentBooking.address || {
-              name: 'Domicile',
-              fullAddress: '123 Rue Principale, Tel Aviv',
+              name: 'כתובת הבית',
+              fullAddress: 'רחוב הראשי 123, תל אביב',
             }
           });
         }
       } catch (error) {
+        console.error('שגיאה בטעינת פרטי הזמנה:', error);
       } finally {
         setIsLoading(false);
       }
@@ -61,73 +62,56 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
     loadBookingDetails();
   }, [bookingId, fetchUserBookings, requestType, currentBooking]);
   
-  // Déterminer le contenu de l'en-tête en fonction du type de requête
+  // קביעת תוכן הכותרת לפי סוג הבקשה
   const getHeaderContent = () => {
     if (requestType === 'pending') {
       return {
         icon: "file-document-outline",
-        title: "Demande envoyée",
-        subtitle: "Votre demande a été envoyée au prestataire"
+        title: "בקשה נשלחה",
+        subtitle: "בקשתך נשלחה לספק השירות"
       };
     } else {
       return {
         icon: "check-circle",
-        title: "Réservation confirmée",
-        subtitle: "Votre service a été réservé avec succès"
+        title: "ההזמנה אושרה",
+        subtitle: "השירות הוזמן בהצלחה"
       };
     }
   };
   
   const headerContent = getHeaderContent();
   
-  // Couleur associée au type de service
-  const getServiceColor = () => {
-    if (!booking) return theme.colors.primary;
-    
-    switch (booking.serviceType) {
-      case 'home':
-        return theme.colors.homeService;
-      case 'office':
-        return theme.colors.officeService;
-      case 'building':
-        return theme.colors.buildingService;
-      default:
-        return theme.colors.primary;
-    }
-  };
+  // ✅ ✅ ✅ COULEUR DYNAMIQUE depuis constants.js
+  const serviceColor = getServiceColor(booking?.serviceType || 'home');
   
-  const serviceColor = getServiceColor();
-  
-  // Fonction pour formater la date
+  // פורמט תאריך
   const formatDate = (dateString) => {
-    if (!dateString) return 'Non défini';
+    if (!dateString) return 'לא מוגדר';
     
     const date = new Date(dateString);
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    
-    // Formater date en français
-    return date.toLocaleDateString('fr-FR', options);
+    return date.toLocaleDateString('he-IL', options);
   };
   
-  // Fonction pour formater l'heure
+  // פורמט שעה
   const formatTime = (dateString) => {
     if (!dateString) return '';
     
     const date = new Date(dateString);
-    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
   };
   
-  // Fonction pour formater le prix
+  // פורמט מחיר
   const formatPrice = (price) => {
     return `${price.toFixed(2)} ₪`;
   };
   
-  // Handler pour voir les détails de la réservation
+  // מעבר לפרטי הזמנה
   const handleViewBookingDetails = () => {
     navigation.navigate('BookingDetails', { bookingId: booking._id });
   };
   
-  // Handler pour retourner à l'accueil
+  // חזרה לדף הבית
   const handleReturnHome = () => {
     navigation.reset({
       index: 0,
@@ -135,7 +119,7 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
     });
   };
   
-  // Handler pour voir les réservations
+  // צפייה בהזמנות
   const handleViewBookings = () => {
     navigation.reset({
       index: 0,
@@ -147,7 +131,7 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Chargement des détails de votre réservation...</Text>
+        <Text style={[styles.loadingText, styles.textRTL]}>טוען את פרטי ההזמנה...</Text>
       </View>
     );
   }
@@ -156,41 +140,45 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
     <ScrollView style={styles.container}>
       <View style={[styles.header, { backgroundColor: serviceColor }]}>
         <Icon name={headerContent.icon} size={60} color="white" style={styles.checkIcon} />
-        <Title style={styles.headerTitle}>{headerContent.title}</Title>
-        <Text style={styles.headerSubtitle}>{headerContent.subtitle}</Text>
+        <Title style={[styles.headerTitle, styles.textRTL]}>{headerContent.title}</Title>
+        <Text style={[styles.headerSubtitle, styles.textRTL]}>{headerContent.subtitle}</Text>
       </View>
       
       <Card style={styles.bookingCard}>
         <Card.Content>
           <View style={styles.bookingNumberContainer}>
-            <Text style={styles.bookingNumberLabel}>Numéro de réservation</Text>
-            <Text style={styles.bookingNumber}>{booking?._id}</Text>
+            <Text style={[styles.bookingNumberLabel, styles.textRTL]}>מספר הזמנה</Text>
+            <Text style={[styles.bookingNumber, styles.textRTL]}>{booking?._id}</Text>
           </View>
           
           <Divider style={styles.divider} />
           
-          <Title style={styles.sectionTitle}>Détails du service</Title>
+          <Title style={[styles.sectionTitle, styles.textRTL]}>פרטי השירות</Title>
           <List.Item
-            title={SERVICE_TYPE_LABELS[booking?.serviceType] || 'Service de nettoyage'}
+            title={SERVICE_TYPE_LABELS[booking?.serviceType] || 'שירות ניקיון'}
             description={`${booking?.duration}h • ${CLEANING_FREQUENCY_LABELS[booking?.frequency]}`}
             left={props => <List.Icon {...props} icon="broom" color={serviceColor} />}
+            titleStyle={styles.textRTL}
+            descriptionStyle={styles.textRTL}
           />
           
           <Divider style={styles.divider} />
           
-          <Title style={styles.sectionTitle}>Date et heure</Title>
+          <Title style={[styles.sectionTitle, styles.textRTL]}>תאריך ושעה</Title>
           <List.Item
             title={formatDate(booking?.dateTime)}
             description={formatTime(booking?.dateTime)}
             left={props => <List.Icon {...props} icon="calendar" color={serviceColor} />}
+            titleStyle={styles.textRTL}
+            descriptionStyle={styles.textRTL}
           />
           
           <Divider style={styles.divider} />
           
-          <Title style={styles.sectionTitle}>Prestataire</Title>
+          <Title style={[styles.sectionTitle, styles.textRTL]}>ספק השירות</Title>
           <List.Item
             title={booking?.provider?.name}
-            description={`Note: ${booking?.provider?.rating}/5`}
+            description={`דירוג: ${booking?.provider?.rating}/5`}
             left={props => (
               <Avatar.Text 
                 {...props} 
@@ -199,22 +187,26 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
                 style={{ backgroundColor: serviceColor }}
               />
             )}
+            titleStyle={styles.textRTL}
+            descriptionStyle={styles.textRTL}
           />
           
           <Divider style={styles.divider} />
           
-          <Title style={styles.sectionTitle}>Lieu du service</Title>
+          <Title style={[styles.sectionTitle, styles.textRTL]}>מיקום השירות</Title>
           <List.Item
-            title={booking?.address?.name || 'Adresse'}
+            title={booking?.address?.name || 'כתובת'}
             description={booking?.address?.fullAddress}
             left={props => <List.Icon {...props} icon="map-marker" color={serviceColor} />}
+            titleStyle={styles.textRTL}
+            descriptionStyle={styles.textRTL}
           />
           
           <Divider style={styles.divider} />
           
-          <View style={styles.priceContainer}>
-            <Text style={styles.priceLabel}>Prix estimé:</Text>
-            <Text style={styles.priceValue}>{formatPrice(booking?.price || 0)}</Text>
+          <View style={[styles.priceContainer, styles.rtlRow]}>
+            <Text style={[styles.priceLabel, styles.textRTL]}>מחיר משוער:</Text>
+            <Text style={[styles.priceValue, styles.textRTL]}>{formatPrice(booking?.price || 0)}</Text>
           </View>
         </Card.Content>
       </Card>
@@ -222,16 +214,16 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
       {requestType === 'pending' ? (
         <Card style={styles.instructionsCard}>
           <Card.Content>
-            <Title style={styles.sectionTitle}>Informations importantes</Title>
+            <Title style={[styles.sectionTitle, styles.textRTL]}>מידע חשוב</Title>
             
             <View style={styles.instructionItem}>
               <View style={[styles.instructionNumber, { backgroundColor: serviceColor }]}>
                 <Text style={styles.instructionNumberText}>1</Text>
               </View>
               <View style={styles.instructionContent}>
-                <Text style={styles.instructionTitle}>Attente de confirmation</Text>
-                <Text style={styles.instructionText}>
-                  Votre demande a été envoyée au prestataire. Il doit confirmer sa disponibilité.
+                <Text style={[styles.instructionTitle, styles.textRTL]}>ממתין לאישור</Text>
+                <Text style={[styles.instructionText, styles.textRTL]}>
+                  בקשתך נשלחה לספק השירות. הוא חייב לאשר את זמינותו.
                 </Text>
               </View>
             </View>
@@ -241,9 +233,9 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
                 <Text style={styles.instructionNumberText}>2</Text>
               </View>
               <View style={styles.instructionContent}>
-                <Text style={styles.instructionTitle}>Notification</Text>
-                <Text style={styles.instructionText}>
-                  Vous recevrez une notification dès que le prestataire aura répondu à votre demande.
+                <Text style={[styles.instructionTitle, styles.textRTL]}>התראה</Text>
+                <Text style={[styles.instructionText, styles.textRTL]}>
+                  תקבל התראה ברגע שספק השירות יגיב לבקשתך.
                 </Text>
               </View>
             </View>
@@ -253,9 +245,9 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
                 <Text style={styles.instructionNumberText}>3</Text>
               </View>
               <View style={styles.instructionContent}>
-                <Text style={styles.instructionTitle}>Suivi</Text>
-                <Text style={styles.instructionText}>
-                  Vous pouvez suivre l'état de votre demande dans la section "Mes réservations".
+                <Text style={[styles.instructionTitle, styles.textRTL]}>מעקב</Text>
+                <Text style={[styles.instructionText, styles.textRTL]}>
+                  תוכל לעקוב אחר מצב בקשתך בקטע "ההזמנות שלי".
                 </Text>
               </View>
             </View>
@@ -264,16 +256,16 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
       ) : (
         <Card style={styles.instructionsCard}>
           <Card.Content>
-            <Title style={styles.sectionTitle}>Prochaines étapes</Title>
+            <Title style={[styles.sectionTitle, styles.textRTL]}>השלבים הבאים</Title>
             
             <View style={styles.instructionItem}>
               <View style={[styles.instructionNumber, { backgroundColor: serviceColor }]}>
                 <Text style={styles.instructionNumberText}>1</Text>
               </View>
               <View style={styles.instructionContent}>
-                <Text style={styles.instructionTitle}>Confirmez votre disponibilité</Text>
-                <Text style={styles.instructionText}>
-                  Assurez-vous d'être disponible à la date et à l'heure prévues. 
+                <Text style={[styles.instructionTitle, styles.textRTL]}>אשר את הזמינות שלך</Text>
+                <Text style={[styles.instructionText, styles.textRTL]}>
+                  ודא שתהיה זמין בתאריך ובשעה המתוכננים.
                 </Text>
               </View>
             </View>
@@ -283,9 +275,9 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
                 <Text style={styles.instructionNumberText}>2</Text>
               </View>
               <View style={styles.instructionContent}>
-                <Text style={styles.instructionTitle}>Préparation du lieu</Text>
-                <Text style={styles.instructionText}>
-                  Facilitez l'accès au prestataire et dégagez les zones à nettoyer.
+                <Text style={[styles.instructionTitle, styles.textRTL]}>הכנת המקום</Text>
+                <Text style={[styles.instructionText, styles.textRTL]}>
+                  הקל על הגישה לספק השירות ופנה את האזורים לניקוי.
                 </Text>
               </View>
             </View>
@@ -295,10 +287,10 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
                 <Text style={styles.instructionNumberText}>3</Text>
               </View>
               <View style={styles.instructionContent}>
-                <Text style={styles.instructionTitle}>Service et paiement</Text>
-                <Text style={styles.instructionText}>
-                  Le prestataire arrivera à l'heure prévue et effectuera le service.
-                  {booking?.paymentMethod === 'cash' ? " N'oubliez pas de préparer le paiement en espèces." : ''}
+                <Text style={[styles.instructionTitle, styles.textRTL]}>שירות ותשלום</Text>
+                <Text style={[styles.instructionText, styles.textRTL]}>
+                  ספק השירות יגיע בשעה המתוכננת ויבצע את השירות.
+                  {booking?.paymentMethod === 'cash' ? ' אל תשכח להכין את התשלום במזומן.' : ''}
                 </Text>
               </View>
             </View>
@@ -308,31 +300,36 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
       
       <View style={styles.buttonContainer}>
         {requestType === 'pending' ? (
-          <Button
-            mode="contained"
-            style={[styles.button, { backgroundColor: serviceColor }]}
+          <TouchableOpacity
+            style={[styles.containedButton, { backgroundColor: serviceColor }]}
             onPress={handleViewBookings}
+            activeOpacity={0.8}
           >
-            Voir mes réservations
-          </Button>
+            <Text style={styles.containedButtonText}>
+              צפה בהזמנות שלי
+            </Text>
+          </TouchableOpacity>
         ) : (
-          <Button
-            mode="contained"
-            style={[styles.button, { backgroundColor: serviceColor }]}
+          <TouchableOpacity
+            style={[styles.containedButton, { backgroundColor: serviceColor }]}
             onPress={handleViewBookingDetails}
+            activeOpacity={0.8}
           >
-            Voir les détails de la réservation
-          </Button>
+            <Text style={styles.containedButtonText}>
+              צפה בפרטי ההזמנה
+            </Text>
+          </TouchableOpacity>
         )}
         
-        <Button
-          mode="outlined"
-          style={[styles.button, styles.secondaryButton]}
+        <TouchableOpacity
+          style={[styles.outlinedButton, { borderColor: serviceColor }]}
           onPress={handleReturnHome}
-          color={serviceColor}
+          activeOpacity={0.8}
         >
-          Retour à l'accueil
-        </Button>
+          <Text style={[styles.outlinedButtonText, { color: serviceColor }]}>
+            חזרה לדף הבית
+          </Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -410,7 +407,7 @@ const styles = StyleSheet.create({
     marginVertical: 15,
   },
   instructionItem: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     marginBottom: 20,
     alignItems: 'flex-start',
   },
@@ -420,7 +417,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginLeft: 15,
     marginTop: 3,
   },
   instructionNumberText: {
@@ -441,7 +438,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   priceContainer: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 10,
@@ -459,13 +456,43 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 30,
   },
-  button: {
-    paddingVertical: 8,
+  
+  // ✅ Boutons personnalisés
+  containedButton: {
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 10,
+    elevation: 2,
   },
-  secondaryButton: {
-    borderColor: 'transparent',
-  }
+  containedButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  outlinedButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  outlinedButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  
+  rtlRow: {
+    flexDirection: 'row-reverse',
+  },
+  textRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
 });
 
 export default BookingConfirmationScreen;

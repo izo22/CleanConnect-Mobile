@@ -6,18 +6,19 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
-  Image,
   Alert,
-  Platform
+  RefreshControl
 } from 'react-native';
-import { Card, Button, Avatar, Badge, Divider, List, IconButton } from 'react-native-paper';
 import { AuthContext } from '../../context/AuthContext';
 import { providerService } from '../../services/api';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
 
 const ProviderProfileScreen = () => {
-  const { logout } = useContext(AuthContext); // ✅ Récupérer la fonction logout du contexte
+  const isRTL = true; // Always RTL for Hebrew
+  const { logout } = useContext(AuthContext);
   const navigation = useNavigation();
   const [provider, setProvider] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,93 +32,44 @@ const ProviderProfileScreen = () => {
       setProvider(response.data);
       setError(null);
     } catch (err) {
-      setError('Impossible de charger les données du prestataire');
+      setError('שגיאה בטעינת הפרופיל');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  // Charger les données au montage du composant
   useEffect(() => {
     fetchProviderData();
   }, []);
 
-  // Actualiser les données lorsque l'écran redevient actif
   useFocusEffect(
     React.useCallback(() => {
       fetchProviderData();
     }, [])
   );
 
-  // Gérer le téléchargement d'image de profil
-  const handleImageUpload = async () => {
-    try {
-      // Demander les permissions
-      if (Platform.OS !== 'web') {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission requise', 'Nous avons besoin de votre permission pour accéder à vos photos.');
-          return;
-        }
-      }
-
-      // Lancer le sélecteur d'image
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const selectedImage = result.assets[0];
-        
-        // Préparer l'objet pour l'upload
-        const imageData = {
-          uri: selectedImage.uri,
-          type: 'image/jpeg',
-          name: 'profile-image.jpg',
-        };
-
-        setLoading(true);
-        
-        // Envoyer l'image au serveur
-        const response = await providerService.updateProfileImage(imageData);
-        
-        // Actualiser les données du prestataire
-        if (response.data && response.data.success) {
-          Alert.alert('Succès', 'Votre photo de profil a été mise à jour.');
-          fetchProviderData();
-        }
-      }
-    } catch (error) {
-      Alert.alert('Erreur', 'Impossible de mettre à jour votre photo de profil.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ✅ FONCTION DE DÉCONNEXION CORRIGÉE
   const handleLogout = async () => {
     Alert.alert(
-      'Déconnexion',
-      'Voulez-vous vraiment vous déconnecter ?',
+      'התנתקות',
+      'האם אתה בטוח שברצונך להתנתק?',
       [
         {
-          text: 'Annuler',
+          text: 'ביטול',
           style: 'cancel'
         },
         {
-          text: 'Déconnexion',
+          text: 'התנתק',
           style: 'destructive',
           onPress: async () => {
             try {
               setLoading(true);
-              await logout(); // ✅ Utiliser la fonction logout du contexte
-              // La navigation sera gérée automatiquement par AppNavigator
+              await logout();
             } catch (error) {
-              Alert.alert('Erreur', 'Impossible de vous déconnecter. Veuillez réessayer.');
+              Alert.alert(
+                'שגיאה',
+                'שגיאה בהתנתקות. אנא נסה שוב.'
+              );
               setLoading(false);
             }
           }
@@ -130,7 +82,7 @@ const ProviderProfileScreen = () => {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#0066CC" />
-        <Text>Chargement des données...</Text>
+        <Text style={styles.textRTL}>טוען...</Text>
       </View>
     );
   }
@@ -139,315 +91,208 @@ const ProviderProfileScreen = () => {
     return (
       <View style={styles.centerContainer}>
         <Icon name="error-outline" size={50} color="#FF6B6B" />
-        <Text style={styles.errorText}>{error}</Text>
-        <Button mode="contained" onPress={fetchProviderData}>
-          Réessayer
-        </Button>
+        <Text style={[styles.errorText, styles.textRTL]}>{error}</Text>
+        <TouchableOpacity style={styles.button} onPress={fetchProviderData}>
+          <Text style={styles.buttonText}>נסה שוב</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  // Si aucune donnée n'est disponible, afficher un message d'erreur
   if (!provider) {
     return (
       <View style={styles.centerContainer}>
-        <Text>Aucune donnée de profil disponible.</Text>
-        <Button mode="contained" onPress={fetchProviderData} style={{ marginTop: 20 }}>
-          Actualiser
-        </Button>
+        <Text style={styles.textRTL}>אין נתונים להצגה</Text>
+        <TouchableOpacity style={[styles.button, { marginTop: 20 }]} onPress={fetchProviderData}>
+          <Text style={styles.buttonText}>רענן</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  // Calculer des statistiques à partir des données réelles
   const pendingRequests = provider.requests?.filter(req => req.status === 'pending').length || 0;
   const completedJobs = provider.requests?.filter(req => req.status === 'completed').length || 0;
-  const averageRating = provider.rating || 0;
-  const totalReviews = provider.reviews?.length || 0;
+
+  const getLocalizedDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      const monthNames = [
+        'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+        'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+      ];
+      const month = monthNames[date.getMonth()];
+      const year = date.getFullYear();
+      return `${month} ${year}`;
+    } catch (error) {
+      return dateString;
+    }
+  };
 
   return (
     <View style={styles.container}>
       <ScrollView 
         style={styles.scrollContainer}
-        refreshing={refreshing}
-        onRefresh={() => {
-          setRefreshing(true);
-          fetchProviderData();
-        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchProviderData();
+            }}
+          />
+        }
       >
-        {/* En-tête avec photo de profil */}
-        <Card style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <TouchableOpacity onPress={handleImageUpload}>
-              <Avatar.Text 
-                size={80} 
-                label={`${provider.firstName.charAt(0)}${provider.lastName.charAt(0)}`}
-                backgroundColor="#0D8ABC"
-                color="#FFFFFF"
-              />
-              <View style={styles.editIconContainer}>
-                <Icon name="edit" size={16} color="#FFFFFF" />
-              </View>
-            </TouchableOpacity>
-            
+        {/* Profile Card */}
+        <View style={styles.card}>
+          <View style={[styles.profileHeader, styles.profileHeaderRTL]}>
             <View style={styles.headerInfo}>
-              <Text style={styles.name}>{`${provider.firstName} ${provider.lastName}`}</Text>
-              <View style={styles.ratingContainer}>
-                <Icon name="star" size={16} color="#FFD700" />
-                <Text style={styles.rating}>{averageRating.toFixed(1)}/5</Text>
-                <Text style={styles.reviewCount}>({totalReviews} avis)</Text>
-              </View>
-              <Text style={styles.memberSince}>
-                Membre depuis {new Date(provider.createdAt).toLocaleDateString()}
+              <Text style={[styles.name, styles.textRTL]}>
+                {`${provider.firstName} ${provider.lastName}`}
+              </Text>
+              <Text style={[styles.memberSince, styles.textRTL]}>
+                חבר מאז {getLocalizedDate(provider.createdAt)}
               </Text>
             </View>
           </View>
           
           {provider.bio && (
-            <Card.Content style={styles.bioSection}>
-              <Text style={styles.bioText}>{provider.bio}</Text>
-            </Card.Content>
+            <View style={styles.bioSection}>
+              <Text style={[styles.bioText, styles.textRTL]}>{provider.bio}</Text>
+            </View>
           )}
           
-          <Card.Actions>
-            <Button 
-              mode="contained" 
-              onPress={() => navigation.navigate('EditProviderProfile', { provider })}
-              style={styles.editButton}
+          <View style={[styles.cardActions, styles.cardActionsRTL]}>
+            <TouchableOpacity 
+              style={styles.button}
+              onPress={() => navigation.navigate('EditPersonalInfo', { provider })}
             >
-              Modifier mon profil
-            </Button>
-          </Card.Actions>
-        </Card>
+              <Text style={styles.buttonText}>עדכן את הפרופיל שלי</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-        {/* Carte des statistiques */}
-        <Card style={styles.card}>
-          <Card.Title title="Mes statistiques" />
-          <Card.Content>
+        {/* Stats Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardTitle, styles.textRTL]}>
+              הסטטיסטיקות שלי
+            </Text>
+          </View>
+          <View style={styles.cardContent}>
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{pendingRequests}</Text>
-                <Text style={styles.statLabel}>Demandes en attente</Text>
+                <Text style={[styles.statLabel, styles.textRTL]}>
+                  בקשות ממתינות
+                </Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{completedJobs}</Text>
-                <Text style={styles.statLabel}>Services complétés</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{provider.hourlyRate}€</Text>
-                <Text style={styles.statLabel}>Taux horaire moyen</Text>
+                <Text style={[styles.statLabel, styles.textRTL]}>
+                  שירותים שהושלמו
+                </Text>
               </View>
             </View>
-          </Card.Content>
-        </Card>
+          </View>
+        </View>
 
-        {/* Services proposés */}
-        <Card style={styles.card}>
-          <Card.Title 
-            title="Mes services" 
-            right={(props) => (
-              <IconButton
-                {...props}
-                icon="plus"
-                onPress={() => navigation.navigate('AddService')}
-              />
-            )}
-          />
-          <Card.Content>
-            {provider.serviceDetails && provider.serviceDetails.length > 0 ? (
-              provider.serviceDetails.map((service, index) => (
-                <View key={index} style={styles.serviceItem}>
-                  <View style={styles.serviceHeader}>
-                    <Text style={styles.serviceType}>
-                      {service.type.charAt(0).toUpperCase() + service.type.slice(1)}
-                    </Text>
-                    <Text style={styles.serviceRate}>{service.hourlyRate}€/h</Text>
-                  </View>
-                  {service.description && (
-                    <Text style={styles.serviceDescription}>{service.description}</Text>
-                  )}
-                  <View style={styles.serviceActions}>
-                    <Button 
-                      mode="text" 
-                      compact 
-                      onPress={() => navigation.navigate('EditService', { service, serviceIndex: index })}
-                    >
-                      Modifier
-                    </Button>
-                    <Button 
-                      mode="text" 
-                      compact 
-                      textColor="#FF6B6B"
-                      onPress={() => {
-                        Alert.alert(
-                          'Supprimer le service',
-                          'Êtes-vous sûr de vouloir supprimer ce service ?',
-                          [
-                            { text: 'Annuler', style: 'cancel' },
-                            { 
-                              text: 'Supprimer', 
-                              style: 'destructive',
-                              onPress: async () => {
-                                try {
-                                  await providerService.deleteService(service._id);
-                                  Alert.alert('Succès', 'Le service a été supprimé.');
-                                  fetchProviderData();
-                                } catch (error) {
-                                  Alert.alert('Erreur', 'Impossible de supprimer le service.');
-                                }
-                              }
-                            }
-                          ]
-                        );
-                      }}
-                    >
-                      Supprimer
-                    </Button>
-                  </View>
-                  {index < provider.serviceDetails.length - 1 && <Divider style={styles.divider} />}
-                </View>
-              ))
-            ) : (
-              <Text style={styles.emptyMessage}>
-                Vous n'avez pas encore ajouté de services. Cliquez sur le + pour ajouter votre premier service.
-              </Text>
-            )}
-          </Card.Content>
-        </Card>
+        {/* Services Card - SUPPRIMÉ - Géré maintenant dans EditPersonalInfo */}
 
-        {/* Zones de service */}
-        <Card style={styles.card}>
-          <Card.Title title="Zones de service" />
-          <Card.Content>
+        {/* Service Areas Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardTitle, styles.textRTL]}>
+              אזורי שירות
+            </Text>
+          </View>
+          <View style={styles.cardContent}>
             <View style={styles.serviceAreasContainer}>
               {provider.serviceAreas && provider.serviceAreas.length > 0 ? (
                 provider.serviceAreas.map((area, index) => (
-                  <Badge key={index} style={styles.areaBadge}>
-                    {area}
-                  </Badge>
+                  <View key={index} style={styles.areaBadge}>
+                    <Text style={styles.areaBadgeText}>{area}</Text>
+                  </View>
                 ))
               ) : (
-                <Text style={styles.emptyMessage}>
-                  Aucune zone de service définie
+                <Text style={[styles.emptyMessage, styles.textRTL]}>
+                  לא הוגדרו אזורי שירות
                 </Text>
               )}
             </View>
-            <Button 
-              mode="outlined" 
+            <TouchableOpacity 
+              style={styles.outlinedButton}
               onPress={() => navigation.navigate('EditServiceAreas', { areas: provider.serviceAreas })}
-              style={styles.actionButton}
             >
-              Gérer mes zones de service
-            </Button>
-          </Card.Content>
-        </Card>
-
-        {/* Disponibilités */}
-        <Card style={styles.card}>
-          <Card.Title title="Mes disponibilités" />
-          <Card.Content>
-            {provider.availability && provider.availability.length > 0 ? (
-              provider.availability.map((slot, index) => {
-                // Convertir le numéro du jour en nom
-                const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-                const dayName = days[slot.day];
-                
-                return (
-                  <View key={index} style={styles.availabilityItem}>
-                    <Text style={styles.dayName}>{dayName}</Text>
-                    <Text style={styles.timeSlot}>{slot.startTime} - {slot.endTime}</Text>
-                  </View>
-                );
-              })
-            ) : (
-              <Text style={styles.emptyMessage}>
-                Aucune disponibilité définie
+              <Text style={styles.outlinedButtonText}>
+                נהל אזורי שירות
               </Text>
-            )}
-            <Button 
-              mode="outlined" 
-              onPress={() => navigation.navigate('EditAvailability', { availability: provider.availability })}
-              style={styles.actionButton}
-            >
-              Gérer mes disponibilités
-            </Button>
-          </Card.Content>
-        </Card>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-        {/* Informations de contact */}
-        <Card style={styles.card}>
-          <Card.Title title="Coordonnées" />
-          <Card.Content>
-            <List.Item
-              title="Email"
-              description={provider.email}
-              left={props => <List.Icon {...props} icon="email" />}
-            />
-            <List.Item
-              title="Téléphone"
-              description={provider.phone || "Non renseigné"}
-              left={props => <List.Icon {...props} icon="phone" />}
-            />
-            <Button 
-              mode="outlined" 
+        {/* Contact Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardTitle, styles.textRTL]}>
+              פרטי התקשרות
+            </Text>
+          </View>
+          <View style={styles.cardContent}>
+            <View style={styles.listItem}>
+              <Icon name="email" size={24} color="#666" style={styles.listIcon} />
+              <View style={styles.listContent}>
+                <Text style={[styles.listTitle, styles.textRTL]}>
+                  אימייל
+                </Text>
+                <Text style={[styles.listDescription, styles.textRTL]}>
+                  {provider.email}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.listItem}>
+              <Icon name="phone" size={24} color="#666" style={styles.listIcon} />
+              <View style={styles.listContent}>
+                <Text style={[styles.listTitle, styles.textRTL]}>
+                  טלפון
+                </Text>
+                <Text style={[styles.listDescription, styles.textRTL]}>
+                  {provider.phone || 'לא צוין'}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity 
+              style={styles.outlinedButton}
               onPress={() => navigation.navigate('EditContact', { 
                 email: provider.email, 
                 phone: provider.phone 
               })}
-              style={styles.actionButton}
             >
-              Modifier mes coordonnées
-            </Button>
-          </Card.Content>
-        </Card>
+              <Text style={styles.outlinedButtonText}>
+                ערוך פרטי התקשרות
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-        {/* Expérience et certifications */}
-        <Card style={styles.card}>
-          <Card.Title title="Expérience & Certifications" />
-          <Card.Content>
-            <List.Item
-              title="Années d'expérience"
-              description={`${provider.experience || 0} an${provider.experience > 1 ? 's' : ''}`}
-              left={props => <List.Icon {...props} icon="briefcase" />}
-            />
-            
-            <Text style={styles.certificationTitle}>Certifications:</Text>
-            {provider.certifications && provider.certifications.length > 0 ? (
-              provider.certifications.map((cert, index) => (
-                <Text key={index} style={styles.certificationItem}>• {cert}</Text>
-              ))
-            ) : (
-              <Text style={styles.emptyMessage}>Aucune certification ajoutée</Text>
-            )}
-            
-            <Button 
-              mode="outlined" 
-              onPress={() => navigation.navigate('EditExperience', { 
-                experience: provider.experience,
-                certifications: provider.certifications
-              })}
-              style={styles.actionButton}
-            >
-              Modifier mon expérience
-            </Button>
-          </Card.Content>
-        </Card>
-        
-        {/* Carte de déconnexion */}
-        <Card style={styles.card}>
-          <Card.Title title="Compte" />
-          <Card.Content>
-            <Button 
-              mode="outlined" 
-              icon="logout"
+        {/* Account Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardTitle, styles.textRTL]}>
+              חשבון
+            </Text>
+          </View>
+          <View style={styles.cardContent}>
+            <TouchableOpacity 
+              style={styles.logoutButton}
               onPress={handleLogout}
-              style={[styles.actionButton, styles.logoutButton]}
-              labelStyle={{ color: '#FF6B6B' }}
             >
-              Déconnexion
-            </Button>
-          </Card.Content>
-        </Card>
+              <Icon name="logout" size={20} color="#FF6B6B" style={{ marginRight: 8 }} />
+              <Text style={styles.logoutButtonText}>
+                התנתק
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -473,51 +318,57 @@ const styles = StyleSheet.create({
     color: '#FF6B6B',
     textAlign: 'center',
   },
-  profileCard: {
-    marginBottom: 16,
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
     padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardHeader: {
+    marginBottom: 16,
+  },
+  cardHeaderWithAction: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  cardContent: {
+    marginTop: 8,
+  },
+  cardActions: {
+    marginTop: 16,
+  },
+  cardActionsRTL: {
+    flexDirection: 'row-reverse',
   },
   profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 16,
   },
-  editIconContainer: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#3498db',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+  profileHeaderRTL: {
+    alignItems: 'flex-end',
   },
   headerInfo: {
-    marginLeft: 16,
     flex: 1,
   },
   name: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: 'bold',
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  rating: {
-    marginLeft: 4,
-    fontWeight: 'bold',
-  },
-  reviewCount: {
-    marginLeft: 4,
-    color: '#666',
+    color: '#333',
   },
   memberSince: {
-    marginTop: 4,
+    marginTop: 8,
     color: '#666',
-    fontSize: 12,
+    fontSize: 14,
   },
   bioSection: {
     marginTop: 10,
@@ -527,11 +378,29 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: '#555',
   },
-  card: {
-    marginBottom: 16,
+  button: {
+    backgroundColor: '#0066CC',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
   },
-  editButton: {
-    width: '100%',
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  outlinedButton: {
+    borderWidth: 1,
+    borderColor: '#0066CC',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  outlinedButtonText: {
+    color: '#0066CC',
+    fontSize: 16,
+    fontWeight: '600',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -550,34 +419,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
-  },
-  serviceItem: {
-    marginBottom: 12,
-  },
-  serviceHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  serviceType: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  serviceRate: {
-    fontWeight: 'bold',
-    color: '#0066CC',
-  },
-  serviceDescription: {
     marginTop: 4,
-    color: '#666',
-  },
-  serviceActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 8,
-  },
-  divider: {
-    marginVertical: 12,
   },
   emptyMessage: {
     fontStyle: 'italic',
@@ -591,12 +433,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   areaBadge: {
-    margin: 4,
     backgroundColor: '#E1F5FE',
-    color: '#0277BD',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    margin: 4,
   },
-  actionButton: {
-    marginTop: 12,
+  areaBadgeText: {
+    color: '#0277BD',
+    fontSize: 14,
   },
   availabilityItem: {
     flexDirection: 'row',
@@ -605,11 +450,34 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  availabilityItemRTL: {
+    flexDirection: 'row-reverse',
+  },
   dayName: {
     fontWeight: 'bold',
   },
   timeSlot: {
     color: '#666',
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  listIcon: {
+    marginRight: 16,
+  },
+  listContent: {
+    flex: 1,
+  },
+  listTitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  listDescription: {
+    fontSize: 16,
+    color: '#333',
   },
   certificationTitle: {
     fontWeight: 'bold',
@@ -622,8 +490,23 @@ const styles = StyleSheet.create({
     color: '#555',
   },
   logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
     borderColor: '#FF6B6B',
+    padding: 12,
+    borderRadius: 8,
     marginVertical: 10,
+  },
+  logoutButtonText: {
+    color: '#FF6B6B',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  textRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
 });
 

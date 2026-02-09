@@ -1,3 +1,9 @@
+// src/screens/profile/UserProfileScreen.js
+// ✅ תורגם לעברית ישירות ללא i18n
+// ✅ תוקן: הצגת עיר אמיתית מהפרופיל
+// ✅ נוסף: גישה לוידאו של הנכס
+// ✅ תוקן: עריכת כתובת ועיר דרך EditPersonalInfo
+
 import React, { useState, useContext, useEffect } from 'react';
 import {
   View,
@@ -16,30 +22,30 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import * as RootNavigation from '../../navigation/RootNavigation'; // Importez la référence
+import * as RootNavigation from '../../navigation/RootNavigation';
 
 // Composant pour les options du profil
-const ProfileOption = ({ icon, title, onPress, value, rightComponent }) => {
+const ProfileOption = ({ icon, title, onPress, value, rightComponent, isRTL }) => {
   return (
     <TouchableOpacity style={styles.optionContainer} onPress={onPress}>
-      <View style={styles.optionLeft}>
+      <View style={[styles.optionLeft, isRTL && styles.optionLeftRTL]}>
         <Ionicons name={icon} size={24} color="#3498db" />
-        <Text style={styles.optionTitle}>{title}</Text>
+        <Text style={[styles.optionTitle, isRTL && styles.textRTL]}>{title}</Text>
       </View>
-      <View style={styles.optionRight}>
-        {value && <Text style={styles.optionValue}>{value}</Text>}
+      <View style={[styles.optionRight, isRTL && styles.optionRightRTL]}>
+        {value && <Text style={[styles.optionValue, isRTL && styles.textRTL]}>{value}</Text>}
         {rightComponent}
-        <Ionicons name="chevron-forward" size={20} color="#999" />
+        <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color="#999" />
       </View>
     </TouchableOpacity>
   );
 };
 
 // Composant pour les sections du profil
-const ProfileSection = ({ title, children }) => {
+const ProfileSection = ({ title, children, isRTL }) => {
   return (
     <View style={styles.sectionContainer}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>{title}</Text>
       {children}
     </View>
   );
@@ -48,35 +54,41 @@ const ProfileSection = ({ title, children }) => {
 const UserProfileScreen = () => {
   const authContext = useContext(AuthContext);
   const navigation = useNavigation();
+  const isRTL = true; // ✅ תמיד RTL לעברית
+  
   const [isLoading, setIsLoading] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   
-  // Données du profil
+  // ✅ CORRECTION : Données du profil depuis authContext.userInfo
   const [profileData, setProfileData] = useState({
-    firstName: authContext?.userInfo?.firstName || authContext?.userInfo?.name || 'Utilisateur',
-    lastName: authContext?.userInfo?.lastName || '',
-    email: authContext?.userInfo?.email || 'utilisateur@exemple.com',
-    phone: authContext?.userInfo?.phone || '+972 54 123 4567',
-    language: authContext?.userInfo?.language || 'Hébreu',
-    addresses: authContext?.userInfo?.addresses || [
-      {
-        id: '1',
-        name: 'Domicile',
-        street: '25 Rue Ben Yehuda',
-        city: 'Tel Aviv',
-        postalCode: '6380802',
-        isDefault: true,
-      },
-      {
-        id: '2',
-        name: 'Bureau',
-        street: '12 Rue Herzl',
-        city: 'Tel Aviv',
-        postalCode: '6684401',
-        isDefault: false,
-      },
-    ],
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    city: '', // ✅ Ajout du champ ville
+    address: '',
+    language: 'עברית',
   });
+
+  // ✅ Charger les vraies données du profil depuis authContext
+  useEffect(() => {
+    if (authContext?.userInfo) {
+      setProfileData({
+        firstName: authContext.userInfo.firstName || authContext.userInfo.name || 'משתמש',
+        lastName: authContext.userInfo.lastName || '',
+        email: authContext.userInfo.email || 'email@example.com',
+        phone: authContext.userInfo.phone || 'לא צוין',
+        city: authContext.userInfo.city || 'לא צוין', // ✅ Ville depuis userInfo
+        address: authContext.userInfo.address || 'לא צוינה',
+        language: authContext.userInfo.language || 'עברית',
+      });
+      
+      console.log('📋 נתוני פרופיל:', {
+        city: authContext.userInfo.city,
+        address: authContext.userInfo.address
+      });
+    }
+  }, [authContext?.userInfo]);
 
   // Gérer le changement de langue
   const handleLanguageChange = () => {
@@ -88,82 +100,150 @@ const UserProfileScreen = () => {
     navigation.navigate('EditPersonalInfo', { profileData });
   };
 
-  // Gérer la gestion des adresses
-  const handleManageAddresses = () => {
-    navigation.navigate('ManageAddresses', { addresses: profileData.addresses });
+  // ✅ CORRECTION : Naviguer vers EditPersonalInfo pour éditer ville/adresse
+  const handleEditAddress = () => {
+    navigation.navigate('EditPersonalInfo', { profileData });
   };
 
-  // Fonction de déconnexion améliorée
-  const handleLogout = () => {
-    Alert.alert(
-      'Déconnexion',
-      'Voulez-vous vraiment vous déconnecter ?',
-      [
-        {
-          text: 'Confirmer',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setIsLoading(true);
-              await authContext.logout();
-              RootNavigation.reset({
-                index: 0,
-                routes: [{ name: 'Welcome' }],
-              });
-            } catch (error) {
-              Alert.alert("Erreur", "Impossible de vous déconnecter. Veuillez fermer et relancer l'application.");
-            } finally {
-              setIsLoading(false);
-            }
-          }
-        }
-      ]
-    );
+  // ✅ NOUVEAU : Gérer l'accès à la vidéo de propriété
+  const handlePropertyVideo = () => {
+    navigation.navigate('PropertyVideo');
   };
-  
-  const handleLogoutDirect = async () => {
+
+  // Fonction de déconnexion - VERSION WEB (sans Alert)
+  const handleLogout = async () => {
+    console.log('🔴🔴🔴 DÉBUT DÉCONNEXION !!! 🔴🔴🔴');
+    
     try {
       setIsLoading(true);
-      await authContext.logout();
-      RootNavigation.reset({
-        index: 0,
-        routes: [{ name: 'Welcome' }],
-      });
+      
+      console.log('🔴 Début de la déconnexion...');
+      
+      // ✅ Vider toutes les données AsyncStorage
+      await AsyncStorage.clear();
+      console.log('✅ AsyncStorage vidé');
+      
+      // ✅ Réinitialiser le contexte d'authentification
+      if (authContext) {
+        if (authContext.setUserToken) {
+          authContext.setUserToken(null);
+          console.log('✅ Token réinitialisé');
+        }
+        if (authContext.setUserInfo) {
+          authContext.setUserInfo(null);
+          console.log('✅ UserInfo réinitialisé');
+        }
+        if (authContext.setUserRole) {
+          authContext.setUserRole(null);
+          console.log('✅ UserRole réinitialisé');
+        }
+        
+        // Appeler logout si la fonction existe
+        if (authContext.logout && typeof authContext.logout === 'function') {
+          await authContext.logout();
+          console.log('✅ Fonction logout appelée');
+        }
+      }
+      
+      console.log('🔄 Tentative de redirection...');
+      
+      // ✅ Essayer plusieurs méthodes de navigation
+      
+      // Méthode 1 : Navigation avec reset
+      try {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Welcome' }],
+        });
+        console.log('✅ Méthode 1 réussie - navigation.reset vers Welcome');
+        return;
+      } catch (e) {
+        console.log('❌ Méthode 1 échouée:', e.message);
+      }
+      
+      // Méthode 2 : RootNavigation
+      try {
+        RootNavigation.reset({
+          index: 0,
+          routes: [{ name: 'Welcome' }],
+        });
+        console.log('✅ Méthode 2 réussie - RootNavigation.reset');
+        return;
+      } catch (e) {
+        console.log('❌ Méthode 2 échouée:', e.message);
+      }
+      
+      // Méthode 3 : Essayer Auth
+      try {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Auth' }],
+        });
+        console.log('✅ Méthode 3 réussie - navigation vers Auth');
+        return;
+      } catch (e) {
+        console.log('❌ Méthode 3 échouée:', e.message);
+      }
+      
+      // Méthode 4 : Navigate simple vers Login
+      try {
+        navigation.navigate('Login');
+        console.log('✅ Méthode 4 réussie - navigate vers Login');
+        return;
+      } catch (e) {
+        console.log('❌ Méthode 4 échouée:', e.message);
+      }
+      
+      // Méthode 5 : Navigate simple vers Welcome
+      try {
+        navigation.navigate('Welcome');
+        console.log('✅ Méthode 5 réussie - navigate vers Welcome');
+        return;
+      } catch (e) {
+        console.log('❌ Méthode 5 échouée:', e.message);
+      }
+      
+      // Méthode 6 : Forcer le rechargement
+      console.log('⚠️ Toutes les méthodes ont échoué, tentative de rechargement...');
+      if (Platform.OS === 'web') {
+        window.location.href = '/';
+        console.log('✅ Redirection web forcée');
+      }
+      
     } catch (error) {
+      console.error('❌ Erreur lors de la déconnexion:', error);
     } finally {
       setIsLoading(false);
+      console.log('🏁 Fin du processus de déconnexion');
     }
   };
-  
-  
 
   // Gérer la suppression du compte
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Supprimer le compte',
-      'Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.',
+      'מחיקת חשבון',
+      'האם אתה בטוח שברצונך למחוק את החשבון? פעולה זו אינה הפיכה.',
       [
         {
-          text: 'Annuler',
+          text: 'ביטול',
           style: 'cancel',
         },
         {
-          text: 'Supprimer',
+          text: 'מחק',
           onPress: async () => {
-            // Ajouter la logique de suppression de compte ici
-            Alert.alert('Compte supprimé', 'Votre compte a été supprimé avec succès.');
+            Alert.alert(
+              'החשבון נמחק',
+              'החשבון שלך נמחק בהצלחה'
+            );
             
-            // Utiliser la même méthode de déconnexion fiable
             await AsyncStorage.clear();
             
-            // Réinitialiser le contexte d'authentification
             if (authContext) {
               if (authContext.setUserToken) authContext.setUserToken(null);
               if (authContext.setUserInfo) authContext.setUserInfo(null);
               if (authContext.setUserRole) authContext.setUserRole(null);
             }
             
-            // Utiliser RootNavigation pour rediriger
             RootNavigation.reset({
               index: 0,
               routes: [{ name: 'Welcome' }],
@@ -192,48 +272,67 @@ const UserProfileScreen = () => {
               {profileData.lastName.charAt(0)}
             </Text>
           </View>
-          <Text style={styles.userName}>
+          <Text style={[styles.userName, styles.textRTL]}>
             {profileData.firstName} {profileData.lastName}
           </Text>
-          <Text style={styles.userEmail}>{profileData.email}</Text>
+          <Text style={[styles.userEmail, styles.textRTL]}>{profileData.email}</Text>
         </View>
 
         {/* Informations personnelles */}
-        <ProfileSection title="Informations personnelles">
+        <ProfileSection title="פרטים אישיים" isRTL={isRTL}>
           <ProfileOption
             icon="person-outline"
-            title="Modifier mes informations"
+            title="ערוך פרטים"
             onPress={handleEditPersonalInfo}
+            isRTL={isRTL}
           />
           <ProfileOption
             icon="call-outline"
-            title="Téléphone"
+            title="טלפון"
             value={profileData.phone}
-            onPress={() => navigation.navigate('EditPhone', { phone: profileData.phone })}
+            onPress={handleEditPersonalInfo}
+            isRTL={isRTL}
           />
         </ProfileSection>
 
-        {/* Adresses */}
-        <ProfileSection title="Mes adresses">
+        {/* ✅ Adresse, ville et VIDÉO */}
+        <ProfileSection title="הנכס שלי" isRTL={isRTL}>
           <ProfileOption
             icon="location-outline"
-            title="Gérer mes adresses"
-            value={`${profileData.addresses.length} adresses`}
-            onPress={handleManageAddresses}
+            title="עיר"
+            value={profileData.city}
+            onPress={handleEditAddress}
+            isRTL={isRTL}
+          />
+          <ProfileOption
+            icon="home-outline"
+            title="כתובת"
+            value={profileData.address}
+            onPress={handleEditAddress}
+            isRTL={isRTL}
+          />
+          {/* ✅ NOUVEAU : Option vidéo de propriété */}
+          <ProfileOption
+            icon="videocam-outline"
+            title="וידאו של הנכס"
+            value="📹"
+            onPress={handlePropertyVideo}
+            isRTL={isRTL}
           />
         </ProfileSection>
 
         {/* Préférences */}
-        <ProfileSection title="Préférences">
+        <ProfileSection title="העדפות" isRTL={isRTL}>
           <ProfileOption
             icon="language-outline"
-            title="Langue"
+            title="שפה"
             value={profileData.language}
             onPress={handleLanguageChange}
+            isRTL={isRTL}
           />
           <ProfileOption
             icon="notifications-outline"
-            title="Notifications"
+            title="התראות"
             rightComponent={
               <Switch
                 value={notificationsEnabled}
@@ -244,20 +343,46 @@ const UserProfileScreen = () => {
               />
             }
             onPress={() => setNotificationsEnabled(!notificationsEnabled)}
+            isRTL={isRTL}
           />
         </ProfileSection>
 
         {/* Compte */}
-        <ProfileSection title="Compte">
-          <ProfileOption
-            icon="log-out-outline"
-            title="Déconnexion"
+        <ProfileSection title="חשבון" isRTL={isRTL}>
+          {/* Bouton de déconnexion direct */}
+          <TouchableOpacity 
+            style={[styles.optionContainer, { backgroundColor: '#ffebee' }]} 
             onPress={handleLogout}
-          />
+          >
+            <View style={[styles.optionLeft, styles.optionLeftRTL]}>
+              <Ionicons name="log-out-outline" size={24} color="#e74c3c" />
+              <Text style={[styles.optionTitle, styles.textRTL, { color: '#e74c3c', fontWeight: 'bold' }]}>
+                התנתק
+              </Text>
+            </View>
+            <Ionicons name="chevron-back" size={20} color="#e74c3c" />
+          </TouchableOpacity>
+          
           <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount}>
-            <Text style={styles.deleteAccountText}>Supprimer mon compte</Text>
+            <Text style={[styles.deleteAccountText, styles.textRTL]}>
+              מחק חשבון
+            </Text>
           </TouchableOpacity>
         </ProfileSection>
+        
+        {/* ✅ Informations de débogage (à retirer en production) */}
+        {__DEV__ && (
+          <ProfileSection title="מידע דיבאג (למפתחים)" isRTL={isRTL}>
+            <View style={styles.debugContainer}>
+              <Text style={[styles.debugText, styles.textRTL]}>
+                עיר: {authContext?.userInfo?.city || 'לא מוגדר'}
+              </Text>
+              <Text style={[styles.debugText, styles.textRTL]}>
+                כתובת: {authContext?.userInfo?.address || 'לא מוגדר'}
+              </Text>
+            </View>
+          </ProfileSection>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -344,6 +469,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  optionLeftRTL: {
+    flexDirection: 'row-reverse',
+  },
   optionTitle: {
     fontSize: 16,
     marginLeft: 12,
@@ -352,6 +480,9 @@ const styles = StyleSheet.create({
   optionRight: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  optionRightRTL: {
+    flexDirection: 'row-reverse',
   },
   optionValue: {
     fontSize: 16,
@@ -365,6 +496,19 @@ const styles = StyleSheet.create({
   deleteAccountText: {
     color: '#e74c3c',
     fontSize: 16,
+  },
+  debugContainer: {
+    padding: 15,
+    backgroundColor: '#f0f0f0',
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 5,
+  },
+  textRTL: {
+    writingDirection: 'rtl',
+    textAlign: 'right',
   },
 });
 

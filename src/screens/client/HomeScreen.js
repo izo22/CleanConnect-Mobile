@@ -1,72 +1,79 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { Text, Card, Title, Paragraph, Button, useTheme } from 'react-native-paper';
-import { SERVICE_TYPES, SERVICE_TYPE_LABELS } from '../../config/constants';
-import { useAuth } from '../../context/AuthContext';
-import { useBooking } from '../../context/BookingContext'; // Ajouté cette ligne
+// src/screens/client/HomeScreen.js
+// ✅ VERSION MODERNE - Design startup avec header personnalisé
 
-const ServiceCard = ({ title, description, color, iconName, onPress }) => {
+import React from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { SERVICE_TYPES, SERVICE_COLORS } from '../../config/constants';
+import { useAuth } from '../../context/AuthContext';
+import { useBooking } from '../../context/BookingContext';
+
+const ServiceCard = ({ title, description, color, icon, onPress }) => {
   return (
-    <Card 
-      style={[styles.card, { borderLeftColor: color, borderLeftWidth: 4 }]}
+    <TouchableOpacity 
+      style={styles.card}
       onPress={onPress}
+      activeOpacity={0.7}
     >
-      <Card.Content style={styles.cardContent}>
-        <View style={styles.cardHeader}>
-          <Title style={styles.cardTitle}>{title}</Title>
-        </View>
-        <Paragraph style={styles.cardDescription}>{description}</Paragraph>
-      </Card.Content>
-      <Card.Actions style={styles.cardActions}>
-        <Button mode="contained" style={{ backgroundColor: color }} onPress={onPress}>
-          Réserver
-        </Button>
-      </Card.Actions>
-    </Card>
+      <View style={[styles.cardIconContainer, { backgroundColor: `${color}15` }]}>
+        <Ionicons name={icon} size={32} color={color} />
+      </View>
+      
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle}>{title}</Text>
+        <Text style={styles.cardDescription}>{description}</Text>
+      </View>
+      
+      <View style={[styles.cardButton, { backgroundColor: color }]}>
+        <Text style={styles.cardButtonText}>הזמן עכשיו</Text>
+        <Ionicons name="arrow-back" size={16} color="white" style={{ marginRight: 4 }} />
+      </View>
+    </TouchableOpacity>
   );
 };
 
 const HomeScreen = ({ navigation }) => {
-  const theme = useTheme();
   const { userInfo } = useAuth();
-  const { updateBooking } = useBooking(); // Ajouté cette ligne
-  
-  // Log pour débogage
+  const { updateBooking } = useBooking();
   
   const serviceOptions = [
     {
       type: SERVICE_TYPES.HOME,
-      title: SERVICE_TYPE_LABELS.home,
-      color: theme.colors.homeService,
-      description: 'Nettoyage professionnel pour votre domicile, adapté à vos besoins spécifiques.',
-      iconName: 'home'
+      title: 'ניקיון בית',
+      color: SERVICE_COLORS.HOME,
+      description: 'ניקיון מקצועי לבית שלך, מותאם לצרכים הספציפיים שלך',
+      icon: 'home'
     },
     {
       type: SERVICE_TYPES.OFFICE,
-      title: SERVICE_TYPE_LABELS.office,
-      color: theme.colors.officeService,
-      description: 'Services complets pour bureaux et espaces professionnels.',
-      iconName: 'briefcase'
+      title: 'ניקיון משרדים',
+      color: SERVICE_COLORS.OFFICE,
+      description: 'שירותים מלאים למשרדים וחללים מקצועיים',
+      icon: 'briefcase'
     },
     {
       type: SERVICE_TYPES.BUILDING,
-      title: SERVICE_TYPE_LABELS.building,
-      color: theme.colors.buildingService,
-      description: 'Entretien des parties communes et des immeubles résidentiels.',
-      iconName: 'building'
+      title: 'ניקיון בניינים',
+      color: SERVICE_COLORS.BUILDING,
+      description: 'תחזוקה של חלקים משותפים ובניינים מגורים',
+      icon: 'business'
+    },
+    {
+      type: SERVICE_TYPES.AIRBNB,
+      title: 'ניקיון אירבנב',
+      color: SERVICE_COLORS.AIRBNB,
+      description: 'שירות ניקיון מקצועי לדירות אירבנב. ניקיון מהיר ויעיל בין אורחים',
+      icon: 'key'
     }
   ];
 
   const navigateToService = (serviceType) => {
-    
-    // Mettre à jour le contexte de réservation
     updateBooking({ 
       serviceType: serviceType,
       duration: 2,
       frequency: 'one_time'
     });
     
-    // Ensuite naviguer vers la recherche de prestataires
     navigation.navigate('ProviderSearch', { 
       serviceType,
       duration: '2',
@@ -76,13 +83,19 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
+      {/* ✅ HEADER MODERNE PERSONNALISÉ */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>
-          Bonjour, {userInfo?.firstName || ''} {userInfo?.lastName || 'Client'}
-        </Text>
-        <Text style={styles.subtitle}>Quel type de service recherchez-vous ?</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.greeting}>
+            שלום, {userInfo?.firstName || 'לקוח'}
+          </Text>
+          <Text style={styles.subtitle}>
+            איזה סוג שירות אתה מחפש?
+          </Text>
+        </View>
       </View>
 
+      {/* ✅ CARDS DE SERVICES MODERNES */}
       <View style={styles.servicesContainer}>
         {serviceOptions.map((service) => (
           <ServiceCard
@@ -90,27 +103,35 @@ const HomeScreen = ({ navigation }) => {
             title={service.title}
             description={service.description}
             color={service.color}
-            iconName={service.iconName}
+            icon={service.icon}
             onPress={() => navigateToService(service.type)}
           />
         ))}
       </View>
 
+      {/* ✅ BOUTONS D'ACTIONS MODERNES */}
       <View style={styles.actionsContainer}>
-        <Button 
-          mode="outlined" 
-          style={styles.actionButton}
+        <TouchableOpacity 
+          style={styles.actionCard}
           onPress={() => navigation.navigate('Dashboard')}
         >
-          Mes réservations
-        </Button>
-        <Button 
-          mode="outlined" 
-          style={styles.actionButton}
+          <View style={styles.actionIconContainer}>
+            <Ionicons name="calendar" size={24} color="#2E86C1" />
+          </View>
+          <Text style={styles.actionCardTitle}>ההזמנות שלי</Text>
+          <Text style={styles.actionCardSubtitle}>צפה בהזמנות</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.actionCard}
           onPress={() => navigation.navigate('Profile')}
         >
-          Mon profil
-        </Button>
+          <View style={styles.actionIconContainer}>
+            <Ionicons name="person" size={24} color="#2E86C1" />
+          </View>
+          <Text style={styles.actionCardTitle}>הפרופיל שלי</Text>
+          <Text style={styles.actionCardSubtitle}>ערוך פרטים</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -119,61 +140,141 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F8F9FA',
   },
+  
+  // ✅ HEADER MODERNE
   header: {
-    padding: 20,
-    paddingTop: 40,
     backgroundColor: '#2E86C1',
+    paddingTop: 60,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  headerContent: {
+    flex: 1,
   },
   greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '700',
     color: 'white',
-    marginBottom: 5,
+    marginBottom: 8,
+    textAlign: 'right',
   },
   subtitle: {
     fontSize: 16,
     color: 'white',
-    marginBottom: 10,
+    opacity: 0.9,
+    textAlign: 'right',
+    fontWeight: '500',
   },
+  
+  // ✅ CARDS DE SERVICES MODERNES
   servicesContainer: {
-    padding: 15,
+    padding: 16,
   },
   card: {
-    marginBottom: 15,
-    elevation: 2,
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    marginBottom: 16,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  cardIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    alignSelf: 'flex-end',
   },
   cardContent: {
-    paddingVertical: 10,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 16,
   },
   cardTitle: {
-    fontWeight: 'bold',
-    fontSize: 18,
+    fontWeight: '700',
+    fontSize: 20,
+    color: '#1F2937',
+    marginBottom: 8,
+    textAlign: 'right',
   },
   cardDescription: {
-    color: '#666',
+    color: '#6B7280',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'right',
+    fontWeight: '500',
   },
-  cardActions: {
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+  cardButton: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
+  cardButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  
+  // ✅ ACTIONS CARDS MODERNES
   actionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 15,
-    marginBottom: 20,
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+    gap: 12,
   },
-  actionButton: {
-    width: '45%',
-  }
+  actionCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  actionIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#DBEAFE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  actionCardTitle: {
+    color: '#1F2937',
+    fontWeight: '700',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  actionCardSubtitle: {
+    color: '#6B7280',
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
 });
 
 export default HomeScreen;

@@ -9,6 +9,9 @@ import EditAddressScreen from '../screens/profile/EditAddressScreen';
 import LanguageSettingsScreen from '../screens/profile/LanguageSettingsScreen';
 import EditPhoneScreen from '../screens/profile/EditPhoneScreen';
 
+// ✅ NOUVEAU : Écran vidéo de propriété
+import PropertyVideoScreen from '../screens/client/PropertyVideoScreen';
+
 const Stack = createStackNavigator();
 
 // Navigateur de la pile du profil
@@ -21,6 +24,8 @@ const ProfileStackNavigator = () => {
       <Stack.Screen name="EditAddress" component={EditAddressScreen} />
       <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
       <Stack.Screen name="EditPhone" component={EditPhoneScreen} />
+      {/* ✅ NOUVEAU : Route pour la vidéo de propriété */}
+      <Stack.Screen name="PropertyVideo" component={PropertyVideoScreen} />
     </Stack.Navigator>
   );
 };

@@ -1,11 +1,16 @@
 // src/context/BookingContext.js
-// ✅ MODIFIÉ - Ajout de la fonction selectProvider
+// ✅ VERSION COMPLÈTE - Logique existante + Intégration Escrow API + MAPPING HÉBREU + DEBUG LOG
+// 🔧 FIX: Calcul de prix corrigé pour utiliser le tarif du SERVICE SPÉCIFIQUE au lieu de la moyenne
+// 🐛 FIX: Ajout de normalizeServiceType pour mapper anglais → hébreu
 
 import React, { createContext, useState, useContext, useCallback, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL, SERVICE_TYPES, STORAGE_KEYS } from '../config/constants';
 import { useAuth } from './AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// ✅ ESCROW - Configuration API backend
+const BACKEND_API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export const BookingContext = createContext();
 
@@ -24,9 +29,14 @@ export const BookingProvider = ({ children }) => {
   });
   
   const [userBookings, setUserBookings] = useState([]);
+  useEffect(() => {
+    console.log('🔍 STATE userBookings MIS À JOUR:', userBookings.length, 'bookings');
+    console.log('🔍 CONTENU:', userBookings);
+  }, [userBookings]);
   const [isLoadingBookings, setIsLoadingBookings] = useState(false);
   const [bookingError, setBookingError] = useState(null);
 
+  // Charger les bookings sauvegardés au démarrage
   useEffect(() => {
     const loadSavedBookings = async () => {
       try {
@@ -35,12 +45,14 @@ export const BookingProvider = ({ children }) => {
           setUserBookings(JSON.parse(savedBookings));
         }
       } catch (error) {
+        console.error('Error loading saved bookings:', error);
       }
     };
     
     loadSavedBookings();
   }, []);
 
+  // Créer un booking de test si aucun n'existe
   useEffect(() => {
     if (userBookings.length === 0) {
       const testBooking = {
@@ -49,7 +61,7 @@ export const BookingProvider = ({ children }) => {
         dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         duration: 2,
         frequency: 'one_time',
-        price: 170,
+        price: 100, // 🐛 FIX: Corrigé de 170 à 100 (2h × 50₪/h)
         status: 'pending',
         selectedProvider: {
           _id: 'provider-1',
@@ -68,11 +80,13 @@ export const BookingProvider = ({ children }) => {
     }
   }, [userBookings.length]);
 
+  // Sauvegarder les bookings automatiquement
   useEffect(() => {
     const saveBookings = async () => {
       try {
         await AsyncStorage.setItem(STORAGE_KEYS.USER_BOOKINGS, JSON.stringify(userBookings));
       } catch (error) {
+        console.error('Error saving bookings:', error);
       }
     };
     
@@ -81,22 +95,38 @@ export const BookingProvider = ({ children }) => {
     }
   }, [userBookings]);
 
+  // Mettre à jour le booking actuel
   const updateBooking = useCallback((data) => {
     setCurrentBooking(prev => ({ ...prev, ...data }));
   }, []);
 
-  // ✅ NOUVELLE FONCTION - Sélectionner un prestataire
+  // ✅ Sélectionner un prestataire - 🐛 FIX: Correction pour inclure name directement
   const selectProvider = useCallback((provider) => {
+    console.log('🔍 SELECTING PROVIDER:', provider);
+    console.log('   - name:', provider.name);
+    console.log('   - firstName/lastName:', provider.firstName, provider.lastName);
+    console.log('   - serviceDetails:', provider.serviceDetails);
+    console.log('   - services:', provider.services);
+    console.log('   - price:', provider.price);
+    console.log('   - hourlyRate (moyenne):', provider.hourlyRate);
+    
     setCurrentBooking(prev => ({
       ...prev,
       selectedProvider: {
         _id: provider._id,
-        name: `${provider.firstName} ${provider.lastName}`,
+        name: provider.name || `${provider.firstName} ${provider.lastName}`,
         hourlyRate: provider.hourlyRate,
         rating: provider.rating,
+        phone: provider.phone,
+        // ✅ Inclure TOUTES les structures possibles pour le calcul de prix
+        serviceDetails: provider.serviceDetails,
+        services: provider.services,
+        price: provider.price,
       },
     }));
   }, []);
+
+  // Réinitialiser le booking
   const resetBooking = useCallback(() => {
     setCurrentBooking({
       serviceType: null,
@@ -110,6 +140,7 @@ export const BookingProvider = ({ children }) => {
     });
   }, []);
 
+  // Charger les prestataires disponibles
   const loadAvailableProviders = useCallback(async (criteria = {}) => {
     try {
       const params = {
@@ -119,6 +150,7 @@ export const BookingProvider = ({ children }) => {
         ...criteria,
       };
 
+      // Mock providers (remplacer par vraie API plus tard)
       const mockProviders = [
         {
           _id: 'provider-1',
@@ -167,54 +199,128 @@ export const BookingProvider = ({ children }) => {
     }
   }, [currentBooking.serviceType, currentBooking.dateTime, currentBooking.address]);
 
-  // ✅ CALCUL DE PRIX CORRIGÉ - Utilise le tarif réel du prestataire
+  // 🐛 FIX CRITIQUE: Fonction de normalisation des types de service (anglais → hébreu)
+  const normalizeServiceType = useCallback((type) => {
+    if (!type) return null;
+    
+    const mapping = {
+      // Anglais → Hébreu (base de données)
+      'home': 'בית',
+      'office': 'משרד',
+      'building': 'בניין',
+      'airbnb': 'אירבנב',
+      // Hébreu → Hébreu (déjà normalisé)
+      'בית': 'בית',
+      'משרד': 'משרד',
+      'בניין': 'בניין',
+      'אירבנב': 'אירבנב',
+    };
+    
+    const normalized = mapping[type] || type;
+    console.log(`🔄 normalizeServiceType: "${type}" → "${normalized}"`);
+    return normalized;
+  }, []);
+
+  // 🔧 FIX: Calcul de prix - Utilise le tarif du SERVICE SPÉCIFIQUE avec normalisation
   const calculatePrice = useCallback(async () => {
     if (!currentBooking.serviceType || !currentBooking.duration) {
+      console.log('❌ Calcul prix impossible: serviceType ou duration manquant');
       return 0;
     }
 
     try {
-      // ✅ UTILISER LE PRIX DU PRESTATAIRE SÉLECTIONNÉ
+      console.log('💰 === DÉBUT CALCUL PRIX ===');
+      console.log('   Service Type (app):', currentBooking.serviceType);
+      console.log('   Duration:', currentBooking.duration, 'heures');
+      console.log('   Provider:', currentBooking.selectedProvider);
+      
+      // ✅ Normaliser le type de service recherché
+      const normalizedSearchType = normalizeServiceType(currentBooking.serviceType);
+      console.log('   Service Type (normalized):', normalizedSearchType);
+      
+      // ✅ Utiliser le prix du SERVICE SPÉCIFIQUE sélectionné
       let hourlyRate = 85; // Prix par défaut
       
-      if (currentBooking.selectedProvider?.hourlyRate) {
-        // Si le prestataire a un tarif horaire global
-        hourlyRate = currentBooking.selectedProvider.hourlyRate;
-      } else if (currentBooking.selectedProvider?.services) {
-        // Si le prestataire a des tarifs par type de service (format nouveau)
-        const serviceDetail = currentBooking.selectedProvider.services.find(
-          s => s.type === currentBooking.serviceType
-        );
-        if (serviceDetail && serviceDetail.hourlyRate) {
-          hourlyRate = serviceDetail.hourlyRate;
+      if (currentBooking.selectedProvider) {
+        console.log('   🔍 Recherche du tarif spécifique...');
+        
+        // ✅ PRIORITÉ 1: Chercher dans serviceDetails (format provider)
+        if (currentBooking.selectedProvider.serviceDetails && Array.isArray(currentBooking.selectedProvider.serviceDetails)) {
+          console.log('   → Checking serviceDetails:', currentBooking.selectedProvider.serviceDetails);
+          
+          const serviceDetail = currentBooking.selectedProvider.serviceDetails.find(s => {
+            const normalizedServiceType = normalizeServiceType(s.type);
+            const match = normalizedServiceType === normalizedSearchType;
+            console.log(`      Comparing: "${s.type}" (${normalizedServiceType}) === ${normalizedSearchType} ? ${match}`);
+            return match;
+          });
+          
+          if (serviceDetail && serviceDetail.hourlyRate) {
+            hourlyRate = serviceDetail.hourlyRate;
+            console.log('   ✅ Prix trouvé dans serviceDetails:', hourlyRate, '₪/h pour', normalizedSearchType);
+          } else {
+            console.log('   ⚠️  Pas trouvé dans serviceDetails');
+          }
         }
-      } else if (currentBooking.selectedProvider?.price) {
-        // Ancien format avec objet price
-        if (typeof currentBooking.selectedProvider.price === 'object') {
-          hourlyRate = currentBooking.selectedProvider.price[currentBooking.serviceType] || 85;
-        } else if (typeof currentBooking.selectedProvider.price === 'number') {
-          hourlyRate = currentBooking.selectedProvider.price;
+        // ✅ PRIORITÉ 2: Chercher dans services (format alternatif)
+        else if (currentBooking.selectedProvider.services && Array.isArray(currentBooking.selectedProvider.services)) {
+          console.log('   → Checking services array:', currentBooking.selectedProvider.services);
+          
+          const serviceDetail = currentBooking.selectedProvider.services.find(s => {
+            const normalizedServiceType = normalizeServiceType(s.type);
+            return normalizedServiceType === normalizedSearchType;
+          });
+          
+          if (serviceDetail && serviceDetail.hourlyRate) {
+            hourlyRate = serviceDetail.hourlyRate;
+            console.log('   ✅ Prix trouvé dans services:', hourlyRate, '₪/h pour', normalizedSearchType);
+          }
         }
+        // ✅ PRIORITÉ 3: Objet price avec tarifs par type
+        else if (currentBooking.selectedProvider.price) {
+          console.log('   → Checking price object:', currentBooking.selectedProvider.price);
+          
+          if (typeof currentBooking.selectedProvider.price === 'object') {
+            // Essayer avec le type normalisé ET le type original
+            hourlyRate = currentBooking.selectedProvider.price[normalizedSearchType] || 
+                        currentBooking.selectedProvider.price[currentBooking.serviceType] || 
+                        85;
+            console.log('   ✅ Prix trouvé dans price object:', hourlyRate, '₪/h pour', normalizedSearchType);
+          } else if (typeof currentBooking.selectedProvider.price === 'number') {
+            hourlyRate = currentBooking.selectedProvider.price;
+            console.log('   ✅ Prix unique trouvé:', hourlyRate, '₪/h');
+          }
+        }
+        // ⚠️ FALLBACK: hourlyRate global (moyenne) - EN DERNIER RECOURS SEULEMENT
+        else if (currentBooking.selectedProvider.hourlyRate) {
+          hourlyRate = currentBooking.selectedProvider.hourlyRate;
+          console.warn('   ⚠️  Utilisation du tarif moyen (fallback):', hourlyRate, '₪/h');
+        }
+      } else {
+        console.log('   ⚠️  Pas de fournisseur sélectionné, utilisation du tarif par défaut:', hourlyRate, '₪/h');
       }
-      
       
       // Calcul du prix en fonction de la durée
       let price = hourlyRate * currentBooking.duration;
-      
+      console.log('   📊 Prix de base:', price, '₪ (', hourlyRate, '₪/h ×', currentBooking.duration, 'h)');
       
       // Appliquer des réductions pour les fréquences régulières
       if (currentBooking.frequency === 'weekly') {
         price = price * 0.9; // 10% de réduction
+        console.log('   💵 Réduction hebdomadaire (10%):', price, '₪');
       } else if (currentBooking.frequency === 'bi_weekly') {
         price = price * 0.95; // 5% de réduction
+        console.log('   💵 Réduction bi-hebdomadaire (5%):', price, '₪');
       } else if (currentBooking.frequency === 'monthly') {
         price = price * 0.97; // 3% de réduction
+        console.log('   💵 Réduction mensuelle (3%):', price, '₪');
       }
-      
       
       // Arrondir à 2 décimales
       price = Math.round(price * 100) / 100;
       
+      console.log('   ✅ PRIX FINAL:', price, '₪');
+      console.log('💰 === FIN CALCUL PRIX ===\n');
       
       // Simuler un délai réseau
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -223,17 +329,18 @@ export const BookingProvider = ({ children }) => {
       updateBooking({ price });
       return price;
     } catch (error) {
+      console.error('❌ Error calculating price:', error);
       return 0;
     }
-  }, [currentBooking.serviceType, currentBooking.duration, currentBooking.frequency, currentBooking.selectedProvider, updateBooking]);
+  }, [currentBooking.serviceType, currentBooking.duration, currentBooking.frequency, currentBooking.selectedProvider, updateBooking, normalizeServiceType]);
 
+  // Synchroniser booking vers le prestataire (AsyncStorage)
   const syncBookingToProvider = useCallback(async (booking) => {
     try {
       const providerRequestsKey = `provider_requests_${booking.selectedProvider._id}`;
       
       const existingRequests = await AsyncStorage.getItem(providerRequestsKey);
       const requests = existingRequests ? JSON.parse(existingRequests) : [];
-      
       
       const providerRequest = {
         _id: booking._id,
@@ -246,17 +353,21 @@ export const BookingProvider = ({ children }) => {
         price: booking.price,
         address: booking.address,
         notes: booking.notes,
-        date: booking.created
+        date: booking.created,
+        payment: booking.payment // ✅ ESCROW - Inclure info payment
       };
       
       requests.unshift(providerRequest);
       
       await AsyncStorage.setItem(providerRequestsKey, JSON.stringify(requests));
       
+      console.log('✅ Booking synced to provider:', booking.selectedProvider._id);
     } catch (error) {
+      console.error('Error syncing to provider:', error);
     }
   }, [userInfo]);
 
+  // Ajouter un booking à la liste
   const addBooking = useCallback((newBooking) => {
     setUserBookings(prevBookings => {
       const updatedBookings = [newBooking, ...prevBookings];
@@ -265,34 +376,73 @@ export const BookingProvider = ({ children }) => {
     return { success: true, booking: newBooking };
   }, []);
 
-  const createBooking = useCallback(async () => {
+  // ✅ ESCROW - Créer une réservation avec paiement
+  const createBooking = useCallback(async (paymentData = {}) => {
     try {
-      
       if (!userToken) {
         setBookingError('Veuillez vous connecter pour réserver un service');
         return { success: false, message: 'Authentification requise' };
       }
-
 
       if (!currentBooking.serviceType || !currentBooking.selectedProvider || !currentBooking.dateTime) {
         setBookingError('Veuillez remplir tous les champs obligatoires');
         return { success: false, message: 'Informations incomplètes' };
       }
 
-      const bookingId = 'booking-' + Date.now();
+      console.log('📝 Creating booking with payment...');
+      console.log('   Provider:', currentBooking.selectedProvider._id);
+      console.log('   DateTime:', currentBooking.dateTime);
+      console.log('   Payment:', paymentData);
+
+      // ✅ MAPPING serviceType (anglais → HÉBREU pour backend)
+      const mappedServiceType = normalizeServiceType(currentBooking.serviceType);
+      console.log('   ServiceType mapping:', currentBooking.serviceType, '→', mappedServiceType);
+
+      // ✅ ESCROW - Appel API backend
+      const token = await AsyncStorage.getItem('token');
       
+      const response = await fetch(`${BACKEND_API_URL}/bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          providerId: currentBooking.selectedProvider._id,
+          serviceType: mappedServiceType,
+          propertyType: currentBooking.propertyType || 'דירה',
+          scheduledDate: currentBooking.dateTime,
+          address: currentBooking.address?.fullAddress || currentBooking.address || 'À définir',
+          description: currentBooking.notes || '',
+          price: currentBooking.price || 0,
+          duration: currentBooking.duration || 2,
+          paymentIntentId: paymentData.paymentIntentId || null,
+          paymentMethod: paymentData.paymentMethod || 'card'
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Échec de création de la réservation');
+      }
+
+      console.log('✅ Booking created via API:', data.booking._id);
+
+      // ✅ Construire le booking complet avec toutes les infos
       const newBooking = {
-        _id: bookingId,
+        _id: data.booking._id,
         serviceType: currentBooking.serviceType,
         dateTime: currentBooking.dateTime,
         duration: currentBooking.duration,
         frequency: currentBooking.frequency,
         price: currentBooking.price,
-        status: 'pending',
+        status: data.booking.status || 'pending_payment', // ✅ ESCROW status
         selectedProvider: {
           _id: currentBooking.selectedProvider._id,
           name: currentBooking.selectedProvider.name,
           rating: currentBooking.selectedProvider.rating || 4.8,
+          phone: data.booking.provider?.phone || currentBooking.selectedProvider.phone
         },
         address: currentBooking.address || {
           id: '1',
@@ -301,26 +451,34 @@ export const BookingProvider = ({ children }) => {
         },
         notes: currentBooking.notes,
         created: new Date().toISOString(),
+        payment: data.booking.payment || {
+          intentId: paymentData.paymentIntentId,
+          status: 'held',
+          amount: 0
+        },
+        providerPhoneVisible: data.booking.providerPhoneVisible || false // ✅ ESCROW
       };
       
+      // ✅ Ajouter à la liste locale
+      addBooking(newBooking);
       
-      const result = addBooking(newBooking);
-      
+      // ✅ Synchroniser avec le prestataire (AsyncStorage)
       await syncBookingToProvider(newBooking);
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // ✅ Nettoyer le booking actuel
       resetBooking();
       
       return { success: true, booking: newBooking };
 
     } catch (error) {
-      const message = error.response?.data?.message || 'Erreur lors de la création de la réservation';
+      console.error('❌ Error creating booking:', error);
+      const message = error.message || 'Erreur lors de la création de la réservation';
       setBookingError(message);
       return { success: false, message };
     }
-  }, [currentBooking, userToken, resetBooking, addBooking, syncBookingToProvider]);
+  }, [currentBooking, userToken, resetBooking, addBooking, syncBookingToProvider, normalizeServiceType]);
 
+  // ✅ ESCROW - Récupérer les bookings de l'utilisateur
   const fetchUserBookings = useCallback(async (forceRefresh = false) => {
     if (!userToken) return [];
 
@@ -328,12 +486,42 @@ export const BookingProvider = ({ children }) => {
     setBookingError(null);
     
     try {
+      const token = await AsyncStorage.getItem('token');
       
+      // ✅ Essayer d'abord l'API backend
+      try {
+        const response = await fetch(`${BACKEND_API_URL}/bookings`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.success && data.data) {
+            console.log('✅ Bookings loaded from API:', data.data.length);
+            console.log('🔍 PREMIER BOOKING:', JSON.stringify(data.data[0], null, 2));
+            setUserBookings(data.data);
+            
+            // Sauvegarder localement
+            await AsyncStorage.setItem(STORAGE_KEYS.USER_BOOKINGS, JSON.stringify(data.data));
+            
+            setIsLoadingBookings(false);
+            return data.data;
+          }
+        }
+      } catch (apiError) {
+        console.log('⚠️  API fetch failed, falling back to AsyncStorage');
+      }
+      
+      // ✅ Fallback: charger depuis AsyncStorage
       const savedBookings = await AsyncStorage.getItem(STORAGE_KEYS.USER_BOOKINGS);
       
       if (savedBookings) {
         const bookingsData = JSON.parse(savedBookings);
-        
+        console.log('✅ Bookings loaded from AsyncStorage:', bookingsData.length);
         setUserBookings([...bookingsData]);
         setIsLoadingBookings(false);
         return bookingsData;
@@ -343,6 +531,7 @@ export const BookingProvider = ({ children }) => {
         return [];
       }
     } catch (error) {
+      console.error('Error fetching bookings:', error);
       setBookingError('Impossible de charger vos réservations');
       setUserBookings([]);
       return [];
@@ -351,6 +540,7 @@ export const BookingProvider = ({ children }) => {
     }
   }, [userToken]);
 
+  // Mettre à jour le statut d'un booking
   const updateBookingStatus = useCallback(async (bookingId, status) => {
     try {
       setUserBookings(prev => 
@@ -371,8 +561,43 @@ export const BookingProvider = ({ children }) => {
     }
   }, [userBookings]);
 
+  // ✅ ESCROW - Annuler un booking
   const cancelBooking = useCallback(async (bookingId) => {
     try {
+      const token = await AsyncStorage.getItem('token');
+      
+      // ✅ Essayer d'annuler via API
+      try {
+        const response = await fetch(`${BACKEND_API_URL}/bookings/${bookingId}/cancel`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.success) {
+            console.log('✅ Booking cancelled via API');
+            
+            // Mettre à jour localement
+            setUserBookings(prev => 
+              prev.map(booking => 
+                booking._id === bookingId 
+                  ? { ...booking, status: 'cancelled' } 
+                  : booking
+              )
+            );
+            
+            return { success: true };
+          }
+        }
+      } catch (apiError) {
+        console.log('⚠️  API cancel failed, updating locally');
+      }
+      
+      // ✅ Fallback: mise à jour locale uniquement
       setUserBookings(prev => 
         prev.map(booking => 
           booking._id === bookingId 
@@ -385,10 +610,12 @@ export const BookingProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Erreur lors de l\'annulation' };
+      console.error('Error canceling booking:', error);
+      return { success: false, message: error.message || 'Erreur lors de l\'annulation' };
     }
   }, []);
 
+  // Supprimer tous les bookings
   const clearAllBookings = useCallback(async () => {
     try {
       await AsyncStorage.removeItem(STORAGE_KEYS.USER_BOOKINGS);
@@ -399,10 +626,11 @@ export const BookingProvider = ({ children }) => {
     }
   }, []);
 
+  // Valeurs du contexte
   const contextValue = useMemo(() => ({
     currentBooking,
     updateBooking,
-    selectProvider, // ✅ AJOUTÉ - Fonction pour sélectionner un prestataire
+    selectProvider,
     resetBooking,
     loadAvailableProviders,
     calculatePrice,
@@ -419,7 +647,7 @@ export const BookingProvider = ({ children }) => {
   }), [
     currentBooking,
     updateBooking,
-    selectProvider, // ✅ AJOUTÉ dans les dépendances
+    selectProvider,
     resetBooking,
     loadAvailableProviders,
     calculatePrice,

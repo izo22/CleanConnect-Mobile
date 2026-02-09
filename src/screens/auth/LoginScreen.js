@@ -16,7 +16,8 @@ import { AuthContext } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const LoginScreen = ({ navigation, route }) => {
-  // Récupérer le rôle depuis les paramètres de navigation
+  const isRTL = true;
+  // קבלת הרול מפרמטרי הניווט
   const { role = 'client' } = route.params || {};
   
   const [email, setEmail] = useState('');
@@ -27,9 +28,9 @@ const LoginScreen = ({ navigation, route }) => {
   const { login, error } = useContext(AuthContext);
 
   const handleLogin = async () => {
-    // Validation de base
+    // בדיקה בסיסית
     if (!email || !password) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      Alert.alert('שגיאה', 'אנא מלא את כל השדות');
       return;
     }
 
@@ -37,11 +38,11 @@ const LoginScreen = ({ navigation, route }) => {
     
     try {
       await login(email, password, role);
-      // La redirection sera gérée par le navigateur principal basé sur userToken et userRole
+      // הניווט יטופל על ידי הניווט הראשי בהתבסס על userToken ו-userRole
     } catch (error) {
       Alert.alert(
-        'Erreur de connexion',
-        error.message || 'Identifiants incorrects ou problème de connexion'
+        'שגיאת התחברות',
+        error.message || 'אימייל או סיסמה שגויים'
       );
     } finally {
       setIsSubmitting(false);
@@ -59,16 +60,16 @@ const LoginScreen = ({ navigation, route }) => {
     >
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.formContainer}>
-          <Text style={styles.title}>
-            Connexion {role === 'provider' ? 'Prestataire' : 'Client'}
+          <Text style={[styles.title, styles.textRTL]}>
+            {role === 'provider' ? 'התחברות ספק' : 'התחברות לקוח'}
           </Text>
           
-          {error && <Text style={styles.errorText}>{error}</Text>}
+          {error && <Text style={[styles.errorText, styles.textRTL]}>{error}</Text>}
           
           <View style={styles.inputContainer}>
             <TextInput
-              style={styles.input}
-              placeholder="Email"
+              style={[styles.input, styles.textRTL]}
+              placeholder="אימייל"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -78,14 +79,14 @@ const LoginScreen = ({ navigation, route }) => {
           
           <View style={styles.inputContainer}>
             <TextInput
-              style={[styles.input, { paddingRight: 50 }]}
-              placeholder="Mot de passe"
+              style={[styles.input, styles.textRTL, { paddingLeft: 50 }]}
+              placeholder="סיסמה"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
             />
             <TouchableOpacity
-              style={styles.passwordToggle}
+              style={[styles.passwordToggle, styles.passwordToggleRTL]}
               onPress={toggleShowPassword}
             >
               <Ionicons
@@ -97,10 +98,10 @@ const LoginScreen = ({ navigation, route }) => {
           </View>
           
           <TouchableOpacity
-            style={styles.forgotPassword}
+            style={[styles.forgotPassword, styles.forgotPasswordRTL]}
             onPress={() => navigation.navigate('ForgotPassword')}
           >
-            <Text style={styles.forgotPasswordText}>Mot de passe oublié ?</Text>
+            <Text style={[styles.forgotPasswordText, styles.textRTL]}>שכחת סיסמה?</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -111,16 +112,16 @@ const LoginScreen = ({ navigation, route }) => {
             {isSubmitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Se connecter</Text>
+              <Text style={styles.buttonText}>התחבר</Text>
             )}
           </TouchableOpacity>
           
-          <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Vous n'avez pas de compte ?</Text>
+          <View style={[styles.registerContainer, styles.registerContainerRTL]}>
+            <Text style={[styles.registerText, styles.textRTL]}>אין לך חשבון?</Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('Welcome')}
             >
-              <Text style={styles.registerLink}>S'inscrire</Text>
+              <Text style={[styles.registerLink, { marginRight: 5, marginLeft: 0 }]}>הירשם</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -173,9 +174,16 @@ const styles = StyleSheet.create({
     right: 15,
     top: 13,
   },
+  passwordToggleRTL: {
+    right: 'auto',
+    left: 15,
+  },
   forgotPassword: {
     alignSelf: 'flex-end',
     marginBottom: 20,
+  },
+  forgotPasswordRTL: {
+    alignSelf: 'flex-start',
   },
   forgotPasswordText: {
     color: '#4a90e2',
@@ -202,6 +210,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 20,
   },
+  registerContainerRTL: {
+    flexDirection: 'row-reverse',
+  },
   registerText: {
     color: '#666',
   },
@@ -214,6 +225,10 @@ const styles = StyleSheet.create({
     color: 'red',
     marginBottom: 15,
     textAlign: 'center',
+  },
+  textRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
 });
 

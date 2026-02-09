@@ -1,31 +1,37 @@
+// src/screens/auth/ForgotPassword.js
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Button, TextInput } from 'react-native-paper';
 
 const ForgotPasswordScreen = ({ navigation }) => {
+  const isRTL = true;
   const [email, setEmail] = React.useState('');
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Mot de passe oublié</Text>
-      <Text style={styles.subtitle}>Entrez votre email pour réinitialiser votre mot de passe</Text>
+      <Text style={[styles.title, styles.textRTL]}>
+        שכחת סיסמה?
+      </Text>
+      <Text style={[styles.subtitle, styles.textRTL]}>
+        הזן את כתובת האימייל שלך ונשלח לך הוראות לאיפוס הסיסמה
+      </Text>
       
       <TextInput
-        label="Email"
+        label="אימייל"
         value={email}
         onChangeText={setEmail}
         mode="outlined"
-        style={styles.input}
+        style={[styles.input, styles.textRTL]}
         keyboardType="email-address"
         autoCapitalize="none"
       />
       
       <Button 
         mode="contained" 
-        onPress={() => alert('Réinitialisation demandée')}
+        onPress={() => alert('נשלחה בקשה לאיפוס סיסמה')}
         style={styles.button}
       >
-        Réinitialiser
+        שלח בקשה לאיפוס
       </Button>
       
       <Button 
@@ -33,7 +39,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
         onPress={() => navigation.navigate('Login')}
         style={styles.linkButton}
       >
-        Retour à la connexion
+        חזרה להתחברות
       </Button>
     </ScrollView>
   );
@@ -64,6 +70,10 @@ const styles = StyleSheet.create({
   },
   linkButton: {
     marginTop: 20,
+  },
+  textRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
 });
 

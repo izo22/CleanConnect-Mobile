@@ -1,4 +1,4 @@
-// CalendarScreen.js - VERSION PRESTATAIRE SYNCHRONISÉE - CORRIGÉE - HOOKS FIXES
+// CalendarScreen.js - FIXED avec couleurs dynamiques selon serviceType
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getServiceColor } from '../../config/constants';  // ✅ Import de la fonction helper (2 niveaux)
 
 // Fonction utilitaire pour générer les dates du mois
 const getDaysInMonth = (year, month) => {
@@ -50,22 +51,14 @@ const isToday = (date) => {
   );
 };
 
-const getMonthName = (month) => {
-  const monthNames = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-  ];
-  return monthNames[month];
-};
-
-const WEEKDAYS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-
-// ✅ CORRECTION : CALENDRIER VIDE POUR NOUVEAUX PRESTATAIRES
-const INITIAL_MOCK_AVAILABILITIES = []; // Tableau vide au lieu des données mock
-const MOCK_JOBS = []; // Tableau vide au lieu des missions fictives
+const INITIAL_MOCK_AVAILABILITIES = [];
+const MOCK_JOBS = [];
 
 const CalendarScreen = ({ navigation, route }) => {
-  // 🚨 TOUS LES HOOKS DOIVENT ÊTRE ICI AU DÉBUT - JAMAIS DANS DES CONDITIONS
+  // ✅ RÉCUPÉRATION DU SERVICE TYPE ET DE SA COULEUR
+  const serviceType = route.params?.serviceType || 'home';
+  const serviceColor = getServiceColor(serviceType);
+  
   // États d'authentification
   const [providerId, setProviderId] = useState(null);
   const [userRole, setUserRole] = useState(null);
@@ -87,12 +80,22 @@ const CalendarScreen = ({ navigation, route }) => {
   const [endTime, setEndTime] = useState('17:00');
   const [isRecurring, setIsRecurring] = useState(false);
 
-  // 🔑 CLÉS DE STOCKAGE SPÉCIFIQUES AU PRESTATAIRE
   const getStorageKey = (type) => {
     return `${type}_${providerId}`;
   };
 
-  // 🔄 CHARGER LES INFOS UTILISATEUR DEPUIS ASYNCSTORAGE
+  // ✅ Noms des mois en hébreu
+  const getMonthName = (month) => {
+    const months = [
+      'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+      'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+    ];
+    return months[month];
+  };
+
+  // ✅ Jours de la semaine en hébreu
+  const WEEKDAYS = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"];
+
   useEffect(() => {
     const loadUserInfo = async () => {
       try {
@@ -101,7 +104,6 @@ const CalendarScreen = ({ navigation, route }) => {
         
         if (userData) {
           const user = JSON.parse(userData);
-          
           setProviderId(user.id);
           setUserRole(role);
         }
@@ -114,21 +116,18 @@ const CalendarScreen = ({ navigation, route }) => {
     loadUserInfo();
   }, []);
 
-  // ✅ CORRECTION : CHARGER LES DISPONIBILITÉS SANS FORCER LES DONNÉES MOCK
   const loadAvailabilities = async () => {
-    if (!providerId) return; // Ne rien faire si pas d'ID
+    if (!providerId) return;
     
     setIsLoadingAvailabilities(true);
     try {
       const storageKey = getStorageKey('provider_availabilities');
-      
       const savedAvailabilities = await AsyncStorage.getItem(storageKey);
       
       if (savedAvailabilities) {
         const parsedAvailabilities = JSON.parse(savedAvailabilities);
         setAvailabilities(parsedAvailabilities);
       } else {
-        // ✅ CORRECTION : Nouveau prestataire = calendrier vide (pas de sauvegarde automatique)
         setAvailabilities([]);
       }
     } catch (error) {
@@ -138,14 +137,12 @@ const CalendarScreen = ({ navigation, route }) => {
     }
   };
 
-  // 🔄 CHARGER LES DISPONIBILITÉS QUAND L'ID EST DISPONIBLE
   useEffect(() => {
     if (providerId) {
       loadAvailabilities();
     }
   }, [providerId]);
 
-  // 🔄 SAUVEGARDER LES DISPONIBILITÉS
   const saveAvailabilities = async (newAvailabilities) => {
     if (!providerId) return;
     
@@ -156,7 +153,6 @@ const CalendarScreen = ({ navigation, route }) => {
     }
   };
 
-  // FONCTION OPTIMISÉE POUR VÉRIFIER LES JOBS
   const hasJobs = useMemo(() => {
     const jobDates = new Set();
     MOCK_JOBS.forEach(job => {
@@ -172,7 +168,6 @@ const CalendarScreen = ({ navigation, route }) => {
     };
   }, []);
 
-  // FONCTION OPTIMISÉE POUR VÉRIFIER LES DISPONIBILITÉS
   const hasAvailability = useMemo(() => {
     return (date) => {
       if (!date) return false;
@@ -221,7 +216,6 @@ const CalendarScreen = ({ navigation, route }) => {
     }, 500);
   };
 
-  // Obtenir les disponibilités pour la date sélectionnée
   const getAvailabilitiesForDate = (date) => {
     if (!date) return [];
     const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -236,7 +230,6 @@ const CalendarScreen = ({ navigation, route }) => {
     });
   };
 
-  // Gérer l'ajout d'une disponibilité
   const handleAddAvailability = (date = null) => {
     const targetDate = date || selectedDate;
     if (!targetDate) return;
@@ -244,15 +237,25 @@ const CalendarScreen = ({ navigation, route }) => {
     setShowAvailabilityModal(true);
   };
 
-  // 🔄 AJOUTER UNE NOUVELLE DISPONIBILITÉ AVEC SAUVEGARDE
   const addAvailability = async () => {
     if (!modalDate || !startTime || !endTime) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      Alert.alert('שגיאה', 'יש למלא את כל השדות');
       return;
     }
 
-    if (startTime >= endTime) {
-      Alert.alert('Erreur', 'L\'heure de fin doit être après l\'heure de début');
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+      Alert.alert('שגיאה', 'פורמט שעה לא תקין. השתמש בפורמט HH:MM (לדוגמה: 09:00)');
+      return;
+    }
+
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    const startTotalMinutes = startHours * 60 + startMinutes;
+    const endTotalMinutes = endHours * 60 + endMinutes;
+
+    if (startTotalMinutes >= endTotalMinutes) {
+      Alert.alert('שגיאה', 'שעת הסיום חייבת להיות אחרי שעת ההתחלה');
       return;
     }
 
@@ -268,27 +271,29 @@ const CalendarScreen = ({ navigation, route }) => {
 
     const updatedAvailabilities = [...availabilities, newAvailability];
     
-    // 🔄 SAUVEGARDER ET METTRE À JOUR L'ÉTAT
-    await saveAvailabilities(updatedAvailabilities);
-    setAvailabilities(updatedAvailabilities);
-    
-    setShowAvailabilityModal(false);
-    setStartTime('09:00');
-    setEndTime('17:00');
-    setIsRecurring(false);
-    
-    Alert.alert('Succès', 'Disponibilité ajoutée avec succès. Elle sera visible pour les clients.');
+    try {
+      await saveAvailabilities(updatedAvailabilities);
+      setAvailabilities(updatedAvailabilities);
+      
+      setShowAvailabilityModal(false);
+      setStartTime('09:00');
+      setEndTime('17:00');
+      setIsRecurring(false);
+      
+      Alert.alert('הצלחה', 'הזמינות נוספה בהצלחה');
+    } catch (error) {
+      Alert.alert('שגיאה', 'שגיאה בשמירת הזמינות: ' + error.message);
+    }
   };
 
-  // 🔄 SUPPRIMER UNE DISPONIBILITÉ
   const deleteAvailability = async (availabilityId) => {
     Alert.alert(
-      'Supprimer la disponibilité',
-      'Êtes-vous sûr de vouloir supprimer cette disponibilité ?',
+      'מחיקת זמינות',
+      'האם אתה בטוח שברצונך למחוק זמינות זו?',
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: 'ביטול', style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: 'מחק',
           style: 'destructive',
           onPress: async () => {
             const updatedAvailabilities = availabilities.filter(av => av.id !== availabilityId);
@@ -300,19 +305,18 @@ const CalendarScreen = ({ navigation, route }) => {
     );
   };
 
-  // Navigation mois
   const goToPreviousMonth = () => {
     const previousMonth = new Date(currentDate);
     previousMonth.setMonth(previousMonth.getMonth() - 1);
     setCurrentDate(previousMonth);
-    setSelectedDate(null); // Reset la date sélectionnée
+    setSelectedDate(null);
   };
 
   const goToNextMonth = () => {
     const nextMonth = new Date(currentDate);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     setCurrentDate(nextMonth);
-    setSelectedDate(null); // Reset la date sélectionnée
+    setSelectedDate(null);
   };
 
   const goToCurrentMonth = () => {
@@ -330,78 +334,74 @@ const CalendarScreen = ({ navigation, route }) => {
 
   const selectedDateAvailabilities = selectedDate ? getAvailabilitiesForDate(selectedDate) : [];
 
-  // 🚨 RENDU CONDITIONNEL - PAS D'EARLY RETURN AVANT TOUS LES HOOKS
-  // Chargement des données d'authentification
   if (isAuthLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Chargement des données d'authentification...</Text>
+          <ActivityIndicator size="large" color={serviceColor} />
+          <Text style={styles.loadingText}>טוען אימות...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Pas d'utilisateur ou rôle incorrect
   if (!providerId || userRole !== 'provider') {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Erreur: Utilisateur non connecté ou rôle incorrect</Text>
-          <Text style={styles.providerIdText}>Rôle: {userRole}, ID: {providerId}</Text>
+          <Text style={styles.loadingText}>לא מחובר כנותן שירות</Text>
+          <Text style={styles.providerIdText}>
+            תפקיד: {userRole}, ID: {providerId}
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // 🔄 AFFICHAGE DE CHARGEMENT PENDANT LE CHARGEMENT DES DISPONIBILITÉS
   if (isLoadingAvailabilities) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Chargement de vos disponibilités...</Text>
-          <Text style={styles.providerIdText}>Prestataire ID: {providerId}</Text>
+          <ActivityIndicator size="large" color={serviceColor} />
+          <Text style={styles.loadingText}>טוען זמינויות...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // 🚨 RENDU PRINCIPAL - MAINTENANT TOUS LES HOOKS SONT DÉCLARÉS
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Calendrier - Mon Planning</Text>
-        <Text style={styles.providerInfo}>Prestataire ID: {providerId}</Text>
-        <View style={styles.legend}>
-          <View style={styles.legendItem}>
+      {/* ✅ HEADER avec couleur dynamique */}
+      <View style={[styles.header, { backgroundColor: serviceColor }]}>
+        <Text style={styles.headerTitle}>בחר משבצת זמן</Text>
+        <View style={styles.legendRTL}>
+          <View style={styles.legendItemRTL}>
             <View style={[styles.legendDot, { backgroundColor: '#FF4757' }]} />
-            <Text style={styles.legendText}>Missions</Text>
+            <Text style={styles.legendTextWhite}>משימות</Text>
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#2ED573' }]} />
-            <Text style={styles.legendText}>Disponible</Text>
+          <View style={styles.legendItemRTL}>
+            <View style={[styles.legendDot, { backgroundColor: serviceColor }]} />
+            <Text style={styles.legendTextWhite}>זמין</Text>
           </View>
         </View>
       </View>
       
-      <View style={styles.calendarHeader}>
-        <TouchableOpacity onPress={goToPreviousMonth}>
-          <Ionicons name="chevron-back" size={24} color="#007AFF" />
+      <View style={styles.calendarHeaderRTL}>
+        <TouchableOpacity onPress={goToNextMonth}>
+          <Ionicons name="chevron-forward" size={24} color={serviceColor} />
         </TouchableOpacity>
         
         <TouchableOpacity onPress={goToCurrentMonth} style={styles.currentMonthButton}>
           <Text 
-            style={styles.currentMonthText}
+            style={[styles.currentMonthText, { color: serviceColor }]}
             key={`${currentDate.getFullYear()}-${currentDate.getMonth()}`}
           >
             {getMonthName(currentDate.getMonth())} {currentDate.getFullYear()}
           </Text>
         </TouchableOpacity>
         
-        <TouchableOpacity onPress={goToNextMonth}>
-          <Ionicons name="chevron-forward" size={24} color="#007AFF" />
+        <TouchableOpacity onPress={goToPreviousMonth}>
+          <Ionicons name="chevron-back" size={24} color={serviceColor} />
         </TouchableOpacity>
       </View>
       
@@ -413,78 +413,74 @@ const CalendarScreen = ({ navigation, route }) => {
         ))}
       </View>
       
-      {/* CALENDRIER AVEC INDICATEURS */}
-      <ScrollView style={styles.calendarScrollView}>
-      <View style={styles.calendarContainer}>
-        {calendarDays.map((item, index) => {
-          const hasJobsForDay = hasJobs(item.date);
-          const hasAvailabilityForDay = hasAvailability(item.date);
-          const isSelected = selectedDate && 
-            item.date && 
-            selectedDate.getDate() === item.date.getDate() && 
-            selectedDate.getMonth() === item.date.getMonth() && 
-            selectedDate.getFullYear() === item.date.getFullYear();
-          
-          return (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.dayContainer,
-                !item.isCurrentMonth && styles.disabledDay,
-                item.isToday && styles.todayContainer,
-                isSelected && styles.selectedDayContainer,
-              ]}
-              disabled={!item.isCurrentMonth}
-              onPress={() => item.date && setSelectedDate(item.date)}
-            >
-              <Text
+      <ScrollView style={styles.mainScrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.calendarContainer}>
+          {calendarDays.map((item, index) => {
+            const hasJobsForDay = hasJobs(item.date);
+            const hasAvailabilityForDay = hasAvailability(item.date);
+            const isSelected = selectedDate && 
+              item.date && 
+              selectedDate.getDate() === item.date.getDate() && 
+              selectedDate.getMonth() === item.date.getMonth() && 
+              selectedDate.getFullYear() === item.date.getFullYear();
+            
+            return (
+              <TouchableOpacity
+                key={index}
                 style={[
-                  styles.dayText,
-                  item.isToday && styles.todayText,
-                  isSelected && styles.selectedDayText,
+                  styles.dayContainer,
+                  !item.isCurrentMonth && styles.disabledDay,
+                  item.isToday && [styles.todayContainer, { backgroundColor: `${serviceColor}20` }],
+                  isSelected && [styles.selectedDayContainer, { backgroundColor: serviceColor }],
                 ]}
+                disabled={!item.isCurrentMonth}
+                onPress={() => item.date && setSelectedDate(item.date)}
               >
-                {item.day}
-              </Text>
-              {/* INDICATEURS */}
-              <View style={styles.indicatorsContainer}>
-                {hasJobsForDay && <View style={[styles.indicator, styles.jobIndicator]} />}
-                {hasAvailabilityForDay && <View style={[styles.indicator, styles.availabilityIndicator]} />}
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      </ScrollView>
-      
-      <View style={styles.selectedDateHeader}>
-        <Text style={styles.selectedDateText}>
-          {selectedDate ? 
-            `${selectedDate.getDate()} ${getMonthName(selectedDate.getMonth())} ${selectedDate.getFullYear()}` : 
-            'Sélectionnez une date'
-          }
-        </Text>
-        {selectedDate && (
-          <TouchableOpacity 
-            style={styles.addAvailabilityButton}
-            onPress={() => handleAddAvailability()}
-          >
-            <Ionicons name="add-circle" size={20} color="#007AFF" />
-            <Text style={styles.addAvailabilityText}>Ajouter une disponibilité</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-      
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+                <Text
+                  style={[
+                    styles.dayText,
+                    item.isToday && [styles.todayText, { color: serviceColor }],
+                    isSelected && styles.selectedDayText,
+                  ]}
+                >
+                  {item.day}
+                </Text>
+                <View style={styles.indicatorsContainer}>
+                  {hasJobsForDay && <View style={[styles.indicator, styles.jobIndicator]} />}
+                  {hasAvailabilityForDay && <View style={[styles.indicator, { backgroundColor: serviceColor }]} />}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-      ) : (
-        <ScrollView style={styles.jobsContainer}>
-          {/* MISSIONS */}
+        
+        <View style={styles.selectedDateHeader}>
+          <Text style={styles.selectedDateText}>
+            {selectedDate ? 
+              `${selectedDate.getDate()} ${getMonthName(selectedDate.getMonth())} ${selectedDate.getFullYear()}` : 
+              'בחר תאריך בלוח השנה'
+            }
+          </Text>
+          {selectedDate && (
+            <TouchableOpacity 
+              style={[styles.addAvailabilityButton, { backgroundColor: `${serviceColor}20` }]}
+              onPress={() => handleAddAvailability()}
+            >
+              <Ionicons name="add-circle" size={20} color={serviceColor} />
+              <Text style={[styles.addAvailabilityText, { color: serviceColor }]}>הוסף זמינות</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={serviceColor} />
+          </View>
+        ) : (
+          <View style={styles.jobsContainer}>
           {jobs.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Missions</Text>
+              <Text style={styles.sectionTitle}>משימות</Text>
               {jobs.map((job) => (
                 <TouchableOpacity
                   key={job.id}
@@ -498,7 +494,7 @@ const CalendarScreen = ({ navigation, route }) => {
                     </View>
                   </View>
                   
-                  <View style={styles.jobInfo}>
+                  <View style={styles.jobInfoRTL}>
                     <Text style={styles.clientName}>{job.clientName}</Text>
                     <Text style={styles.serviceName}>{job.serviceName}</Text>
                     <Text style={styles.address}>{job.address}</Text>
@@ -512,32 +508,31 @@ const CalendarScreen = ({ navigation, route }) => {
                       ]}
                     >
                       <Text style={styles.statusText}>
-                        {job.status === 'confirmed' ? 'Confirmé' : 'En attente'}
+                        {job.status === 'confirmed' ? 'מאושר' : 'ממתין'}
                       </Text>
                     </View>
-                    <Text style={styles.price}>{job.price} ₪</Text>
+                    <Text style={[styles.price, { color: serviceColor }]}>{job.price} ₪</Text>
                   </View>
                 </TouchableOpacity>
               ))}
             </View>
           )}
 
-          {/* 🔄 SECTION DISPONIBILITÉS AVEC POSSIBILITÉ DE SUPPRIMER */}
           {selectedDateAvailabilities.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Créneaux disponibles</Text>
+              <Text style={styles.sectionTitle}>זמנים פנויים</Text>
               {selectedDateAvailabilities.map((availability) => (
-                <View key={availability.id} style={styles.availabilityCard}>
-                  <View style={styles.availabilityTime}>
-                    <Ionicons name="time-outline" size={20} color="#2ED573" />
+                <View key={availability.id} style={[styles.availabilityCard, { borderRightColor: serviceColor }]}>
+                  <View style={styles.availabilityTimeRTL}>
+                    <Ionicons name="time-outline" size={20} color={serviceColor} />
                     <Text style={styles.availabilityTimeText}>
                       {availability.startTime} - {availability.endTime}
                     </Text>
                   </View>
-                  <View style={styles.availabilityInfo}>
+                  <View style={styles.availabilityInfoRTL}>
                     {availability.isRecurring && (
-                      <View style={styles.recurringBadge}>
-                        <Text style={styles.recurringText}>Récurrent</Text>
+                      <View style={[styles.recurringBadge, { backgroundColor: `${serviceColor}20` }]}>
+                        <Text style={[styles.recurringText, { color: serviceColor }]}>חוזר</Text>
                       </View>
                     )}
                     <TouchableOpacity 
@@ -552,54 +547,50 @@ const CalendarScreen = ({ navigation, route }) => {
             </View>
           )}
 
-          {/* MESSAGE QUAND AUCUNE DONNÉE */}
           {selectedDate && jobs.length === 0 && selectedDateAvailabilities.length === 0 && (
             <View style={styles.noJobsContainer}>
               <Ionicons name="calendar" size={60} color="#CCCCCC" />
-              <Text style={styles.noJobsText}>Aucune activité prévue</Text>
+              <Text style={styles.noJobsText}>אין משימות או זמינויות ליום זה</Text>
               <Text style={styles.noJobsSubtext}>
-                Cliquez sur "Ajouter une disponibilité" pour définir vos créneaux libres.
+                לחץ על כפתור + כדי להוסיף זמינות
               </Text>
             </View>
           )}
 
-          {/* MESSAGE QUAND AUCUNE DATE SÉLECTIONNÉE */}
           {!selectedDate && (
             <View style={styles.noJobsContainer}>
               <Ionicons name="calendar-outline" size={60} color="#CCCCCC" />
-              <Text style={styles.noJobsText}>Sélectionnez une date</Text>
+              <Text style={styles.noJobsText}>בחר תאריך כדי לראות משימות וזמינויות</Text>
               <Text style={styles.noJobsSubtext}>
-                Cliquez sur une date du calendrier pour voir vos missions et disponibilités.
+                לחץ על יום בלוח השנה למעלה
               </Text>
               
-              {/* 🔄 INFO SUR LE NOMBRE TOTAL DE DISPONIBILITÉS */}
-              <View style={styles.statsContainer}>
-                <Text style={styles.statsText}>
-                  📊 Total de vos disponibilités : {availabilities.length}
+              <View style={[styles.statsContainer, { backgroundColor: `${serviceColor}10`, borderColor: serviceColor }]}>
+                <Text style={[styles.statsText, { color: serviceColor }]}>
+                  סה"כ {availabilities.length} זמינויות מוגדרות
                 </Text>
-                <Text style={styles.statsSubtext}>
+                <Text style={[styles.statsSubtext, { color: serviceColor }]}>
                   {availabilities.length === 0 
-                    ? "(Calendrier vide - Ajoutez vos premières disponibilités !)" 
-                    : "(Visibles par tous les clients)"
+                    ? 'הוסף זמינות כדי לאפשר ללקוחות להזמין'
+                    : 'ניתן לראות אותן בלוח השנה (נקודות צבעוניות)'
                   }
                 </Text>
               </View>
             </View>
           )}
-        </ScrollView>
+        </View>
       )}
+      </ScrollView>
 
-      {/* BOUTON FLOTTANT CONDITIONNEL */}
       {selectedDate && (
         <TouchableOpacity 
-          style={styles.floatingButton}
+          style={[styles.floatingButtonRTL, { backgroundColor: serviceColor }]}
           onPress={() => handleAddAvailability()}
         >
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       )}
 
-      {/* MODAL D'AJOUT DE DISPONIBILITÉ */}
       <Modal
         visible={showAvailabilityModal}
         transparent={true}
@@ -608,21 +599,21 @@ const CalendarScreen = ({ navigation, route }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Ajouter une disponibilité</Text>
+            <View style={styles.modalHeaderRTL}>
+              <Text style={styles.modalTitle}>הוסף זמינות</Text>
               <TouchableOpacity onPress={() => setShowAvailabilityModal(false)}>
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
-              <Text style={styles.modalDateText}>
+              <Text style={[styles.modalDateText, { color: serviceColor }]}>
                 {modalDate ? `${modalDate.getDate()} ${getMonthName(modalDate.getMonth())} ${modalDate.getFullYear()}` : ''}
               </Text>
 
               <View style={styles.timeInputContainer}>
                 <View style={styles.timeInput}>
-                  <Text style={styles.timeLabel}>Début</Text>
+                  <Text style={styles.timeLabel}>התחלה</Text>
                   <TextInput
                     style={styles.timeField}
                     value={startTime}
@@ -632,7 +623,7 @@ const CalendarScreen = ({ navigation, route }) => {
                 </View>
                 <Text style={styles.timeSeparator}>-</Text>
                 <View style={styles.timeInput}>
-                  <Text style={styles.timeLabel}>Fin</Text>
+                  <Text style={styles.timeLabel}>סיום</Text>
                   <TextInput
                     style={styles.timeField}
                     value={endTime}
@@ -643,32 +634,33 @@ const CalendarScreen = ({ navigation, route }) => {
               </View>
 
               <TouchableOpacity
-                style={styles.recurringToggle}
+                style={styles.recurringToggleRTL}
                 onPress={() => setIsRecurring(!isRecurring)}
               >
-                <View style={[styles.checkbox, isRecurring && styles.checkboxChecked]}>
+                <View style={[
+                  styles.checkbox, 
+                  isRecurring && { backgroundColor: serviceColor, borderColor: serviceColor }
+                ]}>
                   {isRecurring && <Ionicons name="checkmark" size={16} color="#FFF" />}
                 </View>
-                <Text style={styles.recurringText}>Répéter chaque semaine</Text>
+                <Text style={styles.recurringText}>חזור כל שבוע באותו יום</Text>
               </TouchableOpacity>
               
-              <Text style={styles.syncNote}>
-                💡 Cette disponibilité sera automatiquement visible par tous les clients
-              </Text>
+              <Text style={[styles.syncNote, { color: serviceColor }]}>השינויים נשמרים באופן מקומי</Text>
             </View>
 
-            <View style={styles.modalActions}>
+            <View style={styles.modalActionsRTL}>
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => setShowAvailabilityModal(false)}
               >
-                <Text style={styles.cancelButtonText}>Annuler</Text>
+                <Text style={styles.cancelButtonText}>ביטול</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.addButton}
+                style={[styles.addButton, { backgroundColor: serviceColor }]}
                 onPress={addAvailability}
               >
-                <Text style={styles.addButtonText}>Ajouter</Text>
+                <Text style={styles.addButtonText}>הוסף</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -692,50 +684,51 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: '#666666',
+    textAlign: 'right',
   },
   providerIdText: {
     marginTop: 5,
     fontSize: 12,
     color: '#999999',
+    textAlign: 'right',
   },
   header: {
     padding: 15,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderBottomColor: 'rgba(255,255,255,0.3)',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
+    color: '#FFFFFF',
     marginBottom: 5,
+    textAlign: 'right',
   },
-  providerInfo: {
-    fontSize: 12,
-    color: '#666666',
-    marginBottom: 10,
+  legendRTL: {
+    flexDirection: 'row-reverse',
   },
-  legend: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-  },
-  legendItem: {
-    flexDirection: 'row',
+  legendItemRTL: {
+    flexDirection: 'row-reverse',
+    marginRight: 0,
+    marginLeft: 20,
     alignItems: 'center',
-    marginRight: 20,
   },
   legendDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 5,
+    marginLeft: 5,
   },
   legendText: {
     fontSize: 12,
     color: '#666666',
   },
-  calendarHeader: {
-    flexDirection: 'row',
+  legendTextWhite: {
+    fontSize: 12,
+    color: '#FFFFFF',
+  },
+  calendarHeaderRTL: {
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 15,
@@ -743,8 +736,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
   },
-  calendarScrollView: {
-    maxHeight: 400, // Hauteur maximale pour le calendrier
+  mainScrollView: {
+    flex: 1,
     backgroundColor: '#FFFFFF',
   },
   currentMonthButton: {
@@ -753,7 +746,6 @@ const styles = StyleSheet.create({
   currentMonthText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333333',
   },
   weekdaysContainer: {
     flexDirection: 'row',
@@ -793,15 +785,12 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   todayContainer: {
-    backgroundColor: '#E3F2FD',
     borderRadius: 20,
   },
   todayText: {
-    color: '#007AFF',
     fontWeight: 'bold',
   },
   selectedDayContainer: {
-    backgroundColor: '#007AFF',
     borderRadius: 20,
   },
   selectedDayText: {
@@ -829,9 +818,6 @@ const styles = StyleSheet.create({
   jobIndicator: {
     backgroundColor: '#FF4757',
   },
-  availabilityIndicator: {
-    backgroundColor: '#2ED573',
-  },
   selectedDateHeader: {
     padding: 15,
     backgroundColor: '#F8F8F8',
@@ -843,11 +829,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333333',
+    textAlign: 'right',
   },
   addAvailabilityButton: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
-    backgroundColor: '#E3F2FD',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
@@ -855,13 +841,12 @@ const styles = StyleSheet.create({
   },
   addAvailabilityText: {
     fontSize: 14,
-    color: '#007AFF',
     fontWeight: '600',
-    marginLeft: 5,
+    marginRight: 5,
   },
   jobsContainer: {
-    flex: 1,
     padding: 15,
+    paddingBottom: 30,
   },
   section: {
     marginBottom: 20,
@@ -871,6 +856,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333333',
     marginBottom: 10,
+    textAlign: 'right',
   },
   jobCard: {
     flexDirection: 'row',
@@ -906,24 +892,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666666',
   },
-  jobInfo: {
+  jobInfoRTL: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   clientName: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333333',
     marginBottom: 2,
+    textAlign: 'right',
   },
   serviceName: {
     fontSize: 14,
     color: '#666666',
     marginBottom: 4,
+    textAlign: 'right',
   },
   address: {
     fontSize: 12,
     color: '#999999',
+    textAlign: 'right',
   },
   jobActions: {
     alignItems: 'flex-end',
@@ -950,7 +940,6 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#007AFF',
   },
   availabilityCard: {
     flexDirection: 'row',
@@ -959,16 +948,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 15,
     marginBottom: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: '#2ED573',
+    borderRightWidth: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
   },
-  availabilityTime: {
-    flexDirection: 'row',
+  availabilityTimeRTL: {
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     flex: 1,
   },
@@ -976,23 +964,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333333',
-    marginLeft: 8,
+    marginRight: 8,
   },
-  availabilityInfo: {
-    alignItems: 'flex-end',
-    flexDirection: 'row',
+  availabilityInfoRTL: {
+    flexDirection: 'row-reverse',
     alignItems: 'center',
   },
   recurringBadge: {
-    backgroundColor: '#E3F2FD',
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 12,
-    marginRight: 10,
+    marginLeft: 10,
   },
   recurringText: {
     fontSize: 12,
-    color: '#007AFF',
     fontWeight: 'bold',
   },
   deleteButton: {
@@ -1009,6 +994,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#666666',
     marginTop: 20,
+    textAlign: 'center',
   },
   noJobsSubtext: {
     fontSize: 14,
@@ -1020,31 +1006,26 @@ const styles = StyleSheet.create({
   statsContainer: {
     marginTop: 30,
     padding: 15,
-    backgroundColor: '#E8F5E9',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#2ED573',
   },
   statsText: {
     fontSize: 16,
-    color: '#2E7D32',
     fontWeight: 'bold',
     textAlign: 'center',
   },
   statsSubtext: {
     fontSize: 12,
-    color: '#4CAF50',
     textAlign: 'center',
     marginTop: 5,
   },
-  floatingButton: {
+  floatingButtonRTL: {
     position: 'absolute',
     bottom: 30,
-    right: 20,
+    left: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -1064,8 +1045,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: 20,
   },
-  modalHeader: {
-    flexDirection: 'row',
+  modalHeaderRTL: {
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
@@ -1081,7 +1062,6 @@ const styles = StyleSheet.create({
   modalDateText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#007AFF',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -1114,8 +1094,8 @@ const styles = StyleSheet.create({
     color: '#333333',
     marginHorizontal: 20,
   },
-  recurringToggle: {
-    flexDirection: 'row',
+  recurringToggleRTL: {
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 15,
@@ -1126,22 +1106,17 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#DDDDDD',
     borderRadius: 4,
-    marginRight: 10,
+    marginLeft: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  checkboxChecked: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
   syncNote: {
     fontSize: 12,
-    color: '#4CAF50',
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  modalActions: {
-    flexDirection: 'row',
+  modalActionsRTL: {
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
   },
   cancelButton: {
@@ -1149,7 +1124,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0',
     paddingVertical: 15,
     borderRadius: 10,
-    marginRight: 10,
+    marginLeft: 10,
     alignItems: 'center',
   },
   cancelButtonText: {
@@ -1159,10 +1134,9 @@ const styles = StyleSheet.create({
   },
   addButton: {
     flex: 1,
-    backgroundColor: '#007AFF',
     paddingVertical: 15,
     borderRadius: 10,
-    marginLeft: 10,
+    marginRight: 10,
     alignItems: 'center',
   },
   addButtonText: {

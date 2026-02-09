@@ -1,4 +1,6 @@
-// RequestsScreen.js - Écran de liste des missions pour prestataire
+// provider/RequestsScreen.js
+// ✅ AVEC ADRESSE VISIBLE + CORRECTION ACCEPTATION/REFUS
+
 import React, { useState, useContext } from 'react';
 import {
   StyleSheet,
@@ -9,9 +11,10 @@ import {
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native'; // ✅ AJOUT
+import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../../context/AuthContext';
 import { providerService } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,20 +24,36 @@ const RequestsScreen = ({ navigation }) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [processingRequests, setProcessingRequests] = useState({});
 
-  // ✅ CORRECTION : useFocusEffect au lieu de useEffect
-  // Cela recharge les données à chaque fois que l'écran devient visible
   useFocusEffect(
     React.useCallback(() => {
       loadRequests();
     }, [])
   );
 
-  // Charger les demandes depuis AsyncStorage
+  // ✅ Fonction pour formater l'adresse
+  const formatAddress = (address) => {
+    if (!address) return 'כתובת לא סופקה';
+    
+    if (typeof address === 'string') {
+      return address;
+    }
+    
+    if (address.fullAddress) {
+      return address.fullAddress;
+    }
+    
+    const parts = [];
+    if (address.street) parts.push(address.street);
+    if (address.houseNumber) parts.push(address.houseNumber);
+    if (address.city) parts.push(address.city);
+    
+    return parts.length > 0 ? parts.join(', ') : 'כתובת לא סופקה';
+  };
+
   const loadRequests = async () => {
     try {
-      
-      // Récupérer l'ID du prestataire depuis l'API (comme le Dashboard)
       const response = await providerService.getProviderProfile();
       const providerId = response.data._id;
       
@@ -43,18 +62,33 @@ const RequestsScreen = ({ navigation }) => {
         return;
       }
 
+      const jobsResponse = await providerService.getJobs();
+      const apiRequests = jobsResponse.data || [];
       
-      // Récupérer les demandes depuis AsyncStorage
+      console.log(`✅ ${apiRequests.length} missions récupérées depuis l'API`);
+      
+      const formattedRequests = apiRequests.map(req => ({
+        _id: req._id,
+        status: req.status,
+        serviceType: req.serviceType,
+        dateTime: req.scheduledDate,
+        duration: req.duration || 2,
+        clientName: req.client ? `${req.client.firstName} ${req.client.lastName}` : 'Client inconnu',
+        clientId: req.client?._id,
+        clientPhone: req.client?.phone,
+        price: req.price,
+        address: req.address,
+        notes: req.notes,
+        payment: req.payment
+      }));
+      
+      setRequests(formattedRequests);
+      
       const providerRequestsKey = `provider_requests_${providerId}`;
-      const savedRequests = await AsyncStorage.getItem(providerRequestsKey);
+      await AsyncStorage.setItem(providerRequestsKey, JSON.stringify(formattedRequests));
       
-      if (savedRequests) {
-        const requestsData = JSON.parse(savedRequests);
-        setRequests(requestsData);
-      } else {
-        setRequests([]);
-      }
     } catch (error) {
+      console.error('Erreur chargement requêtes:', error);
       setRequests([]);
     } finally {
       setLoading(false);
@@ -62,41 +96,208 @@ const RequestsScreen = ({ navigation }) => {
     }
   };
 
-  // Fonction de rafraîchissement
   const onRefresh = () => {
     setRefreshing(true);
     loadRequests();
   };
 
-  // Accepter une demande
+  const getStatusLabel = (status) => {
+    const statusMap = {
+      'pending': 'ממתין לאישור',
+      'pending_payment': 'ממתין לאישור',
+      'payment_pending': 'ממתין לאישור',
+      'accepted': 'מאושר',
+      'confirmed': 'מאושר',
+      'completed': 'הושלם',
+      'declined': 'נדחה',
+      'cancelled': 'בוטל',
+      'canceled': 'בוטל',
+      'payment_held': 'תשלום מוחזק',
+      'payment_released': 'תשלום שוחרר',
+      'in_progress': 'בתהליך'
+    };
+    return statusMap[status] || status;
+  };
+
+  const getServiceTypeLabel = (serviceType) => {
+    const serviceMap = {
+      'Standard Cleaning': 'ניקיון רגיל',
+      'standard': 'ניקיון רגיל',
+      'Deep Cleaning': 'ניקיון עמוק',
+      'deep': 'ניקיון עמוק',
+      'Move In/Out': 'ניקיון דירה',
+      'move': 'ניקיון דירה',
+      'Post Construction': 'ניקיון אחרי בנייה',
+      'construction': 'ניקיון אחרי בנייה',
+      'Window Cleaning': 'ניקיון חלונות',
+      'windows': 'ניקיון חלונות',
+      'home': 'בית',
+      'Home': 'בית',
+      'office': 'משרד',
+      'Office': 'משרד',
+      'building': 'בניין',
+      'Building': 'בניין',
+      'airbnb': 'אירבנב',
+      'Airbnb': 'אירבנב'
+    };
+    return serviceMap[serviceType] || serviceType;
+  };
+
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      
+      const daysHebrew = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+      const monthsHebrew = [
+        'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+        'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+      ];
+      
+      const dayOfWeek = daysHebrew[date.getDay()];
+      const dayOfMonth = date.getDate();
+      const month = monthsHebrew[date.getMonth()];
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${dayOfWeek}, ${dayOfMonth} ${month}, ${hours}:${minutes}`;
+    } catch (error) {
+      console.error('Erreur formatage date:', error);
+      return dateString;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending':
+      case 'pending_payment':
+      case 'payment_pending':
+        return '#FF9800';
+      case 'accepted':
+      case 'confirmed':
+        return '#4CAF50';
+      case 'declined':
+      case 'cancelled':
+      case 'canceled':
+        return '#F44336';
+      case 'completed':
+        return '#9C27B0';
+      default:
+        return '#666666';
+    }
+  };
+
+  // ✅ CORRECTION - Utilise le service API
   const acceptRequest = async (requestId) => {
     try {
+      if (processingRequests[requestId]) return;
+      
+      setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
+
+      // ✅ DEBUG: Vérifier le rôle et le token
+      const userRole = await AsyncStorage.getItem('userRole');
+      const token = await AsyncStorage.getItem('token');
+      console.log('🔑 Rôle utilisateur:', userRole);
+      console.log('🎫 Token présent:', !!token);
+
+      // ✅ Utilise la fonction du service API
+      const data = await providerService.acceptJob(requestId);
+
+      if (!data.success) {
+        throw new Error(data.message || 'שגיאה באישור הבקשה');
+      }
+
       await updateRequestStatus(requestId, 'accepted');
-      await loadRequests(); // Recharger la liste
+      await loadRequests();
+
+      Alert.alert(
+        'הצלחה!',
+        'הבקשה אושרה והתשלום נלקח. הלקוח יקבל את מספר הטלפון שלך.',
+        [{ text: 'אישור' }]
+      );
+
     } catch (error) {
+      console.error('Erreur acceptation:', error);
+      Alert.alert(
+        'שגיאה',
+        error.message || 'לא ניתן לאשר את הבקשה',
+        [{ text: 'אישור' }]
+      );
+    } finally {
+      setProcessingRequests(prev => ({ ...prev, [requestId]: false }));
     }
   };
 
-  // Refuser une demande
+  // ✅ CORRECTION - Utilise le service API
   const declineRequest = async (requestId) => {
     try {
-      await updateRequestStatus(requestId, 'declined');
-      await loadRequests(); // Recharger la liste
+      if (processingRequests[requestId]) return;
+
+      Alert.prompt(
+        'סיבת דחייה',
+        'למה אתה דוחה את הבקשה הזו?',
+        [
+          {
+            text: 'ביטול',
+            style: 'cancel'
+          },
+          {
+            text: 'שלח',
+            onPress: async (reason) => {
+              try {
+                setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
+
+                // ✅ DEBUG: Vérifier le rôle et le token
+                const userRole = await AsyncStorage.getItem('userRole');
+                const token = await AsyncStorage.getItem('token');
+                console.log('🔑 Rôle utilisateur:', userRole);
+                console.log('🎫 Token présent:', !!token);
+
+                // ✅ Utilise la fonction du service API
+                const data = await providerService.declineJob(requestId);
+
+                if (!data.success) {
+                  throw new Error(data.message || 'שגיאה בדחיית הבקשה');
+                }
+
+                await updateRequestStatus(requestId, 'declined');
+                await loadRequests();
+
+                Alert.alert(
+                  'בקשה נדחתה',
+                  'הלקוח יקבל החזר כספי אוטומטי.',
+                  [{ text: 'אישור' }]
+                );
+
+              } catch (error) {
+                console.error('Erreur refus:', error);
+                Alert.alert(
+                  'שגיאה',
+                  error.message || 'לא ניתן לדחות את הבקשה',
+                  [{ text: 'אישור' }]
+                );
+              } finally {
+                setProcessingRequests(prev => ({ ...prev, [requestId]: false }));
+              }
+            }
+          }
+        ],
+        'plain-text',
+        '',
+        'default'
+      );
+
     } catch (error) {
+      console.error('Erreur flux refus:', error);
     }
   };
 
-  // Mettre à jour le statut d'une demande
   const updateRequestStatus = async (requestId, newStatus) => {
     try {
-      // Récupérer l'ID du prestataire depuis l'API
       const response = await providerService.getProviderProfile();
       const providerId = response.data._id;
       
       if (!providerId) return;
 
-
-      // 1. Mettre à jour côté prestataire
       const providerRequestsKey = `provider_requests_${providerId}`;
       const savedRequests = await AsyncStorage.getItem(providerRequestsKey);
       
@@ -108,21 +309,19 @@ const RequestsScreen = ({ navigation }) => {
         await AsyncStorage.setItem(providerRequestsKey, JSON.stringify(updatedRequests));
       }
 
-      // 2. Mettre à jour côté client (synchronisation bidirectionnelle)
       const request = requests.find(r => r._id === requestId);
       if (request) {
         await syncStatusToClient(request.clientId, requestId, newStatus);
       }
 
     } catch (error) {
+      console.error('Erreur mise à jour statut:', error);
     }
   };
 
-  // Synchroniser le statut côté client
   const syncStatusToClient = async (clientId, requestId, newStatus) => {
     try {
-      // Mettre à jour les réservations du client - utiliser la clé du BookingContext
-      const clientBookingsKey = 'user_bookings'; // Même clé que STORAGE_KEYS.USER_BOOKINGS
+      const clientBookingsKey = 'user_bookings';
       const savedBookings = await AsyncStorage.getItem(clientBookingsKey);
       
       if (savedBookings) {
@@ -133,94 +332,27 @@ const RequestsScreen = ({ navigation }) => {
         await AsyncStorage.setItem(clientBookingsKey, JSON.stringify(updatedBookings));
       }
     } catch (error) {
+      console.error('Erreur sync client:', error);
     }
   };
 
-  // Formater la date
-  const formatDate = (dateString) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('fr-FR', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return 'Date invalide';
-    }
-  };
-
-  // Obtenir la couleur du statut
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending':
-        return '#FF9800';
-      case 'accepted':
-      case 'confirmed':
-        return '#4CAF50';
-      case 'declined':
-      case 'cancelled':
-        return '#F44336';
-      case 'completed':
-        return '#9C27B0';
-      default:
-        return '#666666';
-    }
-  };
-
-  // Obtenir le libellé du statut
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case 'pending':
-        return 'En attente';
-      case 'accepted':
-      case 'confirmed':
-        return 'Acceptée';
-      case 'declined':
-        return 'Refusée';
-      case 'cancelled':
-        return 'Annulée';
-      case 'completed':
-        return 'Terminée';
-      default:
-        return status;
-    }
-  };
-
-  // Obtenir le libellé du type de service
-  const getServiceTypeLabel = (serviceType) => {
-    switch (serviceType) {
-      case 'home':
-        return 'Domicile';
-      case 'office':
-        return 'Bureau';
-      case 'building':
-        return 'Immeuble';
-      default:
-        return serviceType;
-    }
-  };
-
-  // Naviguer vers les détails
   const navigateToDetails = (request) => {
-    // Transformer la demande au format attendu par JobDetailsScreen
     const jobData = {
       id: request._id,
       clientName: request.clientName,
       serviceName: getServiceTypeLabel(request.serviceType),
       date: request.dateTime,
       duration: request.duration,
-      address: request.address?.fullAddress || 'Adresse non spécifiée',
+      address: formatAddress(request.address),
       coordinates: {
-        latitude: 32.0853,  // Coordonnées par défaut Tel Aviv
+        latitude: 32.0853,
         longitude: 34.7818
       },
       clientPhone: request.clientPhone || '+972 50 123 4567',
       price: request.price,
       status: request.status,
-      notes: request.notes || 'Aucune note'
+      notes: request.notes || 'אין הערות',
+      payment: request.payment
     };
 
     navigation.navigate('JobDetails', { 
@@ -233,7 +365,7 @@ const RequestsScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Chargement des demandes...</Text>
+        <Text style={styles.loadingText}>טוען...</Text>
       </SafeAreaView>
     );
   }
@@ -245,9 +377,9 @@ const RequestsScreen = ({ navigation }) => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#333333" />
+          <Ionicons name="arrow-forward" size={24} color="#333333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mes Missions</Text>
+        <Text style={styles.headerTitle}>המשימות שלי</Text>
         <TouchableOpacity 
           style={styles.refreshButton}
           onPress={onRefresh}
@@ -265,64 +397,56 @@ const RequestsScreen = ({ navigation }) => {
         {requests.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="clipboard-outline" size={60} color="#CCCCCC" />
-            <Text style={styles.emptyTitle}>Aucune mission</Text>
-            <Text style={styles.emptySubtitle}>
-              Vous n'avez pas encore reçu de demandes de mission
-            </Text>
+            <Text style={styles.emptyTitle}>אין בקשות</Text>
+            <Text style={styles.emptySubtitle}>בקשות חדשות יופיעו כאן</Text>
           </View>
         ) : (
           <>
-            {/* Statistiques rapides */}
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {requests.filter(r => r.status === 'pending').length}
+                  {requests.filter(r => r.status === 'pending' || r.status === 'pending_payment').length}
                 </Text>
-                <Text style={styles.statLabel}>En attente</Text>
+                <Text style={styles.statLabel}>ממתין</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {requests.filter(r => r.status === 'accepted' || r.status === 'confirmed').length}
                 </Text>
-                <Text style={styles.statLabel}>Acceptées</Text>
+                <Text style={styles.statLabel}>מאושר</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {requests.filter(r => r.status === 'completed').length}
                 </Text>
-                <Text style={styles.statLabel}>Terminées</Text>
+                <Text style={styles.statLabel}>הושלם</Text>
               </View>
             </View>
 
-            {/* Liste des demandes */}
             {requests.map((request) => (
               <TouchableOpacity
                 key={request._id}
                 style={styles.requestCard}
                 onPress={() => navigateToDetails(request)}
+                activeOpacity={0.7}
               >
                 <View style={styles.requestHeader}>
                   <Text style={styles.clientName}>{request.clientName}</Text>
-                  <View 
-                    style={[
-                      styles.statusBadge, 
-                      { backgroundColor: getStatusColor(request.status) }
-                    ]}
-                  >
+                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(request.status) }]}>
                     <Text style={styles.statusText}>
                       {getStatusLabel(request.status)}
                     </Text>
                   </View>
                 </View>
 
+                <View style={styles.serviceTypeContainer}>
+                  <Ionicons name="construct" size={22} color="#007AFF" />
+                  <Text style={styles.serviceTypeText}>
+                    {getServiceTypeLabel(request.serviceType)}
+                  </Text>
+                </View>
+
                 <View style={styles.requestInfo}>
-                  <View style={styles.infoRow}>
-                    <Ionicons name="construct" size={16} color="#666666" />
-                    <Text style={styles.infoText}>
-                      {getServiceTypeLabel(request.serviceType)}
-                    </Text>
-                  </View>
-                  
                   <View style={styles.infoRow}>
                     <Ionicons name="calendar" size={16} color="#666666" />
                     <Text style={styles.infoText}>
@@ -332,46 +456,57 @@ const RequestsScreen = ({ navigation }) => {
                   
                   <View style={styles.infoRow}>
                     <Ionicons name="time" size={16} color="#666666" />
-                    <Text style={styles.infoText}>
-                      {request.duration}h
-                    </Text>
+                    <Text style={styles.infoText}>{request.duration} שעות</Text>
                   </View>
                   
                   <View style={styles.infoRow}>
-                    <Ionicons name="cash" size={16} color="#666666" />
-                    <Text style={styles.infoText}>
-                      {request.price}₪
+                    <Ionicons name="cash" size={16} color="#4CAF50" />
+                    <Text style={[styles.infoText, { color: '#4CAF50', fontWeight: 'bold' }]}>
+                      ₪{request.price}
                     </Text>
                   </View>
                 </View>
 
+                {/* ✅ ADRESSE BIEN VISIBLE */}
                 <View style={styles.addressRow}>
-                  <Ionicons name="location" size={16} color="#666666" />
+                  <Ionicons name="location" size={20} color="#FF9800" />
                   <Text style={styles.addressText} numberOfLines={2}>
-                    {request.address?.fullAddress || 'Adresse non spécifiée'}
+                    {formatAddress(request.address)}
                   </Text>
                 </View>
 
-                {request.status === 'pending' && (
+                {(request.status === 'pending' || request.status === 'pending_payment') && (
                   <View style={styles.pendingActions}>
                     <TouchableOpacity
-                      style={styles.acceptButton}
+                      style={[
+                        styles.acceptButton,
+                        processingRequests[request._id] && styles.disabledButton
+                      ]}
                       onPress={(e) => {
                         e.stopPropagation();
                         acceptRequest(request._id);
                       }}
+                      disabled={processingRequests[request._id]}
                     >
-                      <Text style={styles.acceptButtonText}>Accepter</Text>
+                      {processingRequests[request._id] ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.acceptButtonText}>קבל</Text>
+                      )}
                     </TouchableOpacity>
                     
                     <TouchableOpacity
-                      style={styles.declineButton}
+                      style={[
+                        styles.declineButton,
+                        processingRequests[request._id] && styles.disabledButton
+                      ]}
                       onPress={(e) => {
                         e.stopPropagation();
                         declineRequest(request._id);
                       }}
+                      disabled={processingRequests[request._id]}
                     >
-                      <Text style={styles.declineButtonText}>Refuser</Text>
+                      <Text style={styles.declineButtonText}>דחה</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -398,9 +533,10 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     color: '#666666',
+    textAlign: 'right',
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
@@ -416,6 +552,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333333',
+    textAlign: 'right',
   },
   refreshButton: {
     padding: 5,
@@ -435,6 +572,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#666666',
     marginTop: 20,
+    textAlign: 'right',
   },
   emptySubtitle: {
     fontSize: 16,
@@ -469,6 +607,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666666',
     marginTop: 4,
+    textAlign: 'center',
   },
   requestCard: {
     backgroundColor: '#FFFFFF',
@@ -483,20 +622,21 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   requestHeader: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   clientName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333333',
     flex: 1,
+    textAlign: 'right',
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 12,
   },
   statusText: {
@@ -504,36 +644,63 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
+  serviceTypeContainer: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    backgroundColor: '#F0F7FF',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  serviceTypeText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#007AFF',
+    marginRight: 8,
+    textAlign: 'right',
+  },
   requestInfo: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginBottom: 10,
   },
   infoRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
-    marginRight: 15,
+    marginLeft: 15,
     marginBottom: 5,
     width: '45%',
   },
   infoText: {
     fontSize: 14,
     color: '#333333',
-    marginLeft: 5,
+    marginRight: 5,
+    textAlign: 'right',
   },
+  // ✅ ADRESSE SUPER VISIBLE
   addressRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'flex-start',
+    backgroundColor: '#FFF3CD',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
     marginBottom: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9800',
   },
   addressText: {
-    fontSize: 14,
-    color: '#666666',
-    marginLeft: 5,
+    fontSize: 16,
+    color: '#000',
+    fontWeight: '600',
+    marginRight: 10,
     flex: 1,
+    textAlign: 'right',
+    lineHeight: 22,
   },
   pendingActions: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     marginTop: 10,
     paddingTop: 10,
@@ -543,30 +710,33 @@ const styles = StyleSheet.create({
   acceptButton: {
     backgroundColor: '#4CAF50',
     paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 6,
-    flex: 0.45,
+    paddingVertical: 10,
+    borderRadius: 8,
+    flex: 0.48,
     alignItems: 'center',
   },
   acceptButtonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 15,
   },
   declineButton: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1.5,
     borderColor: '#F44336',
-    flex: 0.45,
+    flex: 0.48,
     alignItems: 'center',
   },
   declineButtonText: {
     color: '#F44336',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 15,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 

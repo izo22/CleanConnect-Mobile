@@ -1,19 +1,26 @@
+// src/screens/auth/Register.js
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 
 const RegisterScreen = ({ navigation }) => {
+  const isRTL = true;
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Inscription</Text>
-      <Text style={styles.subtitle}>Cette page est en cours de développement</Text>
+      <Text style={[styles.title, styles.textRTL]}>
+        הרשמה
+      </Text>
+      <Text style={[styles.subtitle, styles.textRTL]}>
+        בפיתוח...
+      </Text>
       
       <Button 
         mode="contained" 
         onPress={() => navigation.navigate('Login')}
         style={styles.button}
       >
-        Retour à la connexion
+        חזרה להתחברות
       </Button>
     </ScrollView>
   );
@@ -39,6 +46,10 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 20,
     width: '100%',
+  },
+  textRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
 });
 

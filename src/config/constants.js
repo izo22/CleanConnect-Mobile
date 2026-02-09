@@ -1,25 +1,26 @@
 // src/config/constants.js
-// ✅ AJOUT DU SYSTÈME DE VILLES
+// ✅ מערכת ערים מתורגמת לעברית
 
-// URL de l'API
-export const API_URL = 'https://cleanconnect-backend-tulh.onrender.com/api';
+// URL של API
+//export const API_URL = 'https://cleanconnect-backend-tulh.onrender.com/api';
+export const API_URL = 'http://localhost:5000/api';
 
-// ✅ FRAIS PLATEFORME - SYSTÈME MIXTE
+// ✅ עמלות פלטפורמה - מערכת מעורבת
 export const PLATFORM_FEES = {
-  BASE_FEE: 10,              // Frais de base fixe (₪)
-  COMMISSION_RATE: 0.03,     // Commission 3%
-  PROMO_BASE_FEE: 8,         // Frais promo lancement (₪)
+  BASE_FEE: 10,              // עמלת בסיס קבועה (₪)
+  COMMISSION_RATE: 0.03,     // עמלה 3%
+  PROMO_BASE_FEE: 8,         // עמלת השקה מבצע (₪)
   CURRENCY: '₪',
-  MIN_TOTAL_FEE: 10,         // Frais minimum total (₪)
+  MIN_TOTAL_FEE: 10,         // עמלה מינימלית כוללת (₪)
 };
 
-// Fonction pour calculer les frais plateforme
+// פונקציה לחישוב עמלות פלטפורמה
 export const calculatePlatformFees = (servicePrice, isPromo = false) => {
   const baseFee = isPromo ? PLATFORM_FEES.PROMO_BASE_FEE : PLATFORM_FEES.BASE_FEE;
   const commission = servicePrice * PLATFORM_FEES.COMMISSION_RATE;
   const totalFee = baseFee + commission;
   
-  // Appliquer le minimum
+  // החלת מינימום
   const finalFee = Math.max(totalFee, PLATFORM_FEES.MIN_TOTAL_FEE);
   
   return {
@@ -32,123 +33,153 @@ export const calculatePlatformFees = (servicePrice, isPromo = false) => {
   };
 };
 
-// ✅ VILLES D'ISRAËL PAR ZONE (NOUVEAU)
+// ✅ ערים בישראל לפי אזור (חדש)
 export const ISRAEL_CITIES_BY_ZONE = [
   {
-    zone: 'Tel Aviv et environs',
+    zone: 'תל אביב והסביבה',
     cities: [
-      'Tel Aviv',
-      'Ramat Gan',
-      'Givatayim',
-      'Bnei Brak',
-      'Holon',
-      'Bat Yam',
-      'Herzliya',
-      'Petah Tikva',
-      'Raanana',
-      'Kfar Saba'
+      'תל אביב',
+      'רמת גן',
+      'גבעתיים',
+      'בני ברק',
+      'חולון',
+      'בת ים',
+      'הרצליה',
+      'פתח תקווה',
+      'רעננה',
+      'כפר סבא'
     ]
   },
   {
-    zone: 'Jerusalem et environs',
+    zone: 'ירושלים והסביבה',
     cities: [
-      'Jerusalem',
-      'Mevasseret Zion',
-      'Beit Shemesh',
-      'Ma\'ale Adumim',
-      'Modi\'in-Maccabim-Re\'ut',
-      'Efrat',
-      'Beitar Illit'
+      'ירושלים',
+      'מבשרת ציון',
+      'בית שמש',
+      'מעלה אדומים',
+      'מודיעין-מכבים-רעות',
+      'אפרת',
+      'ביתר עילית'
     ]
   },
   {
-    zone: 'Haifa et environs',
+    zone: 'חיפה והסביבה',
     cities: [
-      'Haifa',
-      'Krayot',
-      'Nesher',
-      'Tirat Carmel',
-      'Acre (Akko)',
-      'Nahariya'
+      'חיפה',
+      'קריות',
+      'נשר',
+      'טירת כרמל',
+      'עכו',
+      'נהריה'
     ]
   },
   {
-    zone: 'Beer Sheva et Sud',
+    zone: 'באר שבע והדרום',
     cities: [
-      'Beer Sheva',
-      'Ashdod',
-      'Ashkelon',
-      'Dimona',
-      'Arad',
-      'Kiryat Gat',
-      'Sderot',
-      'Ofakim',
-      'Netivot'
+      'באר שבע',
+      'אשדוד',
+      'אשקלון',
+      'דימונה',
+      'ערד',
+      'קריית גת',
+      'שדרות',
+      'אופקים',
+      'נתיבות'
     ]
   },
   {
-    zone: 'Centre (Sharon)',
+    zone: 'מרכז (שרון)',
     cities: [
-      'Netanya',
-      'Kfar Saba',
-      'Hod HaSharon',
-      'Raanana',
-      'Herzliya',
-      'Rehovot',
-      'Rishon LeZion',
-      'Lod',
-      'Ramla',
-      'Ness Ziona'
+      'נתניה',
+      'כפר סבא',
+      'הוד השרון',
+      'רעננה',
+      'הרצליה',
+      'רחובות',
+      'ראשון לציון',
+      'לוד',
+      'רמלה',
+      'נס ציונה'
     ]
   },
   {
-    zone: 'Nord (Galilée)',
+    zone: 'צפון (גליל)',
     cities: [
-      'Nazareth',
-      'Tiberias',
-      'Safed (Tzfat)',
-      'Karmiel',
-      'Nahariya',
-      'Afula',
-      'Migdal HaEmek'
+      'נצרת',
+      'טבריה',
+      'צפת',
+      'כרמיאל',
+      'נהריה',
+      'עפולה',
+      'מגדל העמק'
     ]
   }
 ];
 
-// Liste plate de toutes les villes (pour recherche et sélection simple)
+// רשימה שטוחה של כל הערים (לחיפוש ובחירה פשוטה)
 export const ALL_CITIES = ISRAEL_CITIES_BY_ZONE
   .flatMap(zone => zone.cities)
   .sort((a, b) => a.localeCompare(b, 'he'));
 
-// Types de services proposés
+// סוגי שירותים מוצעים
 export const SERVICE_TYPES = {
   HOME: 'home',
   OFFICE: 'office',
   BUILDING: 'building',
+  AIRBNB: 'airbnb',  // ✅ NOUVEAU
 };
 
-// Traduction des types de services
+// תרגום סוגי שירותים
 export const SERVICE_TYPE_LABELS = {
-  home: 'Nettoyage à domicile',
-  office: 'Nettoyage de bureaux',
-  building: 'Nettoyage d\'immeubles',
+  home: 'ניקיון בית',
+  office: 'ניקיון משרד',
+  building: 'ניקיון בניין',
+  airbnb: 'ניקיון אירבנב',  // ✅ NOUVEAU
 };
 
-// Types de clients
+// ✅ ✅ ✅ AJOUT ICI - צבעים של סוגי שירותים - COULEURS UNIFIÉES
+export const SERVICE_COLORS = {
+  HOME: '#4A90E2',      // 🏠 בית - כחול (BLEU)
+  OFFICE: '#E67E22',    // 🏢 משרד - כתום (ORANGE)
+  BUILDING: '#27AE60',  // 🏗️ בניין - ירוק (VERT)
+  AIRBNB: '#FF5A5F',    // 🏨 אירבנב - ורוד (ROSE)
+};
+
+// פונקציה לקבלת צבע לפי סוג שירות - Helper function
+export const getServiceColor = (serviceType) => {
+  switch (serviceType?.toLowerCase()) {
+    case 'home':
+    case 'בית':
+      return SERVICE_COLORS.HOME;
+    case 'office':
+    case 'משרד':
+      return SERVICE_COLORS.OFFICE;
+    case 'building':
+    case 'בניין':
+      return SERVICE_COLORS.BUILDING;
+    case 'airbnb':
+    case 'אירבנב':
+      return SERVICE_COLORS.AIRBNB;
+    default:
+      return '#2196F3'; // צבע ברירת מחדל (bleu par défaut)
+  }
+};
+
+// סוגי לקוחות
 export const CLIENT_TYPES = {
   INDIVIDUAL: 'individual',
   BUSINESS: 'business',
   BUILDING_MANAGER: 'building',
 };
 
-// Traduction des types de clients
+// תרגום סוגי לקוחות
 export const CLIENT_TYPE_LABELS = {
-  individual: 'Particulier',
-  business: 'Entreprise',
-  building: 'Gestionnaire d\'immeuble',
+  individual: 'פרטי',
+  business: 'עסק',
+  building: 'מנהל בניין',
 };
 
-// Statuts de réservation
+// סטטוסים של הזמנה
 export const BOOKING_STATUS = {
   PENDING: 'pending',
   CONFIRMED: 'confirmed',
@@ -157,16 +188,16 @@ export const BOOKING_STATUS = {
   CANCELLED: 'cancelled',
 };
 
-// Traduction des statuts de réservation
+// תרגום סטטוסי הזמנה
 export const BOOKING_STATUS_LABELS = {
-  pending: 'En attente',
-  confirmed: 'Confirmé',
-  in_progress: 'En cours',
-  completed: 'Terminé',
-  cancelled: 'Annulé',
+  pending: 'ממתין',
+  confirmed: 'מאושר',
+  in_progress: 'בביצוע',
+  completed: 'הושלם',
+  cancelled: 'בוטל',
 };
 
-// Options de fréquence de nettoyage
+// אפשרויות תדירות ניקיון
 export const CLEANING_FREQUENCY = {
   ONE_TIME: 'one_time',
   WEEKLY: 'weekly',
@@ -174,23 +205,23 @@ export const CLEANING_FREQUENCY = {
   MONTHLY: 'monthly',
 };
 
-// Traduction des fréquences de nettoyage
+// תרגום תדירויות ניקיון
 export const CLEANING_FREQUENCY_LABELS = {
-  one_time: 'Une fois',
-  weekly: 'Hebdomadaire',
-  bi_weekly: 'Bi-hebdomadaire',
-  monthly: 'Mensuel',
+  one_time: 'פעם אחת',
+  weekly: 'שבועי',
+  bi_weekly: 'דו-שבועי',
+  monthly: 'חודשי',
 };
 
-// Durées de nettoyage standard (en heures)
+// משכי ניקיון סטנדרטיים (בשעות)
 export const CLEANING_DURATIONS = [1, 2, 3, 4, 5, 6, 8];
 
-// Formats de date et heure
+// פורמטים של תאריך ושעה
 export const DATE_FORMAT = 'DD/MM/YYYY';
 export const TIME_FORMAT = 'HH:mm';
 export const DATETIME_FORMAT = 'DD/MM/YYYY HH:mm';
 
-// Clés de stockage local
+// מפתחות אחסון מקומי
 export const STORAGE_KEYS = {
   AUTH_TOKEN: 'auth_token',
   USER_INFO: 'user_info',
@@ -198,28 +229,28 @@ export const STORAGE_KEYS = {
   USER_BOOKINGS: 'user_bookings',
 };
 
-// Langues disponibles
+// שפות זמינות
 export const LANGUAGES = {
   HE: 'he',
   EN: 'en',
   AR: 'ar',
 };
 
-// Traduction des langues
+// תרגום שפות
 export const LANGUAGE_LABELS = {
   he: 'עברית',
   en: 'English',
 };
 
-// Permissions
+// הרשאות
 export const PERMISSIONS = {
   LOCATION: 'location',
   CAMERA: 'camera',
   NOTIFICATIONS: 'notifications',
 };
 
-// Pagination
+// עימוד
 export const ITEMS_PER_PAGE = 10;
 
-// Temps d'expiration des tokens (en secondes)
-export const TOKEN_EXPIRATION = 86400; // 24 heures
+// זמן תפוגה של טוקנים (בשניות)
+export const TOKEN_EXPIRATION = 86400; // 24 שעות

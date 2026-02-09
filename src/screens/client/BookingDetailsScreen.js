@@ -1,40 +1,30 @@
 // src/screens/client/BookingDetails.js
+// ✅ תורגם לעברית ישירות ללא i18n
+// ✅ תוקן: תצוגת תאריך בעברית
+// ✅ ESCROW: הצגת מספר טלפון מותנית + סטטוס תשלום
+// ✅ תוקן: React Native Paper Text variants
+
 import React, { useState, useEffect, useContext } from 'react';
-import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
-import { Text, Card, Title, Paragraph, Button, Divider, ActivityIndicator, Appbar, useTheme, Portal, Dialog, TextInput, Avatar, IconButton } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, Linking, TextInput as RNTextInput } from 'react-native';
+import { Text, Card, Divider, ActivityIndicator, Appbar, useTheme, Portal, Dialog, Avatar, IconButton } from 'react-native-paper';
 import { useBooking } from '../../context/BookingContext';
 import { AuthContext } from '../../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'; // ✅ AJOUT useFocusEffect
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { he } from 'date-fns/locale';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-// Constantes pour les statuts de réservation
+// קבועים לסטטוס הזמנה
 const BOOKING_STATUS = {
+  PENDING_PAYMENT: 'pending_payment', // ✅ ESCROW
   PENDING: 'pending',
   CONFIRMED: 'confirmed',
+  ACCEPTED: 'accepted', // ✅ ESCROW
+  DECLINED: 'declined', // ✅ ESCROW
   IN_PROGRESS: 'in_progress',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled',
-};
-
-// Labels pour les statuts
-const BOOKING_STATUS_LABELS = {
-  [BOOKING_STATUS.PENDING]: 'En attente',
-  [BOOKING_STATUS.CONFIRMED]: 'Confirmé',
-  [BOOKING_STATUS.IN_PROGRESS]: 'En cours',
-  [BOOKING_STATUS.COMPLETED]: 'Terminé',
-  [BOOKING_STATUS.CANCELLED]: 'Annulé',
-};
-
-// Couleurs pour les statuts
-const BOOKING_STATUS_COLORS = {
-  [BOOKING_STATUS.PENDING]: '#FF9800',
-  [BOOKING_STATUS.CONFIRMED]: '#4CAF50',
-  [BOOKING_STATUS.IN_PROGRESS]: '#2196F3',
-  [BOOKING_STATUS.COMPLETED]: '#9C27B0',
-  [BOOKING_STATUS.CANCELLED]: '#F44336',
 };
 
 const BookingDetailsScreen = () => {
@@ -42,58 +32,82 @@ const BookingDetailsScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { bookingId } = route.params;
-  const { userBookings, fetchUserBookings, cancelBooking, updateBookingStatus, currentBooking } = useBooking(); // ✅ AJOUT currentBooking
+  const { userBookings, fetchUserBookings, cancelBooking, updateBookingStatus, currentBooking } = useBooking();
   const { userInfo } = useContext(AuthContext);
+  const isRTL = true;
   
   const [booking, setBooking] = useState(null);
-  const [displayAddress, setDisplayAddress] = useState(''); // ✅ RENOMMÉ pour clarté
+  const [displayAddress, setDisplayAddress] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isRatingDialogVisible, setIsRatingDialogVisible] = useState(false);
   const [rating, setRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
   const [isCancellationDialogVisible, setIsCancellationDialogVisible] = useState(false);
+  const [isCompletionDialogVisible, setIsCompletionDialogVisible] = useState(false);
   
-  // ✅ NOUVELLE FONCTION : Déterminer quelle adresse afficher
+  // ✅ פונקציה: תוויות לסטטוסים בעברית
+  const getBookingStatusLabel = (status) => {
+    const statusLabels = {
+      [BOOKING_STATUS.PENDING_PAYMENT]: 'ממתין לתשלום',
+      [BOOKING_STATUS.PENDING]: 'ממתין לאישור ספק',
+      [BOOKING_STATUS.CONFIRMED]: 'מאושר',
+      [BOOKING_STATUS.ACCEPTED]: 'מאושר',
+      [BOOKING_STATUS.DECLINED]: 'נדחה על ידי הספק',
+      [BOOKING_STATUS.IN_PROGRESS]: 'בביצוע',
+      [BOOKING_STATUS.COMPLETED]: 'הושלם',
+      [BOOKING_STATUS.CANCELLED]: 'בוטל',
+    };
+    return statusLabels[status] || 'ממתין לאישור';
+  };
+  
+  // צבעים לסטטוסים
+  const BOOKING_STATUS_COLORS = {
+    [BOOKING_STATUS.PENDING_PAYMENT]: '#FF9800',
+    [BOOKING_STATUS.PENDING]: '#FF9800',
+    [BOOKING_STATUS.CONFIRMED]: '#4CAF50',
+    [BOOKING_STATUS.ACCEPTED]: '#4CAF50',
+    [BOOKING_STATUS.DECLINED]: '#F44336',
+    [BOOKING_STATUS.IN_PROGRESS]: '#2196F3',
+    [BOOKING_STATUS.COMPLETED]: '#9C27B0',
+    [BOOKING_STATUS.CANCELLED]: '#F44336',
+  };
+  
+  // ✅ פונקציה: קביעת איזו כתובת להציג
   const determineDisplayAddress = async () => {
     try {
-      // PRIORITÉ 1 : Adresse du currentBooking (si modifiée via AddressSelection)
       if (currentBooking?.address) {
         setDisplayAddress(currentBooking.address.fullAddress);
         return;
       }
       
-      // PRIORITÉ 2 : Adresse du booking spécifique
       if (booking?.address) {
-        setDisplayAddress(booking.address.fullAddress);
+        setDisplayAddress(booking.address.fullAddress || booking.address);
         return;
       }
       
-      // PRIORITÉ 3 : Adresse d'inscription (par défaut)
       const userData = await AsyncStorage.getItem('userData');
       if (userData) {
         const user = JSON.parse(userData);
-        setDisplayAddress(user.address || 'Adresse non renseignée');
+        setDisplayAddress(user.address || 'כתובת לא צוינה');
       } else {
-        setDisplayAddress('Adresse non disponible');
+        setDisplayAddress('כתובת לא זמינה');
       }
     } catch (error) {
-      setDisplayAddress('Adresse non disponible');
+      setDisplayAddress('כתובת לא זמינה');
     }
   };
   
-  // ✅ RECHARGER L'ADRESSE QUAND ON REVIENT À L'ÉCRAN
   useFocusEffect(
     React.useCallback(() => {
       determineDisplayAddress();
     }, [currentBooking?.address, booking?.address])
   );
   
-  // Chargement initial de l'adresse
   useEffect(() => {
     determineDisplayAddress();
   }, []);
   
-  // Chargement des détails de la réservation
+  // טעינת פרטי ההזמנה
   useEffect(() => {
     loadBookingDetails();
   }, [bookingId]);
@@ -102,16 +116,14 @@ const BookingDetailsScreen = () => {
     setIsLoading(true);
     
     try {
-      // Récupérer toutes les réservations si ce n'est pas déjà fait
       await fetchUserBookings();
-      
-      // Trouver la réservation spécifique par ID
       const foundBooking = userBookings.find(b => b._id === bookingId);
       
       if (foundBooking) {
+        console.log('📋 Booking loaded:', foundBooking);
         setBooking(foundBooking);
       } else {
-        // Si la réservation n'est pas trouvée (pour la démo, créer une fausse)
+        // נתוני דמו
         setBooking({
           _id: bookingId,
           serviceType: 'home',
@@ -126,31 +138,27 @@ const BookingDetailsScreen = () => {
             rating: 4.8,
             phone: '+972 50 123 4567',
           },
-          notes: 'Attention au chat. Produits écologiques préférés.',
-          rating: null,
+          notes: 'אנא הביאו את כל הציוד הדרוש',
+          providerPhoneVisible: true, // ✅ Demo
         });
       }
     } catch (error) {
-      Alert.alert(
-        'Erreur',
-        'Impossible de charger les détails de la réservation. Veuillez réessayer.'
-      );
+      console.error('Error loading booking:', error);
+      Alert.alert('שגיאה', 'לא ניתן לטעון את פרטי ההזמנה');
     } finally {
       setIsLoading(false);
     }
   };
   
-  // Formater la date pour l'affichage
   const formatBookingDate = (dateString) => {
     try {
       const date = new Date(dateString);
-      return format(date, 'PPPP', { locale: fr }); // Format long: "lundi 7 janvier 2023"
+      return format(date, 'PPPP', { locale: he });
     } catch (error) {
-      return 'Date non disponible';
+      return 'תאריך לא זמין';
     }
   };
   
-  // Formater l'heure pour l'affichage
   const formatBookingTime = (dateString) => {
     try {
       const date = new Date(dateString);
@@ -159,41 +167,36 @@ const BookingDetailsScreen = () => {
       return '';
     }
   };
-  
-  // Couleur associée au type de service
+    
   const getServiceColor = (serviceType) => {
     switch (serviceType) {
       case 'home':
-        return theme.colors.homeService;
+        return theme.colors.homeService || '#4A90E2';    // 🏠 BLEU
       case 'office':
-        return theme.colors.officeService;
+        return theme.colors.officeService || '#E67E22';  // 🏢 ORANGE (CORRIGÉ)
       case 'building':
-        return theme.colors.buildingService;
+        return theme.colors.buildingService || '#27AE60'; // 🏗️ VERT (CORRIGÉ)
+      case 'airbnb':
+        return theme.colors.airbnbService || '#FF5A5F';  // 🏨 ROSE
       default:
         return theme.colors.primary;
     }
   };
   
-  // Obtenir le type de service en français
   const getServiceTypeLabel = (serviceType) => {
-    switch (serviceType) {
-      case 'home':
-        return 'Domicile';
-      case 'office':
-        return 'Bureau';
-      case 'building':
-        return 'Immeuble';
-      default:
-        return 'Service';
-    }
+    const typeLabels = {
+      'home': 'ניקיון בית',
+      'office': 'ניקיון משרדים',
+      'building': 'ניקיון בניינים',
+      'airbnb': 'ניקיון אירבנב',
+    };
+    return typeLabels[serviceType] || 'שירות';
   };
   
-  // Formatage du prix
   const formatPrice = (price) => {
-    return `${price.toFixed(2)} ₪`;
+    return `₪${price.toFixed(2)}`;
   };
   
-  // Gestion de l'annulation
   const handleCancelBooking = async () => {
     try {
       setIsCancellationDialogVisible(false);
@@ -201,38 +204,24 @@ const BookingDetailsScreen = () => {
       const result = await cancelBooking(bookingId);
       
       if (result.success) {
-        // Mise à jour de l'état local
         setBooking({
           ...booking,
           status: BOOKING_STATUS.CANCELLED,
         });
         
-        Alert.alert(
-          'Annulation confirmée',
-          'Votre réservation a été annulée avec succès.'
-        );
+        Alert.alert('ההזמנה בוטלה', 'ההזמנה שלך בוטלה בהצלחה');
       } else {
-        Alert.alert(
-          'Erreur',
-          result.message || 'Une erreur est survenue lors de l\'annulation.'
-        );
+        Alert.alert('שגיאה', result.message || 'לא ניתן לבטל את ההזמנה');
       }
     } catch (error) {
-      Alert.alert(
-        'Erreur',
-        'Une erreur inattendue est survenue. Veuillez réessayer.'
-      );
+      Alert.alert('שגיאה', 'אירעה שגיאה בלתי צפויה');
     }
   };
   
-  // Gestion de la notation
   const handleRateService = async () => {
     try {
       setIsRatingDialogVisible(false);
       
-      // En situation réelle, appel à l'API pour enregistrer la notation
-      
-      // Mise à jour de l'état local
       setBooking({
         ...booking,
         rating: {
@@ -242,19 +231,12 @@ const BookingDetailsScreen = () => {
         },
       });
       
-      Alert.alert(
-        'Merci',
-        'Votre évaluation a été enregistrée avec succès.'
-      );
+      Alert.alert('תודה על הדירוג!', 'הדירוג שלך נשלח בהצלחה');
     } catch (error) {
-      Alert.alert(
-        'Erreur',
-        'Une erreur est survenue lors de l\'enregistrement de votre évaluation.'
-      );
+      Alert.alert('שגיאה', 'לא ניתן לשלוח את הדירוג');
     }
   };
   
-  // Vérifier si la réservation peut être annulée (24h avant)
   const canBeCancelled = () => {
     if (!booking || booking.status === BOOKING_STATUS.CANCELLED) return false;
     
@@ -266,14 +248,65 @@ const BookingDetailsScreen = () => {
     return diffHours >= 24;
   };
   
-  // Vérifier si le service peut être noté (terminé et pas encore noté)
   const canBeRated = () => {
     return booking && 
            booking.status === BOOKING_STATUS.COMPLETED && 
            !booking.rating;
   };
   
-  // Rendu des étoiles de notation
+  // ✅ NEW: Vérifier si le service est terminé
+  const isServiceTimeEnded = () => {
+    if (!booking || !booking.dateTime || !booking.duration) return false;
+    
+    const startTime = new Date(booking.dateTime);
+    const endTime = new Date(startTime.getTime() + booking.duration * 60 * 60 * 1000);
+    const now = new Date();
+    
+    return now > endTime;
+  };
+  
+  // ✅ NEW: Vérifier si on peut compléter manuellement
+  const canManuallyComplete = () => {
+    return (
+      (booking?.status === 'accepted' || 
+       booking?.status === 'confirmed' || 
+       booking?.status === 'pending') &&
+      isServiceTimeEnded()
+    );
+  };
+  
+  // ✅ NEW: Complétion manuelle du service
+  const handleCompleteService = async () => {
+    try {
+      setIsCompletionDialogVisible(false);
+      
+      const result = await updateBookingStatus(bookingId, BOOKING_STATUS.COMPLETED);
+      
+      if (result.success) {
+        setBooking({
+          ...booking,
+          status: BOOKING_STATUS.COMPLETED,
+        });
+        
+        Alert.alert(
+          'השירות הושלם',
+          'תודה על האישור!',
+          [{ text: 'אישור' }]
+        );
+        
+        // Optionnel : ouvrir le dialog de notation après 1 seconde
+        setTimeout(() => {
+          setIsRatingDialogVisible(true);
+        }, 1000);
+      } else {
+        Alert.alert('שגיאה', result.message || 'לא ניתן לעדכן את סטטוס ההזמנה');
+      }
+    } catch (error) {
+      console.error('Error completing service:', error);
+      Alert.alert('שגיאה', 'אירעה שגיאה בלתי צפויה');
+    }
+  };
+  
   const renderRatingStars = () => {
     return (
       <View style={styles.ratingStarsContainer}>
@@ -294,14 +327,13 @@ const BookingDetailsScreen = () => {
     );
   };
   
-  // Rendu de l'évaluation existante
   const renderExistingRating = () => {
     if (!booking || !booking.rating) return null;
     
     return (
       <Card style={styles.ratingCard}>
         <Card.Content>
-          <Title style={styles.ratingTitle}>Votre évaluation</Title>
+          <Text variant="bold" style={[styles.ratingTitle, styles.textRTL]}>הדירוג שלך</Text>
           <View style={styles.ratingRow}>
             {[1, 2, 3, 4, 5].map((star) => (
               <Icon
@@ -313,13 +345,13 @@ const BookingDetailsScreen = () => {
               />
             ))}
             <Text style={styles.ratingDate}>
-              {new Date(booking.rating.date).toLocaleDateString('fr-FR')}
+              {format(new Date(booking.rating.date), 'P', { locale: he })}
             </Text>
           </View>
           {booking.rating.comment && (
-            <Paragraph style={styles.ratingComment}>
+            <Text style={[styles.ratingComment, styles.textRTL]}>
               "{booking.rating.comment}"
-            </Paragraph>
+            </Text>
           )}
         </Card.Content>
       </Card>
@@ -330,7 +362,7 @@ const BookingDetailsScreen = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Chargement des détails...</Text>
+        <Text style={styles.loadingText}>טוען...</Text>
       </View>
     );
   }
@@ -341,25 +373,29 @@ const BookingDetailsScreen = () => {
     <View style={styles.container}>
       <Appbar.Header style={{ backgroundColor: serviceColor }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} color="white" />
-        <Appbar.Content title="Détails de la réservation" color="white" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end', paddingRight: 16 }}>
+          <Text variant="bold" style={{ color: 'white', fontSize: 20 }}>
+            פרטי הזמנה
+          </Text>
+        </View>
       </Appbar.Header>
       
       <ScrollView style={styles.scrollView}>
         <View style={[styles.statusBanner, { backgroundColor: BOOKING_STATUS_COLORS[booking.status] }]}>
           <Text style={styles.statusText}>
-            {BOOKING_STATUS_LABELS[booking.status]}
+            {getBookingStatusLabel(booking.status)}
           </Text>
         </View>
         
         <Card style={styles.mainCard}>
           <Card.Content>
-            <View style={styles.dateSection}>
-              <Icon name="calendar" size={24} color={serviceColor} style={styles.icon} />
+            <View style={[styles.dateSection, styles.rtlRow]}>
+              <Icon name="calendar" size={24} color={serviceColor} style={styles.iconRTL} />
               <View>
-                <Text style={styles.dateText}>
+                <Text style={[styles.dateText, styles.textRTL]}>
                   {formatBookingDate(booking.dateTime)}
                 </Text>
-                <Text style={styles.timeText}>
+                <Text style={[styles.timeText, styles.textRTL]}>
                   {formatBookingTime(booking.dateTime)}
                 </Text>
               </View>
@@ -368,8 +404,8 @@ const BookingDetailsScreen = () => {
             <Divider style={styles.divider} />
             
             <View style={styles.serviceSection}>
-              <View style={styles.serviceRow}>
-                <Text style={styles.label}>Type de service</Text>
+              <View style={[styles.serviceRow, styles.rtlRow]}>
+                <Text style={[styles.label, styles.textRTL]}>סוג שירות</Text>
                 <View style={[styles.serviceTypeBadge, { backgroundColor: serviceColor }]}>
                   <Text style={styles.serviceTypeText}>
                     {getServiceTypeLabel(booking.serviceType)}
@@ -377,14 +413,16 @@ const BookingDetailsScreen = () => {
                 </View>
               </View>
               
-              <View style={styles.detailRow}>
-                <Text style={styles.label}>Durée</Text>
-                <Text style={styles.value}>{booking.duration} heures</Text>
+              <View style={[styles.detailRow, styles.rtlRow]}>
+                <Text style={[styles.label, styles.textRTL]}>משך</Text>
+                <Text style={[styles.value, styles.textRTL]}>
+                  {booking.duration} שעות
+                </Text>
               </View>
               
-              <View style={styles.detailRow}>
-                <Text style={styles.label}>Prix</Text>
-                <Text style={[styles.value, styles.priceValue]}>
+              <View style={[styles.detailRow, styles.rtlRow]}>
+                <Text style={[styles.label, styles.textRTL]}>מחיר</Text>
+                <Text style={[styles.value, styles.priceValue, styles.textRTL]}>
                   {formatPrice(booking.price)}
                 </Text>
               </View>
@@ -392,63 +430,175 @@ const BookingDetailsScreen = () => {
             
             <Divider style={styles.divider} />
             
+            {/* ✅ ESCROW - Section Provider avec affichage conditionnel du téléphone */}
             <View style={styles.providerSection}>
-              <Text style={styles.sectionTitle}>Prestataire</Text>
-              <View style={styles.providerInfo}>
-                <Avatar.Text 
-                  size={40} 
-                  label={booking.selectedProvider?.name?.charAt(0) || 'P'} 
-                  style={{ backgroundColor: serviceColor }}
-                />
-                <View style={styles.providerDetails}>
-                  <Text style={styles.providerName}>
-                    {booking.selectedProvider?.name || "Non assigné"}
-                  </Text>
-                  {booking.selectedProvider?.rating && (
-                    <View style={styles.providerRating}>
-                      <Icon name="star" size={16} color="#FFC107" />
-                      <Text style={styles.ratingText}>
-                        {booking.selectedProvider.rating}
+              <Text variant="bold" style={[styles.sectionTitle, styles.textRTL]}>
+                ספק השירות
+              </Text>
+              
+              {/* ✅ ESCROW - Si providerPhoneVisible === true */}
+              {booking.providerPhoneVisible ? (
+                <>
+                  <View style={[styles.providerInfo, styles.rtlRow]}>
+                    <Avatar.Text 
+                      size={40} 
+                      label={booking.selectedProvider?.name?.charAt(0) || 'P'} 
+                      style={{ backgroundColor: serviceColor }}
+                    />
+                    <View style={[styles.providerDetails, styles.rtlFlex]}>
+                      <Text style={[styles.providerName, styles.textRTL]}>
+                        {booking.selectedProvider?.name || 'ספק לא שויך'}
+                      </Text>
+                      {booking.selectedProvider?.rating && (
+                        <View style={[styles.providerRating, styles.rtlRow]}>
+                          <Icon name="star" size={16} color="#FFC107" />
+                          <Text style={[styles.ratingText, styles.textRTL]}>
+                            {booking.selectedProvider.rating}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  
+                  {/* Téléphone visible - APPROUVÉ */}
+                  <View style={[styles.phoneContainer, styles.rtlRow]}>
+                    <Icon name="check-circle" size={20} color="#4CAF50" style={styles.iconRTL} />
+                    <View style={styles.phoneDetails}>
+                      <Text style={[styles.phoneLabel, styles.textRTL]}>
+                        מספר טלפון (אושר)
+                      </Text>
+                      <TouchableOpacity 
+                        style={[styles.phoneButton, styles.rtlRow]}
+                        onPress={() => {
+                          const phone = booking.selectedProvider?.phone || booking.provider?.phone;
+                          if (phone) {
+                            Linking.openURL(`tel:${phone}`);
+                          }
+                        }}
+                      >
+                        <Icon name="phone" size={18} color="#007AFF" style={styles.iconRTL} />
+                        <Text style={[styles.phoneNumber, styles.textRTL]}>
+                          {booking.selectedProvider?.phone || booking.provider?.phone}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </>
+              ) : (
+                <>
+                  {/* ✅ ESCROW - Si providerPhoneVisible === false */}
+                  <View style={[styles.providerInfo, styles.rtlRow]}>
+                    <Avatar.Text 
+                      size={40} 
+                      label={booking.selectedProvider?.name?.charAt(0) || 'P'} 
+                      style={{ backgroundColor: serviceColor }}
+                    />
+                    <View style={[styles.providerDetails, styles.rtlFlex]}>
+                      <Text style={[styles.providerName, styles.textRTL]}>
+                        {booking.selectedProvider?.name || 'ספק לא שויך'}
+                      </Text>
+                      {booking.selectedProvider?.rating && (
+                        <View style={[styles.providerRating, styles.rtlRow]}>
+                          <Icon name="star" size={16} color="#FFC107" />
+                          <Text style={[styles.ratingText, styles.textRTL]}>
+                            {booking.selectedProvider.rating}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  
+                  {/* Téléphone masqué - EN ATTENTE */}
+                  <View style={[styles.phoneContainer, styles.phoneHiddenContainer, styles.rtlRow]}>
+                    <Icon name="lock" size={20} color="#FF9800" style={styles.iconRTL} />
+                    <View style={styles.phoneDetails}>
+                      <Text style={[styles.phoneLabel, styles.textRTL]}>
+                        מספר טלפון
+                      </Text>
+                      <Text style={[styles.phoneHidden, styles.textRTL]}>
+                        ●●● ●●● ●●●●
+                      </Text>
+                      <Text style={[styles.phoneHiddenNote, styles.textRTL]}>
+                        {booking.status === BOOKING_STATUS.PENDING_PAYMENT || booking.status === BOOKING_STATUS.PENDING 
+                          ? '⏳ ממתין לאישור הספק - הכסף שלך מוחזק בנאמנות'
+                          : booking.status === BOOKING_STATUS.DECLINED
+                          ? '❌ הבקשה נדחתה - תקבל החזר כספי מלא'
+                          : 'לא זמין'}
                       </Text>
                     </View>
-                  )}
-                </View>
-                <IconButton 
-                  icon="phone" 
-                  size={24} 
-                  color={serviceColor}
-                  onPress={() => {/* Intégrer l'action d'appel */}}
-                />
-              </View>
+                  </View>
+                </>
+              )}
             </View>
             
             <Divider style={styles.divider} />
             
-            {/* ✅ SECTION ADRESSE AVEC MISE À JOUR DYNAMIQUE */}
+            {/* ✅ ESCROW - Afficher info de paiement si applicable */}
+            {booking.payment && (
+              <>
+                <View style={[styles.paymentStatusContainer, styles.rtlRow]}>
+                  <Icon 
+                    name={
+                      booking.payment.status === 'held' ? 'clock-outline' :
+                      booking.payment.status === 'captured' ? 'check-circle' :
+                      booking.payment.status === 'refunded' ? 'undo' :
+                      'information'
+                    } 
+                    size={18} 
+                    color={
+                      booking.payment.status === 'held' ? '#FF9800' :
+                      booking.payment.status === 'captured' ? '#4CAF50' :
+                      booking.payment.status === 'refunded' ? '#F44336' :
+                      '#666'
+                    }
+                    style={styles.iconRTL}
+                  />
+                  <View style={styles.paymentDetails}>
+                    <Text style={[styles.paymentLabel, styles.textRTL]}>
+                      סטטוס תשלום
+                    </Text>
+                    <Text style={[styles.paymentStatusText, styles.textRTL]}>
+                      {booking.payment.status === 'held' && `${booking.payment.amount}₪ מוחזק בנאמנות`}
+                      {booking.payment.status === 'captured' && `${booking.payment.amount}₪ נלקח בהצלחה`}
+                      {booking.payment.status === 'refunded' && `${booking.payment.amount}₪ הוחזר`}
+                    </Text>
+                  </View>
+                </View>
+                <Divider style={styles.divider} />
+              </>
+            )}
+            
+            {/* כתובת השירות */}
             <View style={styles.addressSection}>
-              <View style={styles.addressHeader}>
-                <Text style={styles.sectionTitle}>Adresse du service</Text>
+              <View style={[styles.addressHeader, styles.rtlRow]}>
+                <Text variant="bold" style={[styles.sectionTitle, styles.textRTL]}>
+                  כתובת השירות
+                </Text>
                 <TouchableOpacity onPress={() => navigation.navigate('AddressSelection')}>
-                  <Text style={[styles.modifyButton, { color: serviceColor }]}>
-                    Modifier
+                  <Text style={[styles.modifyButton, { color: serviceColor }, styles.textRTL]}>
+                    שנה
                   </Text>
                 </TouchableOpacity>
               </View>
-              <View style={styles.addressInfo}>
-                <Icon name="map-marker" size={24} color={serviceColor} style={styles.icon} />
-                <View style={styles.addressDetails}>
-                  <Text style={styles.addressText}>
+              <View style={[styles.addressInfo, styles.rtlRow]}>
+                <Icon 
+                  name="map-marker" 
+                  size={24} 
+                  color={serviceColor} 
+                  style={styles.iconRTL} 
+                />
+                <View style={[styles.addressDetails, styles.rtlFlex]}>
+                  <Text style={[styles.addressText, styles.textRTL]}>
                     {displayAddress}
                   </Text>
-                  {/* ✅ INDICATEUR SOURCE DE L'ADRESSE */}
                   {currentBooking?.address && (
-                    <Text style={styles.addressSource}>
-                      (Adresse personnalisée)
+                    <Text style={[styles.addressSource, styles.textRTL]}>
+                      כתובת מותאמת אישית
                     </Text>
                   )}
                   {!currentBooking?.address && (
-                    <Text style={styles.addressSource}>
-                      (Adresse d'inscription)
+                    <Text style={[styles.addressSource, styles.textRTL]}>
+                      כתובת מהרישום
                     </Text>
                   )}
                 </View>
@@ -459,10 +609,19 @@ const BookingDetailsScreen = () => {
               <>
                 <Divider style={styles.divider} />
                 <View style={styles.notesSection}>
-                  <Text style={styles.sectionTitle}>Instructions spéciales</Text>
-                  <View style={styles.notesBox}>
-                    <Icon name="note-text" size={24} color={serviceColor} style={styles.icon} />
-                    <Text style={styles.notesText}>{booking.notes}</Text>
+                  <Text variant="bold" style={[styles.sectionTitle, styles.textRTL]}>
+                    הוראות מיוחדות
+                  </Text>
+                  <View style={[styles.notesBox, styles.rtlRow]}>
+                    <Icon 
+                      name="note-text" 
+                      size={24} 
+                      color={serviceColor} 
+                      style={styles.iconRTL} 
+                    />
+                    <Text style={[styles.notesText, styles.textRTL]}>
+                      {booking.notes}
+                    </Text>
                   </View>
                 </View>
               </>
@@ -473,109 +632,179 @@ const BookingDetailsScreen = () => {
         {renderExistingRating()}
         
         <View style={styles.actionsContainer}>
+          {/* ✅ NEW: Bouton de complétion manuelle */}
+          {canManuallyComplete() && (
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.containedButton, { backgroundColor: '#9C27B0' }]}
+              onPress={() => setIsCompletionDialogVisible(true)}
+            >
+              <Icon name="check-circle" size={20} color="white" style={{ marginLeft: 8 }} />
+              <Text style={[styles.buttonText, { color: 'white' }]}>סיים שירות</Text>
+            </TouchableOpacity>
+          )}
+          
           {canBeRated() && (
-            <Button 
-              mode="contained" 
-              style={[styles.actionButton, { backgroundColor: '#9C27B0' }]}
-              icon="star"
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.containedButton, { backgroundColor: '#9C27B0' }]}
               onPress={() => setIsRatingDialogVisible(true)}
             >
-              Évaluer le service
-            </Button>
+              <Icon name="star" size={20} color="white" style={{ marginLeft: 8 }} />
+              <Text style={[styles.buttonText, { color: 'white' }]}>דרג את השירות</Text>
+            </TouchableOpacity>
           )}
           
           {canBeCancelled() && (
-            <Button 
-              mode="outlined" 
-              style={styles.actionButton}
-              icon="close-circle"
-              color="#F44336"
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.outlinedButton, { borderColor: '#F44336' }]}
               onPress={() => setIsCancellationDialogVisible(true)}
             >
-              Annuler la réservation
-            </Button>
+              <Icon name="close-circle" size={20} color="#F44336" style={{ marginLeft: 8 }} />
+              <Text style={[styles.buttonText, { color: '#F44336' }]}>בטל הזמנה</Text>
+            </TouchableOpacity>
           )}
           
           {booking.status === BOOKING_STATUS.CONFIRMED && (
-            <Button 
-              mode="outlined" 
-              style={styles.actionButton}
-              icon="calendar-edit"
-              color={serviceColor}
-              onPress={() => { /* Naviguer vers l'écran de modification */ }}
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.outlinedButton, { borderColor: serviceColor }]}
+              onPress={() => { /* ניווט למסך שינוי */ }}
             >
-              Modifier la réservation
-            </Button>
+              <Icon name="calendar-edit" size={20} color={serviceColor} style={{ marginLeft: 8 }} />
+              <Text style={[styles.buttonText, { color: serviceColor }]}>שנה הזמנה</Text>
+            </TouchableOpacity>
           )}
           
-          <Button 
-            mode="text" 
-            style={styles.actionButton}
-            icon="help-circle"
-            onPress={() => { /* Naviguer vers l'aide */ }}
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.textButton]}
+            onPress={() => { /* ניווט לעזרה */ }}
           >
-            Besoin d'aide?
-          </Button>
+            <Icon name="help-circle" size={20} color={theme.colors.primary} style={{ marginLeft: 8 }} />
+            <Text style={[styles.buttonText, { color: theme.colors.primary }]}>צריך עזרה?</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
       
-      {/* Dialog de notation */}
+      {/* ✅ NEW: דיאלוג סיום שירות */}
+      <Portal>
+        <Dialog
+          visible={isCompletionDialogVisible}
+          onDismiss={() => setIsCompletionDialogVisible(false)}
+          style={styles.dialog}
+        >
+          <View style={{ padding: 20, paddingBottom: 0 }}>
+            <Text variant="bold" style={[styles.textRTL, { fontSize: 20, marginBottom: 8 }]}>
+              סיום שירות
+            </Text>
+          </View>
+          <Dialog.Content>
+            <Text style={[styles.dialogText, styles.textRTL]}>
+              האם השירות הושלם בהצלחה?
+            </Text>
+          </Dialog.Content>
+          <View style={styles.dialogActions}>
+            <TouchableOpacity 
+              style={styles.dialogButton}
+              onPress={() => setIsCompletionDialogVisible(false)}
+            >
+              <Text style={[styles.buttonText, { color: theme.colors.primary }]}>ביטול</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.dialogButton}
+              onPress={handleCompleteService}
+            >
+              <Text style={[styles.buttonText, { color: '#9C27B0' }]}>כן, סיים</Text>
+            </TouchableOpacity>
+          </View>
+        </Dialog>
+      </Portal>
+      
+      {/* דיאלוג דירוג */}
       <Portal>
         <Dialog
           visible={isRatingDialogVisible}
           onDismiss={() => setIsRatingDialogVisible(false)}
           style={styles.dialog}
         >
-          <Dialog.Title>Évaluer le service</Dialog.Title>
+          <View style={{ padding: 20, paddingBottom: 0 }}>
+            <Text variant="bold" style={[styles.textRTL, { fontSize: 20, marginBottom: 8 }]}>
+              דרג את השירות
+            </Text>
+          </View>
           <Dialog.Content>
-            <Paragraph style={styles.dialogText}>
-              Comment évaluez-vous le service fourni par {booking?.selectedProvider?.name}?
-            </Paragraph>
+            <Text style={[styles.dialogText, styles.textRTL]}>
+              איך היה השירות של {booking?.selectedProvider?.name || 'הספק'}?
+            </Text>
             {renderRatingStars()}
-            <TextInput
-              label="Commentaire (optionnel)"
-              value={ratingComment}
-              onChangeText={setRatingComment}
-              style={styles.commentInput}
-              multiline
-              numberOfLines={3}
-            />
+            <View style={{ marginTop: 10 }}>
+              <Text style={[styles.textRTL, { marginBottom: 5, color: '#666' }]}>
+                הערות (אופציונלי)
+              </Text>
+              <RNTextInput
+                value={ratingComment}
+                onChangeText={setRatingComment}
+                style={[styles.commentInput, styles.textRTL, { 
+                  borderWidth: 1, 
+                  borderColor: '#ddd', 
+                  borderRadius: 4,
+                  padding: 10,
+                  minHeight: 80,
+                  textAlign: 'right'
+                }]}
+                multiline
+                numberOfLines={3}
+                placeholder="הוסף הערות כאן..."
+                placeholderTextColor="#999"
+              />
+            </View>
           </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setIsRatingDialogVisible(false)}>Annuler</Button>
-            <Button 
+          <View style={styles.dialogActions}>
+            <TouchableOpacity 
+              style={styles.dialogButton}
+              onPress={() => setIsRatingDialogVisible(false)}
+            >
+              <Text style={[styles.buttonText, { color: theme.colors.primary }]}>ביטול</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.dialogButton, { opacity: rating === 0 ? 0.5 : 1 }]}
               onPress={handleRateService} 
               disabled={rating === 0}
-              color="#9C27B0"
             >
-              Soumettre
-            </Button>
-          </Dialog.Actions>
+              <Text style={[styles.buttonText, { color: '#9C27B0' }]}>שלח דירוג</Text>
+            </TouchableOpacity>
+          </View>
         </Dialog>
       </Portal>
       
-      {/* Dialog de confirmation d'annulation */}
+      {/* דיאלוג ביטול */}
       <Portal>
         <Dialog
           visible={isCancellationDialogVisible}
           onDismiss={() => setIsCancellationDialogVisible(false)}
           style={styles.dialog}
         >
-          <Dialog.Title>Confirmer l'annulation</Dialog.Title>
+          <View style={{ padding: 20, paddingBottom: 0 }}>
+            <Text variant="bold" style={[styles.textRTL, { fontSize: 20, marginBottom: 8 }]}>
+              ביטול הזמנה
+            </Text>
+          </View>
           <Dialog.Content>
-            <Paragraph style={styles.dialogText}>
-              Êtes-vous sûr de vouloir annuler cette réservation?
-            </Paragraph>
+            <Text style={[styles.dialogText, styles.textRTL]}>
+              האם אתה בטוח שברצונך לבטל את ההזמנה?
+            </Text>
           </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setIsCancellationDialogVisible(false)}>Non</Button>
-            <Button 
-              onPress={handleCancelBooking}
-              color="#F44336"
+          <View style={styles.dialogActions}>
+            <TouchableOpacity 
+              style={styles.dialogButton}
+              onPress={() => setIsCancellationDialogVisible(false)}
             >
-              Oui, annuler
-            </Button>
-          </Dialog.Actions>
+              <Text style={[styles.buttonText, { color: theme.colors.primary }]}>לא</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.dialogButton}
+              onPress={handleCancelBooking}
+            >
+              <Text style={[styles.buttonText, { color: '#F44336' }]}>כן, בטל</Text>
+            </TouchableOpacity>
+          </View>
         </Dialog>
       </Portal>
     </View>
@@ -620,6 +849,10 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: 10,
+  },
+  iconRTL: {
+    marginRight: 0,
+    marginLeft: 10,
   },
   dateText: {
     fontSize: 18,
@@ -669,7 +902,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
     marginBottom: 10,
   },
   providerSection: {
@@ -678,6 +910,7 @@ const styles = StyleSheet.create({
   providerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 10,
   },
   providerDetails: {
     flex: 1,
@@ -695,6 +928,76 @@ const styles = StyleSheet.create({
   ratingText: {
     marginLeft: 5,
     color: '#666',
+  },
+  // ✅ ESCROW - Styles téléphone
+  phoneContainer: {
+    flexDirection: 'row-reverse',
+    alignItems: 'flex-start',
+    backgroundColor: '#E3F2FD',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 5,
+  },
+  phoneHiddenContainer: {
+    backgroundColor: '#FFF8E1',
+  },
+  phoneDetails: {
+    flex: 1,
+  },
+  phoneLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  phoneButton: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    backgroundColor: '#BBDEFB',
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  phoneNumber: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginRight: 6,
+  },
+  phoneHidden: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#999',
+    marginTop: 2,
+  },
+  phoneHiddenNote: {
+    fontSize: 12,
+    color: '#FF9800',
+    marginTop: 6,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  // ✅ ESCROW - Styles payment status
+  paymentStatusContainer: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 5,
+  },
+  paymentDetails: {
+    flex: 1,
+  },
+  paymentLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
+  },
+  paymentStatusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
   },
   addressSection: {
     marginBottom: 5,
@@ -724,7 +1027,6 @@ const styles = StyleSheet.create({
     color: '#333',
     lineHeight: 22,
   },
-  // ✅ NOUVEAU STYLE POUR INDICATEUR SOURCE
   addressSource: {
     fontSize: 12,
     color: '#666',
@@ -751,6 +1053,42 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginBottom: 10,
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  containedButton: {
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  outlinedButton: {
+    borderWidth: 1,
+    backgroundColor: 'transparent',
+  },
+  textButton: {
+    backgroundColor: 'transparent',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  dialogActions: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'flex-start',
+    padding: 8,
+    paddingTop: 0,
+  },
+  dialogButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginLeft: 8,
   },
   ratingCard: {
     margin: 15,
@@ -797,7 +1135,19 @@ const styles = StyleSheet.create({
   commentInput: {
     backgroundColor: 'transparent',
     marginTop: 10,
-  }
+  },
+  // סגנונות RTL
+  rtlRow: {
+    flexDirection: 'row-reverse',
+  },
+  rtlFlex: {
+    marginLeft: 0,
+    marginRight: 10,
+  },
+  textRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
 });
 
 export default BookingDetailsScreen;

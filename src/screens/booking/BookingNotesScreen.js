@@ -1,9 +1,11 @@
 // src/screens/booking/BookingNotesScreen.js
-// ✅ VERSION AVEC UPLOAD VIDÉO/PHOTO
+// ✅ גרסה מתורגמת לעברית עם העלאת וידאו/תמונה
+// ✅ תוקן: נוסף תמיכה ב-Airbnb עם צבע #FF5A5F
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Image, TouchableOpacity, Platform } from 'react-native';
 import { Text, TextInput, Button, useTheme, Appbar, IconButton, Card } from 'react-native-paper';
 import { useBooking } from '../../context/BookingContext';
+import { getServiceColor } from '../../config/constants';  // ✅ Import getServiceColor
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -18,33 +20,19 @@ const BookingNotesScreen = ({ route, navigation }) => {
   const [media, setMedia] = useState(currentBooking.media || []);
   const [isUploading, setIsUploading] = useState(false);
   
-  // Taille maximale en bytes (50 MB)
-  const MAX_FILE_SIZE = 50 * 1024 * 1024;
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+  const isRTL = true; // תמיד RTL לעברית
   
-  // Couleur associée au type de service
-  const getServiceColor = () => {
-    switch (currentBooking.serviceType) {
-      case 'home':
-        return theme.colors.homeService;
-      case 'office':
-        return theme.colors.officeService;
-      case 'building':
-        return theme.colors.buildingService;
-      default:
-        return theme.colors.primary;
-    }
-  };
+  // ✅ ✅ ✅ COULEUR DYNAMIQUE depuis constants.js
+  const serviceColor = getServiceColor(currentBooking.serviceType);
   
-  const serviceColor = getServiceColor();
-  
-  // Demander les permissions
   const requestPermissions = async () => {
     if (Platform.OS !== 'web') {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Permission refusée',
-          'Nous avons besoin de la permission pour accéder à vos photos et vidéos.'
+          'הרשאה נדחתה',
+          'אנחנו צריכים הרשאה לגשת לתמונות ולסרטונים שלך'
         );
         return false;
       }
@@ -52,37 +40,32 @@ const BookingNotesScreen = ({ route, navigation }) => {
     return true;
   };
   
-  // Obtenir la taille du fichier
   const getFileSize = async (uri) => {
     try {
       const fileInfo = await FileSystem.getInfoAsync(uri);
       return fileInfo.size || 0;
     } catch (error) {
-      console.error('Erreur lors de la récupération de la taille du fichier:', error);
+      console.error('שגיאה בקבלת גודל קובץ:', error);
       return 0;
     }
   };
   
-  // Formater la taille pour l'affichage
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return '0 בתים';
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ['בתים', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
   
-  // Sélectionner une vidéo ou photo
   const handlePickMedia = async () => {
-    // Vérifier les permissions
     const hasPermission = await requestPermissions();
     if (!hasPermission) return;
     
-    // Vérifier le nombre de médias (max 3)
     if (media.length >= 3) {
       Alert.alert(
-        'Limite atteinte',
-        'Vous pouvez ajouter maximum 3 fichiers (photos ou vidéos).'
+        'הגעת למגבלה',
+        'אפשר להעלות עד 3 תמונות או סרטונים'
       );
       return;
     }
@@ -91,32 +74,29 @@ const BookingNotesScreen = ({ route, navigation }) => {
       setIsUploading(true);
       
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All, // Photos et vidéos
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsEditing: false,
         quality: 0.8,
-        videoMaxDuration: 60, // 60 secondes max
+        videoMaxDuration: 60,
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedAsset = result.assets[0];
-        
-        // Vérifier la taille du fichier
         const fileSize = await getFileSize(selectedAsset.uri);
         
         if (fileSize > MAX_FILE_SIZE) {
           Alert.alert(
-            'Fichier trop volumineux',
-            `Le fichier sélectionné (${formatFileSize(fileSize)}) dépasse la limite de 50 MB. Veuillez choisir un fichier plus petit.`
+            'הקובץ גדול מדי',
+            `גודל הקובץ (${formatFileSize(fileSize)}) עולה על המגבלה של 50MB`
           );
           setIsUploading(false);
           return;
         }
         
-        // Ajouter le média à la liste
         const newMedia = {
           id: Date.now().toString(),
           uri: selectedAsset.uri,
-          type: selectedAsset.type, // 'image' ou 'video'
+          type: selectedAsset.type,
           fileName: selectedAsset.uri.split('/').pop(),
           size: fileSize,
           duration: selectedAsset.duration || null,
@@ -125,30 +105,29 @@ const BookingNotesScreen = ({ route, navigation }) => {
         setMedia([...media, newMedia]);
         
         Alert.alert(
-          'Succès',
-          `${selectedAsset.type === 'video' ? 'Vidéo' : 'Photo'} ajoutée avec succès (${formatFileSize(fileSize)})`
+          'הועלה בהצלחה',
+          `${selectedAsset.type === 'video' ? 'סרטון' : 'תמונה'} הועלה בהצלחה (${formatFileSize(fileSize)})`
         );
       }
     } catch (error) {
-      console.error('Erreur lors de la sélection du média:', error);
+      console.error('שגיאה בבחירת מדיה:', error);
       Alert.alert(
-        'Erreur',
-        'Une erreur est survenue lors de la sélection du fichier. Veuillez réessayer.'
+        'שגיאה',
+        'כשל בבחירת הקובץ. אנא נסה שוב.'
       );
     } finally {
       setIsUploading(false);
     }
   };
   
-  // Supprimer un média
   const handleRemoveMedia = (mediaId) => {
     Alert.alert(
-      'Confirmer la suppression',
-      'Voulez-vous vraiment supprimer ce fichier ?',
+      'אישור מחיקה',
+      'האם אתה בטוח שברצונך למחוק קובץ זה?',
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: 'ביטול', style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: 'מחק',
           style: 'destructive',
           onPress: () => {
             setMedia(media.filter(m => m.id !== mediaId));
@@ -158,15 +137,13 @@ const BookingNotesScreen = ({ route, navigation }) => {
     );
   };
   
-  // Handler pour sauvegarder les notes et médias
   const handleSaveNotes = () => {
-    // Calculer la taille totale
     const totalSize = media.reduce((sum, m) => sum + m.size, 0);
     
-    if (totalSize > MAX_FILE_SIZE * 3) { // 150MB max au total
+    if (totalSize > MAX_FILE_SIZE * 3) {
       Alert.alert(
-        'Taille totale trop importante',
-        'La taille totale de vos fichiers dépasse 150 MB. Veuillez supprimer certains fichiers.'
+        'סך הקבצים גדול מדי',
+        'הגודל הכולל של הקבצים עולה על 150MB'
       );
       return;
     }
@@ -178,7 +155,6 @@ const BookingNotesScreen = ({ route, navigation }) => {
     navigation.goBack();
   };
   
-  // Rendu d'un média (image ou vidéo)
   const renderMediaItem = (mediaItem) => {
     return (
       <Card key={mediaItem.id} style={styles.mediaCard}>
@@ -204,18 +180,18 @@ const BookingNotesScreen = ({ route, navigation }) => {
             </View>
           )}
           
-          <View style={styles.mediaInfo}>
+          <View style={[styles.mediaInfo, styles.rtlRow]}>
             <Icon 
               name={mediaItem.type === 'video' ? 'video' : 'image'} 
               size={20} 
               color={serviceColor}
-              style={styles.mediaIcon}
+              style={styles.iconRTL}
             />
             <View style={styles.mediaDetails}>
-              <Text style={styles.mediaFileName} numberOfLines={1}>
+              <Text style={[styles.mediaFileName, styles.textRTL]} numberOfLines={1}>
                 {mediaItem.fileName}
               </Text>
-              <Text style={styles.mediaSize}>
+              <Text style={[styles.mediaSize, styles.textRTL]}>
                 {formatFileSize(mediaItem.size)}
                 {mediaItem.duration && ` • ${Math.round(mediaItem.duration)}s`}
               </Text>
@@ -227,7 +203,7 @@ const BookingNotesScreen = ({ route, navigation }) => {
             size={24}
             color="#F44336"
             onPress={() => handleRemoveMedia(mediaItem.id)}
-            style={styles.removeButton}
+            style={styles.removeButtonRTL}
           />
         </View>
       </Card>
@@ -238,96 +214,103 @@ const BookingNotesScreen = ({ route, navigation }) => {
     <View style={styles.container}>
       <Appbar.Header style={{ backgroundColor: serviceColor }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} color="white" />
-        <Appbar.Content title="Instructions spéciales" color="white" />
+        <Appbar.Content 
+          title="הערות והוראות" 
+          color="white"
+          titleStyle={styles.textRTL}
+        />
         <Appbar.Action icon="check" onPress={handleSaveNotes} color="white" />
       </Appbar.Header>
       
       <ScrollView style={styles.content}>
-        <Text style={styles.label}>
-          Informations supplémentaires pour votre prestataire
+        <Text style={[styles.label, styles.textRTL]}>
+          הוסף הערות מיוחדות או הוראות לספק השירות
         </Text>
         
         <TextInput
           value={notes}
           onChangeText={setNotes}
-          style={styles.textInput}
+          style={[styles.textInput, styles.textInputRTL]}
           multiline
           numberOfLines={10}
           mode="outlined"
           theme={{ colors: { primary: serviceColor } }}
-          placeholder="Exemples : code d'accès, animaux domestiques, zones spécifiques à nettoyer, etc."
+          placeholder="לדוגמה: קוד גישה, מיקום מפתח, אזורים שצריכים תשומת לב מיוחדת..."
         />
         
         <View style={styles.examplesContainer}>
-          <Text style={styles.examplesTitle}>Suggestions :</Text>
-          <View style={styles.exampleChips}>
+          <Text style={[styles.examplesTitle, styles.textRTL]}>
+            הצעות להערות:
+          </Text>
+          <View style={[styles.exampleChips, styles.rtlRow]}>
             <Button 
               mode="outlined" 
               style={styles.exampleChip}
-              labelStyle={styles.exampleChipLabel}
-              onPress={() => setNotes(notes ? `${notes}\nCode d'accès : ` : "Code d'accès : ")}
+              labelStyle={[styles.exampleChipLabel, styles.textRTL]}
+              onPress={() => setNotes(notes ? `${notes}\n📍 קוד גישה: 1234` : '📍 קוד גישה: 1234')}
               color={serviceColor}
             >
-              Code d'accès
+              קוד גישה
             </Button>
             
             <Button 
               mode="outlined" 
               style={styles.exampleChip}
-              labelStyle={styles.exampleChipLabel}
-              onPress={() => setNotes(notes ? `${notes}\nJ'ai des animaux domestiques` : "J'ai des animaux domestiques")}
+              labelStyle={[styles.exampleChipLabel, styles.textRTL]}
+              onPress={() => setNotes(notes ? `${notes}\n🐕 יש חיות מחמד בבית` : '🐕 יש חיות מחמד בבית')}
               color={serviceColor}
             >
-              Animaux domestiques
+              חיות מחמד
             </Button>
             
             <Button 
               mode="outlined" 
               style={styles.exampleChip}
-              labelStyle={styles.exampleChipLabel}
-              onPress={() => setNotes(notes ? `${notes}\nAttention aux objets fragiles` : "Attention aux objets fragiles")}
+              labelStyle={[styles.exampleChipLabel, styles.textRTL]}
+              onPress={() => setNotes(notes ? `${notes}\n⚠️ פריטים שבירים` : '⚠️ פריטים שבירים')}
               color={serviceColor}
             >
-              Objets fragiles
+              פריטים שבירים
             </Button>
             
             <Button 
               mode="outlined" 
               style={styles.exampleChip}
-              labelStyle={styles.exampleChipLabel}
-              onPress={() => setNotes(notes ? `${notes}\nProduits écologiques uniquement` : "Produits écologiques uniquement")}
+              labelStyle={[styles.exampleChipLabel, styles.textRTL]}
+              onPress={() => setNotes(notes ? `${notes}\n🌿 להשתמש במוצרים אקולוגיים` : '🌿 להשתמש במוצרים אקולוגיים')}
               color={serviceColor}
             >
-              Produits écologiques
+              מוצרים אקולוגיים
             </Button>
             
             <Button 
               mode="outlined" 
               style={styles.exampleChip}
-              labelStyle={styles.exampleChipLabel}
-              onPress={() => setNotes(notes ? `${notes}\nPorte à l'arrière du bâtiment` : "Porte à l'arrière du bâtiment")}
+              labelStyle={[styles.exampleChipLabel, styles.textRTL]}
+              onPress={() => setNotes(notes ? `${notes}\n🚪 כניסה דרך הכניסה האחורית` : '🚪 כניסה דרך הכניסה האחורית')}
               color={serviceColor}
             >
-              Accès spécifique
+              כניסה מיוחדת
             </Button>
           </View>
         </View>
         
-        {/* ✅ NOUVELLE SECTION MÉDIAS */}
         <View style={styles.mediaSection}>
-          <View style={styles.mediaSectionHeader}>
-            <Text style={styles.mediaSectionTitle}>Photos et Vidéos</Text>
-            <Text style={styles.mediaCount}>{media.length}/3</Text>
+          <View style={[styles.mediaSectionHeader, styles.rtlRow]}>
+            <Text style={[styles.mediaSectionTitle, styles.textRTL]}>
+              תמונות וסרטונים
+            </Text>
+            <Text style={[styles.mediaCount, styles.textRTL]}>
+              {media.length}/3
+            </Text>
           </View>
           
-          <Text style={styles.mediaDescription}>
-            Ajoutez des photos ou une vidéo pour aider le prestataire à mieux comprendre vos besoins (max 50 MB par fichier, 60 secondes pour les vidéos)
+          <Text style={[styles.mediaDescription, styles.textRTL]}>
+            העלה עד 3 תמונות או סרטונים כדי להראות לספק השירות מה צריך לנקות או אזורים בעייתיים.
           </Text>
           
-          {/* Liste des médias */}
           {media.map(mediaItem => renderMediaItem(mediaItem))}
           
-          {/* Bouton ajouter média */}
           {media.length < 3 && (
             <Button
               mode="outlined"
@@ -337,16 +320,22 @@ const BookingNotesScreen = ({ route, navigation }) => {
               color={serviceColor}
               loading={isUploading}
               disabled={isUploading}
+              labelStyle={styles.textRTL}
             >
-              {isUploading ? 'Chargement...' : 'Ajouter une photo ou vidéo'}
+              {isUploading ? 'טוען...' : 'הוסף תמונה או סרטון'}
             </Button>
           )}
           
           {media.length > 0 && (
-            <View style={styles.mediaInfoBox}>
-              <Icon name="information" size={16} color="#666" />
-              <Text style={styles.mediaInfoText}>
-                Les fichiers seront envoyés au prestataire après la confirmation de la réservation
+            <View style={[styles.mediaInfoBox, styles.rtlRow]}>
+              <Icon 
+                name="information" 
+                size={16} 
+                color="#666"
+                style={styles.iconRTL}
+              />
+              <Text style={[styles.mediaInfoText, styles.textRTL]}>
+                התמונות והסרטונים יעזרו לספק השירות להבין טוב יותר את הצרכים שלך ולהתכונן בהתאם.
               </Text>
             </View>
           )}
@@ -355,10 +344,11 @@ const BookingNotesScreen = ({ route, navigation }) => {
         <View style={styles.buttonContainer}>
           <Button
             mode="contained"
-            style={[styles.button, { backgroundColor: serviceColor }]}
+            buttonColor={serviceColor} style={styles.button}
             onPress={handleSaveNotes}
+            labelStyle={styles.textRTL}
           >
-            Enregistrer
+            שמור
           </Button>
         </View>
       </ScrollView>
@@ -383,6 +373,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     marginBottom: 20,
   },
+  textInputRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
   examplesContainer: {
     marginBottom: 20,
   },
@@ -392,7 +386,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   exampleChips: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     flexWrap: 'wrap',
   },
   exampleChip: {
@@ -402,14 +396,12 @@ const styles = StyleSheet.create({
   exampleChipLabel: {
     fontSize: 12,
   },
-  
-  // ✅ NOUVEAUX STYLES POUR LES MÉDIAS
   mediaSection: {
     marginTop: 10,
     marginBottom: 20,
   },
   mediaSectionHeader: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
@@ -462,13 +454,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   mediaInfo: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     marginTop: 10,
     paddingHorizontal: 5,
   },
-  mediaIcon: {
-    marginRight: 8,
+  iconRTL: {
+    marginLeft: 8,
+    marginRight: 0,
   },
   mediaDetails: {
     flex: 1,
@@ -483,10 +476,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
-  removeButton: {
+  removeButtonRTL: {
     position: 'absolute',
     top: 5,
-    right: 5,
+    left: 5,
     backgroundColor: 'rgba(255,255,255,0.9)',
   },
   addMediaButton: {
@@ -496,7 +489,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   mediaInfoBox: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'flex-start',
     backgroundColor: '#E3F2FD',
     padding: 12,
@@ -507,17 +500,23 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     color: '#666',
-    marginLeft: 8,
+    marginRight: 8,
     lineHeight: 18,
   },
-  
   buttonContainer: {
     marginTop: 10,
     marginBottom: 30,
   },
   button: {
     paddingVertical: 8,
-  }
+  },
+  rtlRow: {
+    flexDirection: 'row-reverse',
+  },
+  textRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
 });
 
 export default BookingNotesScreen;

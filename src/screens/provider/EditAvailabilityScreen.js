@@ -6,33 +6,36 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
-  Switch
+  Switch,
+  I18nManager
 } from 'react-native';
 import { Card, Button, IconButton, Divider, ActivityIndicator } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { providerService } from '../../services/api';
-
+import { useTranslation } from 'react-i18next';
 
 const EditAvailabilityScreen = ({ route }) => {
   const navigation = useNavigation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'he';
   const { availability } = route.params || { availability: [] };
   const [loading, setLoading] = useState(false);
 
-  // Convertir les entrées de disponibilité en format lisible pour l'interface utilisateur
-  const initialAvailability = [];
-  
-  // Liste des jours de la semaine
-  const days = [
-    { id: 0, name: 'Dimanche', enabled: false, startTime: '09:00', endTime: '17:00' },
-    { id: 1, name: 'Lundi', enabled: false, startTime: '09:00', endTime: '17:00' },
-    { id: 2, name: 'Mardi', enabled: false, startTime: '09:00', endTime: '17:00' },
-    { id: 3, name: 'Mercredi', enabled: false, startTime: '09:00', endTime: '17:00' },
-    { id: 4, name: 'Jeudi', enabled: false, startTime: '09:00', endTime: '17:00' },
-    { id: 5, name: 'Vendredi', enabled: false, startTime: '09:00', endTime: '17:00' },
-    { id: 6, name: 'Samedi', enabled: false, startTime: '09:00', endTime: '17:00' },
+  // Liste des jours de la semaine avec traduction
+  const getDays = () => [
+    { id: 0, name: t('editAvailability.days.sunday'), enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 1, name: t('editAvailability.days.monday'), enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 2, name: t('editAvailability.days.tuesday'), enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 3, name: t('editAvailability.days.wednesday'), enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 4, name: t('editAvailability.days.thursday'), enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 5, name: t('editAvailability.days.friday'), enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 6, name: t('editAvailability.days.saturday'), enabled: false, startTime: '09:00', endTime: '17:00' },
   ];
 
+  const days = getDays();
+  const initialAvailability = [];
+  
   // Initialiser les jours avec les données existantes
   if (availability && availability.length > 0) {
     availability.forEach(slot => {
@@ -139,8 +142,8 @@ const EditAvailabilityScreen = ({ route }) => {
 
     if (invalidDays.length > 0) {
       Alert.alert(
-        'Erreur de validation',
-        'L\'heure de fin doit être postérieure à l\'heure de début pour tous les jours actifs.'
+        t('editAvailability.errors.validationError'),
+        t('editAvailability.errors.validationMessage')
       );
       return;
     }
@@ -158,12 +161,15 @@ const EditAvailabilityScreen = ({ route }) => {
 
     try {
       await providerService.updateAvailability({ availability: formattedAvailability });
-      Alert.alert('Succès', 'Vos disponibilités ont été mises à jour avec succès');
+      Alert.alert(
+        t('editAvailability.success.title'),
+        t('editAvailability.success.message')
+      );
       navigation.goBack();
     } catch (error) {
       Alert.alert(
-        'Erreur',
-        'Une erreur est survenue lors de la mise à jour de vos disponibilités'
+        t('editAvailability.errors.updateError'),
+        t('editAvailability.errors.updateMessage')
       );
     } finally {
       setLoading(false);
@@ -174,35 +180,43 @@ const EditAvailabilityScreen = ({ route }) => {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Card style={styles.card}>
-          <Card.Title title="Définir vos disponibilités" />
+          <Card.Title 
+            title={t('editAvailability.title')}
+            titleStyle={isRTL && styles.rtlText}
+          />
           <Card.Content>
-            <Text style={styles.description}>
-              Activez les jours où vous êtes disponible et définissez vos heures de travail pour chaque jour.
+            <Text style={[styles.description, isRTL && styles.rtlText]}>
+              {t('editAvailability.description')}
             </Text>
 
             {availabilityData.map((day, index) => (
               <View key={index}>
-                <View style={styles.dayRow}>
-                  <View style={styles.dayHeader}>
+                <View style={[styles.dayRow, isRTL && styles.dayRowRTL]}>
+                  <View style={[styles.dayHeader, isRTL && styles.dayHeaderRTL]}>
                     <Switch
                       value={day.enabled}
                       onValueChange={() => handleDayToggle(index)}
                     />
                     <Text style={[
                       styles.dayName,
-                      !day.enabled && styles.dayDisabled
+                      !day.enabled && styles.dayDisabled,
+                      isRTL && styles.dayNameRTL
                     ]}>
                       {day.name}
                     </Text>
                   </View>
                   
-                  <View style={styles.timeContainer}>
+                  <View style={[styles.timeContainer, isRTL && styles.timeContainerRTL]}>
                     <TouchableOpacity
                       style={[styles.timeButton, !day.enabled && styles.timeButtonDisabled]}
                       onPress={() => day.enabled && showStartPicker(index)}
                       disabled={!day.enabled}
                     >
-                      <Text style={[styles.timeText, !day.enabled && styles.timeTextDisabled]}>
+                      <Text style={[
+                        styles.timeText, 
+                        !day.enabled && styles.timeTextDisabled,
+                        isRTL && styles.rtlText
+                      ]}>
                         {day.startTime}
                       </Text>
                     </TouchableOpacity>
@@ -214,7 +228,11 @@ const EditAvailabilityScreen = ({ route }) => {
                       onPress={() => day.enabled && showEndPicker(index)}
                       disabled={!day.enabled}
                     >
-                      <Text style={[styles.timeText, !day.enabled && styles.timeTextDisabled]}>
+                      <Text style={[
+                        styles.timeText, 
+                        !day.enabled && styles.timeTextDisabled,
+                        isRTL && styles.rtlText
+                      ]}>
                         {day.endTime}
                       </Text>
                     </TouchableOpacity>
@@ -226,22 +244,24 @@ const EditAvailabilityScreen = ({ route }) => {
             ))}
           </Card.Content>
 
-          <Card.Actions style={styles.cardActions}>
+          <Card.Actions style={[styles.cardActions, isRTL && styles.cardActionsRTL]}>
             <Button
               mode="contained"
               onPress={handleSave}
               loading={loading}
               disabled={loading}
-              style={styles.saveButton}
+              style={[styles.saveButton, isRTL && styles.saveButtonRTL]}
+              labelStyle={isRTL && styles.rtlText}
             >
-              Enregistrer
+              {t('editAvailability.save')}
             </Button>
             <Button
               mode="outlined"
               onPress={() => navigation.goBack()}
               disabled={loading}
+              labelStyle={isRTL && styles.rtlText}
             >
-              Annuler
+              {t('editAvailability.cancel')}
             </Button>
           </Card.Actions>
         </Card>
@@ -297,14 +317,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
   },
+  dayRowRTL: {
+    flexDirection: 'row-reverse',
+  },
   dayHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  dayHeaderRTL: {
+    flexDirection: 'row-reverse',
   },
   dayName: {
     marginLeft: 8,
     fontSize: 16,
     fontWeight: '500',
+  },
+  dayNameRTL: {
+    marginLeft: 0,
+    marginRight: 8,
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
   dayDisabled: {
     color: '#999',
@@ -312,6 +344,9 @@ const styles = StyleSheet.create({
   timeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  timeContainerRTL: {
+    flexDirection: 'row-reverse',
   },
   timeButton: {
     backgroundColor: '#E1F5FE',
@@ -343,8 +378,16 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     padding: 16,
   },
+  cardActionsRTL: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'flex-start',
+  },
   saveButton: {
     marginRight: 8,
+  },
+  saveButtonRTL: {
+    marginRight: 0,
+    marginLeft: 8,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -352,6 +395,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
+  },
+  rtlText: {
+    writingDirection: 'rtl',
+    textAlign: 'right',
   },
 });
 

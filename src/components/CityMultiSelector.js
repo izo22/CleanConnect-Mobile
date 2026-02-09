@@ -1,13 +1,83 @@
 // src/components/CityMultiSelector.js
-// ✅ COMPOSANT DE SÉLECTION MULTIPLE DE VILLES
+// ✅ COMPOSANT DE SÉLECTION MULTIPLE DE VILLES - 100% NATIVE
+// ✅ תוקן: Version sans react-native-paper pour éviter toutes les erreurs de variant
 
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Searchbar, Checkbox, Chip, Divider } from 'react-native-paper';
+import { 
+  View, 
+  StyleSheet, 
+  ScrollView, 
+  TextInput,
+  TouchableOpacity,
+  Text 
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { ISRAEL_CITIES_BY_ZONE } from '../config/constants';
+
+// ✅ Composant Chip custom (remplace react-native-paper Chip)
+const CustomChip = ({ children, onClose }) => {
+  return (
+    <View style={styles.customChip}>
+      <Text style={styles.customChipText}>{children}</Text>
+      <TouchableOpacity onPress={onClose} style={styles.customChipClose}>
+        <Ionicons name="close-circle" size={18} color="#4CAF50" />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+// ✅ Composant Searchbar custom (remplace react-native-paper Searchbar)
+const CustomSearchbar = ({ placeholder, value, onChangeText, style }) => {
+  return (
+    <View style={[styles.customSearchbar, style]}>
+      <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+      <TextInput
+        style={styles.searchInput}
+        placeholder={placeholder}
+        value={value}
+        onChangeText={onChangeText}
+        placeholderTextColor="#999"
+      />
+      {value.length > 0 && (
+        <TouchableOpacity onPress={() => onChangeText('')}>
+          <Ionicons name="close-circle" size={20} color="#999" />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
+
+// ✅ Composant CheckboxItem custom
+const CustomCheckboxItem = ({ label, checked, onPress, isRTL }) => {
+  return (
+    <TouchableOpacity 
+      style={styles.customCheckboxItem}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={[
+        styles.customCheckbox,
+        checked && styles.customCheckboxChecked
+      ]}>
+        {checked && (
+          <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+        )}
+      </View>
+      <Text style={[styles.customCheckboxLabel, isRTL && styles.textRTL]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+};
+
+// ✅ Composant Divider custom
+const CustomDivider = ({ style }) => {
+  return <View style={[styles.customDivider, style]} />;
+};
 
 const CityMultiSelector = ({ selectedCities = [], onChange, style }) => {
   const [search, setSearch] = useState('');
+  const isRTL = true;
   
   // Fonction pour cocher/décocher une ville
   const toggleCity = (city) => {
@@ -36,32 +106,30 @@ const CityMultiSelector = ({ selectedCities = [], onChange, style }) => {
   return (
     <View style={[styles.container, style]}>
       {/* Barre de recherche */}
-      <Searchbar
-        placeholder="Rechercher une ville..."
+      <CustomSearchbar
+        placeholder="חפש עיר..."
         value={search}
         onChangeText={setSearch}
-        style={styles.searchBar}
+        style={[styles.searchBar, isRTL && styles.searchBarRTL]}
       />
       
       {/* Villes sélectionnées (chips) */}
       {selectedCities.length > 0 && (
         <View style={styles.selectedContainer}>
-          <Text style={styles.selectedTitle}>
-            ✓ {selectedCities.length} ville{selectedCities.length > 1 ? 's' : ''} sélectionnée{selectedCities.length > 1 ? 's' : ''}
+          <Text style={[styles.selectedTitle, isRTL && styles.textRTL]}>
+            ✓ {selectedCities.length} {selectedCities.length === 1 ? 'עיר נבחרה' : 'ערים נבחרו'}
           </Text>
           <View style={styles.chipsContainer}>
             {selectedCities.map(city => (
-              <Chip
+              <CustomChip
                 key={city}
-                style={styles.chip}
                 onClose={() => removeCity(city)}
-                closeIcon="close"
               >
                 {city}
-              </Chip>
+              </CustomChip>
             ))}
           </View>
-          <Divider style={styles.divider} />
+          <CustomDivider style={styles.divider} />
         </View>
       )}
       
@@ -69,15 +137,15 @@ const CityMultiSelector = ({ selectedCities = [], onChange, style }) => {
       <ScrollView style={styles.citiesList}>
         {filteredZones.map(zone => (
           <View key={zone.zone} style={styles.zoneContainer}>
-            <Text style={styles.zoneTitle}>{zone.zone}</Text>
+            <Text style={[styles.zoneTitle, isRTL && styles.textRTL]}>{zone.zone}</Text>
             
             {zone.cities.map(city => (
-              <Checkbox.Item
+              <CustomCheckboxItem
                 key={city}
                 label={city}
-                status={selectedCities.includes(city) ? 'checked' : 'unchecked'}
+                checked={selectedCities.includes(city)}
                 onPress={() => toggleCity(city)}
-                style={styles.checkboxItem}
+                isRTL={isRTL}
               />
             ))}
           </View>
@@ -85,7 +153,9 @@ const CityMultiSelector = ({ selectedCities = [], onChange, style }) => {
         
         {filteredZones.length === 0 && (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Aucune ville trouvée</Text>
+            <Text style={[styles.emptyText, isRTL && styles.textRTL]}>
+              לא נמצאו ערים
+            </Text>
           </View>
         )}
       </ScrollView>
@@ -97,9 +167,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  // ✅ Styles pour CustomSearchbar
+  customSearchbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    textAlign: 'right',
+  },
   searchBar: {
     marginBottom: 15,
-    elevation: 2,
+  },
+  searchBarRTL: {
+    textAlign: 'right',
   },
   selectedContainer: {
     marginBottom: 15,
@@ -115,9 +208,31 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginBottom: 10,
   },
-  chip: {
-    margin: 4,
+  // ✅ Styles pour CustomChip
+  customChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#E8F5E9',
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    margin: 4,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  customChipText: {
+    fontSize: 14,
+    color: '#2E7D32',
+    marginRight: 6,
+  },
+  customChipClose: {
+    marginLeft: 4,
+  },
+  // ✅ Styles pour CustomDivider
+  customDivider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginTop: 10,
   },
   divider: {
     height: 1,
@@ -136,8 +251,33 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     paddingLeft: 10,
   },
-  checkboxItem: {
-    paddingLeft: 20,
+  // ✅ Styles pour CustomCheckboxItem
+  customCheckboxItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  customCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#2196F3',
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  customCheckboxChecked: {
+    backgroundColor: '#2196F3',
+    borderColor: '#2196F3',
+  },
+  customCheckboxLabel: {
+    fontSize: 16,
+    color: '#333333',
+    flex: 1,
   },
   emptyContainer: {
     padding: 40,
@@ -147,6 +287,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     textAlign: 'center',
+  },
+  textRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
 });
 

@@ -11,12 +11,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const LanguageSettingsScreen = () => {
   const navigation = useNavigation();
   const { userInfo, updateUserInfo } = useContext(AuthContext);
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'he';
+  
   const [selectedLanguage, setSelectedLanguage] = useState(
-    userInfo?.language || 'Hébreu'
+    userInfo?.language || t('languageSettings.languages.hebrew')
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,20 +28,20 @@ const LanguageSettingsScreen = () => {
   const languageOptions = [
     {
       id: 'he',
-      name: 'Hébreu',
-      nativeName: 'עברית',
+      name: t('languageSettings.languages.hebrew'),
+      nativeName: t('languageSettings.languages.hebrewNative'),
       icon: 'language-outline',
     },
     {
       id: 'en',
-      name: 'Anglais',
-      nativeName: 'English',
+      name: t('languageSettings.languages.english'),
+      nativeName: t('languageSettings.languages.englishNative'),
       icon: 'language-outline',
     },
     {
       id: 'ar',
-      name: 'Arabe',
-      nativeName: 'العربية',
+      name: t('languageSettings.languages.arabic'),
+      nativeName: t('languageSettings.languages.arabicNative'),
       icon: 'language-outline',
     },
   ];
@@ -65,11 +69,11 @@ const LanguageSettingsScreen = () => {
       style={styles.languageOption}
       onPress={() => handleSelectLanguage(item)}
     >
-      <View style={styles.languageDetails}>
+      <View style={[styles.languageDetails, isRTL && styles.languageDetailsRTL]}>
         <Ionicons name={item.icon} size={24} color="#3498db" />
-        <View style={styles.languageNames}>
-          <Text style={styles.languageName}>{item.name}</Text>
-          <Text style={styles.nativeName}>{item.nativeName}</Text>
+        <View style={[styles.languageNames, isRTL && styles.languageNamesRTL]}>
+          <Text style={[styles.languageName, isRTL && styles.textRTL]}>{item.name}</Text>
+          <Text style={[styles.nativeName, isRTL && styles.textRTL]}>{item.nativeName}</Text>
         </View>
       </View>
       {selectedLanguage === item.name && (
@@ -86,16 +90,20 @@ const LanguageSettingsScreen = () => {
           onPress={() => navigation.goBack()}
           disabled={isLoading}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Langue de l'application</Text>
+        <Text style={[styles.headerTitle, isRTL && styles.textRTL]}>
+          {t('languageSettings.title')}
+        </Text>
         <View style={styles.placeholderButton} />
       </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3498db" />
-          <Text style={styles.loadingText}>Changement de langue...</Text>
+          <Text style={[styles.loadingText, isRTL && styles.textRTL]}>
+            {t('languageSettings.changing')}
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -155,8 +163,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  languageDetailsRTL: {
+    flexDirection: 'row-reverse',
+  },
   languageNames: {
     marginLeft: 16,
+  },
+  languageNamesRTL: {
+    marginLeft: 0,
+    marginRight: 16,
   },
   languageName: {
     fontSize: 16,
@@ -177,6 +192,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#666',
+  },
+  textRTL: {
+    writingDirection: 'rtl',
+    textAlign: 'right',
   },
 });
 

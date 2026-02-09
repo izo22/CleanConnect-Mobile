@@ -8,10 +8,9 @@ import * as Localization from 'expo-localization';
 import { I18nManager } from 'react-native';
 
 // Importer les fichiers de traduction
-import en from './locales/en.json';
-import fr from './locales/fr.json';
-import he from './locales/he.json';
-
+const en = require('./locales/en.json');
+const fr = require('./locales/fr.json');
+const he = require('./locales/he.json');
 const LANGUAGE_STORAGE_KEY = '@cleanconnect_language';
 
 // Détection de la langue de l'appareil

@@ -8,24 +8,27 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Dimensions,
+  I18nManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 // Composant simple pour afficher un graphique en barres
-const BarChart = ({ data, maxValue, barColor }) => {
+const BarChart = ({ data, maxValue, barColor, isRTL }) => {
   return (
-    <View style={styles.chartContainer}>
+    <View style={[styles.chartContainer, isRTL && styles.chartContainerRTL]}>
       {data.map((item, index) => (
         <View key={index} style={styles.barContainer}>
-          <Text style={styles.barLabel}>{item.label}</Text>
-          <View style={styles.barWrapper}>
+          <Text style={[styles.barLabel, isRTL && styles.rtlText]}>{item.label}</Text>
+          <View style={[styles.barWrapper, isRTL && styles.barWrapperRTL]}>
             <View
               style={[
                 styles.bar,
                 { width: `${(item.value / maxValue) * 100}%`, backgroundColor: barColor },
+                isRTL && styles.barRTL
               ]}
             />
-            <Text style={styles.barValue}>{item.value}</Text>
+            <Text style={[styles.barValue, isRTL && styles.rtlText]}>{item.value}</Text>
           </View>
         </View>
       ))}
@@ -33,15 +36,10 @@ const BarChart = ({ data, maxValue, barColor }) => {
   );
 };
 
-// Périodes disponibles pour les statistiques
-const PERIODS = [
-  { id: 'week', label: 'Semaine' },
-  { id: 'month', label: 'Mois' },
-  { id: 'quarter', label: 'Trimestre' },
-  { id: 'year', label: 'Année' },
-];
-
 const StatsScreen = () => {
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'he';
+  
   const [loading, setLoading] = useState(true);
   const [activePeriod, setActivePeriod] = useState('month');
   const [stats, setStats] = useState({
@@ -56,17 +54,23 @@ const StatsScreen = () => {
     topLocations: [],
   });
 
+  // Périodes disponibles
+  const PERIODS = [
+    { id: 'week', label: t('stats.periods.week') },
+    { id: 'month', label: t('stats.periods.month') },
+    { id: 'quarter', label: t('stats.periods.quarter') },
+    { id: 'year', label: t('stats.periods.year') },
+  ];
+
   useEffect(() => {
     loadStats(activePeriod);
-  }, [activePeriod]);
+  }, [activePeriod, i18n.language]);
 
   // Simuler le chargement des statistiques
   const loadStats = async (period) => {
     setLoading(true);
     
-    // Simuler un délai de chargement
     setTimeout(() => {
-      // Données simulées qui changent en fonction de la période
       let mockStats;
       
       switch (period) {
@@ -78,27 +82,27 @@ const StatsScreen = () => {
             totalEarnings: 1800,
             averageRating: 4.7,
             jobsData: [
-              { label: 'Lun', value: 1 },
-              { label: 'Mar', value: 0 },
-              { label: 'Mer', value: 2 },
-              { label: 'Jeu', value: 1 },
-              { label: 'Ven', value: 1 },
-              { label: 'Sam', value: 0 },
-              { label: 'Dim', value: 0 },
+              { label: t('stats.days.mon'), value: 1 },
+              { label: t('stats.days.tue'), value: 0 },
+              { label: t('stats.days.wed'), value: 2 },
+              { label: t('stats.days.thu'), value: 1 },
+              { label: t('stats.days.fri'), value: 1 },
+              { label: t('stats.days.sat'), value: 0 },
+              { label: t('stats.days.sun'), value: 0 },
             ],
             earningsData: [
-              { label: 'Lun', value: 400 },
-              { label: 'Mar', value: 0 },
-              { label: 'Mer', value: 700 },
-              { label: 'Jeu', value: 350 },
-              { label: 'Ven', value: 350 },
-              { label: 'Sam', value: 0 },
-              { label: 'Dim', value: 0 },
+              { label: t('stats.days.mon'), value: 400 },
+              { label: t('stats.days.tue'), value: 0 },
+              { label: t('stats.days.wed'), value: 700 },
+              { label: t('stats.days.thu'), value: 350 },
+              { label: t('stats.days.fri'), value: 350 },
+              { label: t('stats.days.sat'), value: 0 },
+              { label: t('stats.days.sun'), value: 0 },
             ],
             topServices: [
-              { name: 'Nettoyage complet', count: 3, percentage: 60 },
-              { name: 'Nettoyage de base', count: 1, percentage: 20 },
-              { name: 'Nettoyage vitres', count: 1, percentage: 20 },
+              { name: t('stats.services.complete'), count: 3, percentage: 60 },
+              { name: t('stats.services.basic'), count: 1, percentage: 20 },
+              { name: t('stats.services.windows'), count: 1, percentage: 20 },
             ],
             topLocations: [
               { name: 'Tel Aviv', count: 4, percentage: 80 },
@@ -115,22 +119,22 @@ const StatsScreen = () => {
             totalEarnings: 8500,
             averageRating: 4.8,
             jobsData: [
-              { label: 'Sem 1', value: 5 },
-              { label: 'Sem 2', value: 6 },
-              { label: 'Sem 3', value: 6 },
-              { label: 'Sem 4', value: 5 },
+              { label: t('stats.weeks.week1'), value: 5 },
+              { label: t('stats.weeks.week2'), value: 6 },
+              { label: t('stats.weeks.week3'), value: 6 },
+              { label: t('stats.weeks.week4'), value: 5 },
             ],
             earningsData: [
-              { label: 'Sem 1', value: 1900 },
-              { label: 'Sem 2', value: 2300 },
-              { label: 'Sem 3', value: 2200 },
-              { label: 'Sem 4', value: 2100 },
+              { label: t('stats.weeks.week1'), value: 1900 },
+              { label: t('stats.weeks.week2'), value: 2300 },
+              { label: t('stats.weeks.week3'), value: 2200 },
+              { label: t('stats.weeks.week4'), value: 2100 },
             ],
             topServices: [
-              { name: 'Nettoyage complet', count: 12, percentage: 55 },
-              { name: 'Nettoyage de base', count: 5, percentage: 23 },
-              { name: 'Nettoyage vitres', count: 3, percentage: 14 },
-              { name: 'Nettoyage après travaux', count: 2, percentage: 9 },
+              { name: t('stats.services.complete'), count: 12, percentage: 55 },
+              { name: t('stats.services.basic'), count: 5, percentage: 23 },
+              { name: t('stats.services.windows'), count: 3, percentage: 14 },
+              { name: t('stats.services.postWork'), count: 2, percentage: 9 },
             ],
             topLocations: [
               { name: 'Tel Aviv', count: 15, percentage: 68 },
@@ -149,20 +153,20 @@ const StatsScreen = () => {
             totalEarnings: 25000,
             averageRating: 4.8,
             jobsData: [
-              { label: 'Jan', value: 20 },
-              { label: 'Fév', value: 22 },
-              { label: 'Mar', value: 23 },
+              { label: t('stats.months.jan'), value: 20 },
+              { label: t('stats.months.feb'), value: 22 },
+              { label: t('stats.months.mar'), value: 23 },
             ],
             earningsData: [
-              { label: 'Jan', value: 7500 },
-              { label: 'Fév', value: 8500 },
-              { label: 'Mar', value: 9000 },
+              { label: t('stats.months.jan'), value: 7500 },
+              { label: t('stats.months.feb'), value: 8500 },
+              { label: t('stats.months.mar'), value: 9000 },
             ],
             topServices: [
-              { name: 'Nettoyage complet', count: 35, percentage: 54 },
-              { name: 'Nettoyage de base', count: 15, percentage: 23 },
-              { name: 'Nettoyage vitres', count: 10, percentage: 15 },
-              { name: 'Nettoyage après travaux', count: 5, percentage: 8 },
+              { name: t('stats.services.complete'), count: 35, percentage: 54 },
+              { name: t('stats.services.basic'), count: 15, percentage: 23 },
+              { name: t('stats.services.windows'), count: 10, percentage: 15 },
+              { name: t('stats.services.postWork'), count: 5, percentage: 8 },
             ],
             topLocations: [
               { name: 'Tel Aviv', count: 40, percentage: 62 },
@@ -181,22 +185,22 @@ const StatsScreen = () => {
             totalEarnings: 95000,
             averageRating: 4.8,
             jobsData: [
-              { label: 'T1', value: 65 },
-              { label: 'T2', value: 60 },
-              { label: 'T3', value: 55 },
-              { label: 'T4', value: 70 },
+              { label: t('stats.quarters.q1'), value: 65 },
+              { label: t('stats.quarters.q2'), value: 60 },
+              { label: t('stats.quarters.q3'), value: 55 },
+              { label: t('stats.quarters.q4'), value: 70 },
             ],
             earningsData: [
-              { label: 'T1', value: 25000 },
-              { label: 'T2', value: 22000 },
-              { label: 'T3', value: 20000 },
-              { label: 'T4', value: 28000 },
+              { label: t('stats.quarters.q1'), value: 25000 },
+              { label: t('stats.quarters.q2'), value: 22000 },
+              { label: t('stats.quarters.q3'), value: 20000 },
+              { label: t('stats.quarters.q4'), value: 28000 },
             ],
             topServices: [
-              { name: 'Nettoyage complet', count: 135, percentage: 54 },
-              { name: 'Nettoyage de base', count: 60, percentage: 24 },
-              { name: 'Nettoyage vitres', count: 40, percentage: 16 },
-              { name: 'Nettoyage après travaux', count: 15, percentage: 6 },
+              { name: t('stats.services.complete'), count: 135, percentage: 54 },
+              { name: t('stats.services.basic'), count: 60, percentage: 24 },
+              { name: t('stats.services.windows'), count: 40, percentage: 16 },
+              { name: t('stats.services.postWork'), count: 15, percentage: 6 },
             ],
             topLocations: [
               { name: 'Tel Aviv', count: 160, percentage: 64 },
@@ -226,7 +230,7 @@ const StatsScreen = () => {
     }, 1000);
   };
 
-  // Trouver la valeur maximale pour dimensionner les graphiques correctement
+  // Trouver la valeur maximale pour dimensionner les graphiques
   const getMaxValue = (data) => {
     return Math.max(...data.map(item => item.value)) || 1;
   };
@@ -239,14 +243,19 @@ const StatsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mes statistiques</Text>
+        <Text style={[styles.headerTitle, isRTL && styles.rtlText]}>
+          {t('stats.title')}
+        </Text>
       </View>
       
       {/* Filtres de période */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.periodFilters}
+        contentContainerStyle={[
+          styles.periodFilters,
+          isRTL && styles.periodFiltersRTL
+        ]}
       >
         {PERIODS.map((period) => (
           <TouchableOpacity
@@ -254,6 +263,7 @@ const StatsScreen = () => {
             style={[
               styles.periodButton,
               activePeriod === period.id && styles.activePeriodButton,
+              isRTL && styles.periodButtonRTL
             ]}
             onPress={() => setActivePeriod(period.id)}
           >
@@ -261,6 +271,7 @@ const StatsScreen = () => {
               style={[
                 styles.periodButtonText,
                 activePeriod === period.id && styles.activePeriodButtonText,
+                isRTL && styles.rtlText
               ]}
             >
               {period.label}
@@ -277,71 +288,102 @@ const StatsScreen = () => {
         <ScrollView style={styles.scrollView}>
           {/* Résumé des statistiques */}
           <View style={styles.summaryContainer}>
-            <View style={styles.summaryRow}>
+            <View style={[styles.summaryRow, isRTL && styles.summaryRowRTL]}>
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>{stats.totalJobs}</Text>
-                <Text style={styles.summaryLabel}>Missions totales</Text>
+                <Text style={[styles.summaryValue, isRTL && styles.rtlText]}>
+                  {stats.totalJobs}
+                </Text>
+                <Text style={[styles.summaryLabel, isRTL && styles.rtlText]}>
+                  {t('stats.summary.totalJobs')}
+                </Text>
               </View>
               
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>{completionRate}%</Text>
-                <Text style={styles.summaryLabel}>Taux de réalisation</Text>
+                <Text style={[styles.summaryValue, isRTL && styles.rtlText]}>
+                  {completionRate}%
+                </Text>
+                <Text style={[styles.summaryLabel, isRTL && styles.rtlText]}>
+                  {t('stats.summary.completionRate')}
+                </Text>
               </View>
               
               <View style={styles.summaryItem}>
-                <View style={styles.ratingContainer}>
-                  <Text style={styles.summaryValue}>{stats.averageRating.toFixed(1)}</Text>
+                <View style={[styles.ratingContainer, isRTL && styles.ratingContainerRTL]}>
+                  <Text style={[styles.summaryValue, isRTL && styles.rtlText]}>
+                    {stats.averageRating.toFixed(1)}
+                  </Text>
                   <Ionicons name="star" size={16} color="#FFD700" />
                 </View>
-                <Text style={styles.summaryLabel}>Note moyenne</Text>
+                <Text style={[styles.summaryLabel, isRTL && styles.rtlText]}>
+                  {t('stats.summary.averageRating')}
+                </Text>
               </View>
             </View>
             
             <View style={styles.earningsContainer}>
-              <Text style={styles.earningsLabel}>Revenus totaux</Text>
-              <Text style={styles.earningsValue}>{stats.totalEarnings} ₪</Text>
+              <Text style={[styles.earningsLabel, isRTL && styles.rtlText]}>
+                {t('stats.summary.totalEarnings')}
+              </Text>
+              <Text style={[styles.earningsValue, isRTL && styles.rtlText]}>
+                {stats.totalEarnings} ₪
+              </Text>
             </View>
           </View>
           
           {/* Graphique des missions */}
           <View style={styles.chartSection}>
-            <Text style={styles.sectionTitle}>Missions par période</Text>
+            <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>
+              {t('stats.charts.jobsByPeriod')}
+            </Text>
             <BarChart
               data={stats.jobsData}
               maxValue={getMaxValue(stats.jobsData)}
               barColor="#007AFF"
+              isRTL={isRTL}
             />
           </View>
           
           {/* Graphique des revenus */}
           <View style={styles.chartSection}>
-            <Text style={styles.sectionTitle}>Revenus par période</Text>
+            <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>
+              {t('stats.charts.earningsByPeriod')}
+            </Text>
             <BarChart
               data={stats.earningsData}
               maxValue={getMaxValue(stats.earningsData)}
               barColor="#4CAF50"
+              isRTL={isRTL}
             />
           </View>
           
           {/* Top services */}
           <View style={styles.statsSection}>
-            <Text style={styles.sectionTitle}>Services les plus demandés</Text>
+            <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>
+              {t('stats.topServices.title')}
+            </Text>
             {stats.topServices.map((service, index) => (
-              <View key={index} style={styles.statItem}>
-                <View style={styles.statInfo}>
-                  <Text style={styles.statName}>{service.name}</Text>
-                  <Text style={styles.statCount}>{service.count} missions</Text>
+              <View key={index} style={[styles.statItem, isRTL && styles.statItemRTL]}>
+                <View style={[styles.statInfo, isRTL && styles.statInfoRTL]}>
+                  <Text style={[styles.statName, isRTL && styles.rtlText]}>
+                    {service.name}
+                  </Text>
+                  <Text style={[styles.statCount, isRTL && styles.rtlText]}>
+                    {service.count} {t('stats.missions')}
+                  </Text>
                 </View>
-                <View style={styles.percentageContainer}>
+                <View style={[styles.percentageContainer, isRTL && styles.percentageContainerRTL]}>
                   <View style={styles.percentageBarContainer}>
                     <View
                       style={[
                         styles.percentageBar,
                         { width: `${service.percentage}%`, backgroundColor: '#FF9800' },
+                        isRTL && styles.percentageBarRTL
                       ]}
                     />
                   </View>
-                  <Text style={styles.percentageText}>{service.percentage}%</Text>
+                  <Text style={[styles.percentageText, isRTL && styles.rtlText]}>
+                    {service.percentage}%
+                  </Text>
                 </View>
               </View>
             ))}
@@ -349,23 +391,32 @@ const StatsScreen = () => {
           
           {/* Top quartiers */}
           <View style={styles.statsSection}>
-            <Text style={styles.sectionTitle}>Quartiers les plus desservis</Text>
+            <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>
+              {t('stats.topLocations.title')}
+            </Text>
             {stats.topLocations.map((location, index) => (
-              <View key={index} style={styles.statItem}>
-                <View style={styles.statInfo}>
-                  <Text style={styles.statName}>{location.name}</Text>
-                  <Text style={styles.statCount}>{location.count} missions</Text>
+              <View key={index} style={[styles.statItem, isRTL && styles.statItemRTL]}>
+                <View style={[styles.statInfo, isRTL && styles.statInfoRTL]}>
+                  <Text style={[styles.statName, isRTL && styles.rtlText]}>
+                    {location.name}
+                  </Text>
+                  <Text style={[styles.statCount, isRTL && styles.rtlText]}>
+                    {location.count} {t('stats.missions')}
+                  </Text>
                 </View>
-                <View style={styles.percentageContainer}>
+                <View style={[styles.percentageContainer, isRTL && styles.percentageContainerRTL]}>
                   <View style={styles.percentageBarContainer}>
                     <View
                       style={[
                         styles.percentageBar,
                         { width: `${location.percentage}%`, backgroundColor: '#9C27B0' },
+                        isRTL && styles.percentageBarRTL
                       ]}
                     />
                   </View>
-                  <Text style={styles.percentageText}>{location.percentage}%</Text>
+                  <Text style={[styles.percentageText, isRTL && styles.rtlText]}>
+                    {location.percentage}%
+                  </Text>
                 </View>
               </View>
             ))}
@@ -399,12 +450,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
   },
+  periodFiltersRTL: {
+    flexDirection: 'row-reverse',
+  },
   periodButton: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingVertical: 8,
     marginHorizontal: 5,
     borderRadius: 20,
     backgroundColor: '#F0F0F0',
+  },
+  periodButtonRTL: {
+    marginHorizontal: 5,
   },
   activePeriodButton: {
     backgroundColor: '#007AFF',
@@ -412,10 +469,10 @@ const styles = StyleSheet.create({
   periodButtonText: {
     fontSize: 14,
     color: '#666666',
+    fontWeight: '500',
   },
   activePeriodButtonText: {
     color: '#FFFFFF',
-    fontWeight: '500',
   },
   loadingContainer: {
     flex: 1,
@@ -427,8 +484,8 @@ const styles = StyleSheet.create({
   },
   summaryContainer: {
     backgroundColor: '#FFFFFF',
-    padding: 15,
     margin: 15,
+    padding: 20,
     borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -439,14 +496,17 @@ const styles = StyleSheet.create({
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: 20,
+  },
+  summaryRowRTL: {
+    flexDirection: 'row-reverse',
   },
   summaryItem: {
     alignItems: 'center',
     flex: 1,
   },
   summaryValue: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#333333',
   },
@@ -460,28 +520,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  ratingContainerRTL: {
+    flexDirection: 'row-reverse',
+  },
   earningsContainer: {
-    backgroundColor: '#F0F8FF',
-    borderRadius: 8,
-    padding: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
   },
   earningsLabel: {
-    fontSize: 16,
-    color: '#333333',
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 5,
   },
   earningsValue: {
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: '#4CAF50',
   },
   chartSection: {
     backgroundColor: '#FFFFFF',
-    padding: 15,
     marginHorizontal: 15,
     marginBottom: 15,
+    padding: 15,
     borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -490,7 +552,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333333',
     marginBottom: 15,
@@ -498,40 +560,43 @@ const styles = StyleSheet.create({
   chartContainer: {
     marginTop: 10,
   },
+  chartContainerRTL: {
+    flexDirection: 'column-reverse',
+  },
   barContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   barLabel: {
-    width: 50,
-    fontSize: 14,
+    fontSize: 12,
     color: '#666666',
+    marginBottom: 5,
   },
   barWrapper: {
-    flex: 1,
-    height: 25,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 5,
-    overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
   },
+  barWrapperRTL: {
+    flexDirection: 'row-reverse',
+  },
   bar: {
-    height: '100%',
+    height: 24,
+    borderRadius: 4,
+    minWidth: 20,
+  },
+  barRTL: {
+    alignSelf: 'flex-end',
   },
   barValue: {
-    position: 'absolute',
-    right: 10,
-    color: '#333333',
-    fontWeight: 'bold',
-    fontSize: 14,
+    marginLeft: 8,
+    fontSize: 12,
+    color: '#666666',
+    fontWeight: '500',
   },
   statsSection: {
     backgroundColor: '#FFFFFF',
-    padding: 15,
     marginHorizontal: 15,
     marginBottom: 15,
+    padding: 15,
     borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -542,38 +607,55 @@ const styles = StyleSheet.create({
   statItem: {
     marginBottom: 15,
   },
+  statItemRTL: {
+    flexDirection: 'row-reverse',
+  },
   statInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     marginBottom: 5,
+  },
+  statInfoRTL: {
+    alignItems: 'flex-end',
   },
   statName: {
     fontSize: 14,
+    fontWeight: '500',
     color: '#333333',
   },
   statCount: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666666',
+    marginTop: 2,
   },
   percentageContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  percentageContainerRTL: {
+    flexDirection: 'row-reverse',
+  },
   percentageBarContainer: {
     flex: 1,
-    height: 10,
+    height: 8,
     backgroundColor: '#F0F0F0',
-    borderRadius: 5,
-    overflow: 'hidden',
+    borderRadius: 4,
     marginRight: 10,
+    overflow: 'hidden',
   },
   percentageBar: {
     height: '100%',
+    borderRadius: 4,
+  },
+  percentageBarRTL: {
+    alignSelf: 'flex-end',
   },
   percentageText: {
-    width: 40,
-    fontSize: 14,
+    fontSize: 12,
+    fontWeight: '500',
     color: '#666666',
+    minWidth: 35,
+  },
+  rtlText: {
+    writingDirection: 'rtl',
     textAlign: 'right',
   },
 });

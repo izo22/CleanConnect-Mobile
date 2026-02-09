@@ -1,77 +1,74 @@
-// src/config/theme.js
+// config/theme.js
+// ✅ Thème avec couleur Airbnb
+
 import { DefaultTheme } from 'react-native-paper';
 
-// Thème personnalisé pour l'application
-const theme = {
+export const theme = {
   ...DefaultTheme,
-  // Couleurs principales de l'application
   colors: {
     ...DefaultTheme.colors,
-    primary: '#2E86C1',      // Bleu principal
-    accent: '#F1C40F',       // Jaune accent
-    background: '#F5F5F5',   // Fond gris clair
-    surface: '#FFFFFF',      // Surface blanche
-    text: '#2C3E50',         // Texte bleu foncé
-    error: '#E74C3C',        // Rouge pour les erreurs
-    success: '#2ECC71',      // Vert pour les succès
-    warning: '#F39C12',      // Orange pour les avertissements
-    placeholder: '#95A5A6',  // Gris pour les placeholders
-    disabled: '#BDC3C7',     // Gris pour les éléments désactivés
-    notification: '#3498DB', // Bleu pour les notifications
+    primary: '#007AFF',
+    accent: '#FF9500',
     
-    // Couleurs spécifiques à l'application
-    cardBackground: '#FFFFFF',
-    headerBackground: '#2E86C1',
-    tabBarActive: '#2E86C1',
-    tabBarInactive: '#95A5A6',
-    divider: '#EAECEE',
-    homeService: '#5DADE2',  // Bleu clair pour services à domicile
-    officeService: '#AF7AC5', // Violet pour services de bureau
-    buildingService: '#52BE80', // Vert pour services d'immeuble
+    // Couleurs par type de service
+    homeService: '#007AFF',      // Bleu pour maison
+    officeService: '#34C759',    // Vert pour bureau
+    buildingService: '#FF9500',  // Orange pour immeuble
+    airbnbService: '#FF5A5F',    // ✅ Rose/Rouge Airbnb
+    
+    // Couleurs d'état
+    success: '#34C759',
+    warning: '#FF9500',
+    error: '#FF3B30',
+    info: '#5AC8FA',
+    
+    // Couleurs de texte
+    text: '#000000',
+    textSecondary: '#666666',
+    textLight: '#999999',
+    
+    // Couleurs de fond
+    background: '#F5F5F5',
+    surface: '#FFFFFF',
+    card: '#FFFFFF',
+    
+    // Couleurs de bordure
+    border: '#E0E0E0',
+    divider: '#E0E0E0',
   },
-  
-  // Arrondi des composants
-  roundness: 8,
   
   // Typographie
   fonts: {
-    ...DefaultTheme.fonts,
-    // Vous pourrez personnaliser les polices ici si nécessaire
+    regular: {
+      fontFamily: 'Heebo',
+      fontWeight: 'normal',
+    },
+    medium: {
+      fontFamily: 'Heebo',
+      fontWeight: '500',
+    },
+    bold: {
+      fontFamily: 'Heebo',
+      fontWeight: 'bold',
+    },
   },
   
-  // Espacement standard (pour les marges et paddings)
+  // Espacements
   spacing: {
     xs: 4,
-    s: 8,
-    m: 16,
-    l: 24,
+    sm: 8,
+    md: 16,
+    lg: 24,
     xl: 32,
     xxl: 48,
   },
   
-  // Ombres pour les éléments en élévation
-  shadows: {
-    small: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 2,
-    },
-    medium: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.15,
-      shadowRadius: 5,
-      elevation: 4,
-    },
-    large: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 5 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 8,
-    },
+  // Rayons de bordure
+  roundness: {
+    small: 4,
+    medium: 8,
+    large: 12,
+    xlarge: 16,
   },
 };
 

@@ -1,8 +1,12 @@
 // src/context/AuthContext.js
+// ✅ VERSION AVEC NOTIFICATIONS PUSH INTÉGRÉES + FIX TIMING ASYNCSTORAGE + FIX VAPID WEB
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { Platform } from 'react-native'; // ✅ AJOUTÉ pour détecter web
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService, userService, providerService } from '../services/api';
-import { Platform } from 'react-native';
+import notificationService from '../services/notificationService';
+import { useNotifications } from '../hooks/useNotifications';
 
 // Création du contexte
 export const AuthContext = createContext();
@@ -22,6 +26,9 @@ export const AuthProvider = ({ children }) => {
   // État pour suivre si c'est le premier lancement de l'application
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
 
+  // ✅ NOUVEAU : Initialiser les notifications quand l'utilisateur est connecté
+  useNotifications(userRole);
+
   // Vérifier si c'est la première fois que l'app est lancée
   useEffect(() => {
     const checkFirstLaunch = async () => {
@@ -34,7 +41,6 @@ export const AuthProvider = ({ children }) => {
           setIsFirstLaunch(false);
         }
       } catch (err) {
-        // Erreur silencieuse
         setIsFirstLaunch(false);
       }
     };
@@ -42,7 +48,7 @@ export const AuthProvider = ({ children }) => {
     checkFirstLaunch();
   }, []);
 
-  // ✅ CORRECTION : Charger les données d'authentification au démarrage SANS auto-login
+  // Charger les données d'authentification au démarrage
   useEffect(() => {
     const bootstrapAsync = async () => {
       try {
@@ -51,35 +57,13 @@ export const AuthProvider = ({ children }) => {
         const role = await AsyncStorage.getItem('userRole');
         const userData = await AsyncStorage.getItem('userData');
         
-        // ✅ DÉSACTIVER L'AUTO-LOGIN - Décommentez les lignes ci-dessous pour réactiver
-        // if (token && userData) {
-        //   setUserToken(token);
-        //   setUserRole(role);
-        //   setUserInfo(JSON.parse(userData));
-        // }
+        console.log('📦 Bootstrap - Token existant:', token ? 'OUI' : 'NON');
+        console.log('📦 Bootstrap - UserData existant:', userData ? 'OUI' : 'NON');
         
-        // ✅ OPTION : Pour activer l'auto-login uniquement après vérification du token
-        // Décommentez ce bloc et commentez les lignes ci-dessus
-        /*
-        if (token && userData) {
-          try {
-            // Vérifier que le token est toujours valide
-            const response = await authService.getMe();
-            if (response && response.data) {
-              setUserToken(token);
-              setUserRole(role);
-              setUserInfo(JSON.parse(userData));
-            }
-          } catch (err) {
-            // Token invalide, nettoyer le stockage
-            await AsyncStorage.removeItem('token');
-            await AsyncStorage.removeItem('userRole');
-            await AsyncStorage.removeItem('userData');
-          }
-        }
-        */
+        // Auto-login désactivé selon ton code original
+        console.log('⚠️ Auto-login désactivé - utilisateur doit se connecter manuellement');
       } catch (e) {
-        // Erreur silencieuse - on continue simplement sans authentification
+        console.error('❌ Erreur bootstrap:', e);
       } finally {
         setIsLoading(false);
       }
@@ -88,13 +72,14 @@ export const AuthProvider = ({ children }) => {
     bootstrapAsync();
   }, []);
 
-  // Fonction de connexion modifiée pour ne pas envoyer le rôle
+  // ✅ Fonction de connexion - AVEC INITIALISATION DES NOTIFICATIONS
   const login = async (email, password, role) => {
     setError(null);
     try {
       setIsLoading(true);
       
-      // Ne pas inclure le rôle dans les credentials envoyés au backend
+      console.log('🔐 Tentative de connexion:', { email, role });
+      
       const credentials = { 
         email, 
         password
@@ -102,20 +87,56 @@ export const AuthProvider = ({ children }) => {
       
       const response = await authService.login(credentials);
       
-      if (response.token) {
+      console.log('✅ Réponse serveur login:', response);
+      
+      if (response.token && response.user) {
+        const completeUserData = {
+          ...response.user,
+          city: response.user.city || '',
+          address: response.user.address || '',
+          phone: response.user.phone || ''
+        };
+        
+        console.log('💾 Données utilisateur complètes à stocker:', completeUserData);
+        
         // Stocker dans AsyncStorage
         await AsyncStorage.setItem('token', response.token);
         await AsyncStorage.setItem('userRole', response.user.role);
-        await AsyncStorage.setItem('userData', JSON.stringify(response.user));
+        await AsyncStorage.setItem('userData', JSON.stringify(completeUserData));
+        
+        // ✅ FIX: Attendre que AsyncStorage persiste (important sur web)
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Mettre à jour l'état
         setUserToken(response.token);
-        setUserInfo(response.user);
+        setUserInfo(completeUserData);
         setUserRole(response.user.role);
+        
+        console.log('✅ Connexion réussie - userInfo:', completeUserData);
+        
+        // ✅ FIX VAPID: Initialiser les notifications push après login (SAUF sur web)
+        if (Platform.OS !== 'web') {
+          setTimeout(async () => {
+            console.log('📱 Initialisation des notifications post-login...');
+            try {
+              const token = await notificationService.registerForPushNotifications();
+              if (token) {
+                await notificationService.savePushTokenToServer(token);
+              }
+            } catch (e) {
+              console.log('⚠️ Erreur notifications:', e.message);
+            }
+          }, 1000);
+        } else {
+          console.log('🌐 Web détecté - notifications push désactivées');
+        }
+      } else {
+        throw new Error('Réponse invalide du serveur');
       }
       
       return response;
     } catch (err) {
+      console.error('❌ Erreur login:', err);
       const errorMessage = err.message || 'Erreur de connexion. Veuillez réessayer.';
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -124,21 +145,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ FONCTION DE DÉCONNEXION CORRIGÉE
+  // ✅ Fonction de déconnexion - AVEC SUPPRESSION DU PUSH TOKEN
   const logout = async () => {
     setError(null);
     try {
       setIsLoading(true);
       
+      console.log('🚪 Déconnexion en cours...');
+      
+      // ✅ NOUVEAU : Supprimer le push token du serveur (sauf sur web)
+      if (Platform.OS !== 'web') {
+        try {
+          await notificationService.removePushTokenFromServer();
+        } catch (e) {
+          console.log('⚠️ Erreur suppression push token (ignorée):', e.message);
+        }
+      }
+      
       // Tenter d'appeler le service de déconnexion
       try {
         await authService.logout();
       } catch (serviceError) {
-        // Continuer malgré l'erreur du backend
-        console.log('Erreur backend lors de la déconnexion (ignorée):', serviceError);
+        console.log('⚠️ Erreur backend lors de la déconnexion (ignorée):', serviceError);
       }
       
-      // ✅ CORRECTION : Nettoyer uniquement les données d'authentification (pas tout AsyncStorage)
+      // Nettoyer les données d'authentification
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('userRole');
       await AsyncStorage.removeItem('userData');
@@ -148,8 +179,11 @@ export const AuthProvider = ({ children }) => {
       setUserInfo(null);
       setUserRole(null);
       
+      console.log('✅ Déconnexion réussie');
+      
       return { success: true };
     } catch (err) {
+      console.error('❌ Erreur déconnexion:', err);
       const errorMessage = err.message || 'Erreur lors de la déconnexion';
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -158,35 +192,67 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Inscription d'un client
+  // ✅ Inscription d'un client - AVEC INITIALISATION DES NOTIFICATIONS
   const registerClient = async (userData) => {
     setError(null);
     try {
       setIsLoading(true);
       
+      console.log('📝 Inscription client avec données:', userData);
+      console.log('📍 Ville envoyée:', userData.city);
+      
       const response = await authService.registerClient(userData);
       
-      if (response.token) {
-        // Merger les données envoyées avec les données reçues
+      console.log('✅ Réponse serveur inscription:', response);
+      
+      if (response.token && response.user) {
         const completeUserData = {
           ...response.user,
-          address: userData.address,
-          phone: userData.phone
+          address: userData.address || response.user.address,
+          phone: userData.phone || response.user.phone,
+          city: userData.city || response.user.city
         };
+        
+        console.log('💾 Données complètes à stocker:', completeUserData);
         
         // Stocker dans AsyncStorage
         await AsyncStorage.setItem('token', response.token);
         await AsyncStorage.setItem('userRole', 'client');
         await AsyncStorage.setItem('userData', JSON.stringify(completeUserData));
         
+        // ✅ FIX: Attendre que AsyncStorage persiste (important sur web)
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         // Mettre à jour l'état
         setUserToken(response.token);
         setUserInfo(completeUserData);
         setUserRole('client');
+        
+        console.log('✅ Inscription réussie - userInfo:', completeUserData);
+        
+        // ✅ FIX VAPID: Initialiser les notifications push après inscription (SAUF sur web)
+        if (Platform.OS !== 'web') {
+          setTimeout(async () => {
+            console.log('📱 Initialisation des notifications post-inscription...');
+            try {
+              const token = await notificationService.registerForPushNotifications();
+              if (token) {
+                await notificationService.savePushTokenToServer(token);
+              }
+            } catch (e) {
+              console.log('⚠️ Erreur notifications:', e.message);
+            }
+          }, 1000);
+        } else {
+          console.log('🌐 Web détecté - notifications push désactivées');
+        }
+      } else {
+        throw new Error('Réponse invalide du serveur');
       }
       
       return response;
     } catch (err) {
+      console.error('❌ Erreur inscription:', err);
       const errorMessage = err.message || 'Erreur lors de l\'inscription. Veuillez réessayer.';
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -195,12 +261,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Inscription d'un prestataire
+  // ✅ Inscription d'un prestataire - AVEC INITIALISATION DES NOTIFICATIONS + FIX TIMING
   const registerProvider = async (providerData) => {
     setError(null);
     try {
       setIsLoading(true);
+      
+      console.log('📝 Inscription prestataire avec données:', providerData);
+      
       const response = await authService.registerProvider(providerData);
+      
+      console.log('✅ Réponse serveur inscription prestataire:', response);
       
       if (response.token) {
         // Stocker dans AsyncStorage
@@ -208,14 +279,38 @@ export const AuthProvider = ({ children }) => {
         await AsyncStorage.setItem('userRole', 'provider');
         await AsyncStorage.setItem('userData', JSON.stringify(response.provider));
         
-        // Mettre à jour l'état
+        // ✅ FIX CRITIQUE: Attendre que AsyncStorage persiste (crucial sur web)
+        // Sans ce délai, le token n'est pas encore disponible quand ProviderDashboardScreen charge
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Mettre à jour l'état APRÈS que AsyncStorage ait persisté
         setUserToken(response.token);
         setUserInfo(response.provider);
         setUserRole('provider');
+        
+        console.log('✅ Inscription prestataire réussie - Token stocké et states mis à jour');
+        
+        // ✅ FIX VAPID: Initialiser les notifications push après inscription (SAUF sur web)
+        if (Platform.OS !== 'web') {
+          setTimeout(async () => {
+            console.log('📱 Initialisation des notifications post-inscription...');
+            try {
+              const token = await notificationService.registerForPushNotifications();
+              if (token) {
+                await notificationService.savePushTokenToServer(token);
+              }
+            } catch (e) {
+              console.log('⚠️ Erreur notifications:', e.message);
+            }
+          }, 1000);
+        } else {
+          console.log('🌐 Web détecté - notifications push désactivées');
+        }
       }
       
       return response;
     } catch (err) {
+      console.error('❌ Erreur inscription prestataire:', err);
       const errorMessage = err.message || 'Erreur lors de l\'inscription du prestataire. Veuillez réessayer.';
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -231,22 +326,24 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(true);
       let response;
       
-      // Utiliser le service approprié selon le rôle de l'utilisateur
+      console.log('🔄 Mise à jour userInfo avec:', updatedData);
+      
       if (userRole === 'provider') {
         response = await providerService.updateProfile(updatedData);
       } else {
         response = await userService.updateProfile(updatedData);
       }
       
-      // Mettre à jour l'état local
       const updatedUserInfo = { ...userInfo, ...updatedData };
       setUserInfo(updatedUserInfo);
       
-      // Mettre à jour le stockage local
       await AsyncStorage.setItem('userData', JSON.stringify(updatedUserInfo));
+      
+      console.log('✅ Mise à jour userInfo réussie:', updatedUserInfo);
       
       return response;
     } catch (err) {
+      console.error('❌ Erreur mise à jour userInfo:', err);
       const errorMessage = err.message || 'Erreur lors de la mise à jour du profil';
       setError(errorMessage);
       throw new Error(errorMessage);

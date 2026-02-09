@@ -1,11 +1,11 @@
 // src/services/providerService.js
-// ✅ FIX: Extraire data de la réponse backend
+// ✅ תורגם לעברית ללא i18n
 
 import { API_URL } from '../config/constants';
 
 const providerService = {
   /**
-   * Récupérer tous les prestataires
+   * לקבל את כל הספקים
    */
   getAllProviders: async () => {
     try {
@@ -19,12 +19,12 @@ const providerService = {
 
 
       if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+        throw new Error(`שגיאת HTTP: ${response.status}`);
       }
 
       const result = await response.json();
       
-      // ✅ FIX: Extraire le tableau 'data' de la réponse
+      // ✅ FIX: חילוץ המערך 'data' מהתגובה
       const data = result.data || result;
       
       
@@ -35,7 +35,7 @@ const providerService = {
   },
 
   /**
-   * Récupérer un prestataire par son ID
+   * לקבל ספק לפי מזהה
    */
   getProviderById: async (providerId) => {
     try {
@@ -48,7 +48,7 @@ const providerService = {
       });
 
       if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+        throw new Error(`שגיאת HTTP: ${response.status}`);
       }
 
       const result = await response.json();
@@ -62,7 +62,7 @@ const providerService = {
   },
 
   /**
-   * Rechercher des prestataires par ville
+   * חיפוש ספקים לפי עיר
    */
   searchProvidersByCity: async (city) => {
     try {
@@ -75,7 +75,7 @@ const providerService = {
       });
 
       if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+        throw new Error(`שגיאת HTTP: ${response.status}`);
       }
 
       const result = await response.json();
@@ -89,7 +89,7 @@ const providerService = {
   },
 
   /**
-   * Rechercher des prestataires par type de service
+   * חיפוש ספקים לפי סוג שירות
    */
   searchProvidersByService: async (serviceType) => {
     try {
@@ -102,7 +102,7 @@ const providerService = {
       });
 
       if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+        throw new Error(`שגיאת HTTP: ${response.status}`);
       }
 
       const result = await response.json();

@@ -1,5 +1,7 @@
 // src/screens/auth/ProviderRegistrationScreen.js
-// ✅ MODIFIÉ - Intégration du sélecteur multi-villes
+// גרסה מתורגמת לעברית ללא i18n
+// ✅ MODIFIÉ: Ajout de la catégorie Airbnb + FIX bouton disabled
+// ✅ CORRIGÉ: services → serviceDetails + ajout description
 
 import React, { useState, useContext } from 'react';
 import {
@@ -17,9 +19,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../../context/AuthContext';
-import CityMultiSelector from '../../components/CityMultiSelector'; // ✅ NOUVEAU
+import CityMultiSelector from '../../components/CityMultiSelector';
 
-// Composant pour les éléments de service
 const ServiceTypeItem = ({ 
   serviceKey, 
   service, 
@@ -27,16 +28,16 @@ const ServiceTypeItem = ({
   description, 
   toggleService, 
   updateRate,
-  error
+  error,
+  isRTL
 }) => {
   return (
     <View style={[
       styles.serviceTypeItem, 
       service.selected && styles.serviceTypeSelected
     ]}>
-      {/* Zone cliquable pour la sélection du service */}
       <TouchableOpacity 
-        style={styles.serviceTypeHeader}
+        style={[styles.serviceTypeHeader, isRTL && styles.serviceTypeHeaderRTL]}
         onPress={() => toggleService(serviceKey)}
       >
         <View style={styles.serviceTypeCheckbox}>
@@ -45,16 +46,17 @@ const ServiceTypeItem = ({
           )}
         </View>
         <View style={styles.serviceTypeContent}>
-          <Text style={styles.serviceTypeTitle}>{title}</Text>
-          <Text style={styles.serviceTypeDescription}>{description}</Text>
+          <Text style={[styles.serviceTypeTitle, isRTL && styles.textRTL]}>{title}</Text>
+          <Text style={[styles.serviceTypeDescription, isRTL && styles.textRTL]}>{description}</Text>
         </View>
       </TouchableOpacity>
       
-      {/* Zone séparée pour le taux horaire */}
       {service.selected && (
         <View style={styles.rateContainer}>
-          <Text style={styles.rateLabel}>Taux horaire :</Text>
-          <View style={styles.rateInputContainer}>
+          <Text style={[styles.rateLabel, isRTL && styles.textRTL]}>
+            תעריף לשעה:
+          </Text>
+          <View style={[styles.rateInputContainer, isRTL && styles.rateInputContainerRTL]}>
             <TextInput
               style={[
                 styles.rateInput, 
@@ -68,7 +70,7 @@ const ServiceTypeItem = ({
             <Text style={styles.rateCurrency}>₪/h</Text>
           </View>
           {error && (
-            <Text style={styles.errorText}>{error}</Text>
+            <Text style={[styles.errorText, isRTL && styles.textRTL]}>{error}</Text>
           )}
         </View>
       )}
@@ -77,10 +79,9 @@ const ServiceTypeItem = ({
 };
 
 const ProviderRegistrationScreen = ({ navigation }) => {
-  // Contexte d'authentification
+  const isRTL = true;
   const { registerProvider } = useContext(AuthContext);
 
-  // États pour les champs du formulaire
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -88,26 +89,30 @@ const ProviderRegistrationScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // États pour les services et leurs taux horaires
   const [services, setServices] = useState({
     homeCleaning: { selected: false, rate: '' },
     buildingCleaning: { selected: false, rate: '' },
-    officeCleaning: { selected: false, rate: '' }
+    officeCleaning: { selected: false, rate: '' },
+    airbnb: { selected: false, rate: '' }
   });
   
-  // ✅ NOUVEAU - État pour les villes de service
   const [serviceCities, setServiceCities] = useState([]);
-  
-  // Vérifier si au moins un type de service est sélectionné
   const isAnyServiceSelected = Object.values(services).some(service => service.selected);
-  
-  // État pour les conditions générales
   const [termsAccepted, setTermsAccepted] = useState(false);
-  
-  // Erreurs de validation
   const [errors, setErrors] = useState({});
   
-  // Fonction pour basculer un type de service
+  // ✅ FIX: Fonction pour vérifier si tous les tarifs des services sélectionnés sont valides
+  const areServiceRatesValid = () => {
+    const selectedServices = Object.values(services).filter(service => service.selected);
+    if (selectedServices.length === 0) return false;
+    
+    return selectedServices.every(service => 
+      service.rate.trim() !== '' && 
+      !isNaN(parseFloat(service.rate)) && 
+      parseFloat(service.rate) > 0
+    );
+  };
+  
   const toggleServiceType = (type) => {
     setServices(prevState => ({
       ...prevState,
@@ -117,23 +122,20 @@ const ProviderRegistrationScreen = ({ navigation }) => {
       }
     }));
     
-    // Effacer l'erreur si au moins un type de service est sélectionné
     if (!services[type].selected) {
       setErrors(prev => ({ ...prev, services: null }));
     }
   };
 
-  // Fonction pour mettre à jour le taux horaire d'un service
   const updateServiceRate = (type, rate) => {
     setServices(prevState => ({
       ...prevState,
       [type]: {
         ...prevState[type],
-        rate: rate.replace(/[^0-9.]/g, '') // Accepter uniquement des chiffres et le point
+        rate: rate.replace(/[^0-9.]/g, '')
       }
     }));
     
-    // Effacer l'erreur associée à ce taux si une valeur est fournie
     if (rate) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -148,63 +150,54 @@ const ProviderRegistrationScreen = ({ navigation }) => {
     }
   };
 
-  // Validation des champs du formulaire
   const validateForm = () => {
     let tempErrors = {};
     let isValid = true;
     
-    // Valider le prénom
     if (!firstName.trim()) {
-      tempErrors.firstName = 'Le prénom est requis';
+      tempErrors.firstName = 'שם פרטי הוא שדה חובה';
       isValid = false;
     }
     
-    // Valider le nom
     if (!lastName.trim()) {
-      tempErrors.lastName = 'Le nom est requis';
+      tempErrors.lastName = 'שם משפחה הוא שדה חובה';
       isValid = false;
     }
     
-    // Valider l'email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim() || !emailRegex.test(email)) {
-      tempErrors.email = 'Email invalide';
+      tempErrors.email = 'נדרשת כתובת אימייל תקינה';
       isValid = false;
     }
     
-    // Valider le téléphone
     if (!phone.trim()) {
-      tempErrors.phone = 'Le téléphone est requis';
+      tempErrors.phone = 'מספר טלפון הוא שדה חובה';
       isValid = false;
     }
     
-    // Valider le mot de passe
     if (password.length < 6) {
-      tempErrors.password = 'Le mot de passe doit contenir au moins 6 caractères';
+      tempErrors.password = 'הסיסמה חייבת להכיל לפחות 6 תווים';
       isValid = false;
     }
     
-    // Valider la confirmation du mot de passe
     if (password !== confirmPassword) {
-      tempErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+      tempErrors.confirmPassword = 'הסיסמאות אינן תואמות';
       isValid = false;
     }
     
-    // Valider les types de services et leurs taux
     if (!isAnyServiceSelected) {
-      tempErrors.services = 'Veuillez sélectionner au moins un type de service';
+      tempErrors.services = 'אנא בחר לפחות סוג שירות אחד';
       isValid = false;
     } else {
-      // Vérifier que chaque service sélectionné a un taux horaire valide
       const serviceRatesErrors = {};
       
       Object.entries(services).forEach(([key, service]) => {
         if (service.selected) {
           if (!service.rate.trim()) {
-            serviceRatesErrors[key] = 'Taux horaire requis';
+            serviceRatesErrors[key] = 'תעריף הוא שדה חובה';
             isValid = false;
           } else if (isNaN(parseFloat(service.rate)) || parseFloat(service.rate) <= 0) {
-            serviceRatesErrors[key] = 'Taux horaire invalide';
+            serviceRatesErrors[key] = 'נדרש תעריף תקין';
             isValid = false;
           }
         }
@@ -215,15 +208,13 @@ const ProviderRegistrationScreen = ({ navigation }) => {
       }
     }
     
-    // ✅ VALIDATION DES VILLES
     if (serviceCities.length === 0) {
-      tempErrors.serviceCities = 'Veuillez sélectionner au moins une ville';
+      tempErrors.serviceCities = 'אנא בחר לפחות עיר אחת';
       isValid = false;
     }
     
-    // Valider les conditions générales
     if (!termsAccepted) {
-      tempErrors.terms = 'Vous devez accepter les conditions générales';
+      tempErrors.terms = 'עליך לקבל את התנאים וההגבלות';
       isValid = false;
     }
     
@@ -231,30 +222,31 @@ const ProviderRegistrationScreen = ({ navigation }) => {
     return isValid;
   };
 
-  // Fonction pour gérer la soumission du formulaire
   const handleSubmit = () => {
     if (validateForm()) {
-      // Mapper les types de services locaux aux valeurs attendues par le modèle
+      // ✅ FIX: Mapping en hébreu pour correspondre au backend
       const serviceTypeMapping = {
-        homeCleaning: 'maison',
-        buildingCleaning: 'immeuble',
-        officeCleaning: 'bureau'
+        homeCleaning: 'בית',
+        buildingCleaning: 'בניין',
+        officeCleaning: 'משרד',
+        airbnb: 'אירבנב'
       };
       
-      // Créer un tableau des services sélectionnés avec leurs taux
+      // ✅ CORRECTION 1: Ajout du champ description
       const selectedServices = Object.entries(services)
         .filter(([_, service]) => service.selected)
         .map(([key, service]) => ({
           type: serviceTypeMapping[key],
-          hourlyRate: parseFloat(service.rate)
+          hourlyRate: parseFloat(service.rate),
+          description: ''  // ✅ AJOUTÉ
         }));
       
-      // Calculer un taux horaire moyen
       const averageHourlyRate = selectedServices.reduce(
         (sum, service) => sum + service.hourlyRate, 
         0
       ) / selectedServices.length;
       
+      // ✅ CORRECTION 2: services → serviceDetails
       const userData = {
         firstName,
         lastName,
@@ -264,25 +256,44 @@ const ProviderRegistrationScreen = ({ navigation }) => {
         userType: 'provider',
         hourlyRate: averageHourlyRate,
         serviceTypes: selectedServices.map(service => service.type),
-        serviceCities: serviceCities, // ✅ AJOUT DES VILLES
-        serviceAreas: serviceCities, // Pour compatibilité
-        services: selectedServices
+        serviceCities: serviceCities,
+        serviceAreas: serviceCities,
+        serviceDetails: selectedServices  // ✅ CHANGÉ: services → serviceDetails
       };
       
-      
-      // Appeler la fonction d'inscription du contexte d'authentification
       registerProvider(userData)
         .then(() => {
           Alert.alert(
-            'Inscription réussie',
-            'Votre compte a été créé avec succès.',
-            [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+            'הרשמה הצליחה!',
+            'החשבון שלך נוצר בהצלחה. אתה יכול להתחבר כעת.',
+            [{ 
+              text: 'אישור', 
+              onPress: () => navigation.navigate('Login') 
+            }]
           );
         })
         .catch(error => {
-          Alert.alert('Erreur', error.message || 'Une erreur est survenue lors de l\'inscription');
+          Alert.alert(
+            'שגיאה', 
+            error.message || 'ההרשמה נכשלה. אנא נסה שוב.'
+          );
         });
+    } else {
+      // ✅ FIX: Afficher une alerte pour indiquer les erreurs
+      Alert.alert(
+        'שגיאת טופס',
+        'אנא תקן את השגיאות בטופס לפני השליחה',
+        [{ text: 'אישור' }]
+      );
     }
+  };
+
+  // ✅ FIX: Bouton disabled basé sur toutes les validations nécessaires
+  const isFormValid = () => {
+    return isAnyServiceSelected && 
+           termsAccepted && 
+           serviceCities.length > 0 && 
+           areServiceRatesValid();
   };
 
   return (
@@ -293,108 +304,177 @@ const ProviderRegistrationScreen = ({ navigation }) => {
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.header}>
-            <Text style={styles.title}>Inscription Prestataire</Text>
-            <Text style={styles.subtitle}>Créez votre compte et proposez vos services</Text>
+            <Text style={[styles.title, isRTL && styles.textRTL]}>
+              הרשמת ספק שירות
+            </Text>
+            <Text style={[styles.subtitle, isRTL && styles.textRTL]}>
+              הצטרף לרשת אנשי המקצוע שלנו
+            </Text>
           </View>
           
-          {/* Informations personnelles */}
           <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Informations personnelles</Text>
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+              פרטים אישיים
+            </Text>
             
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Prénom</Text>
+              <Text style={[styles.label, isRTL && styles.textRTL]}>
+                שם פרטי
+              </Text>
               <TextInput
-                style={[styles.input, errors.firstName ? styles.inputError : null]}
+                style={[
+                  styles.input, 
+                  errors.firstName ? styles.inputError : null,
+                  isRTL && styles.textRTL
+                ]}
                 value={firstName}
                 onChangeText={setFirstName}
-                placeholder="Votre prénom"
+                placeholder="הזן את שמך הפרטי"
               />
-              {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
+              {errors.firstName && (
+                <Text style={[styles.errorText, isRTL && styles.textRTL]}>
+                  {errors.firstName}
+                </Text>
+              )}
             </View>
             
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Nom</Text>
+              <Text style={[styles.label, isRTL && styles.textRTL]}>
+                שם משפחה
+              </Text>
               <TextInput
-                style={[styles.input, errors.lastName ? styles.inputError : null]}
+                style={[
+                  styles.input, 
+                  errors.lastName ? styles.inputError : null,
+                  isRTL && styles.textRTL
+                ]}
                 value={lastName}
                 onChangeText={setLastName}
-                placeholder="Votre nom"
+                placeholder="הזן את שם המשפחה שלך"
               />
-              {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
+              {errors.lastName && (
+                <Text style={[styles.errorText, isRTL && styles.textRTL]}>
+                  {errors.lastName}
+                </Text>
+              )}
             </View>
             
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={[styles.label, isRTL && styles.textRTL]}>
+                אימייל
+              </Text>
               <TextInput
-                style={[styles.input, errors.email ? styles.inputError : null]}
+                style={[
+                  styles.input, 
+                  errors.email ? styles.inputError : null
+                ]}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="votre@email.com"
+                placeholder="example@email.com"
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
-              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+              {errors.email && (
+                <Text style={[styles.errorText, isRTL && styles.textRTL]}>
+                  {errors.email}
+                </Text>
+              )}
             </View>
             
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Téléphone</Text>
+              <Text style={[styles.label, isRTL && styles.textRTL]}>
+                טלפון
+              </Text>
               <TextInput
-                style={[styles.input, errors.phone ? styles.inputError : null]}
+                style={[
+                  styles.input, 
+                  errors.phone ? styles.inputError : null
+                ]}
                 value={phone}
                 onChangeText={setPhone}
                 placeholder="05X-XXX-XXXX"
                 keyboardType="phone-pad"
               />
-              {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+              {errors.phone && (
+                <Text style={[styles.errorText, isRTL && styles.textRTL]}>
+                  {errors.phone}
+                </Text>
+              )}
             </View>
           </View>
           
-          {/* Types de services */}
           <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Types de services proposés</Text>
-            <Text style={styles.sectionSubtitle}>Sélectionnez un ou plusieurs types de services que vous proposez et indiquez votre taux horaire pour chacun</Text>
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+              סוגי שירותים
+            </Text>
+            <Text style={[styles.sectionSubtitle, isRTL && styles.textRTL]}>
+              בחר את סוגי השירותים שאתה מציע והזן את התעריף השעתי עבור כל שירות
+            </Text>
             
-            {errors.services && <Text style={styles.errorText}>{errors.services}</Text>}
+            {errors.services && (
+              <Text style={[styles.errorText, isRTL && styles.textRTL]}>
+                {errors.services}
+              </Text>
+            )}
             
             <ServiceTypeItem
               serviceKey="homeCleaning"
               service={services.homeCleaning}
-              title="Nettoyage de maison privée"
-              description="Nettoyage complet ou partiel de maisons et appartements"
+              title="ניקיון בית"
+              description="ניקיון דירות, בתים פרטיים ומגורים"
               toggleService={toggleServiceType}
               updateRate={updateServiceRate}
               error={errors.serviceRates?.homeCleaning}
+              isRTL={isRTL}
             />
             
             <ServiceTypeItem
               serviceKey="buildingCleaning"
               service={services.buildingCleaning}
-              title="Nettoyage d'immeuble"
-              description="Entretien des parties communes et des halls d'immeubles"
+              title="ניקיון בניינים"
+              description="ניקיון חדרי מדרגות, מבואות וחלקים משותפים"
               toggleService={toggleServiceType}
               updateRate={updateServiceRate}
               error={errors.serviceRates?.buildingCleaning}
+              isRTL={isRTL}
             />
             
             <ServiceTypeItem
               serviceKey="officeCleaning"
               service={services.officeCleaning}
-              title="Nettoyage de bureau"
-              description="Entretien d'espaces de travail et locaux professionnels"
+              title="ניקיון משרדים"
+              description="ניקיון משרדים ומקומות עבודה"
               toggleService={toggleServiceType}
               updateRate={updateServiceRate}
               error={errors.serviceRates?.officeCleaning}
+              isRTL={isRTL}
+            />
+            
+            <ServiceTypeItem
+              serviceKey="airbnb"
+              service={services.airbnb}
+              title="ניקיון אירבנב"
+              description="ניקיון דירות אירבנב בין check-out לcheck-in"
+              toggleService={toggleServiceType}
+              updateRate={updateServiceRate}
+              error={errors.serviceRates?.airbnb}
+              isRTL={isRTL}
             />
           </View>
           
-          {/* ✅ NOUVELLE SECTION - VILLES DE SERVICE */}
           <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Villes où vous proposez vos services *</Text>
-            <Text style={styles.sectionSubtitle}>
-              Cochez toutes les villes où vous êtes prêt à intervenir. Vous pouvez choisir une seule ville, plusieurs villes, ou même des banlieues sans la ville principale.
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+              ערים בהן אתה מספק שירות
+            </Text>
+            <Text style={[styles.sectionSubtitle, isRTL && styles.textRTL]}>
+              בחר את הערים שבהן אתה מעוניין לספק שירותים
             </Text>
             
-            {errors.serviceCities && <Text style={styles.errorText}>{errors.serviceCities}</Text>}
+            {errors.serviceCities && (
+              <Text style={[styles.errorText, isRTL && styles.textRTL]}>
+                {errors.serviceCities}
+              </Text>
+            )}
             
             <View style={[
               styles.citySelectorContainer,
@@ -408,69 +488,99 @@ const ProviderRegistrationScreen = ({ navigation }) => {
             </View>
           </View>
           
-          {/* Mot de passe */}
           <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Sécurité</Text>
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+              אבטחה
+            </Text>
             
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Mot de passe</Text>
+              <Text style={[styles.label, isRTL && styles.textRTL]}>
+                סיסמה
+              </Text>
               <TextInput
-                style={[styles.input, errors.password ? styles.inputError : null]}
+                style={[
+                  styles.input, 
+                  errors.password ? styles.inputError : null,
+                  isRTL && styles.textRTL
+                ]}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
-                placeholder="Minimum 6 caractères"
+                placeholder="הזן סיסמה (לפחות 6 תווים)"
               />
-              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+              {errors.password && (
+                <Text style={[styles.errorText, isRTL && styles.textRTL]}>
+                  {errors.password}
+                </Text>
+              )}
             </View>
             
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Confirmer le mot de passe</Text>
+              <Text style={[styles.label, isRTL && styles.textRTL]}>
+                אימות סיסמה
+              </Text>
               <TextInput
-                style={[styles.input, errors.confirmPassword ? styles.inputError : null]}
+                style={[
+                  styles.input, 
+                  errors.confirmPassword ? styles.inputError : null,
+                  isRTL && styles.textRTL
+                ]}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
-                placeholder="Répétez votre mot de passe"
+                placeholder="הזן את הסיסמה שוב"
               />
-              {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+              {errors.confirmPassword && (
+                <Text style={[styles.errorText, isRTL && styles.textRTL]}>
+                  {errors.confirmPassword}
+                </Text>
+              )}
             </View>
           </View>
           
-          {/* Conditions générales */}
-          <View style={styles.termsContainer}>
+          <View style={[styles.termsContainer, isRTL && styles.termsContainerRTL]}>
             <Switch
               value={termsAccepted}
               onValueChange={setTermsAccepted}
               trackColor={{ false: "#D1D1D6", true: "#4CD964" }}
             />
             <TouchableOpacity onPress={() => setTermsAccepted(!termsAccepted)}>
-              <Text style={styles.termsText}>
-                J'accepte les <Text style={styles.termsLink}>conditions générales</Text> et la <Text style={styles.termsLink}>politique de confidentialité</Text>
+              <Text style={[styles.termsText, isRTL && styles.textRTL]}>
+                אני מסכים ל
+                <Text style={styles.termsLink}>תנאים והגבלות</Text>
+                {' '}ו
+                <Text style={styles.termsLink}>מדיניות הפרטיות</Text>
               </Text>
             </TouchableOpacity>
           </View>
-          {errors.terms && <Text style={styles.errorText}>{errors.terms}</Text>}
+          {errors.terms && (
+            <Text style={[styles.errorText, isRTL && styles.textRTL]}>
+              {errors.terms}
+            </Text>
+          )}
           
-          {/* Bouton d'inscription */}
           <TouchableOpacity 
             style={[
               styles.submitButton, 
-              (!isAnyServiceSelected || !termsAccepted || serviceCities.length === 0) && styles.submitButtonDisabled
+              !isFormValid() && styles.submitButtonDisabled
             ]}
             onPress={handleSubmit}
-            disabled={!isAnyServiceSelected || !termsAccepted || serviceCities.length === 0}
+            disabled={!isFormValid()}
           >
-            <Text style={styles.submitButtonText}>S'inscrire</Text>
+            <Text style={styles.submitButtonText}>
+              הירשם כספק שירות
+            </Text>
           </TouchableOpacity>
           
-          {/* Lien vers la connexion */}
           <TouchableOpacity
             style={styles.loginLink}
             onPress={() => navigation.navigate('Login')}
           >
-            <Text style={styles.loginLinkText}>
-              Déjà inscrit ? <Text style={styles.loginLinkHighlight}>Se connecter</Text>
+            <Text style={[styles.loginLinkText, isRTL && styles.textRTL]}>
+              כבר רשום?{' '}
+              <Text style={styles.loginLinkHighlight}>
+                התחבר
+              </Text>
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -550,7 +660,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 5,
   },
-  // ✅ NOUVEAUX STYLES POUR LE SÉLECTEUR DE VILLES
   citySelectorContainer: {
     height: 400,
     borderWidth: 1,
@@ -576,6 +685,9 @@ const styles = StyleSheet.create({
   serviceTypeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  serviceTypeHeaderRTL: {
+    flexDirection: 'row-reverse',
   },
   serviceTypeCheckbox: {
     width: 24,
@@ -616,6 +728,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  rateInputContainerRTL: {
+    flexDirection: 'row-reverse',
+  },
   rateInput: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
@@ -634,6 +749,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  termsContainerRTL: {
+    flexDirection: 'row-reverse',
   },
   termsText: {
     fontSize: 14,
@@ -671,6 +789,10 @@ const styles = StyleSheet.create({
   loginLinkHighlight: {
     color: '#007AFF',
     fontWeight: 'bold',
+  },
+  textRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
 });
 

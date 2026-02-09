@@ -1,67 +1,1014 @@
 {
-  "bonjour": "שלום",
-  "quel_type_de_service_recherchezvous_": "איזה סוג שירות אתם מחפשים?",
-  "rserver": "הזמן",
-  "nettoyage_professionnel_pour_votre_domicile_adapt_": "ניקיון מקצועי לבית שלכם, מותאם לצרכים הספציפיים שלכם.",
-  "services_complets_pour_bureaux_et_espaces_professi": "שירותים מלאים למשרדים וחללים מקצועיים.",
-  "entretien_des_parties_communes_et_des_immeubles_rs": "תחזוקה של חלקים משותפים ובניינים למגורים.",
-  "domicile": "בית",
-  "bureau": "משרד",
-  "immeuble": "בניין",
-  "connexion": "התחברות",
-  "inscription": "הרשמה",
-  "email": "אימייל",
-  "mot_de_passe": "סיסמה",
-  "se_connecter": "התחבר",
-  "sinscrire": "הירשם",
-  "mot_de_passe_oubli_": "שכחת סיסמה?",
-  "rsum_de_la_rservation": "סיכום הזמנה",
-  "type_de_service": "סוג שירות",
-  "dure": "משך",
-  "heures": "שעות",
+  "navigation": {
+    "accueil": "בית",
+    "home": "בית",
+    "bookings": "הזמנות",
+    "profile": "פרופיל",
+    "dashboard": "לוח בקרה",
+    "missions": "משימות",
+    "calendar": "לוח שנה",
+    "myProfile": "הפרופיל שלי",
+    "editService": "ערוך שירות",
+    "addService": "הוסף שירות",
+    "manageAvailability": "נהל את הזמינות שלי",
+    "serviceAreas": "אזורי שירות",
+    "contact": "צור קשר",
+    "experience": "ניסיון",
+    "personalInfo": "מידע אישי",
+    "myMissions": "המשימות שלי",
+    "allRequests": "כל הבקשות",
+    "missionDetails": "פרטי המשימה",
+    "stats": "סטטיסטיקה",
+    "availability": "זמינות",
+    "reviews": "ביקורות",
+    "forgotPassword": "שכחתי סיסמה",
+    "serviceDetails": "פרטי השירות",
+    "providerSearch": "חיפוש ספק",
+    "addressSelection": "בחירת כתובת",
+    "scheduleScreen": "תזמון",
+    "bookingSummary": "סיכום הזמנה",
+    "bookingNotes": "הערות הזמנה",
+    "payment": "תשלום",
+    "confirmation": "אישור",
+    "bookingDetails": "פרטי ההזמנה",
+    "myRequests": "הבקשות שלי",
+    "requests": "בקשות",
+    "settings": "הגדרות",
+    "services": "שירותים",
+    "logout": "התנתק"
+  },
+  "serviceTypes": {
+    "home": "ניקיון בית",
+    "office": "ניקיון משרדים",
+    "building": "ניקיון בניינים",
+    "other": "אחר"
+  },
+  "welcome": "ברוך הבא",
+  "tagline": "השותף שלך לניקיון מקצועי",
+  "choose_language": "בחר שפה",
+  "im_client": "אני מחפש שירות",
+  "im_provider": "אני ספק שירות",
+  "home": "בית",
+  "services": "שירותים",
+  "bookings": "הזמנות",
+  "profile": "פרופיל",
+  "settings": "הגדרות",
+  "logout": "התנתק",
+  "search_services": "חפש שירותים",
+  "search_placeholder": "חפש שירות ניקיון...",
+  "filter_by_city": "סנן לפי עיר",
+  "all_cities": "כל הערים",
+  "tel_aviv": "תל אביב",
+  "jerusalem": "ירושלים",
+  "haifa": "חיפה",
+  "beer_sheva": "באר שבע",
+  "herzliya": "הרצליה",
+  "book_now": "הזמן עכשיו",
+  "view_details": "צפה בפרטים",
+  "price_from": "החל מ",
+  "per_hour": "לשעה",
+  "rating": "דירוג",
+  "reviews": "ביקורות",
+  "available": "זמין",
+  "unavailable": "לא זמין",
+  "booking_details": "פרטי הזמנה",
+  "service_type": "סוג שירות",
   "date": "תאריך",
-  "heure": "שעה",
-  "adresse": "כתובת",
-  "prix": "מחיר",
-  "frais_de_plateforme": "עמלת פלטפורמה",
-  "total": "סה״כ",
-  "confirmer_la_rservation": "אשר הזמנה",
-  "ponctuel": "חד פעמי",
-  "hebdomadaire": "שבועי",
-  "bimensuel": "דו-שבועי",
-  "mensuel": "חודשי",
-  "en_attente": "ממתין",
-  "confirm": "אושר",
-  "en_cours": "בביצוע",
-  "termin": "הושלם",
-  "annul": "בוטל",
-  "accueil": "בית",
-  "mes_rservations": "ההזמנות שלי",
-  "profil": "פרופיל",
-  "messages": "הודעות",
-  "annuler": "בטל",
-  "enregistrer": "שמור",
-  "modifier": "ערוך",
-  "supprimer": "מחק",
-  "retour": "חזור",
-  "suivant": "הבא",
-  "informations_personnelles": "מידע אישי",
-  "prnom": "שם פרטי",
-  "nom": "שם משפחה",
-  "tlphone": "טלפון",
-  "mes_adresses": "הכתובות שלי",
-  "ajouter_une_adresse": "הוסף כתובת",
-  "ville": "עיר",
-  "code_postal": "מיקוד",
-  "rechercher_un_prestataire": "חפש ספק",
-  "filtrer_par_ville": "סנן לפי עיר",
-  "aucun_prestataire_disponible": "אין ספקים זמינים",
-  "voir_le_profil": "צפה בפרופיל",
-  "oui": "כן",
-  "non": "לא",
-  "chargement": "טוען...",
-  "erreur": "שגיאה",
-  "succs": "הצלחה",
+  "time": "שעה",
+  "duration": "משך זמן",
+  "address": "כתובת",
+  "total_price": "מחיר כולל",
+  "reservation_fee": "דמי הזמנה",
+  "service_cost": "עלות שירות",
+  "confirm_booking": "אשר הזמנה",
+  "cancel": "ביטול",
+  "my_bookings": "ההזמנות שלי",
+  "upcoming": "קרובות",
+  "past": "עבר",
+  "cancelled": "מבוטלות",
+  "status_pending": "ממתין",
+  "status_confirmed": "מאושר",
+  "status_completed": "הושלם",
+  "status_cancelled": "בוטל",
+  "contact_provider": "צור קשר עם ספק",
+  "cancel_booking": "בטל הזמנה",
+  "rate_service": "דרג שירות",
+  "leave_review": "השאר ביקורת",
+  "provider_calendar": "לוח שנה של ספק",
+  "set_availability": "הגדר זמינות",
+  "mark_available": "סמן כזמין",
+  "mark_unavailable": "סמן כלא זמין",
+  "my_services": "השירותים שלי",
+  "add_service": "הוסף שירות",
+  "edit_service": "ערוך שירות",
+  "delete_service": "מחק שירות",
+  "service_name": "שם שירות",
+  "description": "תיאור",
+  "price_per_hour": "מחיר לשעה",
+  "save": "שמור",
+  "notifications": "התראות",
+  "new_booking": "הזמנה חדשה",
+  "booking_confirmed": "הזמנה אושרה",
+  "booking_cancelled": "הזמנה בוטלה",
+  "payment_received": "תשלום התקבל",
+  "language": "שפה",
+  "hebrew": "עברית",
+  "french": "צרפתית",
+  "english": "אנגלית",
+  "theme": "ערכת נושא",
+  "light": "בהיר",
+  "dark": "כהה",
+  "about": "אודות",
+  "terms": "תנאי שימוש",
+  "privacy": "פרטיות",
+  "help": "עזרה",
+  "contact_us": "צור קשר",
+  "version": "גרסה",
+  "error_occurred": "אירעה שגיאה",
+  "try_again": "נסה שוב",
+  "loading": "טוען...",
+  "no_results": "לא נמצאו תוצאות",
+  "required_field": "שדה חובה",
+  "invalid_email": "אימייל לא תקין",
+  "invalid_phone": "מספר טלפון לא תקין",
+  "password_too_short": "סיסמה קצרה מדי",
+  "passwords_dont_match": "הסיסמאות לא תואמות",
+  "login": "התחבר",
+  "register": {
+    "title": "הרשמה",
+    "underDevelopment": "עמוד זה בפיתוח"
+  },
+  "email": "אימייל",
+  "password": "סיסמה",
+  "confirm_password": "אשר סיסמה",
+  "forgot_password": "שכחת סיסמה?",
+  "dont_have_account": "אין לך חשבון?",
+  "already_have_account": "יש לך כבר חשבון?",
+  "full_name": "שם מלא",
+  "phone": "טלפון",
+  "city": "עיר",
+  "feature_verified": "ספקים מאומתים",
+  "feature_secure": "תשלום מאובטח",
+  "feature_quality": "שירות איכותי",
+  "changement_langue": "משנה שפה...",
+  "hello": "שלום",
+  "what_service_looking_for": "איזה סוג שירות אתה מחפש?",
+  "home_service_title": "ניקיון בית",
+  "home_service_desc": "ניקיון מקצועי לביתך, מותאם לצרכים הספציפיים שלך",
+  "office_service_title": "ניקיון משרדים",
+  "office_service_desc": "שירותים מלאים למשרדים וחללים מקצועיים",
+  "building_service_title": "ניקיון בניינים",
+  "building_service_desc": "תחזוקה של חלקים משותפים ובניינים מגורים",
+  "choose_how_to_use": "בחר כיצד להשתמש ב-CleanConnect",
+  "client_description": "מצא אנשי מקצוע לניקיון הבית או המשרד שלך",
+  "provider_description": "הצטרף לרשת אנשי המקצוע שלנו",
+  "login_client": "כניסת לקוח",
+  "login_provider": "כניסת ספק",
+  "error": "שגיאה",
+  "fill_all_fields": "אנא מלא את כל השדות",
+  "login_error": "שגיאת כניסה",
+  "incorrect_credentials": "פרטי התחברות שגויים או בעיית חיבור",
+  "show_password": "הצג סיסמה",
+  "hide_password": "הסתר סיסמה",
+  "dashboard": "לוח בקרה",
+  "my_requests": "הבקשות שלי",
+  "pending": "ממתין",
+  "confirmed": "מאושר",
+  "completed": "הושלם",
+  "no_bookings": "אין הזמנות",
+  "no_bookings_message": "אין לך עדיין הזמנות",
+  "start_booking": "התחל הזמנה",
+  "booking_status_pending": "ממתין",
+  "booking_status_accepted": "התקבל",
+  "booking_status_confirmed": "מאושר",
+  "booking_status_in_progress": "בתהליך",
+  "booking_status_completed": "הושלם",
+  "booking_status_cancelled": "בוטל",
+  "booking_status_declined": "נדחה",
+  "refresh": "רענן",
+  "view_booking": "צפה בהזמנה",
+  "scheduled_for": "מתוכנן ל",
+  "provider": "ספק",
+  "client": "לקוח",
   "parametres": "הגדרות",
-  "langue": "שפה"
+  "compte": "חשבון",
+  "informations_personnelles": "מידע אישי",
+  "mes_adresses": "הכתובות שלי",
+  "notifications_reservations": "התראות הזמנה",
+  "unable_to_load_providers": "לא ניתן לטעון ספקים",
+  "searching_providers": "מחפש ספקים...",
+  "available_providers": "ספקים זמינים",
+  "home_cleaning": "ניקיון בית",
+  "office_cleaning": "ניקיון משרדים",
+  "building_cleaning": "ניקיון בניינים",
+  "configuration_error": "שגיאת תצורה",
+  "provider_selection_unavailable": "פונקציית בחירת הספק אינה זמינה. אנא בדוק את BookingContext.",
+  "new_provider": "חדש",
+  "per_hour_short": "/שעה",
+  "in": "ב",
+  "found": "נמצא",
+  "no_provider_in_city": "אין ספק זמין ב",
+  "no_provider_found": "לא נמצא ספק",
+  "try_nearby_city": "נסה לחפש בעיר סמוכה",
+  "check_city_in_profile": "בדוק את העיר שלך בפרופיל",
+  "building_cleaning_description": "תחזוקת אזורים משותפים ומסדרונות בניין",
+  "home_cleaning_description": "ניקיון מקצועי לביתך",
+  "office_cleaning_description": "תחזוקת חללי עבודה ומקומות מקצועיים",
+  "cleaning_service": "שירות ניקיון",
+  "professional_cleaning_services": "שירותי ניקיון מקצועיים",
+  "services_included": "שירותים כלולים",
+  "duration_hours": "משך (שעות)",
+  "frequency": "תדירות",
+  "find_provider": "מצא ספק",
+  "feature_dusting": "ניגוב אבק",
+  "feature_vacuum": "שאיבת אבק",
+  "feature_floor_cleaning": "ניקוי רצפות",
+  "feature_bathroom_kitchen": "אמבטיה ומטבח",
+  "feature_windows": "חלונות",
+  "feature_eco_products": "מוצרים ידידותיים לסביבה",
+  "feature_disinfection": "חיטוי",
+  "feature_trash": "פינוי אשפה",
+  "feature_bathrooms": "אמבטיות",
+  "feature_common_areas": "אזורים משותפים",
+  "feature_entrance_halls": "מסדרונות כניסה",
+  "feature_stairs_elevators": "מדרגות ומעליות",
+  "feature_parking_outdoor": "חניה וחוץ",
+  "feature_technical_rooms": "חדרים טכניים",
+  "feature_after_hours": "שירות לאחר שעות העבודה",
+  "loading_bookings": "טוען הזמנות...",
+  "book_service": "הזמן שירות",
+  "service": "שירות",
+  "service_home": "בית",
+  "service_office": "משרד",
+  "service_building": "בניין",
+  "date_not_available": "תאריך לא זמין",
+  "not_assigned": "לא משויך",
+  "not_specified": "לא צוין",
+  "no_pending_bookings": "אין הזמנות ממתינות",
+  "no_confirmed_bookings": "אין הזמנות מאושרות",
+  "no_completed_bookings": "אין הזמנות שהושלמו",
+  "common": {
+    "error": "שגיאה",
+    "cancel": "ביטול",
+    "no": "לא",
+    "yes": "כן"
+  },
+  "bookingDetails": {
+    "title": "פרטי הזמנה",
+    "loading": "טוען פרטים...",
+    "status": {
+      "pending": "ממתין",
+      "confirmed": "מאושר",
+      "inProgress": "בתהליך",
+      "completed": "הושלם",
+      "cancelled": "בוטל"
+    },
+    "serviceType": {
+      "home": "בית",
+      "office": "משרד",
+      "building": "בניין",
+      "service": "שירות"
+    },
+    "labels": {
+      "serviceType": "סוג שירות",
+      "duration": "משך זמן",
+      "price": "מחיר",
+      "provider": "ספק",
+      "serviceAddress": "כתובת שירות",
+      "specialInstructions": "הוראות מיוחדות"
+    },
+    "duration": {
+      "hours": "{{hours}} שעות"
+    },
+    "price": {
+      "format": "₪{{price}}"
+    },
+    "date": {
+      "unavailable": "תאריך לא זמין"
+    },
+    "provider": {
+      "unassigned": "לא משויך"
+    },
+    "address": {
+      "notProvided": "כתובת לא סופקה",
+      "unavailable": "כתובת לא זמינה",
+      "custom": "(כתובת מותאמת אישית)",
+      "registration": "(כתובת רישום)"
+    },
+    "actions": {
+      "modify": "ערוך",
+      "rateService": "דרג שירות",
+      "cancelBooking": "בטל הזמנה",
+      "modifyBooking": "ערוך הזמנה",
+      "needHelp": "צריך עזרה?"
+    },
+    "rating": {
+      "title": "דרג שירות",
+      "yourRating": "הדירוג שלך",
+      "question": "איך היית מדרג את השירות שסופק על ידי {{provider}}?",
+      "commentLabel": "תגובה (אופציונלי)",
+      "submit": "שלח",
+      "thanksTitle": "תודה",
+      "successMessage": "הדירוג שלך נרשם בהצלחה."
+    },
+    "cancellation": {
+      "title": "אשר ביטול",
+      "question": "האם אתה בטוח שברצונך לבטל הזמנה זו?",
+      "confirmButton": "כן, בטל",
+      "successTitle": "ביטול אושר",
+      "successMessage": "ההזמנה שלך בוטלה בהצלחה."
+    },
+    "errors": {
+      "loadFailed": "לא ניתן לטעון פרטי הזמנה. אנא נסה שוב.",
+      "cancelFailed": "אירעה שגיאה במהלך הביטול.",
+      "unexpected": "אירעה שגיאה בלתי צפויה. אנא נסה שוב.",
+      "ratingFailed": "אירעה שגיאה בשמירת הדירוג שלך."
+    },
+    "demo": {
+      "notes": "שים לב לחתול. מוצרים ידידותיים לסביבה מועדפים."
+    }
+  },
+  "bookingNotes": {
+    "title": "הוראות מיוחדות",
+    "subtitle": "מידע נוסף לספק שלך",
+    "placeholder": "דוגמאות: קוד גישה, חיות מחמד, אזורים ספציפיים לניקוי וכו'.",
+    "suggestions": "הצעות:",
+    "chips": {
+      "accessCode": "קוד גישה",
+      "pets": "חיות מחמד",
+      "fragile": "פריטים שבירים",
+      "ecoProducts": "מוצרים אקולוגיים",
+      "specificAccess": "גישה ספציפית"
+    },
+    "examples": {
+      "accessCode": "קוד גישה: ",
+      "pets": "יש לי חיות מחמד",
+      "fragile": "שים לב לפריטים שבירים",
+      "ecoProducts": "מוצרים ידידותיים לסביבה בלבד",
+      "specificAccess": "דלת בחלק האחורי של הבניין"
+    },
+    "media": {
+      "title": "תמונות וסרטונים",
+      "description": "הוסף תמונות או סרטון כדי לעזור לספק להבין טוב יותר את הצרכים שלך (מקס' 50 MB לקובץ, 60 שניות לסרטונים)",
+      "addButton": "הוסף תמונה או סרטון",
+      "photo": "תמונה",
+      "video": "סרטון",
+      "delete": "מחק",
+      "limitReached": "הגעת למגבלה",
+      "limitMessage": "ניתן להוסיף מקסימום 3 קבצים (תמונות או סרטונים).",
+      "tooLarge": "קובץ גדול מדי",
+      "tooLargeMessage": "הקובץ שנבחר ({{size}}) עולה על מגבלת 50 MB. אנא בחר קובץ קטן יותר.",
+      "successTitle": "הצלחה",
+      "successMessage": "{{type}} נוסף בהצלחה ({{size}})",
+      "confirmDelete": "אשר מחיקה",
+      "confirmDeleteMessage": "האם אתה באמת רוצה למחוק קובץ זה?",
+      "totalTooLarge": "גודל כולל גדול מדי",
+      "totalTooLargeMessage": "הגודל הכולל של הקבצים שלך עולה על 150 MB. אנא מחק כמה קבצים.",
+      "infoMessage": "הקבצים יישלחו לספק לאחר אישור ההזמנה"
+    },
+    "permissions": {
+      "denied": "הרשאה נדחתה",
+      "message": "אנו זקוקים להרשאה לגשת לתמונות והסרטונים שלך."
+    },
+    "errors": {
+      "selectFailed": "אירעה שגיאה בבחירת הקובץ. אנא נסה שוב."
+    }
+  },
+  "payment": {
+    "title": "תשלום מאובטח",
+    "bookingFee": "דמי הזמנה: {{amount}}",
+    "securePayment": "תשלום מאובטח 100%",
+    "paymentMethod": "שיטת תשלום דמים",
+    "payButton": "שלם {{amount}}",
+    "confirmBooking": "ואשר הזמנה",
+    "securityInfo": "תשלום מאובטח SSL - ביטול חינם",
+    "howItWorks": {
+      "title": "איך זה עובד?",
+      "step1": "אתה משלם {{amount}} דמי הזמנה",
+      "step2": "אתה מקבל את פרטי הקשר של הספק",
+      "step3": "אתה משלם עבור השירות ({{amount}}) ישירות לספק"
+    },
+    "benefits": {
+      "title": "✓ מה כולל הדמים:",
+      "contactUnlock": "• פתיחת קשר",
+      "confirmation": "• אישור הזמנה",
+      "support": "• תמיכת לקוחות",
+      "guarantee": "• ערבות פלטפורמה"
+    },
+    "card": {
+      "title": "כרטיס אשראי",
+      "description": "תשלום מאובטח מיידי",
+      "info": "מידע תשלום",
+      "number": "מספר כרטיס",
+      "expiry": "MM/YY",
+      "cvv": "CVV",
+      "name": "שם על הכרטיס"
+    },
+    "errors": {
+      "invalidCard": "מספר כרטיס לא תקין",
+      "expiredCard": "הכרטיס פג תוקף",
+      "invalidExpiry": "תאריך תפוגה לא תקין",
+      "invalidCvv": "CVV חייב להכיל {{length}} ספרות",
+      "nameRequired": "שם על הכרטיס נדרש",
+      "correctErrors": "אנא תקן את השגיאות לפני המשך",
+      "paymentDeclined": "תשלום נדחה. אנא בדוק את המידע הבנקאי שלך.",
+      "bookingFailed": "שגיאה ביצירת הזמנה"
+    },
+    "processing": {
+      "payment": "מעבד תשלום...",
+      "confirmed": "תשלום אושר...",
+      "creating": "יוצר את ההזמנה שלך..."
+    }
+  },
+  "schedule": {
+    "title": "בחר משבצת זמן",
+    "service": "שירות",
+    "loading": "טוען זמינות...",
+    "selectDate": "בחר תאריך",
+    "availableSlots": "משבצות זמינות",
+    "continue": "המשך",
+    "redirecting": "מפנה...",
+    "months": {
+      "0": "ינואר",
+      "1": "פברואר",
+      "2": "מרץ",
+      "3": "אפריל",
+      "4": "מאי",
+      "5": "יוני",
+      "6": "יולי",
+      "7": "אוגוסט",
+      "8": "ספטמבר",
+      "9": "אוקטובר",
+      "10": "נובמבר",
+      "11": "דצמבר"
+    },
+    "weekdays": {
+      "sun": "א׳",
+      "mon": "ב׳",
+      "tue": "ג׳",
+      "wed": "ד׳",
+      "thu": "ה׳",
+      "fri": "ו׳",
+      "sat": "ש׳"
+    },
+    "duration": {
+      "title": "משך שירות",
+      "hours": "{{count}} שעות",
+      "hours_one": "שעה {{count}}",
+      "hours_other": "{{count}} שעות",
+      "resetNote": "שינוי המשך יאפס את בחירת המשבצת שלך"
+    },
+    "alerts": {
+      "invalidDate": "תאריך לא תקין",
+      "selectFutureDate": "אנא בחר תאריך עתידי",
+      "noAvailability": "אין זמינות",
+      "providerNotAvailable": "הספק לא זמין ביום זה",
+      "incompleteSelection": "בחירה לא שלמה",
+      "selectDateTime": "אנא בחר תאריך ומשבצת זמן"
+    },
+    "noSlots": "אין משבצות {{duration}}ש' זמינות",
+    "tryShorter": "נסה משך קצר יותר או תאריך אחר"
+  },
+  "providerDashboard": {
+    "loading": "טוען נתונים...",
+    "reviews": "ביקורות",
+    "stats": {
+      "pendingRequests": "בקשות ממתינות",
+      "completedServices": "שירותים שהושלמו",
+      "averageRate": "תעריף שעתי ממוצע"
+    },
+    "info": {
+      "title": "המידע שלי",
+      "email": "אימייל",
+      "phone": "טלפון",
+      "notProvided": "לא סופק",
+      "address": "כתובת",
+      "addressNotProvided": "לא סופק",
+      "services": "שירותים",
+      "noServices": "אין שירותים מוגדרים",
+      "serviceAreas": "אזורי שירות",
+      "areasNotProvided": "לא סופק"
+    },
+    "actions": {
+      "editProfile": "ערוך את הפרופיל שלי"
+    },
+    "recentRequests": {
+      "title": "בקשות אחרונות",
+      "noRequests": "אין בקשות כרגע",
+      "viewAll": "הצג את כל הבקשות"
+    },
+    "errors": {
+      "loadFailed": "לא ניתן לטעון נתוני ספק"
+    }
+  },
+  "providerRequests": {
+    "title": "המשימות שלי",
+    "loading": "טוען בקשות...",
+    "invalidDate": "תאריך לא תקין",
+    "noAddress": "כתובת לא צוינה",
+    "noNotes": "אין הערות",
+    "empty": {
+      "title": "אין משימות",
+      "subtitle": "עדיין לא קיבלת בקשות למשימות"
+    },
+    "stats": {
+      "pending": "ממתין",
+      "accepted": "התקבל",
+      "completed": "הושלם"
+    },
+    "status": {
+      "pending": "ממתין",
+      "accepted": "התקבל",
+      "confirmed": "התקבל",
+      "declined": "נדחה",
+      "cancelled": "בוטל",
+      "completed": "הושלם"
+    },
+    "serviceType": {
+      "home": "בית",
+      "office": "משרד",
+      "building": "בניין"
+    },
+    "actions": {
+      "accept": "קבל",
+      "decline": "דחה"
+    }
+  },
+  "providerCalendar": {
+    "loading": {
+      "auth": "טוען נתוני אימות...",
+      "availabilities": "טוען את הזמינות שלך..."
+    },
+    "errors": {
+      "notConnected": "שגיאה: משתמש לא מחובר או תפקיד שגוי"
+    },
+    "role": "תפקיד",
+    "providerId": "מזהה ספק",
+    "title": "לוח שנה - לוח הזמנים שלי",
+    "legend": {
+      "missions": "משימות",
+      "available": "זמין"
+    },
+    "months": {
+      "0": "ינואר",
+      "1": "פברואר",
+      "2": "מרץ",
+      "3": "אפריל",
+      "4": "מאי",
+      "5": "יוני",
+      "6": "יולי",
+      "7": "אוגוסט",
+      "8": "ספטמבר",
+      "9": "אוקטובר",
+      "10": "נובמבר",
+      "11": "דצמבר"
+    },
+    "weekdays": {
+      "sun": "א׳",
+      "mon": "ב׳",
+      "tue": "ג׳",
+      "wed": "ד׳",
+      "thu": "ה׳",
+      "fri": "ו׳",
+      "sat": "ש׳"
+    },
+    "selectDate": "בחר תאריך",
+    "addAvailability": "הוסף זמינות",
+    "sections": {
+      "missions": "משימות",
+      "availableSlots": "משבצות זמינות"
+    },
+    "recurring": "חוזר",
+    "empty": {
+      "title": "אין פעילות מתוכננת",
+      "subtitle": "לחץ על 'הוסף זמינות' כדי להגדיר את המשבצות הפנויות שלך."
+    },
+    "noSelection": {
+      "title": "בחר תאריך",
+      "subtitle": "לחץ על תאריך בלוח השנה כדי לראות את המשימות והזמינות שלך."
+    },
+    "stats": {
+      "total": "📊 סה״כ זמינויות: {{count}}",
+      "emptyHint": "(לוח שנה ריק - הוסף את הזמינויות הראשונות שלך!)",
+      "visibleHint": "(נראה לכל הלקוחות)"
+    },
+    "modal": {
+      "title": "הוסף זמינות",
+      "start": "התחלה",
+      "end": "סיום",
+      "repeatWeekly": "חזור מדי שבוע",
+      "syncNote": "💡 זמינות זו תהיה גלויה אוטומטית לכל הלקוחות",
+      "add": "הוסף",
+      "successTitle": "הצלחה",
+      "successMessage": "זמינות נוספה בהצלחה. היא תהיה גלויה ללקוחות.",
+      "errors": {
+        "fillAll": "אנא מלא את כל השדות",
+        "endAfterStart": "שעת סיום חייבת להיות אחרי שעת התחלה"
+      }
+    },
+    "deleteModal": {
+      "title": "מחק זמינות",
+      "message": "האם אתה בטוח שברצונך למחוק זמינות זו?",
+      "confirm": "מחק"
+    }
+  },
+  "providerProfile": {
+    "loading": "טוען נתונים...",
+    "noData": "אין נתוני פרופיל זמינים.",
+    "reviews": "ביקורות",
+    "memberSince": "חבר מאז",
+    "editProfile": "ערוך את הפרופיל שלי",
+    "errors": {
+      "loadFailed": "לא ניתן לטעון נתוני ספק"
+    },
+    "imageUpload": {
+      "permissionTitle": "נדרשת הרשאה",
+      "permissionMessage": "אנו זקוקים להרשאתך לגשת לתמונות שלך.",
+      "successTitle": "הצלחה",
+      "successMessage": "תמונת הפרופיל שלך עודכנה.",
+      "errorMessage": "לא ניתן לעדכן את תמונת הפרופיל שלך."
+    },
+    "stats": {
+      "title": "הסטטיסטיקות שלי",
+      "pendingRequests": "בקשות ממתינות",
+      "completedServices": "שירותים שהושלמו",
+      "averageRate": "תעריף שעתי ממוצע"
+    },
+    "services": {
+      "title": "השירותים שלי",
+      "edit": "ערוך",
+      "delete": "מחק",
+      "deleteTitle": "מחק שירות",
+      "deleteMessage": "האם אתה בטוח שברצונך למחוק שירות זה?",
+      "deleteConfirm": "מחק",
+      "deleteSuccessTitle": "הצלחה",
+      "deleteSuccessMessage": "השירות נמחק.",
+      "deleteError": "לא ניתן למחוק את השירות.",
+      "empty": "עדיין לא הוספת שירותים. לחץ על + כדי להוסיף את השירות הראשון שלך."
+    },
+    "serviceAreas": {
+      "title": "אזורי שירות",
+      "empty": "אין אזורי שירות מוגדרים",
+      "manage": "נהל את אזורי השירות שלי"
+    },
+    "availability": {
+      "title": "הזמינות שלי",
+      "empty": "אין זמינות מוגדרת",
+      "manage": "נהל את הזמינות שלי"
+    },
+    "contact": {
+      "title": "פרטי קשר",
+      "email": "אימייל",
+      "phone": "טלפון",
+      "notProvided": "לא סופק",
+      "edit": "ערוך את פרטי הקשר שלי"
+    },
+    "experience": {
+      "title": "ניסיון ואישורים",
+      "years": "שנות ניסיון",
+      "yearsCount": "שנה {{count}}",
+      "yearsCount_plural": "{{count}} שנים",
+      "certifications": "אישורים",
+      "noCertifications": "לא נוספו אישורים",
+      "edit": "ערוך את הניסיון שלי"
+    },
+    "account": {
+      "title": "חשבון"
+    },
+    "logout": {
+      "button": "התנתק",
+      "title": "התנתק",
+      "message": "האם אתה בטוח שברצונך להתנתק?",
+      "confirm": "התנתק",
+      "errorMessage": "לא ניתן להתנתק. אנא נסה שוב."
+    }
+  },
+  "jobDetails": {
+    "atTime": "ב",
+    "hours": "שעות",
+    "errors": {
+      "loadFailed": "לא ניתן לטעון פרטי משימה",
+      "cannotLoad": "לא ניתן לטעון פרטי משימה",
+      "cannotCall": "לא ניתן לבצע שיחות ממכשיר זה",
+      "cannotMessage": "לא ניתן לשלוח הודעות ממכשיר זה"
+    },
+    "pending": {
+      "title": "בקשת משימה חדשה",
+      "subtitle": "אנא אשר או דחה בקשה זו"
+    },
+    "actions": {
+      "accept": "קבל",
+      "decline": "דחה",
+      "call": "התקשר",
+      "message": "הודעה",
+      "directions": "כיוונים",
+      "contactClient": "צור קשר עם לקוח",
+      "markComplete": "סמן כהושלם",
+      "cancelJob": "בטל משימה"
+    },
+    "serviceDetails": {
+      "title": "פרטי שירות",
+      "service": "שירות",
+      "price": "מחיר",
+      "notes": "הערות",
+      "noNotes": "אין הערות"
+    },
+    "requestedTasks": {
+      "title": "משימות מבוקשות"
+    },
+    "clientHistory": {
+      "title": "היסטוריית לקוח"
+    },
+    "confirmModal": {
+      "title": "אשר משימה",
+      "message": "האם אתה בטוח שברצונך לאשר משימה זו?",
+      "confirm": "אשר",
+      "successTitle": "משימה אושרה",
+      "successMessage": "המשימה אושרה בהצלחה.",
+      "errorMessage": "לא ניתן לאשר את המשימה. אנא נסה שוב."
+    },
+    "cancelModal": {
+      "title": "בטל משימה",
+      "message": "האם אתה בטוח שברצונך לבטל משימה זו?",
+      "no": "לא",
+      "yes": "כן, בטל",
+      "successTitle": "משימה בוטלה",
+      "successMessage": "המשימה בוטלה בהצלחה.",
+      "errorMessage": "לא ניתן לבטל את המשימה. אנא נסה שוב."
+    },
+    "completeModal": {
+      "title": "השלם משימה",
+      "message": "האם אתה בטוח שברצונך לסמן משימה זו כהושלמה?",
+      "confirm": "השלם",
+      "successTitle": "משימה הושלמה",
+      "successMessage": "המשימה סומנה כהושלמה בהצלחה.",
+      "errorMessage": "לא ניתן להשלים את המשימה. אנא נסה שוב."
+    }
+  },
+  "providerRegistration": {
+    "title": "הרשמת ספק",
+    "subtitle": "צור את החשבון שלך והצע את השירותים שלך",
+    "sections": {
+      "personalInfo": "מידע אישי",
+      "serviceTypes": "סוגי שירותים מוצעים",
+      "serviceTypesSubtitle": "בחר סוג שירות אחד או יותר שאתה מציע וציין את התעריף השעתי שלך עבור כל אחד",
+      "serviceCities": "ערים שבהן אתה מציע את השירותים שלך *",
+      "serviceCitiesSubtitle": "סמן את כל הערים שבהן אתה מוכן לעבוד. אתה יכול לבחור עיר אחת, מספר ערים, או אפילו פרברים ללא העיר הראשית.",
+      "security": "אבטחה"
+    },
+    "fields": {
+      "firstName": "שם פרטי",
+      "lastName": "שם משפחה",
+      "email": "אימייל",
+      "phone": "טלפון",
+      "password": "סיסמה",
+      "confirmPassword": "אשר סיסמה"
+    },
+    "placeholders": {
+      "firstName": "השם הפרטי שלך",
+      "lastName": "שם המשפחה שלך",
+      "email": "your@email.com",
+      "phone": "05X-XXX-XXXX",
+      "password": "מינימום 6 תווים",
+      "confirmPassword": "חזור על הסיסמה שלך"
+    },
+    "serviceTypes": {
+      "home": {
+        "title": "ניקיון בתים פרטיים",
+        "description": "ניקיון מלא או חלקי של בתים ודירות"
+      },
+      "building": {
+        "title": "ניקיון בניינים",
+        "description": "תחזוקה של חלקים משותפים ואולמות בניינים"
+      },
+      "office": {
+        "title": "ניקיון משרדים",
+        "description": "תחזוקה של חללי עבודה ומקומות מקצועיים"
+      }
+    },
+    "validation": {
+      "firstNameRequired": "שם פרטי נדרש",
+      "lastNameRequired": "שם משפחה נדרש",
+      "invalidEmail": "אימייל לא תקין",
+      "phoneRequired": "טלפון נדרש",
+      "passwordMinLength": "סיסמה חייבת להיות לפחות 6 תווים",
+      "passwordMismatch": "הסיסמאות לא תואמות",
+      "selectService": "אנא בחר לפחות סוג שירות אחד",
+      "rateRequired": "תעריף שעתי נדרש",
+      "invalidRate": "תעריף שעתי לא תקין",
+      "selectCity": "אנא בחר לפחות עיר אחת",
+      "acceptTerms": "עליך לקבל את התנאים וההגבלות"
+    },
+    "terms": {
+      "accept": "אני מקבל את",
+      "terms": "התנאים וההגבלות",
+      "and": "ואת",
+      "privacy": "מדיניות הפרטיות"
+    },
+    "submitButton": "הירשם",
+    "alreadyRegistered": "כבר רשום?",
+    "login": "התחבר",
+    "success": {
+      "title": "הרשמה הצליחה",
+      "message": "החשבון שלך נוצר בהצלחה."
+    },
+    "errors": {
+      "registrationFailed": "אירעה שגיאה במהלך ההרשמה"
+    }
+  },
+  "clientRegistration": {
+    "title": "הרשמת לקוח",
+    "fields": {
+      "firstName": "שם פרטי",
+      "lastName": "שם משפחה",
+      "city": "העיר שלך *"
+    },
+    "placeholders": {
+      "firstName": "השם הפרטי שלך",
+      "lastName": "שם המשפחה שלך",
+      "email": "your@email.com",
+      "phone": "מספר הטלפון שלך",
+      "password": "הסיסמה שלך",
+      "confirmPassword": "אשר את הסיסמה שלך"
+    },
+    "cityHint": "בחר את העיר שלך כדי למצוא ספקים זמינים קרוב אליך",
+    "submit": "הירשם",
+    "errors": {
+      "firstNameRequired": "שם פרטי נדרש",
+      "lastNameRequired": "שם משפחה נדרש",
+      "emailRequired": "אימייל נדרש",
+      "emailInvalid": "פורמט אימייל לא תקין",
+      "phoneRequired": "מספר טלפון נדרש",
+      "cityRequired": "עיר נדרשת",
+      "passwordRequired": "סיסמה נדרשת",
+      "passwordMinLength": "סיסמה חייבת להיות לפחות 6 תווים",
+      "passwordMismatch": "הסיסמאות לא תואמות",
+      "title": "שגיאת הרשמה",
+      "message": "אירעה שגיאה במהלך ההרשמה"
+    }
+  },
+  "forgotPassword": {
+    "title": "שכחת סיסמה",
+    "subtitle": "הזן את האימייל שלך כדי לאפס את הסיסמה שלך",
+    "resetButton": "אפס",
+    "backToLogin": "חזור להתחברות",
+    "resetRequested": "איפוס נדרש"
+  },
+  "addressSelection": "בחירת כתובת",
+  "jobList": {
+    "errors": {
+      "providerNotFound": "מזהה ספק לא נמצא",
+      "loadError": "לא ניתן לטעון משימות. בדוק את הבקשות שקיבלת.",
+      "loadErrorSubtext": "המשימות מגיעות מהבקשות שקיבלת"
+    },
+    "noAddress": "כתובת לא צוינה",
+    "services": {
+      "home": "ניקיון בית",
+      "office": "ניקיון משרד",
+      "building": "ניקיון בניין",
+      "commercial": "ניקיון מסחרי",
+      "default": "שירות ניקיון"
+    },
+    "searchPlaceholder": "חפש לקוח או כתובת",
+    "filters": {
+      "all": "הכל",
+      "accepted": "התקבלו",
+      "confirmed": "אושרו",
+      "inProgress": "בתהליך",
+      "completed": "הושלמו"
+    },
+    "loading": "מסנכרן משימות...",
+    "retry": "נסה שוב",
+    "empty": {
+      "title": "אין משימות פעילות",
+      "subtitle": "המשימות יופיעו כאן כשתקבל בקשות מלקוחות"
+    },
+    "viewRequests": "הצג בקשות"
+  },
+  "statsSummary": {
+    "title": "סטטיסטיקות",
+    "completedJobs": "משימות שהושלמו",
+    "pendingJobs": "משימות ממתינות",
+    "earnings": "הכנסות",
+    "rating": "דירוג"
+  },
+  "jobCard": {
+    "status": {
+      "confirmed": "אושר",
+      "accepted": "התקבל",
+      "inProgress": "בתהליך",
+      "completed": "הושלם",
+      "pending": "ממתין"
+    }
+  },
+  "editAvailability": {
+    "days": {
+      "sunday": "ראשון",
+      "monday": "שני",
+      "tuesday": "שלישי",
+      "wednesday": "רביעי",
+      "thursday": "חמישי",
+      "friday": "שישי",
+      "saturday": "שבת"
+    },
+    "errors": {
+      "validationError": "שגיאת אימות",
+      "validationMessage": "שעת הסיום חייבת להיות אחרי שעת ההתחלה לכל הימים הפעילים.",
+      "updateError": "שגיאה",
+      "updateMessage": "אירעה שגיאה בעדכון הזמינות שלך"
+    },
+    "success": {
+      "title": "הצלחה",
+      "message": "הזמינות שלך עודכנה בהצלחה"
+    },
+    "title": "הגדר את הזמינות שלך",
+    "description": "הפעל את הימים שבהם אתה זמין והגדר את שעות העבודה שלך לכל יום.",
+    "save": "שמור",
+    "cancel": "ביטול"
+  },
+  "stats": {
+    "title": "הסטטיסטיקות שלי",
+    "periods": {
+      "week": "שבוע",
+      "month": "חודש",
+      "quarter": "רבעון",
+      "year": "שנה"
+    },
+    "days": {
+      "mon": "ב׳",
+      "tue": "ג׳",
+      "wed": "ד׳",
+      "thu": "ה׳",
+      "fri": "ו׳",
+      "sat": "ש׳",
+      "sun": "א׳"
+    },
+    "weeks": {
+      "week1": "שבוע 1",
+      "week2": "שבוע 2",
+      "week3": "שבוע 3",
+      "week4": "שבוע 4"
+    },
+    "months": {
+      "jan": "ינו׳",
+      "feb": "פבר׳",
+      "mar": "מרץ",
+      "apr": "אפר׳",
+      "may": "מאי",
+      "jun": "יוני",
+      "jul": "יולי",
+      "aug": "אוג׳",
+      "sep": "ספט׳",
+      "oct": "אוק׳",
+      "nov": "נוב׳",
+      "dec": "דצמ׳"
+    },
+    "quarters": {
+      "q1": "רבעון 1",
+      "q2": "רבעון 2",
+      "q3": "רבעון 3",
+      "q4": "רבעון 4"
+    },
+    "services": {
+      "complete": "ניקיון מלא",
+      "basic": "ניקיון בסיסי",
+      "windows": "ניקיון חלונות",
+      "postWork": "ניקיון אחרי עבודות"
+    },
+    "summary": {
+      "totalJobs": "סך כל המשימות",
+      "completionRate": "אחוז השלמה",
+      "averageRating": "דירוג ממוצע",
+      "totalEarnings": "סך הכנסות"
+    },
+    "charts": {
+      "jobsByPeriod": "משימות לפי תקופה",
+      "earningsByPeriod": "הכנסות לפי תקופה"
+    },
+    "topServices": {
+      "title": "השירותים המבוקשים ביותר"
+    },
+    "topLocations": {
+      "title": "האזורים המושבים ביותר"
+    }
+  },
+  "missions": "משימות",
+  "calendar": "יומן",
+  "myProfile": "הפרופיל שלי",
+  "editService": "עריכת שירות",
+  "addService": "הוספת שירות",
+  "manageAvailability": "ניהול זמינות",
+  "serviceAreas": "אזורי שירות",
+  "contact": "פרטי קשר",
+  "experience": "ניסיון",
+  "personalInfo": "מידע אישי",
+  "myMissions": "המשימות שלי",
+  "allRequests": "כל הבקשות",
+  "missionDetails": "פרטי משימה",
+  "availability": "זמינות",
+  "serviceDetails": "פרטי שירות",
+  "providerSearch": "חיפוש ספקים",
+  "scheduleScreen": "בחירת תאריך",
+  "bookingSummary": "סיכום הזמנה",
+  "confirmation": "אישור"
 }

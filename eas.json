@@ -27,7 +27,7 @@
     "production": {
       "node": "22.11.0",
       "android": {
-        "buildType": "aab",
+        "buildType": "app-bundle",
         "image": "latest"
       },
       "env": {

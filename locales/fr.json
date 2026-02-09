@@ -1,67 +1,990 @@
 {
-  "bonjour": "Bonjour",
-  "quel_type_de_service_recherchezvous_": "Quel type de service recherchez-vous ?",
-  "rserver": "Réserver",
-  "nettoyage_professionnel_pour_votre_domicile_adapt_": "Nettoyage professionnel pour votre domicile, adapté à vos besoins spécifiques.",
-  "services_complets_pour_bureaux_et_espaces_professi": "Services complets pour bureaux et espaces professionnels.",
-  "entretien_des_parties_communes_et_des_immeubles_rs": "Entretien des parties communes et des immeubles résidentiels.",
-  "domicile": "Domicile",
-  "bureau": "Bureau",
-  "immeuble": "Immeuble",
-  "connexion": "Connexion",
-  "inscription": "Inscription",
-  "email": "Email",
-  "mot_de_passe": "Mot de passe",
-  "se_connecter": "Se connecter",
-  "sinscrire": "S'inscrire",
-  "mot_de_passe_oubli_": "Mot de passe oublié ?",
-  "rsum_de_la_rservation": "Résumé de la réservation",
-  "type_de_service": "Type de service",
-  "dure": "Durée",
-  "heures": "heures",
+  "navigation": {
+    "accueil": "Accueil",
+    "home": "Accueil",
+    "bookings": "Réservations",
+    "profile": "Profil",
+    "dashboard": "Tableau de bord",
+    "myRequests": "Mes demandes",
+    "calendar": "Calendrier",
+    "missions": "Missions",
+    "myMissions": "Mes missions",
+    "requests": "Demandes",
+    "allRequests": "Toutes les demandes",
+    "missionDetails": "Détails de la mission",
+    "stats": "Statistiques",
+    "myProfile": "Mon profil",
+    "editService": "Modifier le service",
+    "addService": "Ajouter un service",
+    "manageAvailability": "Gérer la disponibilité",
+    "serviceAreas": "Zones de service",
+    "contact": "Contact",
+    "experience": "Expérience",
+    "personalInfo": "Informations personnelles",
+    "availability": "Disponibilité",
+    "serviceDetails": "Détails du service",
+    "providerSearch": "Recherche de prestataire",
+    "addressSelection": "Choisir l'adresse",
+    "scheduleScreen": "Choisir la date",
+    "bookingSummary": "Récapitulatif de la réservation",
+    "confirmation": "Confirmation",
+    "settings": "Paramètres",
+    "services": "Services",
+    "logout": "Déconnexion"
+  },
+  "welcome": "Bienvenue",
+  "tagline": "Votre partenaire pour un nettoyage professionnel",
+  "choose_language": "Choisir la langue",
+  "im_client": "Je cherche un service",
+  "im_provider": "Je suis prestataire",
+  "home": "Accueil",
+  "services": "Services",
+  "bookings": "Réservations",
+  "profile": "Profil",
+  "settings": "Paramètres",
+  "logout": "Déconnexion",
+  "search_services": "Rechercher des services",
+  "search_placeholder": "Chercher un service de nettoyage...",
+  "filter_by_city": "Filtrer par ville",
+  "all_cities": "Toutes les villes",
+  "tel_aviv": "Tel Aviv",
+  "jerusalem": "Jérusalem",
+  "haifa": "Haïfa",
+  "beer_sheva": "Beer Sheva",
+  "herzliya": "Herzliya",
+  "book_now": "Réserver maintenant",
+  "view_details": "Voir les détails",
+  "price_from": "À partir de",
+  "per_hour": "par heure",
+  "rating": "Note",
+  "reviews": "Avis",
+  "available": "Disponible",
+  "unavailable": "Indisponible",
+  "booking_details": "Détails de la réservation",
+  "service_type": "Type de service",
   "date": "Date",
-  "heure": "Heure",
-  "adresse": "Adresse",
-  "prix": "Prix",
-  "frais_de_plateforme": "Frais de plateforme",
-  "total": "Total",
-  "confirmer_la_rservation": "Confirmer la réservation",
-  "ponctuel": "Ponctuel",
-  "hebdomadaire": "Hebdomadaire",
-  "bimensuel": "Bimensuel",
-  "mensuel": "Mensuel",
-  "en_attente": "En attente",
-  "confirm": "Confirmé",
-  "en_cours": "En cours",
-  "termin": "Terminé",
-  "annul": "Annulé",
-  "accueil": "Accueil",
-  "mes_rservations": "Mes réservations",
-  "profil": "Profil",
-  "messages": "Messages",
-  "annuler": "Annuler",
-  "enregistrer": "Enregistrer",
-  "modifier": "Modifier",
-  "supprimer": "Supprimer",
-  "retour": "Retour",
-  "suivant": "Suivant",
-  "informations_personnelles": "Informations personnelles",
-  "prnom": "Prénom",
-  "nom": "Nom",
-  "tlphone": "Téléphone",
-  "mes_adresses": "Mes adresses",
-  "ajouter_une_adresse": "Ajouter une adresse",
-  "ville": "Ville",
-  "code_postal": "Code postal",
-  "rechercher_un_prestataire": "Rechercher un prestataire",
-  "filtrer_par_ville": "Filtrer par ville",
-  "aucun_prestataire_disponible": "Aucun prestataire disponible",
-  "voir_le_profil": "Voir le profil",
-  "oui": "Oui",
-  "non": "Non",
-  "chargement": "Chargement...",
-  "erreur": "Erreur",
-  "succs": "Succès",
+  "time": "Heure",
+  "duration": "Durée",
+  "address": "Adresse",
+  "total_price": "Prix total",
+  "reservation_fee": "Frais de réservation",
+  "service_cost": "Coût du service",
+  "confirm_booking": "Confirmer la réservation",
+  "cancel": "Annuler",
+  "my_bookings": "Mes réservations",
+  "upcoming": "À venir",
+  "past": "Passées",
+  "cancelled": "Annulées",
+  "status_pending": "En attente",
+  "status_confirmed": "Confirmée",
+  "status_completed": "Terminée",
+  "status_cancelled": "Annulée",
+  "contact_provider": "Contacter le prestataire",
+  "cancel_booking": "Annuler la réservation",
+  "rate_service": "Noter le service",
+  "leave_review": "Laisser un avis",
+  "provider_calendar": "Calendrier du prestataire",
+  "set_availability": "Définir la disponibilité",
+  "mark_available": "Marquer comme disponible",
+  "mark_unavailable": "Marquer comme indisponible",
+  "my_services": "Mes services",
+  "add_service": "Ajouter un service",
+  "edit_service": "Modifier le service",
+  "delete_service": "Supprimer le service",
+  "service_name": "Nom du service",
+  "description": "Description",
+  "price_per_hour": "Prix par heure",
+  "save": "Enregistrer",
+  "notifications": "Notifications",
+  "new_booking": "Nouvelle réservation",
+  "booking_confirmed": "Réservation confirmée",
+  "booking_cancelled": "Réservation annulée",
+  "payment_received": "Paiement reçu",
+  "language": "Langue",
+  "hebrew": "Hébreu",
+  "french": "Français",
+  "english": "Anglais",
+  "theme": "Thème",
+  "light": "Clair",
+  "dark": "Sombre",
+  "about": "À propos",
+  "terms": "Conditions d'utilisation",
+  "privacy": "Confidentialité",
+  "help": "Aide",
+  "contact_us": "Nous contacter",
+  "version": "Version",
+  "error_occurred": "Une erreur s'est produite",
+  "try_again": "Réessayer",
+  "loading": "Chargement...",
+  "no_results": "Aucun résultat trouvé",
+  "required_field": "Champ obligatoire",
+  "invalid_email": "Email invalide",
+  "invalid_phone": "Numéro de téléphone invalide",
+  "password_too_short": "Mot de passe trop court",
+  "passwords_dont_match": "Les mots de passe ne correspondent pas",
+  "login": "Connexion",
+  "register": {
+    "title": "Inscription",
+    "underDevelopment": "Cette page est en cours de développement"
+  },
+  "email": "Email",
+  "password": "Mot de passe",
+  "confirm_password": "Confirmer le mot de passe",
+  "forgot_password": "Mot de passe oublié ?",
+  "dont_have_account": "Vous n'avez pas de compte ?",
+  "already_have_account": "Vous avez déjà un compte ?",
+  "full_name": "Nom complet",
+  "phone": "Téléphone",
+  "city": "Ville",
+  "feature_verified": "Prestataires vérifiés",
+  "feature_secure": "Paiement sécurisé",
+  "feature_quality": "Service de qualité",
+  "changement_langue": "Changement de langue...",
+  "hello": "Bonjour",
+  "what_service_looking_for": "Quel type de service recherchez-vous ?",
+  "home_service_desc": "Nettoyage professionnel pour votre maison, adapté à vos besoins spécifiques",
+  "office_service_desc": "Services complets pour bureaux et espaces professionnels",
+  "building_service_desc": "Entretien des parties communes et des immeubles résidentiels",
+  "choose_how_to_use": "Choisissez comment utiliser CleanConnect",
+  "client_description": "Trouvez des professionnels pour nettoyer votre maison ou bureau",
+  "provider_description": "Rejoignez notre réseau de professionnels",
+  "login_client": "Connexion client",
+  "login_provider": "Connexion prestataire",
+  "error": "Erreur",
+  "fill_all_fields": "Veuillez remplir tous les champs",
+  "login_error": "Erreur de connexion",
+  "incorrect_credentials": "Identifiants incorrects ou problème de connexion",
+  "show_password": "Afficher le mot de passe",
+  "hide_password": "Masquer le mot de passe",
+  "dashboard": "Tableau de bord",
+  "my_requests": "Mes demandes",
+  "pending": "En attente",
+  "confirmed": "Confirmée",
+  "completed": "Terminée",
+  "no_bookings": "Aucune réservation",
+  "no_bookings_message": "Vous n'avez pas encore de réservations",
+  "start_booking": "Commencer une réservation",
+  "booking_status_pending": "En attente",
+  "booking_status_accepted": "Acceptée",
+  "booking_status_confirmed": "Confirmée",
+  "booking_status_in_progress": "En cours",
+  "booking_status_completed": "Terminée",
+  "booking_status_cancelled": "Annulée",
+  "booking_status_declined": "Refusée",
+  "refresh": "Actualiser",
+  "view_booking": "Voir la réservation",
+  "scheduled_for": "Prévue pour",
+  "provider": "Prestataire",
+  "client": "Client",
   "parametres": "Paramètres",
-  "langue": "Langue"
+  "compte": "Compte",
+  "informations_personnelles": "Informations personnelles",
+  "mes_adresses": "Mes adresses",
+  "notifications_reservations": "Notifications de réservation",
+  "common": {
+    "error": "Erreur",
+    "cancel": "Annuler",
+    "no": "Non",
+    "yes": "Oui"
+  },
+  "bookingDetails": {
+    "title": "Détails de la réservation",
+    "loading": "Chargement des détails...",
+    "status": {
+      "pending": "En attente",
+      "confirmed": "Confirmée",
+      "inProgress": "En cours",
+      "completed": "Terminée",
+      "cancelled": "Annulée"
+    },
+    "serviceType": {
+      "home": "Maison",
+      "office": "Bureau",
+      "building": "Immeuble",
+      "service": "Service"
+    },
+    "labels": {
+      "serviceType": "Type de service",
+      "duration": "Durée",
+      "price": "Prix",
+      "provider": "Prestataire",
+      "serviceAddress": "Adresse du service",
+      "specialInstructions": "Instructions spéciales"
+    },
+    "duration": {
+      "hours": "{{hours}} heures"
+    },
+    "price": {
+      "format": "₪{{price}}"
+    },
+    "date": {
+      "unavailable": "Date indisponible"
+    },
+    "provider": {
+      "unassigned": "Non assigné"
+    },
+    "address": {
+      "notProvided": "Adresse non fournie",
+      "unavailable": "Adresse indisponible",
+      "custom": "(Adresse personnalisée)",
+      "registration": "(Adresse d'inscription)"
+    },
+    "actions": {
+      "modify": "Modifier",
+      "rateService": "Noter le service",
+      "cancelBooking": "Annuler la réservation",
+      "modifyBooking": "Modifier la réservation",
+      "needHelp": "Besoin d'aide ?"
+    },
+    "rating": {
+      "title": "Noter le service",
+      "yourRating": "Votre note",
+      "question": "Comment évalueriez-vous le service fourni par {{provider}} ?",
+      "commentLabel": "Commentaire (facultatif)",
+      "submit": "Soumettre",
+      "thanksTitle": "Merci",
+      "successMessage": "Votre note a été enregistrée avec succès."
+    },
+    "cancellation": {
+      "title": "Confirmer l'annulation",
+      "question": "Êtes-vous sûr de vouloir annuler cette réservation ?",
+      "confirmButton": "Oui, annuler",
+      "successTitle": "Annulation confirmée",
+      "successMessage": "Votre réservation a été annulée avec succès."
+    },
+    "errors": {
+      "loadFailed": "Impossible de charger les détails de la réservation. Veuillez réessayer.",
+      "cancelFailed": "Une erreur s'est produite lors de l'annulation.",
+      "unexpected": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+      "ratingFailed": "Une erreur s'est produite lors de l'enregistrement de votre note."
+    },
+    "demo": {
+      "notes": "Attention au chat. Produits écologiques préférés."
+    }
+  },
+  "bookingNotes": {
+    "title": "Instructions spéciales",
+    "subtitle": "Informations supplémentaires pour votre prestataire",
+    "placeholder": "Exemples : code d'accès, animaux, zones spécifiques à nettoyer, etc.",
+    "suggestions": "Suggestions :",
+    "chips": {
+      "accessCode": "Code d'accès",
+      "pets": "Animaux",
+      "fragile": "Objets fragiles",
+      "ecoProducts": "Produits éco",
+      "specificAccess": "Accès spécifique"
+    },
+    "examples": {
+      "accessCode": "Code d'accès : ",
+      "pets": "J'ai des animaux",
+      "fragile": "Attention aux objets fragiles",
+      "ecoProducts": "Uniquement produits écologiques",
+      "specificAccess": "Porte à l'arrière du bâtiment"
+    },
+    "media": {
+      "title": "Photos et vidéos",
+      "description": "Ajoutez des photos ou une vidéo pour aider le prestataire à mieux comprendre vos besoins (max 50 Mo par fichier, 60 secondes pour les vidéos)",
+      "addButton": "Ajouter une photo ou vidéo",
+      "photo": "Photo",
+      "video": "Vidéo",
+      "delete": "Supprimer",
+      "limitReached": "Limite atteinte",
+      "limitMessage": "Vous pouvez ajouter au maximum 3 fichiers (photos ou vidéos).",
+      "tooLarge": "Fichier trop volumineux",
+      "tooLargeMessage": "Le fichier sélectionné ({{size}}) dépasse la limite de 50 Mo. Veuillez choisir un fichier plus petit.",
+      "successTitle": "Succès",
+      "successMessage": "{{type}} ajoutée avec succès ({{size}})",
+      "confirmDelete": "Confirmer la suppression",
+      "confirmDeleteMessage": "Voulez-vous vraiment supprimer ce fichier ?",
+      "totalTooLarge": "Taille totale trop grande",
+      "totalTooLargeMessage": "La taille totale de vos fichiers dépasse 150 Mo. Veuillez supprimer certains fichiers.",
+      "infoMessage": "Les fichiers seront envoyés au prestataire après confirmation de la réservation"
+    },
+    "permissions": {
+      "denied": "Permission refusée",
+      "message": "Nous avons besoin de l'autorisation d'accéder à vos photos et vidéos."
+    },
+    "errors": {
+      "selectFailed": "Une erreur s'est produite lors de la sélection du fichier. Veuillez réessayer."
+    }
+  },
+  "payment": {
+    "title": "Paiement sécurisé",
+    "bookingFee": "Frais de réservation : {{amount}}",
+    "securePayment": "Paiement 100% sécurisé",
+    "paymentMethod": "Méthode de paiement des frais",
+    "payButton": "PAYER {{amount}}",
+    "confirmBooking": "Et confirmer la réservation",
+    "securityInfo": "Paiement sécurisé SSL - Annulation gratuite",
+    "howItWorks": {
+      "title": "Comment ça marche ?",
+      "step1": "Vous payez {{amount}} de frais de réservation",
+      "step2": "Vous recevez les coordonnées du prestataire",
+      "step3": "Vous payez le service ({{amount}}) DIRECTEMENT au prestataire"
+    },
+    "benefits": {
+      "title": "✓ Ce que comprennent les frais :",
+      "contactUnlock": "• Déblocage du contact",
+      "confirmation": "• Confirmation de réservation",
+      "support": "• Support client",
+      "guarantee": "• Garantie plateforme"
+    },
+    "card": {
+      "title": "Carte bancaire",
+      "description": "Paiement sécurisé immédiat",
+      "info": "Informations de paiement",
+      "number": "Numéro de carte",
+      "expiry": "MM/AA",
+      "cvv": "CVV",
+      "name": "Nom sur la carte"
+    },
+    "errors": {
+      "invalidCard": "Numéro de carte invalide",
+      "expiredCard": "La carte a expiré",
+      "invalidExpiry": "Date d'expiration invalide",
+      "invalidCvv": "Le CVV doit contenir {{length}} chiffres",
+      "nameRequired": "Nom sur la carte requis",
+      "correctErrors": "Veuillez corriger les erreurs avant de continuer",
+      "paymentDeclined": "Paiement refusé. Veuillez vérifier vos informations bancaires.",
+      "bookingFailed": "Erreur lors de la création de la réservation"
+    },
+    "processing": {
+      "payment": "Traitement du paiement...",
+      "confirmed": "Paiement confirmé...",
+      "creating": "Création de votre réservation..."
+    }
+  },
+  "schedule": {
+    "title": "Choisir un créneau horaire",
+    "service": "Service",
+    "loading": "Chargement des disponibilités...",
+    "selectDate": "Sélectionnez une date",
+    "availableSlots": "Créneaux disponibles",
+    "continue": "Continuer",
+    "redirecting": "Redirection...",
+    "months": {
+      "0": "Janvier",
+      "1": "Février",
+      "2": "Mars",
+      "3": "Avril",
+      "4": "Mai",
+      "5": "Juin",
+      "6": "Juillet",
+      "7": "Août",
+      "8": "Septembre",
+      "9": "Octobre",
+      "10": "Novembre",
+      "11": "Décembre"
+    },
+    "weekdays": {
+      "sun": "Dim",
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mer",
+      "thu": "Jeu",
+      "fri": "Ven",
+      "sat": "Sam"
+    },
+    "duration": {
+      "title": "Durée du service",
+      "hours_one": "{{count}} heure",
+      "hours_other": "{{count}} heures",
+      "resetNote": "Changer la durée réinitialisera votre sélection de créneau"
+    },
+    "alerts": {
+      "invalidDate": "Date invalide",
+      "selectFutureDate": "Veuillez sélectionner une date future",
+      "noAvailability": "Aucune disponibilité",
+      "providerNotAvailable": "Le prestataire n'est pas disponible ce jour-là",
+      "incompleteSelection": "Sélection incomplète",
+      "selectDateTime": "Veuillez sélectionner une date et un créneau horaire"
+    },
+    "noSlots": "Aucun créneau de {{duration}}h disponible",
+    "tryShorter": "Essayez une durée plus courte ou une autre date"
+  },
+  "providerDashboard": {
+    "loading": "Chargement des données...",
+    "reviews": "avis",
+    "stats": {
+      "pendingRequests": "Demandes en attente",
+      "completedServices": "Services terminés",
+      "averageRate": "Tarif horaire moyen"
+    },
+    "info": {
+      "title": "Mes informations",
+      "email": "Email",
+      "phone": "Téléphone",
+      "notProvided": "Non fourni",
+      "address": "Adresse",
+      "addressNotProvided": "Non fournie",
+      "services": "Services",
+      "noServices": "Aucun service configuré",
+      "serviceAreas": "Zones de service",
+      "areasNotProvided": "Non fournies"
+    },
+    "actions": {
+      "editProfile": "Modifier mon profil"
+    },
+    "recentRequests": {
+      "title": "Demandes récentes",
+      "noRequests": "Aucune demande pour le moment",
+      "viewAll": "Voir toutes les demandes"
+    },
+    "errors": {
+      "loadFailed": "Impossible de charger les données du prestataire"
+    }
+  },
+  "providerRequests": {
+    "title": "Mes missions",
+    "loading": "Chargement des demandes...",
+    "invalidDate": "Date invalide",
+    "noAddress": "Adresse non spécifiée",
+    "noNotes": "Pas de notes",
+    "empty": {
+      "title": "Aucune mission",
+      "subtitle": "Vous n'avez pas encore reçu de demandes de mission"
+    },
+    "stats": {
+      "pending": "En attente",
+      "accepted": "Acceptées",
+      "completed": "Terminées"
+    },
+    "status": {
+      "pending": "En attente",
+      "accepted": "Acceptée",
+      "confirmed": "Acceptée",
+      "declined": "Refusée",
+      "cancelled": "Annulée",
+      "completed": "Terminée"
+    },
+    "serviceType": {
+      "home": "Maison",
+      "office": "Bureau",
+      "building": "Immeuble"
+    },
+    "actions": {
+      "accept": "Accepter",
+      "decline": "Refuser"
+    }
+  },
+  "providerCalendar": {
+    "loading": {
+      "auth": "Chargement des données d'authentification...",
+      "availabilities": "Chargement de vos disponibilités..."
+    },
+    "errors": {
+      "notConnected": "Erreur : Utilisateur non connecté ou rôle incorrect"
+    },
+    "role": "Rôle",
+    "providerId": "ID Prestataire",
+    "title": "Calendrier - Mon planning",
+    "legend": {
+      "missions": "Missions",
+      "available": "Disponible"
+    },
+    "months": {
+      "0": "Janvier",
+      "1": "Février",
+      "2": "Mars",
+      "3": "Avril",
+      "4": "Mai",
+      "5": "Juin",
+      "6": "Juillet",
+      "7": "Août",
+      "8": "Septembre",
+      "9": "Octobre",
+      "10": "Novembre",
+      "11": "Décembre"
+    },
+    "weekdays": {
+      "sun": "Dim",
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mer",
+      "thu": "Jeu",
+      "fri": "Ven",
+      "sat": "Sam"
+    },
+    "selectDate": "Sélectionnez une date",
+    "addAvailability": "Ajouter une disponibilité",
+    "sections": {
+      "missions": "Missions",
+      "availableSlots": "Créneaux disponibles"
+    },
+    "recurring": "Récurrent",
+    "empty": {
+      "title": "Aucune activité prévue",
+      "subtitle": "Cliquez sur 'Ajouter une disponibilité' pour définir vos créneaux libres."
+    },
+    "noSelection": {
+      "title": "Sélectionnez une date",
+      "subtitle": "Cliquez sur une date du calendrier pour voir vos missions et disponibilités."
+    },
+    "stats": {
+      "total": "📊 Total des disponibilités : {{count}}",
+      "emptyHint": "(Calendrier vide - Ajoutez vos premières disponibilités !)",
+      "visibleHint": "(Visible par tous les clients)"
+    },
+    "modal": {
+      "title": "Ajouter une disponibilité",
+      "start": "Début",
+      "end": "Fin",
+      "repeatWeekly": "Répéter chaque semaine",
+      "syncNote": "💡 Cette disponibilité sera automatiquement visible par tous les clients",
+      "add": "Ajouter",
+      "successTitle": "Succès",
+      "successMessage": "Disponibilité ajoutée avec succès. Elle sera visible par les clients.",
+      "errors": {
+        "fillAll": "Veuillez remplir tous les champs",
+        "endAfterStart": "L'heure de fin doit être après l'heure de début"
+      }
+    },
+    "deleteModal": {
+      "title": "Supprimer la disponibilité",
+      "message": "Êtes-vous sûr de vouloir supprimer cette disponibilité ?",
+      "confirm": "Supprimer"
+    }
+  },
+  "providerProfile": {
+    "loading": "Chargement des données...",
+    "noData": "Aucune donnée de profil disponible.",
+    "reviews": "avis",
+    "memberSince": "Membre depuis",
+    "editProfile": "Modifier mon profil",
+    "errors": {
+      "loadFailed": "Impossible de charger les données du prestataire"
+    },
+    "imageUpload": {
+      "permissionTitle": "Permission requise",
+      "permissionMessage": "Nous avons besoin de votre autorisation pour accéder à vos photos.",
+      "successTitle": "Succès",
+      "successMessage": "Votre photo de profil a été mise à jour.",
+      "errorMessage": "Impossible de mettre à jour votre photo de profil."
+    },
+    "stats": {
+      "title": "Mes statistiques",
+      "pendingRequests": "Demandes en attente",
+      "completedServices": "Services terminés",
+      "averageRate": "Tarif horaire moyen"
+    },
+    "services": {
+      "title": "Mes services",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer le service",
+      "deleteMessage": "Êtes-vous sûr de vouloir supprimer ce service ?",
+      "deleteConfirm": "Supprimer",
+      "deleteSuccessTitle": "Succès",
+      "deleteSuccessMessage": "Le service a été supprimé.",
+      "deleteError": "Impossible de supprimer le service.",
+      "empty": "Vous n'avez pas encore ajouté de services. Cliquez sur le + pour ajouter votre premier service."
+    },
+    "serviceAreas": {
+      "title": "Zones de service",
+      "empty": "Aucune zone de service définie",
+      "manage": "Gérer mes zones de service"
+    },
+    "availability": {
+      "title": "Ma disponibilité",
+      "empty": "Aucune disponibilité définie",
+      "manage": "Gérer ma disponibilité"
+    },
+    "contact": {
+      "title": "Informations de contact",
+      "email": "Email",
+      "phone": "Téléphone",
+      "notProvided": "Non fourni",
+      "edit": "Modifier mes informations de contact"
+    },
+    "experience": {
+      "title": "Expérience & Certifications",
+      "years": "Années d'expérience",
+      "yearsCount": "{{count}} an",
+      "yearsCount_plural": "{{count}} ans",
+      "certifications": "Certifications",
+      "noCertifications": "Aucune certification ajoutée",
+      "edit": "Modifier mon expérience"
+    },
+    "account": {
+      "title": "Compte"
+    },
+    "logout": {
+      "button": "Déconnexion",
+      "title": "Déconnexion",
+      "message": "Êtes-vous sûr de vouloir vous déconnecter ?",
+      "confirm": "Déconnexion",
+      "errorMessage": "Impossible de se déconnecter. Veuillez réessayer."
+    }
+  },
+  "jobDetails": {
+    "atTime": "à",
+    "hours": "heures",
+    "errors": {
+      "loadFailed": "Impossible de charger les détails de la mission",
+      "cannotLoad": "Impossible de charger les détails de la mission",
+      "cannotCall": "Impossible de passer des appels depuis cet appareil",
+      "cannotMessage": "Impossible d'envoyer des messages depuis cet appareil"
+    },
+    "pending": {
+      "title": "Nouvelle demande de mission",
+      "subtitle": "Veuillez confirmer ou refuser cette demande"
+    },
+    "actions": {
+      "accept": "Accepter",
+      "decline": "Refuser",
+      "call": "Appeler",
+      "message": "Message",
+      "directions": "Itinéraire",
+      "contactClient": "Contacter le client",
+      "markComplete": "Marquer comme terminée",
+      "cancelJob": "Annuler la mission"
+    },
+    "serviceDetails": {
+      "title": "Détails du service",
+      "service": "Service",
+      "price": "Prix",
+      "notes": "Notes",
+      "noNotes": "Pas de notes"
+    },
+    "requestedTasks": {
+      "title": "Tâches demandées"
+    },
+    "clientHistory": {
+      "title": "Historique du client"
+    },
+    "confirmModal": {
+      "title": "Confirmer la mission",
+      "message": "Êtes-vous sûr de vouloir confirmer cette mission ?",
+      "confirm": "Confirmer",
+      "successTitle": "Mission confirmée",
+      "successMessage": "La mission a été confirmée avec succès.",
+      "errorMessage": "Impossible de confirmer la mission. Veuillez réessayer."
+    },
+    "cancelModal": {
+      "title": "Annuler la mission",
+      "message": "Êtes-vous sûr de vouloir annuler cette mission ?",
+      "no": "Non",
+      "yes": "Oui, annuler",
+      "successTitle": "Mission annulée",
+      "successMessage": "La mission a été annulée avec succès.",
+      "errorMessage": "Impossible d'annuler la mission. Veuillez réessayer."
+    },
+    "completeModal": {
+      "title": "Terminer la mission",
+      "message": "Êtes-vous sûr de vouloir marquer cette mission comme terminée ?",
+      "confirm": "Terminer",
+      "successTitle": "Mission terminée",
+      "successMessage": "La mission a été marquée comme terminée avec succès.",
+      "errorMessage": "Impossible de terminer la mission. Veuillez réessayer."
+    }
+  },
+  "providerRegistration": {
+    "title": "Inscription prestataire",
+    "subtitle": "Créez votre compte et proposez vos services",
+    "sections": {
+      "personalInfo": "Informations personnelles",
+      "serviceTypes": "Types de services proposés",
+      "serviceTypesSubtitle": "Sélectionnez un ou plusieurs types de services que vous proposez et indiquez votre tarif horaire pour chacun",
+      "serviceCities": "Villes où vous proposez vos services *",
+      "serviceCitiesSubtitle": "Cochez toutes les villes où vous êtes prêt à travailler. Vous pouvez choisir une seule ville, plusieurs villes, ou même des banlieues sans la ville principale.",
+      "security": "Sécurité"
+    },
+    "fields": {
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "email": "Email",
+      "phone": "Téléphone",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe"
+    },
+    "placeholders": {
+      "firstName": "Votre prénom",
+      "lastName": "Votre nom",
+      "email": "votre@email.com",
+      "phone": "05X-XXX-XXXX",
+      "password": "Minimum 6 caractères",
+      "confirmPassword": "Répétez votre mot de passe"
+    },
+    "serviceTypes": {
+      "home": {
+        "title": "Nettoyage de maisons privées",
+        "description": "Nettoyage complet ou partiel de maisons et appartements"
+      },
+      "building": {
+        "title": "Nettoyage d'immeubles",
+        "description": "Entretien des parties communes et des halls d'immeubles"
+      },
+      "office": {
+        "title": "Nettoyage de bureaux",
+        "description": "Entretien des espaces de travail et locaux professionnels"
+      }
+    },
+    "validation": {
+      "firstNameRequired": "Le prénom est requis",
+      "lastNameRequired": "Le nom est requis",
+      "invalidEmail": "Email invalide",
+      "phoneRequired": "Le téléphone est requis",
+      "passwordMinLength": "Le mot de passe doit contenir au moins 6 caractères",
+      "passwordMismatch": "Les mots de passe ne correspondent pas",
+      "selectService": "Veuillez sélectionner au moins un type de service",
+      "rateRequired": "Le tarif horaire est requis",
+      "invalidRate": "Tarif horaire invalide",
+      "selectCity": "Veuillez sélectionner au moins une ville",
+      "acceptTerms": "Vous devez accepter les conditions d'utilisation"
+    },
+    "terms": {
+      "accept": "J'accepte les",
+      "terms": "conditions d'utilisation",
+      "and": "et la",
+      "privacy": "politique de confidentialité"
+    },
+    "submitButton": "S'inscrire",
+    "alreadyRegistered": "Déjà inscrit ?",
+    "login": "Se connecter",
+    "success": {
+      "title": "Inscription réussie",
+      "message": "Votre compte a été créé avec succès."
+    },
+    "errors": {
+      "registrationFailed": "Une erreur s'est produite lors de l'inscription"
+    }
+  },
+  "clientRegistration": {
+    "title": "Inscription client",
+    "fields": {
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "city": "Votre ville *"
+    },
+    "placeholders": {
+      "firstName": "Votre prénom",
+      "lastName": "Votre nom",
+      "email": "votre@email.com",
+      "phone": "Votre numéro de téléphone",
+      "password": "Votre mot de passe",
+      "confirmPassword": "Confirmez votre mot de passe"
+    },
+    "cityHint": "Choisissez votre ville pour trouver des prestataires disponibles près de chez vous",
+    "submit": "S'inscrire",
+    "errors": {
+      "firstNameRequired": "Le prénom est requis",
+      "lastNameRequired": "Le nom est requis",
+      "emailRequired": "L'email est requis",
+      "emailInvalid": "Format d'email invalide",
+      "phoneRequired": "Le numéro de téléphone est requis",
+      "cityRequired": "La ville est requise",
+      "passwordRequired": "Le mot de passe est requis",
+      "passwordMinLength": "Le mot de passe doit contenir au moins 6 caractères",
+      "passwordMismatch": "Les mots de passe ne correspondent pas",
+      "title": "Erreur d'inscription",
+      "message": "Une erreur s'est produite lors de l'inscription"
+    }
+  },
+  "forgotPassword": {
+    "title": "Mot de passe oublié",
+    "subtitle": "Entrez votre email pour réinitialiser votre mot de passe",
+    "resetButton": "Réinitialiser",
+    "backToLogin": "Retour à la connexion",
+    "resetRequested": "Réinitialisation demandée"
+  },
+  "addressSelection": {
+    "title": "Choisir une adresse",
+    "loading": "Chargement de vos adresses...",
+    "mainAddress": "Mon adresse principale",
+    "noAddress": "Adresse non fournie",
+    "myAddresses": "Mes adresses",
+    "noAddresses": "Aucune adresse enregistrée",
+    "addAddress": "Ajouter une adresse",
+    "mainBadge": "Principale",
+    "edit": "Modifier",
+    "validate": "Valider cette adresse",
+    "errors": {
+      "loadError": "Erreur",
+      "loadErrorMessage": "Impossible de charger vos adresses",
+      "validationError": "Erreur",
+      "validationErrorMessage": "Veuillez remplir au moins le nom et la rue"
+    },
+    "success": {
+      "title": "Succès",
+      "message": "Adresse ajoutée avec succès"
+    },
+    "editMain": {
+      "title": "Modifier l'adresse principale",
+      "message": "Cette adresse provient de votre inscription. Voulez-vous la modifier dans votre profil ?",
+      "cancel": "Annuler",
+      "editInProfile": "Modifier dans le profil",
+      "addNew": "Ajouter une nouvelle adresse"
+    },
+    "form": {
+      "name": "Nom de l'adresse",
+      "namePlaceholder": "Ex : Bureau, Résidence secondaire, etc.",
+      "street": "Rue et numéro",
+      "city": "Ville",
+      "country": "Pays",
+      "additionalInfo": "Informations supplémentaires (facultatif)",
+      "additionalInfoPlaceholder": "Code porte, étage, instructions...",
+      "cancel": "Annuler",
+      "save": "Enregistrer"
+    },
+    "defaults": {
+      "country": "Israël"
+    }
+  },
+  "jobList": {
+    "errors": {
+      "providerNotFound": "ID prestataire introuvable",
+      "loadError": "Impossible de charger les missions. Vérifiez vos demandes acceptées.",
+      "loadErrorSubtext": "Les missions proviennent des demandes acceptées"
+    },
+    "noAddress": "Adresse non spécifiée",
+    "services": {
+      "home": "Nettoyage de maison",
+      "office": "Nettoyage de bureau",
+      "building": "Nettoyage d'immeuble",
+      "commercial": "Nettoyage commercial",
+      "default": "Service de nettoyage"
+    },
+    "searchPlaceholder": "Rechercher un client ou une adresse",
+    "filters": {
+      "all": "Tous",
+      "accepted": "Acceptées",
+      "confirmed": "Confirmées",
+      "inProgress": "En cours",
+      "completed": "Terminées"
+    },
+    "loading": "Synchronisation des missions...",
+    "retry": "Réessayer",
+    "empty": {
+      "title": "Aucune mission active",
+      "subtitle": "Les missions apparaîtront ici lorsque vous accepterez les demandes des clients"
+    },
+    "viewRequests": "Voir les demandes"
+  },
+  "statsSummary": {
+    "title": "Statistiques",
+    "completedJobs": "Missions terminées",
+    "pendingJobs": "Missions en attente",
+    "earnings": "Revenus",
+    "rating": "Note"
+  },
+  "jobCard": {
+    "status": {
+      "confirmed": "Confirmée",
+      "accepted": "Acceptée",
+      "inProgress": "En cours",
+      "completed": "Terminée",
+      "pending": "En attente"
+    }
+  },
+  "editAvailability": {
+    "days": {
+      "sunday": "Dimanche",
+      "monday": "Lundi",
+      "tuesday": "Mardi",
+      "wednesday": "Mercredi",
+      "thursday": "Jeudi",
+      "friday": "Vendredi",
+      "saturday": "Samedi"
+    },
+    "errors": {
+      "validationError": "Erreur de validation",
+      "validationMessage": "L'heure de fin doit être après l'heure de début pour tous les jours actifs.",
+      "updateError": "Erreur",
+      "updateMessage": "Une erreur s'est produite lors de la mise à jour de votre disponibilité"
+    },
+    "success": {
+      "title": "Succès",
+      "message": "Votre disponibilité a été mise à jour avec succès"
+    },
+    "title": "Définir votre disponibilité",
+    "description": "Activez les jours où vous êtes disponible et définissez vos heures de travail pour chaque jour.",
+    "save": "Enregistrer",
+    "cancel": "Annuler"
+  },
+  "stats": {
+    "title": "Mes statistiques",
+    "periods": {
+      "week": "Semaine",
+      "month": "Mois",
+      "quarter": "Trimestre",
+      "year": "Année"
+    },
+    "days": {
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mer",
+      "thu": "Jeu",
+      "fri": "Ven",
+      "sat": "Sam",
+      "sun": "Dim"
+    },
+    "weeks": {
+      "week1": "Semaine 1",
+      "week2": "Semaine 2",
+      "week3": "Semaine 3",
+      "week4": "Semaine 4"
+    },
+    "months": {
+      "jan": "Jan",
+      "feb": "Fév",
+      "mar": "Mar",
+      "apr": "Avr",
+      "may": "Mai",
+      "jun": "Jui",
+      "jul": "Jul",
+      "aug": "Aoû",
+      "sep": "Sep",
+      "oct": "Oct",
+      "nov": "Nov",
+      "dec": "Déc"
+    },
+    "quarters": {
+      "q1": "T1",
+      "q2": "T2",
+      "q3": "T3",
+      "q4": "T4"
+    },
+    "services": {
+      "complete": "Nettoyage complet",
+      "basic": "Nettoyage de base",
+      "windows": "Nettoyage de vitres",
+      "postWork": "Nettoyage après travaux"
+    },
+    "summary": {
+      "totalJobs": "Total des missions",
+      "completionRate": "Taux d'achèvement",
+      "averageRating": "Note moyenne",
+      "totalEarnings": "Revenus totaux"
+    },
+    "charts": {
+      "jobsByPeriod": "Missions par période",
+      "earningsByPeriod": "Revenus par période"
+    },
+    "topServices": {
+      "title": "Services les plus demandés"
+    },
+    "topLocations": {
+      "title": "Quartiers les plus servis"
+    }
+  },
+  "missions": "Missions",
+  "calendar": "Calendrier",
+  "myProfile": "Mon profil",
+  "editService": "Modifier le service",
+  "addService": "Ajouter un service",
+  "manageAvailability": "Gérer la disponibilité",
+  "serviceAreas": "Zones de service",
+  "contact": "Contact",
+  "experience": "Expérience",
+  "personalInfo": "Informations personnelles",
+  "myMissions": "Mes missions",
+  "allRequests": "Toutes les demandes",
+  "missionDetails": "Détails de la mission",
+  "availability": "Disponibilité",
+  "serviceDetails": "Détails du service",
+  "providerSearch": "Recherche de prestataire",
+  "addressSelection": "Choisir l'adresse",
+  "scheduleScreen": "Choisir la date",
+  "bookingSummary": "Récapitulatif de la réservation",
+  "confirmation": "Confirmation"
 }

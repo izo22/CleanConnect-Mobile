@@ -1,4 +1,4 @@
-// JobDetailsScreen.js - Modification pour utiliser l'API
+// JobDetailsScreen.js - Corrigé avec les bons champs API
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -14,9 +14,12 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { providerService } from '../../services/api'; // Importez votre service API
+import { providerService } from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 const JobDetailsScreen = ({ navigation, route }) => {
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'he';
   const { jobId } = route.params;
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,78 +29,80 @@ const JobDetailsScreen = ({ navigation, route }) => {
     loadJobDetails();
   }, []);
 
-  // JobDetailsScreen.js - Fonction loadJobDetails avec code de débogage
-// JobDetailsScreen.js - Fonction loadJobDetails optimisée pour votre format de réponse API
-
-const loadJobDetails = async () => {
-  setLoading(true);
-  setError(null);
-  
-  try {
-    // Utiliser la méthode getJobDetails existante dans votre service
-    const response = await providerService.getJobDetails(jobId);
+  const loadJobDetails = async () => {
+    setLoading(true);
+    setError(null);
     
-    // En supposant que la réponse a une structure similaire à getJobs:
-    // { success: true, message: "...", data: {...} }
-    // où data contient l'objet mission
-    
-    if (response && response.success) {
-      let jobData;
+    try {
+      const response = await providerService.getJobDetails(jobId);
       
-      if (response.data && typeof response.data === 'object') {
-        // La mission est probablement dans la propriété data
-        jobData = response.data;
+      if (response && response.success) {
+        let jobData;
+        
+        if (response.data && typeof response.data === 'object') {
+          jobData = response.data;
+        } else {
+          jobData = response;
+        }
+        
+        console.log('📦 Job complet:', JSON.stringify(jobData, null, 2));
+        setJob(jobData);
       } else {
-        // Fallback au cas où la structure serait différente
-        jobData = response;
+        throw new Error(response.message || t('jobDetails.errors.loadFailed'));
       }
-      
-      setJob(jobData);
-    } else {
-      throw new Error(response.message || 'Échec du chargement des détails');
+    } catch (err) {
+      setError(t('jobDetails.errors.loadFailed'));
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    setError('Impossible de charger les détails de la mission.');
-  } finally {
-    setLoading(false);
-  }
-};
-  // Formater la date et l'heure
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    
-    return `${day}/${month}/${year} à ${hours}:${minutes}`;
   };
 
-  // Ouvrir l'application de navigation
-  const openMaps = (latitude, longitude, address) => {
-    const location = `${latitude},${longitude}`;
-    const encodedAddress = encodeURIComponent(address);
+  const formatDateTime = (dateString) => {
+    console.log('📅 Date reçue:', dateString);
     
-    let url;
-    if (Platform.OS === 'ios') {
-      url = `maps:?q=${encodedAddress}&ll=${location}`;
-    } else {
-      url = `geo:${location}?q=${encodedAddress}`;
+    const date = new Date(dateString);
+    
+    if (isNaN(date.getTime())) {
+      console.log('❌ Date invalide');
+      return dateString;
     }
     
-    Linking.canOpenURL(url)
+    if (isRTL) {
+      // Format hébreu manuel
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${day}/${month}/${year} בשעה ${hours}:${minutes}`;
+    }
+    
+    // Pour français/anglais
+    const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
+    const dateStr = date.toLocaleDateString(locale);
+    const timeStr = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    
+    return `${dateStr} ${t('jobDetails.atTime')} ${timeStr}`;
+  };
+
+  const openMaps = (address) => {
+    const encodedAddress = encodeURIComponent(address);
+    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+    
+    Linking.canOpenURL(googleMapsUrl)
       .then((supported) => {
         if (supported) {
-          return Linking.openURL(url);
-        } else {
-          const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${location}`;
           return Linking.openURL(googleMapsUrl);
+        } else {
+          Alert.alert(t('common.error'), t('jobDetails.errors.cannotOpenMaps'));
         }
       })
+      .catch(() => {
+        Alert.alert(t('common.error'), t('jobDetails.errors.cannotOpenMaps'));
+      });
   };
 
-  // Appeler le client
   const callClient = (phoneNumber) => {
     const url = `tel:${phoneNumber}`;
     Linking.canOpenURL(url)
@@ -105,12 +110,14 @@ const loadJobDetails = async () => {
         if (supported) {
           return Linking.openURL(url);
         } else {
-          Alert.alert('Erreur', 'Impossible de passer un appel depuis cet appareil');
+          Alert.alert(t('common.error'), t('jobDetails.errors.cannotCall'));
         }
       })
+      .catch(() => {
+        Alert.alert(t('common.error'), t('jobDetails.errors.cannotCall'));
+      });
   };
 
-  // Envoyer un message au client
   const messageClient = (phoneNumber) => {
     const url = `sms:${phoneNumber}`;
     Linking.canOpenURL(url)
@@ -118,36 +125,34 @@ const loadJobDetails = async () => {
         if (supported) {
           return Linking.openURL(url);
         } else {
-          Alert.alert('Erreur', 'Impossible d\'envoyer un message depuis cet appareil');
+          Alert.alert(t('common.error'), t('jobDetails.errors.cannotMessage'));
         }
       })
+      .catch(() => {
+        Alert.alert(t('common.error'), t('jobDetails.errors.cannotMessage'));
+      });
   };
 
-  // Confirmer la mission avec l'API
   const confirmJob = () => {
     Alert.alert(
-      'Confirmer la mission',
-      'Êtes-vous sûr de vouloir confirmer cette mission ?',
+      t('jobDetails.confirmModal.title'),
+      t('jobDetails.confirmModal.message'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Confirmer',
+          text: t('jobDetails.confirmModal.confirm'),
           onPress: async () => {
             try {
-              // Utiliser la méthode acceptJob existante dans votre service
               await providerService.acceptJob(jobId);
-              
-              // Recharger les détails pour obtenir les données mises à jour
               loadJobDetails();
-              
               Alert.alert(
-                'Mission confirmée',
-                'La mission a été confirmée avec succès.'
+                t('jobDetails.confirmModal.successTitle'),
+                t('jobDetails.confirmModal.successMessage')
               );
             } catch (err) {
               Alert.alert(
-                'Erreur',
-                'Impossible de confirmer la mission. Veuillez réessayer.'
+                t('common.error'),
+                t('jobDetails.confirmModal.errorMessage')
               );
             }
           },
@@ -156,32 +161,27 @@ const loadJobDetails = async () => {
     );
   };
 
-  // Annuler la mission avec l'API
   const cancelJob = () => {
     Alert.alert(
-      'Annuler la mission',
-      'Êtes-vous sûr de vouloir annuler cette mission ?',
+      t('jobDetails.cancelModal.title'),
+      t('jobDetails.cancelModal.message'),
       [
-        { text: 'Non', style: 'cancel' },
+        { text: t('jobDetails.cancelModal.no'), style: 'cancel' },
         {
-          text: 'Oui, annuler',
+          text: t('jobDetails.cancelModal.yes'),
           style: 'destructive',
           onPress: async () => {
             try {
-              // Utiliser la méthode declineJob existante dans votre service
               await providerService.declineJob(jobId);
-              
-              // Recharger les détails pour obtenir les données mises à jour
               loadJobDetails();
-              
               Alert.alert(
-                'Mission annulée',
-                'La mission a été annulée avec succès.'
+                t('jobDetails.cancelModal.successTitle'),
+                t('jobDetails.cancelModal.successMessage')
               );
             } catch (err) {
               Alert.alert(
-                'Erreur',
-                'Impossible d\'annuler la mission. Veuillez réessayer.'
+                t('common.error'),
+                t('jobDetails.cancelModal.errorMessage')
               );
             }
           },
@@ -190,37 +190,50 @@ const loadJobDetails = async () => {
     );
   };
 
-  // Marquer la mission comme terminée
   const completeJob = () => {
     Alert.alert(
-      'Terminer la mission',
-      'Êtes-vous sûr de vouloir marquer cette mission comme terminée ?',
+      t('jobDetails.completeModal.title'),
+      t('jobDetails.completeModal.message'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Terminer',
+          text: t('jobDetails.completeModal.confirm'),
           onPress: async () => {
             try {
-              // Utiliser la méthode completeJob existante dans votre service
               await providerService.completeJob(jobId);
-              
-              // Recharger les détails pour obtenir les données mises à jour
               loadJobDetails();
-              
               Alert.alert(
-                'Mission terminée',
-                'La mission a été marquée comme terminée avec succès.'
+                t('jobDetails.completeModal.successTitle'),
+                t('jobDetails.completeModal.successMessage')
               );
             } catch (err) {
               Alert.alert(
-                'Erreur',
-                'Impossible de terminer la mission. Veuillez réessayer.'
+                t('common.error'),
+                t('jobDetails.completeModal.errorMessage')
               );
             }
           },
         },
       ]
     );
+  };
+
+  const getStatusLabel = (status) => {
+    // Map API status to UI status
+    const statusMap = {
+      'pending': 'pending',
+      'accepted': 'confirmed',
+      'completed': 'completed',
+      'cancelled': 'cancelled',
+    };
+    
+    const mappedStatus = statusMap[status] || status;
+    return t(`providerRequests.status.${mappedStatus}`, mappedStatus);
+  };
+
+  const getDisplayStatus = (status) => {
+    // Pour l'affichage du badge
+    return status === 'accepted' ? 'confirmed' : status;
   };
 
   if (loading) {
@@ -235,217 +248,207 @@ const loadJobDetails = async () => {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <Ionicons name="alert-circle" size={60} color="#F44336" />
-        <Text style={styles.errorText}>{error || "Impossible de charger les détails de la mission"}</Text>
+        <Text style={[styles.errorText, isRTL && styles.textRTL]}>
+          {error || t('jobDetails.errors.cannotLoad')}
+        </Text>
         <TouchableOpacity
           style={styles.retryButton}
           onPress={loadJobDetails}
         >
-          <Text style={styles.retryButtonText}>Réessayer</Text>
+          <Text style={styles.retryButtonText}>{t('try_again')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
+  const displayStatus = getDisplayStatus(job.status);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-        {/* En-tête avec statut */}
         <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={styles.clientName}>{job.clientName}</Text>
+          <View style={[styles.headerContent, isRTL && styles.headerContentRTL]}>
+            <Text style={[styles.clientName, isRTL && styles.textRTL]}>
+              {job.client.firstName} {job.client.lastName}
+            </Text>
             <View 
               style={[
                 styles.statusBadge, 
-                job.status === 'confirmed' ? styles.confirmedStatus : 
-                job.status === 'pending' ? styles.pendingStatus : 
-                job.status === 'completed' ? styles.completedStatus : 
+                displayStatus === 'confirmed' ? styles.confirmedStatus : 
+                displayStatus === 'pending' ? styles.pendingStatus : 
+                displayStatus === 'completed' ? styles.completedStatus : 
                 styles.cancelledStatus
               ]}
             >
               <Text style={styles.statusText}>
-                {job.status === 'confirmed' ? 'Confirmé' : 
-                 job.status === 'pending' ? 'En attente' : 
-                 job.status === 'completed' ? 'Terminé' : 
-                 'Annulé'}
+                {getStatusLabel(job.status)}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Boutons d'action UNIQUEMENT pour les missions en attente */}
         {job.status === 'pending' && (
           <View style={styles.pendingContainer}>
-            <Text style={styles.pendingTitle}>Nouvelle demande de mission</Text>
-            <Text style={styles.pendingSubtitle}>Merci de confirmer ou refuser cette demande</Text>
+            <Text style={[styles.pendingTitle, isRTL && styles.textRTL]}>
+              {t('jobDetails.pending.title')}
+            </Text>
+            <Text style={[styles.pendingSubtitle, isRTL && styles.textRTL]}>
+              {t('jobDetails.pending.subtitle')}
+            </Text>
             
-            <View style={styles.pendingActions}>
+            <View style={[styles.pendingActions, isRTL && styles.pendingActionsRTL]}>
               <TouchableOpacity
                 style={styles.confirmButton}
                 onPress={confirmJob}
               >
-                <Text style={styles.confirmButtonText}>Accepter</Text>
+                <Text style={styles.confirmButtonText}>
+                  {t('jobDetails.actions.accept')}
+                </Text>
               </TouchableOpacity>
               
               <TouchableOpacity
                 style={styles.declineButton}
                 onPress={cancelJob}
               >
-                <Text style={styles.declineButtonText}>Décliner</Text>
+                <Text style={styles.declineButtonText}>
+                  {t('jobDetails.actions.decline')}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {/* Informations essentielles */}
         <View style={styles.section}>
-          <View style={styles.sectionRow}>
+          <View style={[styles.sectionRow, isRTL && styles.sectionRowRTL]}>
             <Ionicons name="calendar" size={20} color="#666666" />
-            <Text style={styles.sectionText}>{formatDateTime(job.date)}</Text>
+            <Text style={[styles.sectionText, isRTL && styles.textRTL]}>
+              {formatDateTime(job.scheduledDate)}
+            </Text>
           </View>
           
-          <View style={styles.sectionRow}>
+          <View style={[styles.sectionRow, isRTL && styles.sectionRowRTL]}>
             <Ionicons name="time" size={20} color="#666666" />
-            <Text style={styles.sectionText}>{job.duration} heures</Text>
+            <Text style={[styles.sectionText, isRTL && styles.textRTL]}>
+              {job.duration} {t('jobDetails.hours')}
+            </Text>
           </View>
           
           <TouchableOpacity 
-            style={styles.sectionRow}
-            onPress={() => openMaps(job.coordinates.latitude, job.coordinates.longitude, job.address)}
+            style={[styles.sectionRow, isRTL && styles.sectionRowRTL]}
+            onPress={() => openMaps(job.address)}
           >
             <Ionicons name="location" size={20} color="#666666" />
-            <Text style={[styles.sectionText, styles.addressText]}>{job.address}</Text>
+            <Text style={[styles.sectionText, styles.addressText, isRTL && styles.textRTL]}>
+              {job.address}
+            </Text>
             <Ionicons name="navigate" size={20} color="#007AFF" />
           </TouchableOpacity>
         </View>
 
-        {/* Actions rapides (uniquement pour les missions confirmées) */}
-        {job.status === 'confirmed' && (
+        {job.status === 'accepted' && (
           <View style={styles.actionsContainer}>
             <TouchableOpacity 
               style={styles.actionButton}
-              onPress={() => callClient(job.clientPhone)}
+              onPress={() => callClient(job.client.phone)}
             >
               <View style={[styles.actionIcon, styles.callIcon]}>
                 <Ionicons name="call" size={24} color="#FFFFFF" />
               </View>
-              <Text style={styles.actionText}>Appeler</Text>
+              <Text style={[styles.actionText, isRTL && styles.textRTL]}>
+                {t('jobDetails.actions.call')}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.actionButton}
-              onPress={() => messageClient(job.clientPhone)}
+              onPress={() => messageClient(job.client.phone)}
             >
               <View style={[styles.actionIcon, styles.messageIcon]}>
                 <Ionicons name="chatbubble" size={24} color="#FFFFFF" />
               </View>
-              <Text style={styles.actionText}>Message</Text>
+              <Text style={[styles.actionText, isRTL && styles.textRTL]}>
+                {t('jobDetails.actions.message')}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.actionButton}
-              onPress={() => openMaps(job.coordinates.latitude, job.coordinates.longitude, job.address)}
+              onPress={() => openMaps(job.address)}
             >
               <View style={[styles.actionIcon, styles.directionIcon]}>
                 <Ionicons name="navigate" size={24} color="#FFFFFF" />
               </View>
-              <Text style={styles.actionText}>Itinéraire</Text>
+              <Text style={[styles.actionText, isRTL && styles.textRTL]}>
+                {t('jobDetails.actions.directions')}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Détails du service */}
         <View style={styles.detailSection}>
-          <Text style={styles.sectionTitle}>Détails du service</Text>
+          <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+            {t('jobDetails.serviceDetails.title')}
+          </Text>
           
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Service</Text>
-            <Text style={styles.detailValue}>{job.serviceName}</Text>
+          <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+            <Text style={[styles.detailLabel, isRTL && styles.textRTL]}>
+              {t('jobDetails.serviceDetails.service')}
+            </Text>
+            <Text style={[styles.detailValue, isRTL && styles.textRTL]}>
+              {job.serviceType}
+            </Text>
           </View>
           
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Prix</Text>
-            <Text style={styles.detailValue}>{job.price} ₪</Text>
+          <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+            <Text style={[styles.detailLabel, isRTL && styles.textRTL]}>
+              סוג נכס
+            </Text>
+            <Text style={[styles.detailValue, isRTL && styles.textRTL]}>
+              {job.propertyType}
+            </Text>
           </View>
           
-          <View style={styles.notesContainer}>
-            <Text style={styles.notesLabel}>Notes</Text>
-            <Text style={styles.notesText}>{job.notes || "Aucune note"}</Text>
+          <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+            <Text style={[styles.detailLabel, isRTL && styles.textRTL]}>
+              {t('jobDetails.serviceDetails.price')}
+            </Text>
+            <Text style={[styles.detailValue, isRTL && styles.textRTL]}>
+              ₪{job.price}
+            </Text>
           </View>
+          
+          {job.description && (
+            <View style={styles.notesContainer}>
+              <Text style={[styles.notesLabel, isRTL && styles.textRTL]}>
+                {t('jobDetails.serviceDetails.notes')}
+              </Text>
+              <Text style={[styles.notesText, isRTL && styles.textRTL]}>
+                {job.description}
+              </Text>
+            </View>
+          )}
         </View>
-        
-        {/* Tâches demandées - Uniquement si disponibles dans l'API */}
-        {job.requestedItems && job.requestedItems.length > 0 && (
-          <View style={styles.detailSection}>
-            <Text style={styles.sectionTitle}>Tâches demandées</Text>
-            
-            {job.requestedItems.map((item) => (
-              <View key={item.id} style={styles.checklistItem}>
-                <Ionicons 
-                  name={item.checked ? "checkmark-circle" : "ellipse-outline"} 
-                  size={24} 
-                  color={item.checked ? "#4CAF50" : "#999999"} 
-                />
-                <Text style={styles.checklistText}>{item.name}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-        
-        {/* Contact client (pour les missions en attente) */}
-        {job.status === 'pending' && (
-          <TouchableOpacity 
-            style={styles.contactClientButton}
-            onPress={() => callClient(job.clientPhone)}
-          >
-            <Ionicons name="call" size={20} color="#007AFF" />
-            <Text style={styles.contactClientText}>Contacter le client</Text>
-          </TouchableOpacity>
-        )}
 
-        {/* Historique du client - Uniquement si disponible dans l'API */}
-        {job.clientHistory && job.clientHistory.length > 0 && job.status !== 'pending' && (
-          <View style={styles.detailSection}>
-            <Text style={styles.sectionTitle}>Historique du client</Text>
-            
-            {job.clientHistory.map((historyItem) => (
-              <View key={historyItem.id} style={styles.historyItem}>
-                <Text style={styles.historyDate}>
-                  {new Date(historyItem.date).toLocaleDateString()}
-                </Text>
-                <Text style={styles.historyService}>{historyItem.serviceName}</Text>
-                <View
-                  style={[
-                    styles.historyStatus,
-                    historyItem.status === 'completed' ? styles.completedHistoryStatus : styles.cancelledHistoryStatus
-                  ]}
-                >
-                  <Text style={styles.historyStatusText}>
-                    {historyItem.status === 'completed' ? 'Terminé' : 'Annulé'}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
+        {job.status === 'accepted' && (
+          <>
+            <TouchableOpacity
+              style={styles.completeButton}
+              onPress={completeJob}
+            >
+              <Text style={styles.completeButtonText}>
+                {t('jobDetails.actions.markComplete')}
+              </Text>
+            </TouchableOpacity>
 
-        {/* Bouton pour marquer comme terminé - Pour statut confirmed uniquement */}
-        {job.status === 'confirmed' && (
-          <TouchableOpacity
-            style={styles.completeButton}
-            onPress={completeJob}
-          >
-            <Text style={styles.completeButtonText}>Marquer comme terminé</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Bouton d'annulation pour statuts confirmés uniquement */}
-        {job.status === 'confirmed' && (
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={cancelJob}
-          >
-            <Text style={styles.cancelButtonText}>Annuler la mission</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={cancelJob}
+            >
+              <Text style={styles.cancelButtonText}>
+                {t('jobDetails.actions.cancelJob')}
+              </Text>
+            </TouchableOpacity>
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -492,6 +495,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  headerContentRTL: {
+    flexDirection: 'row-reverse',
+  },
   clientName: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -519,7 +525,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333333',
   },
-  // Styles pour les missions en attente
   pendingContainer: {
     backgroundColor: '#FFFFFF',
     padding: 20,
@@ -543,6 +548,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     paddingHorizontal: 30,
+  },
+  pendingActionsRTL: {
+    flexDirection: 'row-reverse',
   },
   confirmButton: {
     backgroundColor: '#007AFF',
@@ -568,18 +576,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  contactClientButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 20,
-    padding: 15,
-  },
-  contactClientText: {
-    marginLeft: 10,
-    color: '#007AFF',
-    fontSize: 16,
-  },
   section: {
     backgroundColor: '#FFFFFF',
     padding: 15,
@@ -589,6 +585,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 5,
+  },
+  sectionRowRTL: {
+    flexDirection: 'row-reverse',
   },
   sectionText: {
     fontSize: 16,
@@ -649,6 +648,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
   },
+  detailRowRTL: {
+    flexDirection: 'row-reverse',
+  },
   detailLabel: {
     fontSize: 16,
     color: '#666666',
@@ -673,52 +675,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     padding: 10,
     borderRadius: 5,
-  },
-  checklistItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  checklistText: {
-    fontSize: 16,
-    color: '#333333',
-    marginLeft: 10,
-  },
-  historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  historyDate: {
-    fontSize: 14,
-    color: '#666666',
-  },
-  historyService: {
-    fontSize: 14,
-    color: '#333333',
-    flex: 1,
-    marginLeft: 10,
-  },
-  historyStatus: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  completedHistoryStatus: {
-    backgroundColor: '#E8F5E9',
-  },
-  cancelledHistoryStatus: {
-    backgroundColor: '#FFEBEE',
-  },
-  historyStatusText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#333333',
   },
   completeButton: {
     margin: 15,
@@ -746,6 +702,10 @@ const styles = StyleSheet.create({
     color: '#F44336',
     fontSize: 14,
     fontWeight: '500',
+  },
+  textRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
 });
 

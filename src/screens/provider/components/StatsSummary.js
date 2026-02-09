@@ -1,29 +1,29 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, I18nManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const StatsSummary = ({ stats, onPress }) => {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.header}>
-        <Text style={styles.title}>Statistiques</Text>
-        <Ionicons name="chevron-forward" size={20} color="#007AFF" />
+        <Text style={styles.title}>סטטיסטיקות</Text>
+        <Ionicons name={I18nManager.isRTL ? "chevron-back" : "chevron-forward"} size={20} color="#007AFF" />
       </View>
       
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{stats.completedJobs}</Text>
-          <Text style={styles.statLabel}>Missions terminées</Text>
+          <Text style={styles.statLabel}>משימות שהושלמו</Text>
         </View>
         
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{stats.pendingJobs}</Text>
-          <Text style={styles.statLabel}>Missions en attente</Text>
+          <Text style={styles.statLabel}>משימות ממתינות</Text>
         </View>
         
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{stats.totalEarnings.toLocaleString()} ₪</Text>
-          <Text style={styles.statLabel}>Revenus</Text>
+          <Text style={styles.statLabel}>הכנסות</Text>
         </View>
         
         <View style={styles.statItem}>
@@ -31,7 +31,7 @@ const StatsSummary = ({ stats, onPress }) => {
             <Text style={styles.statValue}>{stats.rating.toFixed(1)}</Text>
             <Ionicons name="star" size={14} color="#FFD700" style={styles.ratingIcon} />
           </View>
-          <Text style={styles.statLabel}>Note</Text>
+          <Text style={styles.statLabel}>דירוג</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -60,6 +60,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333333',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
   },
   statsContainer: {
     flexDirection: 'row',

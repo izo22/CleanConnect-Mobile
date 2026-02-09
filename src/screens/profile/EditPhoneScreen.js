@@ -14,12 +14,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AuthContext } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const EditPhoneScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { phone: initialPhone } = route.params;
   const { userInfo, updateUserInfo } = useContext(AuthContext);
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'he';
   
   const [phone, setPhone] = useState(initialPhone || '');
   const [isLoading, setIsLoading] = useState(false);
@@ -27,20 +30,16 @@ const EditPhoneScreen = () => {
 
   // Validation du numéro de téléphone
   const validatePhone = () => {
-    // Regex simple pour les numéros de téléphone israéliens
-    // Format: +972 XX XXX XXXX or 05X-XXX-XXXX
     const phoneRegex = /^(\+972|0)([56789])([0-9]{7,8})$/;
-    
-    // Supprimer tous les caractères non-numériques sauf le +
     const cleanedPhone = phone.replace(/[^0-9+]/g, '');
     
     if (!cleanedPhone) {
-      setError('Le numéro de téléphone est requis');
+      setError(t('editPhone.errors.required'));
       return false;
     }
     
     if (!phoneRegex.test(cleanedPhone)) {
-      setError('Format de numéro de téléphone invalide');
+      setError(t('editPhone.errors.invalid'));
       return false;
     }
     
@@ -61,7 +60,6 @@ const EditPhoneScreen = () => {
     if (validatePhone()) {
       setIsLoading(true);
       
-      // Simuler une requête API
       setTimeout(() => {
         updateUserInfo({
           ...userInfo,
@@ -70,9 +68,9 @@ const EditPhoneScreen = () => {
         
         setIsLoading(false);
         Alert.alert(
-          'Mise à jour réussie',
-          'Votre numéro de téléphone a été mis à jour.',
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
+          t('editPhone.successTitle'),
+          t('editPhone.successMessage'),
+          [{ text: t('editPhone.ok'), onPress: () => navigation.goBack() }]
         );
       }, 1000);
     }
@@ -90,29 +88,36 @@ const EditPhoneScreen = () => {
             onPress={() => navigation.goBack()}
             disabled={isLoading}
           >
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Modifier le téléphone</Text>
+          <Text style={[styles.headerTitle, isRTL && styles.textRTL]}>
+            {t('editPhone.title')}
+          </Text>
           <View style={styles.placeholderButton} />
         </View>
 
         <View style={styles.content}>
           <View style={styles.formContainer}>
-            <Text style={styles.label}>Numéro de téléphone</Text>
+            <Text style={[styles.label, isRTL && styles.textRTL]}>
+              {t('editPhone.label')}
+            </Text>
             <TextInput
-              style={[styles.input, error ? styles.inputError : null]}
+              style={[
+                styles.input,
+                error ? styles.inputError : null,
+                isRTL && styles.inputRTL
+              ]}
               value={phone}
               onChangeText={handlePhoneChange}
-              placeholder="+972 XX XXX XXXX ou 05X-XXX-XXXX"
+              placeholder={t('editPhone.placeholder')}
               keyboardType="phone-pad"
               editable={!isLoading}
             />
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            
-            <Text style={styles.helpText}>
-              Entrez un numéro de téléphone israélien valide,
-              par exemple +972 54 123 4567 ou 054-123-4567
-            </Text>
+            {error ? (
+              <Text style={[styles.errorText, isRTL && styles.textRTL]}>
+                {error}
+              </Text>
+            ) : null}
           </View>
 
           <TouchableOpacity
@@ -123,7 +128,9 @@ const EditPhoneScreen = () => {
             {isLoading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.saveButtonText}>Enregistrer</Text>
+              <Text style={[styles.saveButtonText, isRTL && styles.textRTL]}>
+                {t('editPhone.save')}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -189,6 +196,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#f9f9f9',
   },
+  inputRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
   inputError: {
     borderColor: '#e74c3c',
   },
@@ -196,11 +207,6 @@ const styles = StyleSheet.create({
     color: '#e74c3c',
     fontSize: 12,
     marginTop: 4,
-  },
-  helpText: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 12,
   },
   saveButton: {
     backgroundColor: '#3498db',
@@ -212,6 +218,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  textRTL: {
+    writingDirection: 'rtl',
+    textAlign: 'right',
   },
 });
 

@@ -4,7 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Créer une instance axios avec la configuration de base
 const api = axios.create({
-  baseURL: 'https://cleanconnect-backend-tulh.onrender.com/api',
+  // : 'https://cleanconnect-backend-tulh.onrender.com/api',
+  baseURL: 'http://localhost:5000/api',
+
   headers: {
     'Content-Type': 'application/json',
   },
@@ -178,6 +180,56 @@ export const providerService = {
   updateAvailability: async (availabilityData) => {
     try {
       const response = await api.put('/providers/availability', availabilityData);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // ✅ Ajouter un service
+  addService: async (serviceData) => {
+    try {
+      const response = await api.post('/providers/services', serviceData);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // ✅ Mettre à jour un service
+  updateService: async (serviceId, serviceData) => {
+    try {
+      const response = await api.put(`/providers/services/${serviceId}`, serviceData);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // ✅ Supprimer un service
+  deleteService: async (serviceId) => {
+    try {
+      const response = await api.delete(`/providers/services/${serviceId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // ✅ NOUVEAU: Obtenir les statistiques du dashboard (optimisé)
+  getDashboardStats: async () => {
+    try {
+      const response = await api.get('/providers/dashboard/stats');
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
+  // ✅ NOUVEAU: Obtenir les missions du jour uniquement (optimisé)
+  getTodayJobs: async () => {
+    try {
+      const response = await api.get('/providers/dashboard/today');
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;

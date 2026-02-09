@@ -1,15 +1,16 @@
 // src/screens/client/AddressSelection.js
 import React, { useState, useEffect, useContext } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { Text, Card, Title, Button, RadioButton, Divider, TextInput, Appbar, useTheme, FAB } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput as RNTextInput } from 'react-native';
+import { Card, RadioButton, Divider, Appbar, useTheme, Text } from 'react-native-paper';
 import { useBooking } from '../../context/BookingContext';
-import { AuthContext } from '../../context/AuthContext'; // ✅ AJOUT
-import AsyncStorage from '@react-native-async-storage/async-storage'; // ✅ AJOUT
+import { AuthContext } from '../../context/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 
 const AddressSelectionScreen = ({ navigation }) => {
   const theme = useTheme();
   const { currentBooking, updateBooking } = useBooking();
-  const { userInfo } = useContext(AuthContext); // ✅ RÉCUPÉRATION INFO USER
+  const { userInfo } = useContext(AuthContext);
   
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(
@@ -18,30 +19,23 @@ const AddressSelectionScreen = ({ navigation }) => {
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [newAddress, setNewAddress] = useState({
-    name: '',
     street: '',
-    city: 'Tel Aviv',
-    country: 'Israël',
+    city: 'תל אביב',
+    country: 'ישראל',
     additionalInfo: ''
   });
   
-  // Couleur associée au type de service
   const getServiceColor = () => {
     switch (currentBooking.serviceType) {
-      case 'home':
-        return theme.colors.homeService;
-      case 'office':
-        return theme.colors.officeService;
-      case 'building':
-        return theme.colors.buildingService;
-      default:
-        return theme.colors.primary;
+      case 'home': return theme.colors.homeService || '#007AFF';
+      case 'office': return theme.colors.officeService || '#34C759';
+      case 'building': return theme.colors.buildingService || '#FF9500';
+      default: return theme.colors.primary;
     }
   };
   
   const serviceColor = getServiceColor();
   
-  // ✅ CHARGER L'ADRESSE DE L'UTILISATEUR AU DÉMARRAGE
   useEffect(() => {
     loadUserAddresses();
   }, []);
@@ -49,83 +43,57 @@ const AddressSelectionScreen = ({ navigation }) => {
   const loadUserAddresses = async () => {
     setIsLoading(true);
     try {
-      
-      // Récupérer les données utilisateur depuis AsyncStorage
       const userData = await AsyncStorage.getItem('userData');
-      
       if (userData) {
         const user = JSON.parse(userData);
         
-        // Créer l'adresse principale depuis l'inscription
+        console.log('📦 נתוני משתמש מ-AsyncStorage:', user);
+        
         const mainAddress = {
           id: 'main-address',
-          name: 'Mon adresse principale',
-          fullAddress: user.address || 'Adresse non renseignée',
-          coordinates: { latitude: 32.0853, longitude: 34.7818 }, // Coordonnées par défaut Tel Aviv
-          isMain: true // Marqueur pour l'adresse principale
+          name: 'כתובת ראשית',
+          fullAddress: user.address && user.city 
+            ? `${user.address}, ${user.city}` 
+            : user.city || user.address || 'אין כתובת',
+          city: user.city || '',
+          coordinates: { latitude: 32.0853, longitude: 34.7818 },
+          isMain: true
         };
         
-        // Charger les adresses supplémentaires sauvegardées
+        console.log('🏠 כתובת ראשית שנוצרה:', mainAddress);
+        console.log('📍 עיר בכתובת הראשית:', mainAddress.city);
+        
         const savedAddressesJson = await AsyncStorage.getItem(`user_addresses_${user.id}`);
         const savedAddresses = savedAddressesJson ? JSON.parse(savedAddressesJson) : [];
         
-        // Combiner l'adresse principale et les adresses supplémentaires
         const allAddresses = [mainAddress, ...savedAddresses];
-        
         setAddresses(allAddresses);
         
-        // ✅ PRÉ-SÉLECTIONNER L'ADRESSE PRINCIPALE SI AUCUNE N'EST SÉLECTIONNÉE
         if (!currentBooking.address) {
           setSelectedAddressId('main-address');
         }
-        
-      } else {
       }
     } catch (error) {
-      Alert.alert('Erreur', 'Impossible de charger vos adresses');
+      console.error('❌ שגיאה בטעינת כתובות:', error);
+      Alert.alert('שגיאה', 'לא ניתן לטעון את הכתובות.');
     } finally {
       setIsLoading(false);
     }
   };
-  
-  // Sélectionner l'adresse actuelle du booking si elle existe
-  useEffect(() => {
-    if (currentBooking.address) {
-      setSelectedAddressId(currentBooking.address.id);
-    }
-  }, [currentBooking.address]);
-  
-  // Valider l'adresse sélectionnée
+
   const handleConfirmAddress = () => {
     const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
-    
     if (selectedAddress) {
+      console.log('✅ כתובת נבחרה:', selectedAddress);
+      console.log('📍 עיר בכתובת שנבחרה:', selectedAddress.city);
       updateBooking({ address: selectedAddress });
       navigation.goBack();
     }
   };
-  
-  // ✅ SAUVEGARDER LES ADRESSES SUPPLÉMENTAIRES
-  const saveAdditionalAddresses = async (newAddresses) => {
-    try {
-      const userData = await AsyncStorage.getItem('userData');
-      if (userData) {
-        const user = JSON.parse(userData);
-        // Sauvegarder uniquement les adresses supplémentaires (pas la principale)
-        const additionalAddresses = newAddresses.filter(addr => !addr.isMain);
-        await AsyncStorage.setItem(
-          `user_addresses_${user.id}`,
-          JSON.stringify(additionalAddresses)
-        );
-      }
-    } catch (error) {
-    }
-  };
-  
-  // Ajouter une nouvelle adresse
+
   const handleAddAddress = async () => {
-    if (!newAddress.name || !newAddress.street) {
-      Alert.alert('Erreur', 'Veuillez remplir au moins le nom et la rue');
+    if (!newAddress.street) {
+      Alert.alert('שגיאת אימות', 'אנא מלא את רחוב ומספר הבית');
       return;
     }
     
@@ -134,262 +102,247 @@ const AddressSelectionScreen = ({ navigation }) => {
     
     const newAddressObj = {
       id: `new-${Date.now()}`,
-      name: newAddress.name,
+      name: newAddress.street, // Utiliser la rue comme nom
       fullAddress: fullAddress + additionalInfo,
+      city: newAddress.city,
       coordinates: { 
-        latitude: 32.0853 + (Math.random() * 0.01), // Coordonnées simulées
+        latitude: 32.0853 + (Math.random() * 0.01),
         longitude: 34.7818 + (Math.random() * 0.01)
       },
       isMain: false
     };
+    
+    console.log('➕ כתובת חדשה נוצרה:', newAddressObj);
+    console.log('📍 עיר בכתובת חדשה:', newAddressObj.city);
     
     const updatedAddresses = [...addresses, newAddressObj];
     setAddresses(updatedAddresses);
     setSelectedAddressId(newAddressObj.id);
     setShowAddAddress(false);
     
-    // ✅ SAUVEGARDER LA NOUVELLE ADRESSE
-    await saveAdditionalAddresses(updatedAddresses);
+    // Sauvegarde des adresses additionnelles
+    try {
+      const userData = await AsyncStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        const additionalAddresses = updatedAddresses.filter(addr => !addr.isMain);
+        await AsyncStorage.setItem(
+          `user_addresses_${user.id}`,
+          JSON.stringify(additionalAddresses)
+        );
+      }
+    } catch (error) {
+      console.error('Error saving addresses:', error);
+    }
     
-    // Réinitialiser le formulaire
+    // Réinitialisation du formulaire
     setNewAddress({
-      name: '',
       street: '',
-      city: 'Tel Aviv',
-      country: 'Israël',
+      city: 'תל אביב',
+      country: 'ישראל',
       additionalInfo: ''
     });
     
-    Alert.alert('Succès', 'Adresse ajoutée avec succès');
+    Alert.alert('הצלחה', 'הכתובת נוספה בהצלחה');
   };
-  
-  // ✅ MODIFIER L'ADRESSE PRINCIPALE
-  const handleEditMainAddress = () => {
-    Alert.alert(
-      'Modifier l\'adresse principale',
-      'Cette adresse provient de votre inscription. Souhaitez-vous la modifier dans votre profil ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Modifier dans le profil',
-          onPress: () => {
-            // Navigation vers l'écran de profil (à adapter selon votre navigation)
-            navigation.navigate('Profile');
-          }
-        },
-        {
-          text: 'Ajouter une nouvelle adresse',
-          onPress: () => setShowAddAddress(true)
-        }
-      ]
-    );
-  };
-  
+
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <Appbar.Header style={{ backgroundColor: serviceColor }}>
-          <Appbar.BackAction onPress={() => navigation.goBack()} color="white" />
-          <Appbar.Content title="Choisir une adresse" color="white" />
-        </Appbar.Header>
-        <View style={styles.loadingContainer}>
-          <Text>Chargement de vos adresses...</Text>
-        </View>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.rtlText}>טוען כתובות...</Text>
       </View>
     );
   }
-  
+
   return (
     <View style={styles.container}>
       <Appbar.Header style={{ backgroundColor: serviceColor }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} color="white" />
-        <Appbar.Content title="Choisir une adresse" color="white" />
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>
+            {showAddAddress ? "הוסף כתובת" : "בחירת כתובת"}
+          </Text>
+        </View>
       </Appbar.Header>
       
       <ScrollView style={styles.content}>
         {!showAddAddress ? (
-          // Liste des adresses existantes
-          <Card style={styles.addressesCard}>
+          <Card style={styles.card}>
             <Card.Content>
-              <Title style={styles.sectionTitle}>Mes adresses</Title>
+              <Text style={[styles.sectionTitle, styles.rtlText]}>הכתובות שלי</Text>
               
               {addresses.length === 0 ? (
                 <View style={styles.noAddressContainer}>
-                  <Text style={styles.noAddressText}>Aucune adresse enregistrée</Text>
-                  <Button 
-                    mode="contained" 
+                  <Text style={[styles.noAddressText, styles.rtlText]}>עדיין לא הוספת כתובות</Text>
+                  <TouchableOpacity 
+                    style={[styles.button, { backgroundColor: serviceColor }]}
                     onPress={() => setShowAddAddress(true)}
-                    style={[styles.addFirstAddressButton, { backgroundColor: serviceColor }]}
                   >
-                    Ajouter une adresse
-                  </Button>
+                    <Text style={styles.buttonText}>הוסף כתובת</Text>
+                  </TouchableOpacity>
                 </View>
               ) : (
                 <>
-                  <RadioButton.Group onValueChange={value => setSelectedAddressId(value)} value={selectedAddressId}>
+                  <RadioButton.Group onValueChange={v => setSelectedAddressId(v)} value={selectedAddressId}>
                     {addresses.map((address) => (
                       <View key={address.id}>
                         <TouchableOpacity 
-                          style={styles.addressItem}
+                          style={styles.addressItem} 
                           onPress={() => setSelectedAddressId(address.id)}
                         >
-                          <RadioButton 
-                            value={address.id} 
-                            color={serviceColor}
-                          />
                           <View style={styles.addressDetails}>
-                            <View style={styles.addressNameContainer}>
-                              <Text style={styles.addressName}>{address.name}</Text>
-                              {/* ✅ BADGE POUR L'ADRESSE PRINCIPALE */}
+                            <View style={styles.row}>
+                              <Text style={[styles.addressName, styles.rtlText]}>{address.name}</Text>
                               {address.isMain && (
-                                <View style={[styles.mainBadge, { backgroundColor: serviceColor }]}>
-                                  <Text style={styles.mainBadgeText}>Principale</Text>
+                                <View style={[styles.badge, { backgroundColor: serviceColor }]}>
+                                  <Text style={styles.badgeText}>ראשי</Text>
                                 </View>
                               )}
                             </View>
-                            <Text style={styles.addressText}>{address.fullAddress}</Text>
+                            <Text style={[styles.addressText, styles.rtlText]}>{address.fullAddress}</Text>
                           </View>
-                          {/* ✅ BOUTON MODIFIER POUR L'ADRESSE PRINCIPALE */}
-                          {address.isMain && (
-                            <TouchableOpacity 
-                              onPress={handleEditMainAddress}
-                              style={styles.editButton}
-                            >
-                              <Text style={[styles.editButtonText, { color: serviceColor }]}>Modifier</Text>
-                            </TouchableOpacity>
-                          )}
+                          <RadioButton value={address.id} color={serviceColor} />
                         </TouchableOpacity>
                         <Divider />
                       </View>
                     ))}
                   </RadioButton.Group>
                   
-                  {/* Bouton Valider plus visible */}
-                  <View style={styles.validateButtonContainer}>
-                    <Button 
-                      mode="contained" 
-                      style={[styles.validateButton, { backgroundColor: serviceColor }]}
-                      onPress={handleConfirmAddress}
-                      disabled={!selectedAddressId}
-                    >
-                      Valider cette adresse
-                    </Button>
-                  </View>
+                  <TouchableOpacity 
+                    style={[
+                      styles.button, 
+                      { backgroundColor: serviceColor },
+                      !selectedAddressId && styles.buttonDisabled
+                    ]}
+                    onPress={handleConfirmAddress}
+                    disabled={!selectedAddressId}
+                  >
+                    <Text style={styles.buttonText}>אשר כתובת</Text>
+                  </TouchableOpacity>
                 </>
               )}
             </Card.Content>
           </Card>
         ) : (
-          // Formulaire d'ajout d'adresse
-          <Card style={styles.addressFormCard}>
+          <Card style={styles.card}>
             <Card.Content>
-              <Title style={styles.sectionTitle}>Ajouter une adresse</Title>
+              <Text style={[styles.sectionTitle, styles.rtlText]}>הוסף כתובת</Text>
               
-              <TextInput
-                label="Nom de l'adresse"
-                value={newAddress.name}
-                onChangeText={(text) => setNewAddress({...newAddress, name: text})}
-                style={styles.input}
-                theme={{ colors: { primary: serviceColor } }}
-                placeholder="Ex: Bureau, Maison secondaire, etc."
-              />
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, styles.rtlText, { color: serviceColor }]}>רחוב ומספר בית</Text>
+                <RNTextInput
+                  value={newAddress.street}
+                  onChangeText={t => setNewAddress({...newAddress, street: t})}
+                  style={[styles.textInput, styles.rtlText, { borderColor: serviceColor }]}
+                  placeholderTextColor="#999"
+                />
+              </View>
               
-              <TextInput
-                label="Rue et numéro"
-                value={newAddress.street}
-                onChangeText={(text) => setNewAddress({...newAddress, street: text})}
-                style={styles.input}
-                theme={{ colors: { primary: serviceColor } }}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, styles.rtlText, { color: serviceColor }]}>עיר</Text>
+                <RNTextInput
+                  value={newAddress.city}
+                  onChangeText={t => setNewAddress({...newAddress, city: t})}
+                  style={[styles.textInput, styles.rtlText, { borderColor: serviceColor }]}
+                  placeholderTextColor="#999"
+                />
+              </View>
               
-              <TextInput
-                label="Ville"
-                value={newAddress.city}
-                onChangeText={(text) => setNewAddress({...newAddress, city: text})}
-                style={styles.input}
-                theme={{ colors: { primary: serviceColor } }}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, styles.rtlText, { color: serviceColor }]}>מדינה</Text>
+                <RNTextInput
+                  value={newAddress.country}
+                  onChangeText={t => setNewAddress({...newAddress, country: t})}
+                  style={[styles.textInput, styles.rtlText, { borderColor: serviceColor }]}
+                  placeholderTextColor="#999"
+                />
+              </View>
               
-              <TextInput
-                label="Pays"
-                value={newAddress.country}
-                onChangeText={(text) => setNewAddress({...newAddress, country: text})}
-                style={styles.input}
-                theme={{ colors: { primary: serviceColor } }}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, styles.rtlText, { color: serviceColor }]}>פרטים נוספים (אופציונלי)</Text>
+                <RNTextInput
+                  value={newAddress.additionalInfo}
+                  onChangeText={t => setNewAddress({...newAddress, additionalInfo: t})}
+                  style={[styles.textInput, styles.textInputMultiline, styles.rtlText, { borderColor: serviceColor }]}
+                  placeholder="לדוגמה: קומה 3, דירה 12"
+                  placeholderTextColor="#999"
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
               
-              <TextInput
-                label="Informations complémentaires (optionnel)"
-                value={newAddress.additionalInfo}
-                onChangeText={(text) => setNewAddress({...newAddress, additionalInfo: text})}
-                style={styles.input}
-                theme={{ colors: { primary: serviceColor } }}
-                placeholder="Code porte, étage, instructions..."
-                multiline
-              />
-              
-              <View style={styles.formButtonsContainer}>
-                <Button 
-                  mode="outlined" 
+              <View style={styles.buttonRow}>
+                <TouchableOpacity 
+                  style={[styles.buttonOutlined, { borderColor: serviceColor }]}
                   onPress={() => setShowAddAddress(false)}
-                  style={styles.cancelButton}
-                  color={serviceColor}
                 >
-                  Annuler
-                </Button>
+                  <Text style={[styles.buttonOutlinedText, { color: serviceColor }]}>
+                    ביטול
+                  </Text>
+                </TouchableOpacity>
                 
-                <Button 
-                  mode="contained" 
+                <TouchableOpacity 
+                  style={[
+                    styles.button, 
+                    { backgroundColor: serviceColor },
+                    !newAddress.street && styles.buttonDisabled
+                  ]}
                   onPress={handleAddAddress}
-                  style={[styles.saveButton, { backgroundColor: serviceColor }]}
-                  disabled={!newAddress.name || !newAddress.street}
+                  disabled={!newAddress.street}
                 >
-                  Enregistrer
-                </Button>
+                  <Text style={styles.buttonText}>שמור כתובת</Text>
+                </TouchableOpacity>
               </View>
             </Card.Content>
           </Card>
         )}
       </ScrollView>
-      
-      {/* Bouton d'ajout d'adresse */}
+
       {!showAddAddress && addresses.length > 0 && (
-        <FAB
+        <TouchableOpacity 
           style={[styles.fab, { backgroundColor: serviceColor }]}
-          icon="plus"
           onPress={() => setShowAddAddress(true)}
-          label="Ajouter une adresse"
-        />
+        >
+          <Ionicons name="add" size={24} color="white" />
+        </TouchableOpacity>
       )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f5f5f5' 
   },
-  content: {
-    flex: 1,
+  content: { 
+    flex: 1 
   },
-  loadingContainer: {
+  loadingContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  headerTitleContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'flex-end',
+    paddingRight: 16,
   },
-  addressesCard: {
-    margin: 15,
-    borderRadius: 8,
-    elevation: 4,
+  headerTitle: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'right',
   },
-  addressFormCard: {
-    margin: 15,
-    borderRadius: 8,
-    elevation: 4,
+  card: { 
+    margin: 15, 
+    borderRadius: 8, 
+    elevation: 4 
   },
   sectionTitle: {
     fontSize: 18,
+    fontWeight: 'bold',
     marginBottom: 15,
   },
   noAddressContainer: {
@@ -401,80 +354,113 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 20,
   },
-  addFirstAddressButton: {
-    paddingHorizontal: 20,
-  },
-  addressItem: {
-    flexDirection: 'row',
+  addressItem: { 
+    flexDirection: 'row-reverse', 
     alignItems: 'center',
     paddingVertical: 12,
   },
-  addressDetails: {
+  addressDetails: { 
+    flex: 1, 
+    marginRight: 10 
+  },
+  addressName: { 
+    fontWeight: 'bold', 
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  addressText: { 
+    color: '#666', 
+    fontSize: 14, 
+    marginTop: 4 
+  },
+  row: { 
+    flexDirection: 'row-reverse', 
+    alignItems: 'center' 
+  },
+  badge: { 
+    paddingHorizontal: 8, 
+    paddingVertical: 2,
+    borderRadius: 10 
+  },
+  badgeText: { 
+    color: 'white', 
+    fontSize: 10, 
+    fontWeight: 'bold' 
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: 'white',
+    textAlign: 'right',
+  },
+  textInputMultiline: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  button: {
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  buttonOutlined: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
     flex: 1,
     marginLeft: 10,
   },
-  addressNameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  addressName: {
+  buttonOutlinedText: {
+    fontWeight: 'bold',
     fontSize: 16,
-    fontWeight: 'bold',
-    marginRight: 8,
   },
-  // ✅ BADGE "PRINCIPALE"
-  mainBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  mainBadgeText: {
-    fontSize: 12,
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  addressText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  editButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  input: {
-    backgroundColor: 'transparent',
-    marginBottom: 16,
-  },
-  formButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 10,
-  },
-  cancelButton: {
-    marginRight: 10,
-  },
-  saveButton: {
-    minWidth: 100,
-  },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
-  },
-  validateButtonContainer: {
+  buttonRow: { 
+    flexDirection: 'row-reverse', 
+    justifyContent: 'space-between', 
     marginTop: 20,
-    alignItems: 'center',
   },
-  validateButton: {
-    width: '100%',
-    paddingVertical: 8,
-  }
+  fab: { 
+    position: 'absolute', 
+    margin: 16, 
+    left: 0,
+    bottom: 0,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  rtlText: {
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
 });
 
 export default AddressSelectionScreen;

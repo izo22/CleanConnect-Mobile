@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { Text, View } from 'react-native';
+import { Text, View, TouchableOpacity } from 'react-native';
 
 // Contexte d'authentification
 import { AuthContext } from '../context/AuthContext';
@@ -24,6 +24,7 @@ import CalendarScreen from '../screens/provider/CalendarScreen';
 import AvailabilityScreen from '../screens/provider/AvailabilityScreen';
 import StatsScreen from '../screens/provider/StatsScreen';
 import RequestsScreen from '../screens/provider/RequestsScreen';
+import EditPersonalInfoScreen from '../screens/profile/EditPersonalInfoScreen';
 
 // Écrans client
 import HomeScreen from '../screens/client/HomeScreen';
@@ -44,18 +45,22 @@ import AddressSelectionScreen from '../screens/client/AddressSelection';
 import ProfileStackNavigator from './ProfileStackNavigator';
 
 // Écran Mot de passe oublié temporaire
-const ForgotPasswordScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Mot de passe oublié</Text>
-  </View>
-);
+const ForgotPasswordScreen = () => {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>שכחתי סיסמה</Text>
+    </View>
+  );
+};
 
 // Écran Reviews temporaire pour les prestataires
-const ReviewsScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Avis</Text>
-  </View>
-);
+const ReviewsScreen = () => {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>ביקורות</Text>
+    </View>
+  );
+};
 
 // Piles de navigation
 const Stack = createStackNavigator();
@@ -64,7 +69,7 @@ const ProviderStack = createStackNavigator();
 const ClientStack = createStackNavigator();
 const ProviderProfileStack = createStackNavigator();
 
-// Options d'en-tête standard sans bouton de déconnexion
+// Options d'en-tête standard
 const getHeaderOptions = (title) => ({
   title: title,
   headerShown: true,
@@ -96,54 +101,53 @@ const ClientMainStack = () => {
         name="Home" 
         component={HomeScreen} 
         options={{ 
-          ...getHeaderOptions("Accueil"),
-          headerShown: true
+          headerShown: false
         }} 
       />
       <ClientStack.Screen 
         name="ServiceDetails" 
         component={ServiceDetailsScreen} 
-        options={getHeaderOptions("Détails du service")}
+        options={getHeaderOptions("פרטי שירות")}
       />
       <ClientStack.Screen 
         name="ProviderSearch" 
         component={ProviderSearchScreen} 
-        options={getHeaderOptions("Recherche de prestataires")}
+        options={{ headerShown: false }}
       />
       <ClientStack.Screen 
         name="AddressSelection" 
         component={AddressSelectionScreen}
-        options={getHeaderOptions("Choisir une adresse")}
+        options={getHeaderOptions("בחירת כתובת")}
       />
       <ClientStack.Screen 
         name="ScheduleScreen" 
         component={ScheduleScreen}
-        options={getHeaderOptions("Choisir une date")}
+        options={{ headerShown: false }}
       />
       <ClientStack.Screen 
         name="BookingSummary" 
         component={BookingSummaryScreen}
-        options={getHeaderOptions("Résumé de la réservation")}
+        options={{ headerShown: false }}
       />
       <ClientStack.Screen 
         name="BookingNotes" 
         component={BookingNotesScreen}
-        options={getHeaderOptions("Notes")}
+        options={getHeaderOptions("הערות להזמנה")}
       />
       <ClientStack.Screen 
         name="PaymentScreen" 
         component={PaymentScreen}
-        options={getHeaderOptions("Paiement")}
+        options={{ headerShown: false }}
       />
       <ClientStack.Screen 
         name="BookingConfirmation" 
         component={BookingConfirmationScreen}
-        options={getHeaderOptions("Confirmation")}
+        options={getHeaderOptions("אישור הזמנה")}
       />
       <ClientStack.Screen 
         name="BookingDetails" 
         component={BookingDetailsScreen}
-        options={getHeaderOptions("Détails de la réservation")}
+        options={getHeaderOptions("פרטי הזמנה")}
       />
     </ClientStack.Navigator>
   );
@@ -176,18 +180,18 @@ const ClientTabs = () => {
         name="HomeStack" 
         component={ClientMainStack} 
         options={{
-          title: 'Accueil',
+          title: 'בית',
         }}
       />
       <Tab.Screen 
         name="Dashboard" 
         component={ClientDashboardScreen} 
         options={{
-          title: 'Réservations',
+          title: 'הזמנות',
           headerShown: true,
           header: () => (
             <View style={{ height: 90, backgroundColor: '#2E86C1', justifyContent: 'flex-end', paddingBottom: 10, paddingHorizontal: 15 }}>
-              <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>Réservations</Text>
+              <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>הזמנות</Text>
             </View>
           )
         }}
@@ -196,7 +200,7 @@ const ClientTabs = () => {
         name="Profile"
         component={ProfileStackNavigator}
         options={{
-          title: 'Profil',
+          title: 'פרופיל',
         }}
       />
     </Tab.Navigator>
@@ -220,42 +224,42 @@ const ProviderProfileNavigator = () => {
       <ProviderProfileStack.Screen 
         name="ProviderProfile" 
         component={ProviderProfileScreen} 
-        options={getHeaderOptions('Mon Profil')} 
+        options={getHeaderOptions('הפרופיל שלי')} 
       />
       <ProviderProfileStack.Screen 
         name="EditService" 
         component={EditServiceScreen} 
-        options={getHeaderOptions('Modifier le service')} 
+        options={getHeaderOptions('עריכת שירות')} 
       />
       <ProviderProfileStack.Screen 
         name="AddService" 
         component={EditServiceScreen} 
-        options={getHeaderOptions('Ajouter un service')} 
+        options={getHeaderOptions('הוסף שירות')} 
       />
       <ProviderProfileStack.Screen 
         name="EditAvailability" 
         component={EditAvailabilityScreen} 
-        options={getHeaderOptions('Gérer mes disponibilités')} 
+        options={getHeaderOptions('ניהול זמינות')} 
       />
       <ProviderProfileStack.Screen 
         name="EditServiceAreas" 
         component={AvailabilityScreen} 
-        options={getHeaderOptions('Zones de service')} 
+        options={getHeaderOptions('אזורי שירות')} 
       />
       <ProviderProfileStack.Screen 
         name="EditContact" 
         component={ProfileStackNavigator} 
-        options={getHeaderOptions('Coordonnées')} 
+        options={getHeaderOptions('פרטי קשר')} 
       />
       <ProviderProfileStack.Screen 
         name="EditExperience" 
         component={ProfileStackNavigator} 
-        options={getHeaderOptions('Expérience')} 
+        options={getHeaderOptions('ניסיון')} 
       />
       <ProviderProfileStack.Screen 
         name="EditPersonalInfo" 
-        component={ProfileStackNavigator} 
-        options={getHeaderOptions('Informations personnelles')} 
+        component={EditPersonalInfoScreen}
+        options={getHeaderOptions('מידע אישי')} 
       />
     </ProviderProfileStack.Navigator>
   );
@@ -290,11 +294,11 @@ const ProviderTabs = () => {
         name="Dashboard" 
         component={ProviderDashboardScreen} 
         options={{
-          title: 'Tableau de bord',
+          title: 'לוח בקרה',
           headerShown: true,
           header: () => (
             <View style={{ height: 90, backgroundColor: '#2E86C1', justifyContent: 'flex-end', paddingBottom: 10, paddingHorizontal: 15 }}>
-              <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>Tableau de bord</Text>
+              <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>לוח בקרה</Text>
             </View>
           )
         }}
@@ -303,18 +307,18 @@ const ProviderTabs = () => {
         name="Jobs" 
         component={ProviderJobsNavigator} 
         options={{
-          title: 'Missions',
+          title: 'משימות',
         }}
       />
       <Tab.Screen 
         name="Calendar" 
         component={CalendarScreen} 
         options={{
-          title: 'Calendrier',
+          title: 'יומן',
           headerShown: true,
           header: () => (
             <View style={{ height: 90, backgroundColor: '#2E86C1', justifyContent: 'flex-end', paddingBottom: 10, paddingHorizontal: 15 }}>
-              <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>Calendrier</Text>
+              <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>יומן</Text>
             </View>
           )
         }}
@@ -323,7 +327,7 @@ const ProviderTabs = () => {
         name="Profile"
         component={ProviderProfileNavigator}
         options={{
-          title: 'Profil',
+          title: 'פרופיל',
         }}
       />
     </Tab.Navigator>
@@ -337,51 +341,51 @@ const ProviderJobsNavigator = () => {
       <ProviderStack.Screen 
         name="JobList" 
         component={JobListScreen} 
-        options={getHeaderOptions('Mes Missions')} 
+        options={getHeaderOptions('המשימות שלי')} 
       />
       <ProviderStack.Screen 
         name="RequestsScreen" 
         component={RequestsScreen} 
-        options={getHeaderOptions('Toutes les demandes')} 
+        options={getHeaderOptions('כל הבקשות')} 
       />
       <ProviderStack.Screen 
         name="JobDetails" 
         component={JobDetailsScreen} 
-        options={getHeaderOptions('Détails de la mission')} 
+        options={getHeaderOptions('פרטי משימה')} 
       />
       <ProviderStack.Screen 
         name="Stats" 
         component={StatsScreen} 
-        options={getHeaderOptions('Statistiques')} 
+        options={getHeaderOptions('סטטיסטיקות')} 
       />
       <ProviderStack.Screen 
         name="Availability" 
         component={AvailabilityScreen} 
-        options={getHeaderOptions('Disponibilités')} 
+        options={getHeaderOptions('זמינות')} 
       />
       <ProviderStack.Screen 
         name="Reviews" 
         component={ReviewsScreen} 
-        options={getHeaderOptions('Avis')} 
+        options={getHeaderOptions('ביקורות')} 
       />
     </ProviderStack.Navigator>
   );
 };
 
-// ✅ Navigation principale de l'application CORRIGÉE
+// Navigation principale de l'application
 const AppNavigator = () => {
   const { userToken, userRole, isLoading } = useContext(AuthContext);
   
-  // ✅ Afficher un écran de chargement pendant l'initialisation
+  // Afficher un écran de chargement pendant l'initialisation
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Chargement...</Text>
+        <Text>טוען...</Text>
       </View>
     );
   }
   
-  // ✅ Logique de navigation basée sur l'état d'authentification
+  // Logique de navigation basée sur l'état d'authentification
   const isAuthenticated = !!userToken;
   
   return (
