@@ -8,7 +8,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2E86C1"
+      "backgroundColor": "#FFFFFF"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -22,10 +22,11 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#2E86C1"
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.cleanconnect18.cleanconnect",
-      "runtimeVersion": "1.0.0"
+      "runtimeVersion": "1.0.0",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,7 +38,9 @@
     },
     "plugins": [
       "expo-font",
-      "expo-localization"
+      "expo-localization",
+      "@react-native-community/datetimepicker",
+      "expo-notifications"
     ],
     "updates": {
       "url": "https://u.expo.dev/af7a1ce0-1a74-4d89-8876-ba0ed01e1b8b"
