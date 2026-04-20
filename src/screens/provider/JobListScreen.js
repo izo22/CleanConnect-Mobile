@@ -39,32 +39,77 @@ const JobListScreen = ({ navigation }) => {
     }, [])
   );
 
+  const formatAddress = (address) => {
+    if (!address) return 'כתובת לא סופקה';
+    if (typeof address === 'string') return address;
+    if (address.fullAddress) return address.fullAddress;
+    
+    const parts = [];
+    if (address.street) parts.push(address.street);
+    if (address.houseNumber) parts.push(address.houseNumber);
+    if (address.city) parts.push(address.city);
+    
+    return parts.length > 0 ? parts.join(', ') : 'כתובת לא סופקה';
+  };
+
   const loadRequests = async () => {
     try {
+      console.log('🔍 Début loadRequests...');
+      
       const response = await providerService.getProviderProfile();
+      console.log('✅ Provider profile reçu:', response.data);
+      
       const providerId = response.data._id;
+      console.log('📋 Provider ID:', providerId);
       
       if (!providerId) {
+        console.log('❌ Pas de providerId - arrêt');
         setLoading(false);
         return;
       }
-
-      const providerRequestsKey = `provider_requests_${providerId}`;
-      const savedRequests = await AsyncStorage.getItem(providerRequestsKey);
+  
+      console.log('📞 Appel API getJobs...');
+      const jobsResponse = await providerService.getJobs();
+      console.log('✅ Jobs response reçue:', jobsResponse);
+      console.log('📊 Nombre de jobs:', jobsResponse.data?.length || 0);
       
-      if (savedRequests) {
-        const requestsData = JSON.parse(savedRequests);
-        setRequests(requestsData);
-        setFilteredRequests(requestsData);
-      } else {
-        setRequests([]);
-        setFilteredRequests([]);
-      }
+      const apiRequests = jobsResponse.data || [];
+      console.log('📦 apiRequests:', apiRequests);
+      
+      const formattedRequests = apiRequests.map(req => ({
+        _id: req._id,
+        status: req.status,
+        serviceType: req.serviceType,
+        dateTime: req.scheduledDate,
+        duration: req.duration || 2,
+        clientName: req.client ? `${req.client.firstName} ${req.client.lastName}` : 'Client inconnu',
+        clientId: req.client?._id,
+        clientPhone: req.client?.phone,
+        price: req.price,
+        address: req.address,
+        notes: req.notes,
+        payment: req.payment
+      }));
+      
+      console.log('✨ formattedRequests:', formattedRequests);
+      console.log('📝 Nombre de requests formatées:', formattedRequests.length);
+      
+      setRequests(formattedRequests);
+      setFilteredRequests(formattedRequests);
+      console.log('✅ State mis à jour');
+      
+      // Sauvegarder dans AsyncStorage
+      const providerRequestsKey = `provider_requests_${providerId}`;
+      await AsyncStorage.setItem(providerRequestsKey, JSON.stringify(formattedRequests));
+      console.log('💾 Sauvegardé dans AsyncStorage');
+      
     } catch (error) {
-      console.error('Erreur chargement requêtes:', error);
+      console.error('❌ Erreur chargement requêtes:', error);
+      console.error('❌ Error details:', error.response?.data || error.message);
       setRequests([]);
       setFilteredRequests([]);
     } finally {
+      console.log('🏁 Fin loadRequests - setLoading(false)');
       setLoading(false);
       setRefreshing(false);
     }
@@ -170,7 +215,11 @@ const JobListScreen = ({ navigation }) => {
     let filtered = [...requests];
     
     if (filter === 'ממתין') {
-      filtered = requests.filter(r => r.status === 'pending' || r.status === 'pending_payment');
+      filtered = requests.filter(r => 
+        r.status === 'pending' || 
+        r.status === 'pending_payment' || 
+        r.status === 'payment_pending'
+      );
     } else if (filter === 'מאושר') {
       filtered = requests.filter(r => r.status === 'accepted' || r.status === 'confirmed');
     } else if (filter === 'הושלם') {
@@ -183,7 +232,7 @@ const JobListScreen = ({ navigation }) => {
       filtered = filtered.filter(
         req =>
           req.clientName?.toLowerCase().includes(query) ||
-          req.address?.fullAddress?.toLowerCase().includes(query) ||
+          formatAddress(req.address).toLowerCase().includes(query) ||
           getServiceTypeLabel(req.serviceType).toLowerCase().includes(query)
       );
     }
@@ -199,7 +248,11 @@ const JobListScreen = ({ navigation }) => {
     
     // Appliquer le filtre actif
     if (activeFilter === 'ממתין') {
-      filtered = filtered.filter(r => r.status === 'pending' || r.status === 'pending_payment');
+      filtered = filtered.filter(r => 
+        r.status === 'pending' || 
+        r.status === 'pending_payment' || 
+        r.status === 'payment_pending'
+      );
     } else if (activeFilter === 'מאושר') {
       filtered = filtered.filter(r => r.status === 'accepted' || r.status === 'confirmed');
     } else if (activeFilter === 'הושלם') {
@@ -212,7 +265,7 @@ const JobListScreen = ({ navigation }) => {
       filtered = filtered.filter(
         req =>
           req.clientName?.toLowerCase().includes(query) ||
-          req.address?.fullAddress?.toLowerCase().includes(query) ||
+          formatAddress(req.address).toLowerCase().includes(query) ||
           getServiceTypeLabel(req.serviceType).toLowerCase().includes(query)
       );
     }
@@ -386,7 +439,7 @@ const JobListScreen = ({ navigation }) => {
       serviceName: getServiceTypeLabel(request.serviceType),
       date: request.dateTime,
       duration: request.duration,
-      address: request.address?.fullAddress || 'כתובת לא סופקה',
+      address: formatAddress(request.address),
       coordinates: {
         latitude: 32.0853,
         longitude: 34.7818
@@ -520,7 +573,7 @@ const JobListScreen = ({ navigation }) => {
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {requests.filter(r => r.status === 'pending' || r.status === 'pending_payment').length}
+                  {requests.filter(r => r.status === 'pending' || r.status === 'pending_payment' || r.status === 'payment_pending').length}
                 </Text>
                 <Text style={styles.statLabel}>ממתין</Text>
               </View>
@@ -572,11 +625,11 @@ const JobListScreen = ({ navigation }) => {
                 <View style={styles.addressRow}>
                   <Ionicons name="location" size={16} color="#666666" />
                   <Text style={styles.addressText} numberOfLines={2}>
-                    {request.address?.fullAddress || 'כתובת לא סופקה'}
+                    {formatAddress(request.address)}
                   </Text>
                 </View>
 
-                {(request.status === 'pending' || request.status === 'pending_payment') && (
+                {(request.status === 'pending' || request.status === 'pending_payment' || request.status === 'payment_pending') && (
                   <View style={styles.pendingActions}>
                     <TouchableOpacity
                       style={[

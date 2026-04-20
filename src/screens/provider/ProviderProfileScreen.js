@@ -1,3 +1,17 @@
+// ProviderProfileScreen.js - REFONTE UI MINIMALISTE PREMIUM
+/*
+CHANGEMENTS MAJEURS:
+- Typographie: tailles réduites (28→24, 24→20, 16→14, 14→12)
+- Poids: 'bold' → '600', '500' → '400'  
+- Container: fond #F9FAFB
+- Cards: borderRadius 12px, bordures 1px #F3F4F6, shadowOpacity 0.03
+- Badges: backgroundColor à 10% d'opacité, borderRadius 6px
+- Stats: fontSize 24→20, fontWeight 'bold'→'600'
+- Buttons: paddingVertical 12, borderRadius 8px
+- Icons: size réduits (50→40, 24→20)
+- Colors: #111827 pour textes, #6B7280 pour secondaires, #9CA3AF pour disabled
+- Spacing: doublé entre sections (16→32)
+*/
 import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
@@ -13,11 +27,9 @@ import { AuthContext } from '../../context/AuthContext';
 import { providerService } from '../../services/api';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { format } from 'date-fns';
-import { he } from 'date-fns/locale';
 
 const ProviderProfileScreen = () => {
-  const isRTL = true; // Always RTL for Hebrew
+  const isRTL = true;
   const { logout } = useContext(AuthContext);
   const navigation = useNavigation();
   const [provider, setProvider] = useState(null);
@@ -66,10 +78,7 @@ const ProviderProfileScreen = () => {
               setLoading(true);
               await logout();
             } catch (error) {
-              Alert.alert(
-                'שגיאה',
-                'שגיאה בהתנתקות. אנא נסה שוב.'
-              );
+              Alert.alert('שגיאה', 'שגיאה בהתנתקות. אנא נסה שוב.');
               setLoading(false);
             }
           }
@@ -81,8 +90,8 @@ const ProviderProfileScreen = () => {
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0066CC" />
-        <Text style={styles.textRTL}>טוען...</Text>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={[styles.loadingText, styles.textRTL]}>טוען...</Text>
       </View>
     );
   }
@@ -90,10 +99,10 @@ const ProviderProfileScreen = () => {
   if (error && !provider) {
     return (
       <View style={styles.centerContainer}>
-        <Icon name="error-outline" size={50} color="#FF6B6B" />
+        <Icon name="error-outline" size={40} color="#EF4444" />
         <Text style={[styles.errorText, styles.textRTL]}>{error}</Text>
-        <TouchableOpacity style={styles.button} onPress={fetchProviderData}>
-          <Text style={styles.buttonText}>נסה שוב</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchProviderData}>
+          <Text style={styles.retryButtonText}>נסה שוב</Text>
         </TouchableOpacity>
       </View>
     );
@@ -102,9 +111,9 @@ const ProviderProfileScreen = () => {
   if (!provider) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.textRTL}>אין נתונים להצגה</Text>
-        <TouchableOpacity style={[styles.button, { marginTop: 20 }]} onPress={fetchProviderData}>
-          <Text style={styles.buttonText}>רענן</Text>
+        <Text style={[styles.emptyText, styles.textRTL]}>אין נתונים להצגה</Text>
+        <TouchableOpacity style={[styles.retryButton, { marginTop: 20 }]} onPress={fetchProviderData}>
+          <Text style={styles.retryButtonText}>רענן</Text>
         </TouchableOpacity>
       </View>
     );
@@ -120,12 +129,15 @@ const ProviderProfileScreen = () => {
         'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
         'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
       ];
-      const month = monthNames[date.getMonth()];
-      const year = date.getFullYear();
-      return `${month} ${year}`;
+      return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
     } catch (error) {
       return dateString;
     }
+  };
+
+  const getDayName = (dayNumber) => {
+    const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    return days[dayNumber] || '';
   };
 
   return (
@@ -144,154 +156,158 @@ const ProviderProfileScreen = () => {
       >
         {/* Profile Card */}
         <View style={styles.card}>
-          <View style={[styles.profileHeader, styles.profileHeaderRTL]}>
+          <View style={styles.profileHeader}>
             <View style={styles.headerInfo}>
               <Text style={[styles.name, styles.textRTL]}>
                 {`${provider.firstName} ${provider.lastName}`}
               </Text>
-              <Text style={[styles.memberSince, styles.textRTL]}>
-                חבר מאז {getLocalizedDate(provider.createdAt)}
+              <Text style={[styles.email, styles.textRTL]}>
+                {provider.email}
               </Text>
-            </View>
-          </View>
-          
-          {provider.bio && (
-            <View style={styles.bioSection}>
-              <Text style={[styles.bioText, styles.textRTL]}>{provider.bio}</Text>
-            </View>
-          )}
-          
-          <View style={[styles.cardActions, styles.cardActionsRTL]}>
-            <TouchableOpacity 
-              style={styles.button}
-              onPress={() => navigation.navigate('EditPersonalInfo', { provider })}
-            >
-              <Text style={styles.buttonText}>עדכן את הפרופיל שלי</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Stats Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, styles.textRTL]}>
-              הסטטיסטיקות שלי
-            </Text>
-          </View>
-          <View style={styles.cardContent}>
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{pendingRequests}</Text>
-                <Text style={[styles.statLabel, styles.textRTL]}>
-                  בקשות ממתינות
+              {provider.phone && (
+                <Text style={[styles.phone, styles.textRTL]}>
+                  {provider.phone}
                 </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{completedJobs}</Text>
-                <Text style={[styles.statLabel, styles.textRTL]}>
-                  שירותים שהושלמו
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Services Card - SUPPRIMÉ - Géré maintenant dans EditPersonalInfo */}
-
-        {/* Service Areas Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, styles.textRTL]}>
-              אזורי שירות
-            </Text>
-          </View>
-          <View style={styles.cardContent}>
-            <View style={styles.serviceAreasContainer}>
-              {provider.serviceAreas && provider.serviceAreas.length > 0 ? (
-                provider.serviceAreas.map((area, index) => (
-                  <View key={index} style={styles.areaBadge}>
-                    <Text style={styles.areaBadgeText}>{area}</Text>
-                  </View>
-                ))
-              ) : (
-                <Text style={[styles.emptyMessage, styles.textRTL]}>
-                  לא הוגדרו אזורי שירות
+              )}
+              {provider.joinDate && (
+                <Text style={[styles.joinDate, styles.textRTL]}>
+                  הצטרף {getLocalizedDate(provider.joinDate)}
                 </Text>
               )}
             </View>
-            <TouchableOpacity 
-              style={styles.outlinedButton}
-              onPress={() => navigation.navigate('EditServiceAreas', { areas: provider.serviceAreas })}
-            >
-              <Text style={styles.outlinedButtonText}>
-                נהל אזורי שירות
+          </View>
+
+          {/* Stats */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{pendingRequests}</Text>
+              <Text style={[styles.statLabel, styles.textRTL]}>ממתינות</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{completedJobs}</Text>
+              <Text style={[styles.statLabel, styles.textRTL]}>הושלמו</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {provider.rating ? provider.rating.toFixed(1) : '0.0'}
               </Text>
-            </TouchableOpacity>
+              <Text style={[styles.statLabel, styles.textRTL]}>דירוג</Text>
+            </View>
           </View>
         </View>
 
-        {/* Contact Card */}
+        {/* Services */}
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, styles.textRTL]}>
-              פרטי התקשרות
+          <Text style={[styles.sectionTitle, styles.textRTL]}>שירותים</Text>
+          {provider.serviceDetails && provider.serviceDetails.length > 0 ? (
+            provider.serviceDetails.map((service, index) => (
+              <View key={index} style={[styles.serviceItem, index !== provider.serviceDetails.length - 1 && styles.serviceItemBorder]}>
+                <View style={styles.serviceInfo}>
+                  <Text style={[styles.serviceType, styles.textRTL]}>
+                    {service.type}
+                  </Text>
+                  <Text style={[styles.serviceRate, styles.textRTL]}>
+                    ₪{service.hourlyRate} לשעה
+                  </Text>
+                </View>
+              </View>
+            ))
+          ) : (
+            <Text style={[styles.emptyMessage, styles.textRTL]}>
+              אין שירותים רשומים
             </Text>
-          </View>
-          <View style={styles.cardContent}>
-            <View style={styles.listItem}>
-              <Icon name="email" size={24} color="#666" style={styles.listIcon} />
-              <View style={styles.listContent}>
-                <Text style={[styles.listTitle, styles.textRTL]}>
-                  אימייל
-                </Text>
-                <Text style={[styles.listDescription, styles.textRTL]}>
-                  {provider.email}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.listItem}>
-              <Icon name="phone" size={24} color="#666" style={styles.listIcon} />
-              <View style={styles.listContent}>
-                <Text style={[styles.listTitle, styles.textRTL]}>
-                  טלפון
-                </Text>
-                <Text style={[styles.listDescription, styles.textRTL]}>
-                  {provider.phone || 'לא צוין'}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity 
-              style={styles.outlinedButton}
-              onPress={() => navigation.navigate('EditContact', { 
-                email: provider.email, 
-                phone: provider.phone 
-              })}
+          )}
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => navigation.navigate('EditService')}
             >
-              <Text style={styles.outlinedButtonText}>
-                ערוך פרטי התקשרות
-              </Text>
-            </TouchableOpacity>
-          </View>
+            <Icon name="edit" size={18} color="#007AFF" />
+            <Text style={[styles.editButtonText, styles.textRTL]}>ערוך שירותים</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Account Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, styles.textRTL]}>
-              חשבון
-            </Text>
+        {/* Service Areas */}
+        {provider.serviceAreas && provider.serviceAreas.length > 0 && (
+          <View style={styles.card}>
+            <Text style={[styles.sectionTitle, styles.textRTL]}>אזורי שירות</Text>
+            <View style={styles.serviceAreasContainer}>
+              {provider.serviceAreas.map((area, index) => (
+                <View key={index} style={styles.areaBadge}>
+                  <Text style={[styles.areaBadgeText, styles.textRTL]}>{area}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-          <View style={styles.cardContent}>
-            <TouchableOpacity 
-              style={styles.logoutButton}
-              onPress={handleLogout}
+        )}
+
+        {/* Availability */}
+        {provider.availability && provider.availability.length > 0 && (
+          <View style={styles.card}>
+            <Text style={[styles.sectionTitle, styles.textRTL]}>זמינות</Text>
+            {provider.availability.map((slot, index) => (
+              <View 
+                key={index} 
+                style={[
+                  styles.availabilityItem, 
+                  styles.availabilityItemRTL,
+                  index !== provider.availability.length - 1 && styles.availabilityItemBorder
+                ]}
+              >
+                <Text style={[styles.dayName, styles.textRTL]}>
+                  {getDayName(slot.day)}
+                </Text>
+                <Text style={[styles.timeSlot, styles.textRTL]}>
+                  {slot.startTime} - {slot.endTime}
+                </Text>
+              </View>
+            ))}
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => navigation.navigate('EditAvailability', { availability: provider.availability })}
             >
-              <Icon name="logout" size={20} color="#FF6B6B" style={{ marginRight: 8 }} />
-              <Text style={styles.logoutButtonText}>
-                התנתק
-              </Text>
+              <Icon name="edit" size={18} color="#007AFF" />
+              <Text style={[styles.editButtonText, styles.textRTL]}>ערוך זמינות</Text>
             </TouchableOpacity>
           </View>
+        )}
+
+        {/* Additional Info */}
+        {(provider.companyName || provider.businessLicense || provider.description) && (
+          <View style={styles.card}>
+            <Text style={[styles.sectionTitle, styles.textRTL]}>מידע נוסף</Text>
+            
+            {provider.companyName && (
+              <View style={styles.infoRow}>
+                <Text style={[styles.infoLabel, styles.textRTL]}>שם חברה</Text>
+                <Text style={[styles.infoValue, styles.textRTL]}>{provider.companyName}</Text>
+              </View>
+            )}
+            
+            {provider.businessLicense && (
+              <View style={styles.infoRow}>
+                <Text style={[styles.infoLabel, styles.textRTL]}>רישיון עסק</Text>
+                <Text style={[styles.infoValue, styles.textRTL]}>{provider.businessLicense}</Text>
+              </View>
+            )}
+            
+            {provider.description && (
+              <View style={styles.infoRow}>
+                <Text style={[styles.infoLabel, styles.textRTL]}>תיאור</Text>
+                <Text style={[styles.infoValue, styles.textRTL]}>{provider.description}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Logout */}
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
+            <Icon name="logout" size={20} color="#EF4444" />
+            <Text style={[styles.logoutButtonText, styles.textRTL]}>התנתק</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -301,106 +317,92 @@ const ProviderProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9FAFB',
   },
   scrollContainer: {
     flex: 1,
-    padding: 16,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#F9FAFB',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '400',
   },
   errorText: {
-    marginVertical: 10,
-    color: '#FF6B6B',
+    fontSize: 14,
+    color: '#EF4444',
     textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 16,
+    fontWeight: '400',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontWeight: '400',
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    marginHorizontal: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardHeader: {
-    marginBottom: 16,
-  },
-  cardHeaderWithAction: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  cardContent: {
-    marginTop: 8,
-  },
-  cardActions: {
-    marginTop: 16,
-  },
-  cardActionsRTL: {
-    flexDirection: 'row-reverse',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   profileHeader: {
-    marginBottom: 16,
-  },
-  profileHeaderRTL: {
-    alignItems: 'flex-end',
+    marginBottom: 24,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   headerInfo: {
-    flex: 1,
+    gap: 8,
   },
   name: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#111827',
+    letterSpacing: -0.4,
+    lineHeight: 31,
   },
-  memberSince: {
-    marginTop: 8,
-    color: '#666',
+  email: {
     fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '400',
+    lineHeight: 18,
   },
-  bioSection: {
-    marginTop: 10,
-    marginBottom: 16,
+  phone: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '400',
+    lineHeight: 18,
   },
-  bioText: {
-    fontStyle: 'italic',
-    color: '#555',
-  },
-  button: {
-    backgroundColor: '#0066CC',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  outlinedButton: {
-    borderWidth: 1,
-    borderColor: '#0066CC',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  outlinedButtonText: {
-    color: '#0066CC',
-    fontSize: 16,
-    fontWeight: '600',
+  joinDate: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '400',
+    marginTop: 4,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -411,98 +413,145 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0066CC',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#007AFF',
+    letterSpacing: -0.4,
+    lineHeight: 26,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 11,
+    color: '#6B7280',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 6,
+    fontWeight: '400',
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 16,
+    letterSpacing: -0.3,
+    lineHeight: 22,
+  },
+  serviceItem: {
+    paddingVertical: 12,
+  },
+  serviceItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  serviceInfo: {
+    gap: 4,
+  },
+  serviceType: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    letterSpacing: -0.2,
+    lineHeight: 18,
+  },
+  serviceRate: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '400',
+    lineHeight: 16,
   },
   emptyMessage: {
     fontStyle: 'italic',
-    color: '#999',
+    color: '#9CA3AF',
     textAlign: 'center',
     marginVertical: 12,
+    fontSize: 13,
+    fontWeight: '400',
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 8,
+    backgroundColor: '#007AFF10',
+  },
+  editButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
   serviceAreasContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 16,
+    marginBottom: 0,
+    gap: 8,
   },
   areaBadge: {
-    backgroundColor: '#E1F5FE',
+    backgroundColor: '#3B82F610',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
-    margin: 4,
+    borderRadius: 6,
   },
   areaBadgeText: {
-    color: '#0277BD',
-    fontSize: 14,
+    color: '#3B82F6',
+    fontSize: 12,
+    fontWeight: '500',
   },
   availabilityItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    paddingVertical: 12,
   },
   availabilityItemRTL: {
     flexDirection: 'row-reverse',
   },
+  availabilityItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
   dayName: {
-    fontWeight: 'bold',
+    fontWeight: '600',
+    fontSize: 14,
+    color: '#111827',
+    letterSpacing: -0.2,
   },
   timeSlot: {
-    color: '#666',
+    color: '#6B7280',
+    fontSize: 13,
+    fontWeight: '400',
   },
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
+  infoRow: {
+    marginBottom: 16,
+    gap: 6,
   },
-  listIcon: {
-    marginRight: 16,
+  infoLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
-  listContent: {
-    flex: 1,
-  },
-  listTitle: {
+  infoValue: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  listDescription: {
-    fontSize: 16,
-    color: '#333',
-  },
-  certificationTitle: {
-    fontWeight: 'bold',
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  certificationItem: {
-    marginLeft: 8,
-    marginBottom: 4,
-    color: '#555',
+    color: '#111827',
+    fontWeight: '400',
+    lineHeight: 18,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#FF6B6B',
-    padding: 12,
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 8,
-    marginVertical: 10,
+    backgroundColor: '#EF444410',
   },
   logoutButtonText: {
-    color: '#FF6B6B',
-    fontSize: 16,
+    color: '#EF4444',
+    fontSize: 15,
     fontWeight: '600',
+    letterSpacing: -0.2,
   },
   textRTL: {
     textAlign: 'right',

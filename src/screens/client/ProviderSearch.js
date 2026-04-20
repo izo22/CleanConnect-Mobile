@@ -1,6 +1,6 @@
 // src/screens/client/ProviderSearch.js
-// ✅ VERSION MODERNE - Navigation intégrée dans le header coloré
-// ✅ Plus de barre bleue séparée - tout est dans le rectangle vert
+// ✅ FIX : serviceCities → serviceAreas (mismatch avec le modèle Provider.js)
+// 🔍 VERSION DEBUG — logs temporaires pour diagnostiquer le filtre ville
 
 import React, { useState, useEffect, useContext } from 'react';
 import {
@@ -12,12 +12,13 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BookingContext } from '../../context/BookingContext';
 import { AuthContext } from '../../context/AuthContext';
 import providerService from '../../services/providerService';
-import { getServiceColor } from '../../config/constants';
+import { getServiceColor, getServiceBackgroundColor } from '../../config/constants';
 
 const ProviderSearch = ({ navigation }) => {
   const { currentBooking, selectProvider } = useContext(BookingContext);
@@ -27,9 +28,11 @@ const ProviderSearch = ({ navigation }) => {
   const [filteredProviders, setFilteredProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const serviceType = currentBooking?.serviceType || 'home';
   const serviceColor = getServiceColor(serviceType);
+  const serviceBgColor = getServiceBackgroundColor(serviceType);
 
   const normalizeServiceType = (type) => {
     if (!type) return null;
@@ -48,10 +51,7 @@ const ProviderSearch = ({ navigation }) => {
       'אירבנב': 'airbnb',
     };
     
-    if (normalization[type]) {
-      return normalization[type];
-    }
-    
+    if (normalization[type]) return normalization[type];
     return normalization[type.toLowerCase()] || type;
   };
 
@@ -73,89 +73,56 @@ const ProviderSearch = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    if (!providers || providers.length === 0) {
-      setFilteredProviders([]);
+    if (!searchQuery.trim()) {
+      setFilteredProviders(providers);
       return;
     }
-    
-    let clientCity = null;
-    
-    if (userInfo?.city) {
-      clientCity = userInfo.city;
-    } else if (currentBooking?.address?.city) {
-      clientCity = currentBooking.address.city;
-    } else if (currentBooking?.address?.fullAddress) {
-      const parts = currentBooking.address.fullAddress.split(',');
-      if (parts.length >= 2) {
-        clientCity = parts[1].trim();
-      }
-    }
-    
-    if (!clientCity) {
-      let filtered = filterByServiceType(providers);
-      setFilteredProviders(filtered);
-      return;
-    }
-    
-    let filtered = providers.filter(provider => {
-      if (!provider.serviceCities || !Array.isArray(provider.serviceCities)) {
-        return false;
-      }
-      
-      return provider.serviceCities.includes(clientCity);
-    });
-    
-    filtered = filterByServiceType(filtered);
-    setFilteredProviders(filtered);
-  }, [providers, currentBooking, userInfo, serviceType]);
+    const q = searchQuery.toLowerCase();
+    setFilteredProviders(
+      providers.filter(p =>
+        `${p.firstName} ${p.lastName}`.toLowerCase().includes(q)
+      )
+    );
+  }, [searchQuery, providers]);
 
-  const filterByServiceType = (providersList) => {
-    const normalizedSearchType = normalizeServiceType(serviceType);
-    
-    return providersList.filter(provider => {
-      if (provider.serviceTypes && Array.isArray(provider.serviceTypes)) {
-        return provider.serviceTypes.some(type => {
-          const normalizedProviderType = normalizeServiceType(type);
-          return normalizedProviderType === normalizedSearchType;
-        });
-      }
-      
-      if (provider.serviceDetails && Array.isArray(provider.serviceDetails)) {
-        return provider.serviceDetails.some(service => 
-          normalizeServiceType(service.type) === normalizedSearchType
-        );
-      }
-      
-      return false;
-    });
-  };
+  
 
   const loadProviders = async () => {
+    const clientCity  = userInfo?.city ?? null;
+    const sType       = currentBooking?.serviceType || 'home'; // ✅ bonne variable
+  
+    console.log('═══════════ PROVIDER SEARCH DEBUG ═══════════');
+    console.log('[1] userInfo :', JSON.stringify(userInfo, null, 2));
+    console.log('[2] clientCity :', clientCity);
+    console.log('[3] serviceType :', sType);
+  
+    if (!clientCity) {
+      console.warn('[!] clientCity est null — filtre ville non appliqué');
+    }
+  
     try {
-      setLoading(true);
-      setError(null);
-      
-      const data = await providerService.getAllProviders();
-      setProviders(data);
+      const response = await providerService.getAllProviders(clientCity, sType);
+  
+      console.log('[4] Réponse brute API :', JSON.stringify(response, null, 2));
+      console.log('[5] Nombre de prestataires :', response?.length ?? 0);
+  
+      setProviders(response ?? []);
+      setFilteredProviders(response ?? []); // ✅ important aussi
     } catch (err) {
-      console.error('❌ שגיאה בטעינת ספקים:', err);
-      setError('לא ניתן לטעון את הספקים');
-      Alert.alert('שגיאה', 'לא ניתן לטעון את הספקים');
+      console.error('[!] Erreur loadProviders :', err.message);
+      setError('שגיאה בטעינת הספקים');
     } finally {
-      setLoading(false);
+      setLoading(false); // ✅ toujours appelé
     }
   };
-
   const handleSelectProvider = (provider) => {
     if (selectProvider && typeof selectProvider === 'function') {
       selectProvider(provider);
-      
-      navigation.navigate('ScheduleScreen', { 
+      navigation.navigate('ScheduleScreen', {
         providerId: provider._id,
         providerName: `${provider.firstName} ${provider.lastName}`,
-        hourlyRate: provider.hourlyRate
+        hourlyRate: provider.hourlyRate,
       });
-      
     } else {
       Alert.alert(
         'שגיאת תצורה',
@@ -182,27 +149,18 @@ const ProviderSearch = ({ navigation }) => {
       const service = provider.serviceDetails.find(
         s => normalizeServiceType(s.type) === normalizedSearchType
       );
-      if (service?.hourlyRate) {
-        return service.hourlyRate;
-      }
+      if (service?.hourlyRate) return service.hourlyRate;
     }
-    
     if (provider.services?.length > 0) {
       const service = provider.services.find(
         s => normalizeServiceType(s.type) === normalizedSearchType
       );
-      if (service?.hourlyRate) {
-        return service.hourlyRate;
-      }
+      if (service?.hourlyRate) return service.hourlyRate;
     }
-    
     if (provider.price && typeof provider.price === 'object') {
       const rate = provider.price[normalizedSearchType];
-      if (rate) {
-        return rate;
-      }
+      if (rate) return rate;
     }
-    
     return provider.hourlyRate || 0;
   };
 
@@ -223,8 +181,11 @@ const ProviderSearch = ({ navigation }) => {
                 style={styles.profilePicture}
               />
             ) : (
-              <View style={styles.profilePicturePlaceholder}>
-                <Ionicons name="person" size={32} color="#999" />
+              <View style={[
+                styles.profilePicturePlaceholder,
+                { backgroundColor: `${serviceColor}10`, borderColor: `${serviceColor}30` }
+              ]}>
+                <Ionicons name="person" size={24} color={serviceColor} />
               </View>
             )}
             
@@ -233,21 +194,20 @@ const ProviderSearch = ({ navigation }) => {
                 {item.firstName} {item.lastName}
               </Text>
               
-              {item.serviceCities && item.serviceCities.length > 0 && (
+              {/* ✅ FIX : serviceAreas au lieu de serviceCities */}
+              {item.serviceAreas && item.serviceAreas.length > 0 && (
                 <View style={styles.locationRow}>
-                  <Ionicons name="location" size={14} color={serviceColor} />
-                  <Text style={[styles.citiesText, { color: serviceColor }]}>
-                    {item.serviceCities.slice(0, 2).join(', ')}
-                    {item.serviceCities.length > 2 && ` +${item.serviceCities.length - 2}`}
+                  <Ionicons name="location" size={12} color="#9CA3AF" />
+                  <Text style={styles.citiesText}>
+                    {item.serviceAreas.slice(0, 2).join(', ')}
                   </Text>
                 </View>
               )}
               
               <View style={styles.ratingRow}>
-                <Ionicons name="star" size={16} color="#FFD700" />
+                <Ionicons name="star" size={12} color="#FCD34D" />
                 <Text style={styles.rating}>
                   {item.rating || 'חדש'}
-                  {item.reviewCount ? ` (${item.reviewCount})` : ''}
                 </Text>
               </View>
             </View>
@@ -258,26 +218,13 @@ const ProviderSearch = ({ navigation }) => {
             </View>
           </View>
           
-          {item.bio && (
-            <Text style={styles.bio} numberOfLines={2}>
-              {item.bio}
-            </Text>
-          )}
-          
           <View style={styles.serviceTypesContainer}>
             {item.serviceTypes && item.serviceTypes.map((type, index) => {
               const badgeColor = getServiceColor(type);
-              
               return (
-                <View 
-                  key={index} 
-                  style={[
-                    styles.modernBadge,
-                    { 
-                      backgroundColor: `${badgeColor}15`,
-                      borderColor: `${badgeColor}40`,
-                    }
-                  ]}
+                <View
+                  key={index}
+                  style={[styles.modernBadge, { backgroundColor: `${badgeColor}10` }]}
                 >
                   <Text style={[styles.modernBadgeText, { color: badgeColor }]}>
                     {translateServiceType(type)}
@@ -293,7 +240,7 @@ const ProviderSearch = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={[styles.centerContainer, { backgroundColor: serviceBgColor }]}>
         <ActivityIndicator size="large" color={serviceColor} />
         <Text style={styles.loadingText}>מחפש ספקים...</Text>
       </View>
@@ -302,11 +249,11 @@ const ProviderSearch = ({ navigation }) => {
 
   if (error) {
     return (
-      <View style={styles.centerContainer}>
-        <Ionicons name="alert-circle" size={64} color="#ff6b6b" />
+      <View style={[styles.centerContainer, { backgroundColor: serviceBgColor }]}>
+        <Ionicons name="alert-circle" size={48} color="#EF4444" />
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity 
-          style={[styles.modernButton, { backgroundColor: serviceColor }]} 
+        <TouchableOpacity
+          style={[styles.modernButton, { backgroundColor: serviceColor }]}
           onPress={loadProviders}
         >
           <Text style={styles.modernButtonText}>נסה שוב</Text>
@@ -315,48 +262,53 @@ const ProviderSearch = ({ navigation }) => {
     );
   }
 
-  const clientCity = userInfo?.city || currentBooking?.address?.city || 
-                     (currentBooking?.address?.fullAddress?.split(',')[1]?.trim());
+  const clientCity =
+    userInfo?.city ||
+    currentBooking?.address?.city ||
+    currentBooking?.address?.fullAddress?.split(',')[1]?.trim();
 
   return (
-    <View style={styles.container}>
-      {/* ✅ HEADER MODERNE AVEC NAVIGATION INTÉGRÉE */}
-      <View style={[styles.header, { backgroundColor: serviceColor }]}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity 
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-forward" size={24} color="white" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>ספקים זמינים</Text>
-            <Text style={styles.headerSubtitle}>
-              {getServiceLabel(serviceType)}
-              {clientCity ? ` ב${clientCity}` : ''}
-            </Text>
-          </View>
-          <View style={{ width: 40 }} />
-        </View>
-        <View style={styles.resultsBadge}>
-          <Text style={styles.resultsBadgeText}>
-            {filteredProviders.length} {filteredProviders.length === 1 ? 'ספק' : 'ספקים'}
+    <View style={[styles.container, { backgroundColor: serviceBgColor }]}>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-forward" size={24} color="#111827" />
+        </TouchableOpacity>
+        
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>ספקים זמינים</Text>
+          <Text style={styles.headerSubtitle}>
+            {getServiceLabel(serviceType)}
+            {clientCity ? ` ב${clientCity}` : ''}
           </Text>
         </View>
       </View>
 
+      {/* BARRE DE RECHERCHE */}
+      <View style={[styles.searchContainer, { borderColor: `${serviceColor}30` }]}>
+        <Ionicons name="search" size={18} color="#9CA3AF" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="חיפוש..."
+          placeholderTextColor="#D1D5DB"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
       {filteredProviders.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <View style={styles.emptyIconContainer}>
-            <Ionicons name="search" size={64} color="#E0E0E0" />
-          </View>
+          <Ionicons name="search" size={48} color={`${serviceColor}40`} />
           <Text style={styles.emptyText}>
-            {clientCity 
+            {clientCity
               ? `אין ספקים זמינים ב${clientCity}`
               : 'לא נמצאו ספקים'}
           </Text>
           <Text style={styles.emptySubtext}>
-            {clientCity 
+            {clientCity
               ? 'נסה לחפש בעיר סמוכה'
               : 'בדוק את העיר בפרופיל שלך'}
           </Text>
@@ -377,108 +329,103 @@ const ProviderSearch = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#F8F9FA',
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
+    marginTop: 12,
+    fontSize: 13,
     color: '#6B7280',
-    fontWeight: '500',
+    fontWeight: '400',
   },
   errorText: {
-    marginTop: 16,
-    fontSize: 16,
+    marginTop: 12,
+    fontSize: 13,
     color: '#EF4444',
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '400',
   },
   modernButton: {
-    marginTop: 24,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
   modernButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
-  // ✅ HEADER MODERNE AVEC NAVIGATION INTÉGRÉE
   header: {
+    backgroundColor: '#FFFFFF',
     paddingTop: 60,
     paddingHorizontal: 20,
-    paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  headerTop: {
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
   },
   backButton: {
-    padding: 8,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    padding: 4,
   },
-  headerTitleContainer: {
+  headerContent: {
     flex: 1,
     alignItems: 'center',
+    marginRight: -28,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
+    letterSpacing: -0.3,
   },
   headerSubtitle: {
-    fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 12,
+    color: '#9CA3AF',
     textAlign: 'center',
+    fontWeight: '400',
   },
-  resultsBadge: {
-    alignSelf: 'flex-end',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backdropFilter: 'blur(10px)',
+  searchContainer: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
   },
-  resultsBadgeText: {
-    color: '#FFFFFF',
+  searchIcon: {
+    marginLeft: 8,
+  },
+  searchInput: {
+    flex: 1,
     fontSize: 14,
-    fontWeight: '600',
+    color: '#111827',
+    fontWeight: '400',
+    textAlign: 'right',
   },
   listContainer: {
     padding: 16,
-    paddingBottom: 32,
+    paddingTop: 0,
+    paddingBottom: 40,
   },
   providerCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
     overflow: 'hidden',
   },
   cardContent: {
@@ -490,90 +437,82 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   profilePicture: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 2,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
     borderColor: '#F3F4F6',
   },
   profilePicturePlaceholder: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#F3F4F6',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderWidth: 1,
   },
   providerInfo: {
     flex: 1,
-    marginRight: 16,
+    marginRight: 12,
   },
   providerName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 6,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
     textAlign: 'right',
+    letterSpacing: -0.2,
   },
   locationRow: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   citiesText: {
-    fontSize: 13,
-    marginRight: 4,
+    fontSize: 11,
+    marginRight: 3,
     textAlign: 'right',
-    fontWeight: '500',
+    color: '#9CA3AF',
+    fontWeight: '400',
   },
   ratingRow: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
   },
   rating: {
-    marginRight: 4,
-    fontSize: 14,
+    marginRight: 3,
+    fontSize: 11,
     color: '#6B7280',
-    fontWeight: '500',
+    fontWeight: '400',
   },
   priceContainer: {
     alignItems: 'flex-end',
   },
   price: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 2,
+    fontSize: 17,
+    fontWeight: '600',
+    marginBottom: 1,
+    letterSpacing: -0.3,
   },
   priceLabel: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    fontWeight: '500',
-  },
-  bio: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 12,
-    lineHeight: 20,
-    textAlign: 'right',
+    fontSize: 10,
+    color: '#D1D5DB',
+    fontWeight: '400',
   },
   serviceTypesContainer: {
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   modernBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginLeft: 0,
-    marginTop: 0,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   modernBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '500',
+    letterSpacing: -0.1,
   },
   emptyContainer: {
     flex: 1,
@@ -581,26 +520,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 40,
   },
-  emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
   emptyText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#374151',
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
     textAlign: 'center',
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 4,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#9CA3AF',
     textAlign: 'center',
+    fontWeight: '400',
   },
 });
 

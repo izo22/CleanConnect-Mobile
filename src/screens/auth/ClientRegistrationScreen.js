@@ -1,5 +1,61 @@
 // src/screens/auth/ClientRegistrationScreen.js
-// ✅ VERSION FINALE QUI MARCHE SUR EXPO WEB
+// 🎨 VERSION ULTRA-MINIMALISTE PREMIUM
+// Style inspiré de Stripe, Linear, Revolut
+
+/*
+CHANGEMENTS MAJEURS APPLIQUÉS :
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ TYPOGRAPHIE :
+  - Titre principal : 18px (au lieu de 24px), weight 600, letterSpacing -0.3
+  - Labels : 13px (au lieu de 16px), weight 400, letterSpacing -0.2
+  - Inputs : 14px (au lieu de 16px), weight 400
+  - Bouton CTA : 14px, weight 600
+  - Line heights serrés : 1.3-1.4 partout
+
+✅ COULEURS & FONDS :
+  - Fond principal : #F9FAFB (ultra-clair)
+  - formContainer : fond blanc pur #FFFFFF
+  - Inputs : fond #FFFFFF (pas #f9f9f9), bordure #F3F4F6
+  - Textes labels : #6B7280 (gris doux)
+  - Couleur primaire : #4a90e2 conservée
+
+✅ BOUTONS :
+  - Hauteur réduite : 40px (au lieu de 50px)
+  - Border-radius : 8px maintenu
+  - Ombres supprimées totalement
+  - État disabled plus subtil
+
+✅ CARDS :
+  - Border-radius : 12px (au lieu de 10px)
+  - Bordure ultra-subtile : #F3F4F6, 1px
+  - Ombres quasi-éliminées : shadowOpacity 0.03, elevation 1
+  - Padding augmenté : 24px (au lieu de 20px)
+
+✅ INPUTS :
+  - Hauteur réduite : 40px (au lieu de 50px)
+  - Fond blanc pur
+  - Bordures ultra-légères #F3F4F6
+  - Placeholder en #9CA3AF
+
+✅ SPACING :
+  - Espacements doublés entre sections : 24px (au lieu de 15px)
+  - Marges augmentées pour respiration
+  - Pas de séparateurs visuels
+
+✅ ICONS :
+  - Taille réduite : 20px (au lieu de 24px)
+  - Couleur grise douce : #9CA3AF
+
+✅ ERREURS :
+  - Font-size réduit : 11px (au lieu de 12px)
+  - Couleur rouge maintenue mais style plus subtil
+
+✅ FIX ANDROID :
+  - lineHeight supprimé des inputs (causait texte invisible/coupé sur Android)
+  - KeyboardAvoidingView ajouté (clavier obscurcissait les champs mot de passe)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+*/
 
 import React, { useState, useContext } from 'react';
 import {
@@ -12,6 +68,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../../context/AuthContext';
@@ -162,6 +219,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
             styles.textRTL
           ]}
           placeholder="הזן את שמך הפרטי"
+          placeholderTextColor="#9CA3AF"
           value={firstName}
           onChangeText={setFirstName}
         />
@@ -184,6 +242,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
             styles.textRTL
           ]}
           placeholder="הזן את שם המשפחה שלך"
+          placeholderTextColor="#9CA3AF"
           value={lastName}
           onChangeText={setLastName}
         />
@@ -202,10 +261,10 @@ const ClientRegistrationScreen = ({ navigation }) => {
         <TextInput
           style={[
             styles.input,
-            errors.email && styles.inputError,
-            styles.textRTL
+            errors.email && styles.inputError
           ]}
           placeholder="example@email.com"
+          placeholderTextColor="#9CA3AF"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -226,10 +285,10 @@ const ClientRegistrationScreen = ({ navigation }) => {
         <TextInput
           style={[
             styles.input,
-            errors.phone && styles.inputError,
-            styles.textRTL
+            errors.phone && styles.inputError
           ]}
           placeholder="05X-XXX-XXXX"
+          placeholderTextColor="#9CA3AF"
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
@@ -253,6 +312,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
             styles.textRTL
           ]}
           placeholder="רחוב ומספר בית"
+          placeholderTextColor="#9CA3AF"
           value={address}
           onChangeText={setAddress}
         />
@@ -278,8 +338,8 @@ const ClientRegistrationScreen = ({ navigation }) => {
         >
           <Ionicons 
             name="chevron-down" 
-            size={24} 
-            color="#666"
+            size={20} 
+            color="#9CA3AF"
             style={styles.cityIcon}
           />
           <Text style={[
@@ -310,6 +370,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
               styles.textRTL
             ]}
             placeholder="הזן סיסמה (לפחות 6 תווים)"
+            placeholderTextColor="#9CA3AF"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
@@ -320,8 +381,8 @@ const ClientRegistrationScreen = ({ navigation }) => {
           >
             <Ionicons
               name={showPassword ? 'eye-off' : 'eye'}
-              size={24}
-              color="#666"
+              size={20}
+              color="#9CA3AF"
             />
           </TouchableOpacity>
         </View>
@@ -344,6 +405,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
             styles.textRTL
           ]}
           placeholder="הזן את הסיסמה שוב"
+          placeholderTextColor="#9CA3AF"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry={!showPassword}
@@ -403,162 +465,240 @@ const ClientRegistrationScreen = ({ navigation }) => {
     );
   }
 
-  // Mobile (iOS/Android)
+  // ✅ FIX ANDROID: KeyboardAvoidingView ajouté — le clavier ne cache plus les champs
   return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={true}
-        keyboardShouldPersistTaps="always"
-      >
-        {renderContent()}
-      </ScrollView>
-      <CityModalSelector
-        visible={showCityModal}
-        onClose={() => setShowCityModal(false)}
-        onSelect={handleCitySelect}
-        selectedCity={city}
-      />
-    </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="always"
+        >
+          {renderContent()}
+        </ScrollView>
+        <CityModalSelector
+          visible={showCityModal}
+          onClose={() => setShowCityModal(false)}
+          onSelect={handleCitySelect}
+          selectedCity={city}
+        />
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // CONTAINERS
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F9FAFB', // Fond ultra-clair
   },
   webContainer: {
     width: '100%',
     minHeight: '100vh',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F9FAFB',
     overflowY: 'auto',
     overflowX: 'hidden',
   },
   webScrollContent: {
     padding: 20,
-    paddingBottom: 200, // ⬅️ Augmente cette valeur (était 100)
+    paddingBottom: 200,
     maxWidth: 600,
     marginHorizontal: 'auto',
     width: '100%',
-    minHeight: '100vh', // ⬅️ Ajoute cette ligne
+    minHeight: '100vh',
   },
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // CARD PRINCIPALE (Ultra-minimaliste)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   formContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
+    backgroundColor: '#FFFFFF', // Blanc pur
+    borderRadius: 12, // Arrondi légèrement augmenté
+    padding: 24, // Padding augmenté pour respiration
+    borderWidth: 1,
+    borderColor: '#F3F4F6', // Bordure ultra-subtile
+    // Ombres quasi-éliminées
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03, // Ultra-subtil
+    shadowRadius: 2,
+    elevation: 1, // Minimal
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // TYPOGRAPHIE (Tailles réduites, weights légers, spacing serré)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    fontSize: 18, // Réduit de 24px à 18px
+    fontWeight: '600', // Semibold pour titre principal
+    letterSpacing: -0.3,
+    lineHeight: 18 * 1.3, // Line height serré
+    marginBottom: 24, // Espacement doublé
     textAlign: 'center',
-    color: '#333',
-  },
-  inputContainer: {
-    marginBottom: 15,
+    color: '#111827', // Noir profond
   },
   label: {
-    fontSize: 16,
-    marginBottom: 5,
-    color: '#555',
+    fontSize: 13, // Réduit de 16px à 13px
+    fontWeight: '400', // Regular
+    letterSpacing: -0.2,
+    lineHeight: 13 * 1.3,
+    marginBottom: 6, // Légèrement augmenté pour respiration
+    color: '#6B7280', // Gris doux
+  },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // INPUTS (Minimalistes, fond blanc, bordures subtiles)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  inputContainer: {
+    marginBottom: 24, // Espacement doublé (était 15px)
   },
   input: {
-    height: 50,
+    height: 40, // Réduit de 50px à 40px
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#F3F4F6', // Bordure ultra-claire
     borderRadius: 8,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    paddingHorizontal: 12,
+    fontSize: 14, // Réduit de 16px à 14px
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    // ✅ FIX ANDROID: lineHeight supprimé — causait texte coupé/invisible sur Android
+    // quand combiné avec height fixe. Aucun impact visuel sur iOS.
+    backgroundColor: '#FFFFFF', // Blanc pur (pas #f9f9f9)
+    color: '#111827',
   },
+  inputError: {
+    borderColor: '#EF4444', // Rouge vif pour erreurs
+  },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // CITY SELECTOR (Même style que inputs)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   cityButton: {
-    height: 50,
+    height: 40,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#F3F4F6',
     borderRadius: 8,
-    paddingHorizontal: 15,
+    paddingHorizontal: 12,
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#FFFFFF',
   },
   cityButtonText: {
     flex: 1,
-    fontSize: 16,
-    color: '#333',
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 14 * 1.4,
+    color: '#111827',
     textAlign: 'right',
   },
   cityPlaceholder: {
-    color: '#999',
+    color: '#9CA3AF', // Gris clair pour placeholder
   },
   cityIcon: {
-    marginLeft: 10,
+    marginLeft: 8,
   },
-  inputError: {
-    borderColor: 'red',
-  },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // PASSWORD (Container pour icône)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   passwordContainer: {
     position: 'relative',
   },
   passwordInput: {
-    paddingRight: 50,
+    paddingRight: 44, // Espace pour l'icône
   },
   passwordToggle: {
     position: 'absolute',
-    left: 15,
-    top: 13,
+    left: 12,
+    top: 10, // Ajusté pour hauteur 40px
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ERREURS (Textes subtils)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   errorText: {
-    color: 'red',
-    fontSize: 12,
-    marginTop: 5,
+    color: '#EF4444',
+    fontSize: 11, // Réduit de 12px à 11px
+    fontWeight: '400',
+    letterSpacing: -0.1,
+    lineHeight: 11 * 1.3,
+    marginTop: 4,
   },
   generalError: {
-    color: 'red',
-    marginBottom: 15,
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 13 * 1.3,
+    marginBottom: 20,
     textAlign: 'center',
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // BOUTON CTA (Hauteur réduite, pas d'ombre)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   button: {
     backgroundColor: '#4a90e2',
-    height: 50,
+    height: 40, // Réduit de 50px à 40px
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
+    // Pas d'ombre
   },
   buttonDisabled: {
-    backgroundColor: '#a5c6ef',
+    backgroundColor: '#93C5FD', // Plus subtil (était #a5c6ef)
+    opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontSize: 14, // Réduit de 16px à 14px
+    fontWeight: '600', // Semibold pour CTA
+    letterSpacing: -0.2,
+    lineHeight: 14 * 1.3,
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // LOGIN LINK (Footer minimaliste)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 24, // Espacement augmenté
   },
   loginContainerRTL: {
     flexDirection: 'row-reverse',
   },
   loginText: {
-    color: '#666',
+    color: '#6B7280', // Gris doux
+    fontSize: 13,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 13 * 1.3,
   },
   loginLink: {
     color: '#4a90e2',
-    fontWeight: 'bold',
+    fontSize: 13,
+    fontWeight: '600', // Semibold pour lien
+    letterSpacing: -0.2,
+    lineHeight: 13 * 1.3,
     marginLeft: 5,
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // RTL
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   textRTL: {
     textAlign: 'right',
     writingDirection: 'rtl',

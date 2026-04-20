@@ -2,15 +2,13 @@
 // ✅ VERSION COMPLÈTE - Logique existante + Intégration Escrow API + MAPPING HÉBREU + DEBUG LOG
 // 🔧 FIX: Calcul de prix corrigé pour utiliser le tarif du SERVICE SPÉCIFIQUE au lieu de la moyenne
 // 🐛 FIX: Ajout de normalizeServiceType pour mapper anglais → hébreu
+// ✅ FIX: BACKEND_API_URL supprimé → utilise API_URL depuis constants.js
 
 import React, { createContext, useState, useContext, useCallback, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL, SERVICE_TYPES, STORAGE_KEYS } from '../config/constants';
 import { useAuth } from './AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// ✅ ESCROW - Configuration API backend
-const BACKEND_API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export const BookingContext = createContext();
 
@@ -61,7 +59,7 @@ export const BookingProvider = ({ children }) => {
         dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         duration: 2,
         frequency: 'one_time',
-        price: 100, // 🐛 FIX: Corrigé de 170 à 100 (2h × 50₪/h)
+        price: 100,
         status: 'pending',
         selectedProvider: {
           _id: 'provider-1',
@@ -100,7 +98,7 @@ export const BookingProvider = ({ children }) => {
     setCurrentBooking(prev => ({ ...prev, ...data }));
   }, []);
 
-  // ✅ Sélectionner un prestataire - 🐛 FIX: Correction pour inclure name directement
+  // ✅ Sélectionner un prestataire
   const selectProvider = useCallback((provider) => {
     console.log('🔍 SELECTING PROVIDER:', provider);
     console.log('   - name:', provider.name);
@@ -118,7 +116,6 @@ export const BookingProvider = ({ children }) => {
         hourlyRate: provider.hourlyRate,
         rating: provider.rating,
         phone: provider.phone,
-        // ✅ Inclure TOUTES les structures possibles pour le calcul de prix
         serviceDetails: provider.serviceDetails,
         services: provider.services,
         price: provider.price,
@@ -150,7 +147,6 @@ export const BookingProvider = ({ children }) => {
         ...criteria,
       };
 
-      // Mock providers (remplacer par vraie API plus tard)
       const mockProviders = [
         {
           _id: 'provider-1',
@@ -204,12 +200,10 @@ export const BookingProvider = ({ children }) => {
     if (!type) return null;
     
     const mapping = {
-      // Anglais → Hébreu (base de données)
       'home': 'בית',
       'office': 'משרד',
       'building': 'בניין',
       'airbnb': 'אירבנב',
-      // Hébreu → Hébreu (déjà normalisé)
       'בית': 'בית',
       'משרד': 'משרד',
       'בניין': 'בניין',
@@ -221,7 +215,7 @@ export const BookingProvider = ({ children }) => {
     return normalized;
   }, []);
 
-  // 🔧 FIX: Calcul de prix - Utilise le tarif du SERVICE SPÉCIFIQUE avec normalisation
+  // 🔧 FIX: Calcul de prix
   const calculatePrice = useCallback(async () => {
     if (!currentBooking.serviceType || !currentBooking.duration) {
       console.log('❌ Calcul prix impossible: serviceType ou duration manquant');
@@ -234,17 +228,14 @@ export const BookingProvider = ({ children }) => {
       console.log('   Duration:', currentBooking.duration, 'heures');
       console.log('   Provider:', currentBooking.selectedProvider);
       
-      // ✅ Normaliser le type de service recherché
       const normalizedSearchType = normalizeServiceType(currentBooking.serviceType);
       console.log('   Service Type (normalized):', normalizedSearchType);
       
-      // ✅ Utiliser le prix du SERVICE SPÉCIFIQUE sélectionné
-      let hourlyRate = 85; // Prix par défaut
+      let hourlyRate = 85;
       
       if (currentBooking.selectedProvider) {
         console.log('   🔍 Recherche du tarif spécifique...');
         
-        // ✅ PRIORITÉ 1: Chercher dans serviceDetails (format provider)
         if (currentBooking.selectedProvider.serviceDetails && Array.isArray(currentBooking.selectedProvider.serviceDetails)) {
           console.log('   → Checking serviceDetails:', currentBooking.selectedProvider.serviceDetails);
           
@@ -262,7 +253,6 @@ export const BookingProvider = ({ children }) => {
             console.log('   ⚠️  Pas trouvé dans serviceDetails');
           }
         }
-        // ✅ PRIORITÉ 2: Chercher dans services (format alternatif)
         else if (currentBooking.selectedProvider.services && Array.isArray(currentBooking.selectedProvider.services)) {
           console.log('   → Checking services array:', currentBooking.selectedProvider.services);
           
@@ -276,12 +266,10 @@ export const BookingProvider = ({ children }) => {
             console.log('   ✅ Prix trouvé dans services:', hourlyRate, '₪/h pour', normalizedSearchType);
           }
         }
-        // ✅ PRIORITÉ 3: Objet price avec tarifs par type
         else if (currentBooking.selectedProvider.price) {
           console.log('   → Checking price object:', currentBooking.selectedProvider.price);
           
           if (typeof currentBooking.selectedProvider.price === 'object') {
-            // Essayer avec le type normalisé ET le type original
             hourlyRate = currentBooking.selectedProvider.price[normalizedSearchType] || 
                         currentBooking.selectedProvider.price[currentBooking.serviceType] || 
                         85;
@@ -291,7 +279,6 @@ export const BookingProvider = ({ children }) => {
             console.log('   ✅ Prix unique trouvé:', hourlyRate, '₪/h');
           }
         }
-        // ⚠️ FALLBACK: hourlyRate global (moyenne) - EN DERNIER RECOURS SEULEMENT
         else if (currentBooking.selectedProvider.hourlyRate) {
           hourlyRate = currentBooking.selectedProvider.hourlyRate;
           console.warn('   ⚠️  Utilisation du tarif moyen (fallback):', hourlyRate, '₪/h');
@@ -300,32 +287,27 @@ export const BookingProvider = ({ children }) => {
         console.log('   ⚠️  Pas de fournisseur sélectionné, utilisation du tarif par défaut:', hourlyRate, '₪/h');
       }
       
-      // Calcul du prix en fonction de la durée
       let price = hourlyRate * currentBooking.duration;
       console.log('   📊 Prix de base:', price, '₪ (', hourlyRate, '₪/h ×', currentBooking.duration, 'h)');
       
-      // Appliquer des réductions pour les fréquences régulières
       if (currentBooking.frequency === 'weekly') {
-        price = price * 0.9; // 10% de réduction
+        price = price * 0.9;
         console.log('   💵 Réduction hebdomadaire (10%):', price, '₪');
       } else if (currentBooking.frequency === 'bi_weekly') {
-        price = price * 0.95; // 5% de réduction
+        price = price * 0.95;
         console.log('   💵 Réduction bi-hebdomadaire (5%):', price, '₪');
       } else if (currentBooking.frequency === 'monthly') {
-        price = price * 0.97; // 3% de réduction
+        price = price * 0.97;
         console.log('   💵 Réduction mensuelle (3%):', price, '₪');
       }
       
-      // Arrondir à 2 décimales
       price = Math.round(price * 100) / 100;
       
       console.log('   ✅ PRIX FINAL:', price, '₪');
       console.log('💰 === FIN CALCUL PRIX ===\n');
       
-      // Simuler un délai réseau
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Mettre à jour le prix dans l'état
       updateBooking({ price });
       return price;
     } catch (error) {
@@ -354,7 +336,7 @@ export const BookingProvider = ({ children }) => {
         address: booking.address,
         notes: booking.notes,
         date: booking.created,
-        payment: booking.payment // ✅ ESCROW - Inclure info payment
+        payment: booking.payment
       };
       
       requests.unshift(providerRequest);
@@ -394,14 +376,13 @@ export const BookingProvider = ({ children }) => {
       console.log('   DateTime:', currentBooking.dateTime);
       console.log('   Payment:', paymentData);
 
-      // ✅ MAPPING serviceType (anglais → HÉBREU pour backend)
       const mappedServiceType = normalizeServiceType(currentBooking.serviceType);
       console.log('   ServiceType mapping:', currentBooking.serviceType, '→', mappedServiceType);
 
-      // ✅ ESCROW - Appel API backend
       const token = await AsyncStorage.getItem('token');
       
-      const response = await fetch(`${BACKEND_API_URL}/bookings`, {
+      // ✅ FIX: utilise API_URL depuis constants.js
+      const response = await fetch(`${API_URL}/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -429,7 +410,6 @@ export const BookingProvider = ({ children }) => {
 
       console.log('✅ Booking created via API:', data.booking._id);
 
-      // ✅ Construire le booking complet avec toutes les infos
       const newBooking = {
         _id: data.booking._id,
         serviceType: currentBooking.serviceType,
@@ -437,7 +417,7 @@ export const BookingProvider = ({ children }) => {
         duration: currentBooking.duration,
         frequency: currentBooking.frequency,
         price: currentBooking.price,
-        status: data.booking.status || 'pending_payment', // ✅ ESCROW status
+        status: data.booking.status || 'pending_payment',
         selectedProvider: {
           _id: currentBooking.selectedProvider._id,
           name: currentBooking.selectedProvider.name,
@@ -456,16 +436,11 @@ export const BookingProvider = ({ children }) => {
           status: 'held',
           amount: 0
         },
-        providerPhoneVisible: data.booking.providerPhoneVisible || false // ✅ ESCROW
+        providerPhoneVisible: data.booking.providerPhoneVisible || false
       };
       
-      // ✅ Ajouter à la liste locale
       addBooking(newBooking);
-      
-      // ✅ Synchroniser avec le prestataire (AsyncStorage)
       await syncBookingToProvider(newBooking);
-      
-      // ✅ Nettoyer le booking actuel
       resetBooking();
       
       return { success: true, booking: newBooking };
@@ -488,9 +463,9 @@ export const BookingProvider = ({ children }) => {
     try {
       const token = await AsyncStorage.getItem('token');
       
-      // ✅ Essayer d'abord l'API backend
+      // ✅ FIX: utilise API_URL depuis constants.js
       try {
-        const response = await fetch(`${BACKEND_API_URL}/bookings`, {
+        const response = await fetch(`${API_URL}/bookings`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -504,10 +479,7 @@ export const BookingProvider = ({ children }) => {
             console.log('✅ Bookings loaded from API:', data.data.length);
             console.log('🔍 PREMIER BOOKING:', JSON.stringify(data.data[0], null, 2));
             setUserBookings(data.data);
-            
-            // Sauvegarder localement
             await AsyncStorage.setItem(STORAGE_KEYS.USER_BOOKINGS, JSON.stringify(data.data));
-            
             setIsLoadingBookings(false);
             return data.data;
           }
@@ -516,7 +488,6 @@ export const BookingProvider = ({ children }) => {
         console.log('⚠️  API fetch failed, falling back to AsyncStorage');
       }
       
-      // ✅ Fallback: charger depuis AsyncStorage
       const savedBookings = await AsyncStorage.getItem(STORAGE_KEYS.USER_BOOKINGS);
       
       if (savedBookings) {
@@ -552,9 +523,7 @@ export const BookingProvider = ({ children }) => {
       );
       
       const updatedBooking = userBookings.find(booking => booking._id === bookingId);
-      
       await new Promise(resolve => setTimeout(resolve, 600));
-      
       return { success: true, booking: updatedBooking };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Erreur de mise à jour' };
@@ -566,9 +535,9 @@ export const BookingProvider = ({ children }) => {
     try {
       const token = await AsyncStorage.getItem('token');
       
-      // ✅ Essayer d'annuler via API
+      // ✅ FIX: utilise API_URL depuis constants.js
       try {
-        const response = await fetch(`${BACKEND_API_URL}/bookings/${bookingId}/cancel`, {
+        const response = await fetch(`${API_URL}/bookings/${bookingId}/cancel`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -580,8 +549,6 @@ export const BookingProvider = ({ children }) => {
           
           if (data.success) {
             console.log('✅ Booking cancelled via API');
-            
-            // Mettre à jour localement
             setUserBookings(prev => 
               prev.map(booking => 
                 booking._id === bookingId 
@@ -589,7 +556,6 @@ export const BookingProvider = ({ children }) => {
                   : booking
               )
             );
-            
             return { success: true };
           }
         }
@@ -597,7 +563,6 @@ export const BookingProvider = ({ children }) => {
         console.log('⚠️  API cancel failed, updating locally');
       }
       
-      // ✅ Fallback: mise à jour locale uniquement
       setUserBookings(prev => 
         prev.map(booking => 
           booking._id === bookingId 
@@ -607,7 +572,6 @@ export const BookingProvider = ({ children }) => {
       );
       
       await new Promise(resolve => setTimeout(resolve, 600));
-      
       return { success: true };
     } catch (error) {
       console.error('Error canceling booking:', error);
@@ -626,7 +590,6 @@ export const BookingProvider = ({ children }) => {
     }
   }, []);
 
-  // Valeurs du contexte
   const contextValue = useMemo(() => ({
     currentBooking,
     updateBooking,

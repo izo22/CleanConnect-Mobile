@@ -1,7 +1,8 @@
-// EditServiceScreen.js - ✅ VERSION COMPLÈTE CORRIGÉE
+// EditServiceScreen.js - REFONTE UI MINIMALISTE PREMIUM
 // ✅ Navigation vers Dashboard qui fonctionne
 // ✅ Alert qui s'affiche correctement
 // ✅ Logs de debug pour tracer le problème
+// ✅ Style minimaliste premium appliqué
 
 import React, { useState } from 'react';
 import { 
@@ -16,7 +17,6 @@ import {
   TouchableOpacity,
   ActivityIndicator
 } from 'react-native';
-import { Card } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { providerService } from '../../services/api';
 import DropDownPicker from 'react-native-dropdown-picker';
@@ -193,8 +193,8 @@ const EditServiceScreen = ({ route }) => {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Card style={styles.card}>
-          <Card.Content>
+        <View style={styles.card}>
+          <View style={styles.cardContent}>
             <Text style={[styles.title, isRTL && styles.textRTL]}>
               {isEditMode ? 'ערוך שירות' : 'הוסף שירות חדש'}
             </Text>
@@ -235,6 +235,7 @@ const EditServiceScreen = ({ route }) => {
                   styles.textRTL
                 ]}
                 placeholder="הזן מחיר לשעה"
+                placeholderTextColor="#D1D5DB"
                 value={hourlyRate}
                 onChangeText={setHourlyRate}
                 keyboardType="numeric"
@@ -252,6 +253,7 @@ const EditServiceScreen = ({ route }) => {
               <NativeTextInput
                 style={[styles.input, styles.textArea, styles.textRTL]}
                 placeholder="תאר את השירות"
+                placeholderTextColor="#D1D5DB"
                 value={description}
                 onChangeText={setDescription}
                 multiline
@@ -268,7 +270,7 @@ const EditServiceScreen = ({ route }) => {
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
                   <Text style={styles.primaryButtonText}>
                     {isEditMode ? 'שמור שינויים' : 'הוסף שירות'}
@@ -285,8 +287,8 @@ const EditServiceScreen = ({ route }) => {
                 <Text style={styles.secondaryButtonText}>ביטול</Text>
               </TouchableOpacity>
             </View>
-          </Card.Content>
-        </Card>
+          </View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -295,91 +297,112 @@ const EditServiceScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9FAFB',
   },
   scrollContainer: {
-    padding: 16,
+    padding: 20,
   },
   card: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    overflow: 'hidden',
+  },
+  cardContent: {
+    padding: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 24,
+    color: '#111827',
+    letterSpacing: -0.4,
+    lineHeight: 26,
   },
   inputContainer: {
     marginBottom: 20,
     zIndex: 1,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     marginBottom: 8,
-    color: '#333',
+    color: '#111827',
+    letterSpacing: -0.2,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#E5E7EB',
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    backgroundColor: '#FFFFFF',
+    color: '#111827',
+    fontWeight: '400',
   },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
   },
   dropdown: {
-    borderColor: '#ddd',
+    borderColor: '#E5E7EB',
     borderRadius: 8,
+    minHeight: 44,
   },
   dropdownContainer: {
-    borderColor: '#ddd',
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
   },
   dropdownText: {
-    fontSize: 16,
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '400',
   },
   errorBorder: {
-    borderColor: '#e74c3c',
+    borderColor: '#EF4444',
   },
   errorText: {
-    color: '#e74c3c',
+    color: '#EF4444',
     fontSize: 12,
-    marginTop: 4,
+    marginTop: 6,
+    fontWeight: '400',
   },
   buttonContainer: {
-    marginTop: 20,
+    marginTop: 24,
     gap: 12,
   },
   primaryButton: {
-    backgroundColor: '#2E86C1',
-    paddingVertical: 14,
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   secondaryButton: {
-    backgroundColor: '#ecf0f1',
-    paddingVertical: 14,
+    backgroundColor: '#F9FAFB',
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   secondaryButtonText: {
-    color: '#7f8c8d',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#6B7280',
+    fontSize: 15,
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   textRTL: {
     textAlign: 'right',

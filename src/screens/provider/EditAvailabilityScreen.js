@@ -1,4 +1,21 @@
-import React, { useState, useEffect } from 'react';
+// EditAvailabilityScreen.js - REFONTE UI MINIMALISTE PREMIUM + TRADUCTION HÉBRAÏQUE
+/*
+CHANGEMENTS MAJEURS APPLIQUÉS:
+✓ Typographie: fontSize réduits de 10-15% (title 17px, description 13px, dayName 14px)
+✓ Poids: '400' par défaut, '600' uniquement pour titres/CTA/prix
+✓ Container: fond #F9FAFB (gris ultra-clair)
+✓ Card: borderRadius 12px, bordures 1px #F3F4F6, ombres supprimées
+✓ Time buttons: backgroundColor à 10% d'opacité (#3B82F610), borderRadius 6px
+✓ Switch: couleur moderne (#10B981 pour actif)
+✓ Separators: bordures ultra-subtiles #F3F4F6
+✓ Buttons: hauteur 40px, style outline pour cancel, filled pour save
+✓ Colors: #111827 (textes actifs), #6B7280 (secondaires), #9CA3AF (disabled)
+✓ Spacing: doublé entre sections (24px)
+✓ letterSpacing: -0.2 à -0.3 pour compression visuelle
+✓ lineHeight: serré (1.3-1.4)
+✓ TRADUCTION: Tous les textes traduits en hébreu (RTL natif)
+*/
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,30 +24,26 @@ import {
   Alert,
   TouchableOpacity,
   Switch,
-  I18nManager
+  ActivityIndicator
 } from 'react-native';
-import { Card, Button, IconButton, Divider, ActivityIndicator } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { providerService } from '../../services/api';
-import { useTranslation } from 'react-i18next';
 
 const EditAvailabilityScreen = ({ route }) => {
   const navigation = useNavigation();
-  const { t, i18n } = useTranslation();
-  const isRTL = i18n.language === 'he';
   const { availability } = route.params || { availability: [] };
   const [loading, setLoading] = useState(false);
 
-  // Liste des jours de la semaine avec traduction
+  // Liste des jours de la semaine en hébreu
   const getDays = () => [
-    { id: 0, name: t('editAvailability.days.sunday'), enabled: false, startTime: '09:00', endTime: '17:00' },
-    { id: 1, name: t('editAvailability.days.monday'), enabled: false, startTime: '09:00', endTime: '17:00' },
-    { id: 2, name: t('editAvailability.days.tuesday'), enabled: false, startTime: '09:00', endTime: '17:00' },
-    { id: 3, name: t('editAvailability.days.wednesday'), enabled: false, startTime: '09:00', endTime: '17:00' },
-    { id: 4, name: t('editAvailability.days.thursday'), enabled: false, startTime: '09:00', endTime: '17:00' },
-    { id: 5, name: t('editAvailability.days.friday'), enabled: false, startTime: '09:00', endTime: '17:00' },
-    { id: 6, name: t('editAvailability.days.saturday'), enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 0, name: 'יום ראשון', enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 1, name: 'יום שני', enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 2, name: 'יום שלישי', enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 3, name: 'יום רביעי', enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 4, name: 'יום חמישי', enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 5, name: 'יום שישי', enabled: false, startTime: '09:00', endTime: '17:00' },
+    { id: 6, name: 'יום שבת', enabled: false, startTime: '09:00', endTime: '17:00' },
   ];
 
   const days = getDays();
@@ -142,8 +155,8 @@ const EditAvailabilityScreen = ({ route }) => {
 
     if (invalidDays.length > 0) {
       Alert.alert(
-        t('editAvailability.errors.validationError'),
-        t('editAvailability.errors.validationMessage')
+        'שגיאת אימות',
+        'שעת הסיום חייבת להיות אחרי שעת ההתחלה בכל הימים המסומנים.'
       );
       return;
     }
@@ -162,14 +175,14 @@ const EditAvailabilityScreen = ({ route }) => {
     try {
       await providerService.updateAvailability({ availability: formattedAvailability });
       Alert.alert(
-        t('editAvailability.success.title'),
-        t('editAvailability.success.message')
+        'הצלחה',
+        'הזמינות שלך עודכנה בהצלחה.'
       );
       navigation.goBack();
     } catch (error) {
       Alert.alert(
-        t('editAvailability.errors.updateError'),
-        t('editAvailability.errors.updateMessage')
+        'שגיאה בעדכון',
+        'אירעה שגיאה בעדכון הזמינות שלך. אנא נסה שוב.'
       );
     } finally {
       setLoading(false);
@@ -179,92 +192,91 @@ const EditAvailabilityScreen = ({ route }) => {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Card style={styles.card}>
-          <Card.Title 
-            title={t('editAvailability.title')}
-            titleStyle={isRTL && styles.rtlText}
-          />
-          <Card.Content>
-            <Text style={[styles.description, isRTL && styles.rtlText]}>
-              {t('editAvailability.description')}
+        <View style={styles.card}>
+          {/* Header */}
+          <View style={styles.cardHeader}>
+            <Text style={styles.title}>עריכת זמינות</Text>
+          </View>
+          
+          {/* Content */}
+          <View style={styles.cardContent}>
+            <Text style={styles.description}>
+              בחר את הימים והשעות בהם אתה זמין לספק שירותים. לקוחות יוכלו לקבוע פגישה רק בזמנים אלו.
             </Text>
 
             {availabilityData.map((day, index) => (
               <View key={index}>
-                <View style={[styles.dayRow, isRTL && styles.dayRowRTL]}>
-                  <View style={[styles.dayHeader, isRTL && styles.dayHeaderRTL]}>
+                <View style={styles.dayRow}>
+                  <View style={styles.dayHeader}>
                     <Switch
                       value={day.enabled}
                       onValueChange={() => handleDayToggle(index)}
+                      trackColor={{ false: "#E5E7EB", true: "#10B981" }}
+                      thumbColor="#FFFFFF"
+                      ios_backgroundColor="#E5E7EB"
                     />
                     <Text style={[
                       styles.dayName,
-                      !day.enabled && styles.dayDisabled,
-                      isRTL && styles.dayNameRTL
+                      !day.enabled && styles.dayDisabled
                     ]}>
                       {day.name}
                     </Text>
                   </View>
-                  
-                  <View style={[styles.timeContainer, isRTL && styles.timeContainerRTL]}>
-                    <TouchableOpacity
-                      style={[styles.timeButton, !day.enabled && styles.timeButtonDisabled]}
-                      onPress={() => day.enabled && showStartPicker(index)}
-                      disabled={!day.enabled}
-                    >
-                      <Text style={[
-                        styles.timeText, 
-                        !day.enabled && styles.timeTextDisabled,
-                        isRTL && styles.rtlText
-                      ]}>
-                        {day.startTime}
-                      </Text>
-                    </TouchableOpacity>
-                    
-                    <Text style={[styles.timeSeparator, !day.enabled && styles.dayDisabled]}>-</Text>
-                    
-                    <TouchableOpacity
-                      style={[styles.timeButton, !day.enabled && styles.timeButtonDisabled]}
-                      onPress={() => day.enabled && showEndPicker(index)}
-                      disabled={!day.enabled}
-                    >
-                      <Text style={[
-                        styles.timeText, 
-                        !day.enabled && styles.timeTextDisabled,
-                        isRTL && styles.rtlText
-                      ]}>
-                        {day.endTime}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
 
-                {index < availabilityData.length - 1 && <Divider style={styles.divider} />}
+                  {day.enabled && (
+                    <View style={styles.timeContainer}>
+                      <TouchableOpacity
+                        onPress={() => showStartPicker(index)}
+                        style={styles.timeButton}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.timeText}>{day.startTime}</Text>
+                      </TouchableOpacity>
+                      
+                      <Text style={styles.timeSeparator}>-</Text>
+                      
+                      <TouchableOpacity
+                        onPress={() => showEndPicker(index)}
+                        style={styles.timeButton}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.timeText}>{day.endTime}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+                
+                {/* Séparateur visuel subtil */}
+                {index < availabilityData.length - 1 && (
+                  <View style={styles.separator} />
+                )}
               </View>
             ))}
-          </Card.Content>
+          </View>
 
-          <Card.Actions style={[styles.cardActions, isRTL && styles.cardActionsRTL]}>
-            <Button
-              mode="contained"
+          {/* Actions */}
+          <View style={styles.cardActions}>
+            <TouchableOpacity
               onPress={handleSave}
-              loading={loading}
               disabled={loading}
-              style={[styles.saveButton, isRTL && styles.saveButtonRTL]}
-              labelStyle={isRTL && styles.rtlText}
+              style={[styles.saveButton, loading && styles.buttonDisabled]}
             >
-              {t('editAvailability.save')}
-            </Button>
-            <Button
-              mode="outlined"
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.saveButtonText}>שמור</Text>
+              )}
+            </TouchableOpacity>
+            
+            <TouchableOpacity
               onPress={() => navigation.goBack()}
               disabled={loading}
-              labelStyle={isRTL && styles.rtlText}
+              style={[styles.cancelButton, loading && styles.buttonDisabled]}
             >
-              {t('editAvailability.cancel')}
-            </Button>
-          </Card.Actions>
-        </Card>
+              <Text style={styles.cancelButtonText}>ביטול</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
 
       {showStartTimePicker && (
@@ -289,7 +301,7 @@ const EditAvailabilityScreen = ({ route }) => {
 
       {loading && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#0066CC" />
+          <ActivityIndicator size="large" color="#007AFF" />
         </View>
       )}
     </View>
@@ -299,106 +311,150 @@ const EditAvailabilityScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9FAFB',
   },
   scrollContainer: {
-    padding: 16,
+    padding: 20,
   },
   card: {
-    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    overflow: 'hidden',
+  },
+  cardHeader: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#111827',
+    letterSpacing: -0.3,
+    lineHeight: 22,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  cardContent: {
+    padding: 20,
   },
   description: {
-    marginBottom: 20,
-    color: '#666',
+    marginBottom: 24,
+    color: '#6B7280',
+    fontSize: 13,
+    fontWeight: '400',
+    lineHeight: 17,
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
   dayRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-  },
-  dayRowRTL: {
-    flexDirection: 'row-reverse',
+    paddingVertical: 16,
   },
   dayHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dayHeaderRTL: {
     flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 12,
   },
   dayName: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  dayNameRTL: {
-    marginLeft: 0,
-    marginRight: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    letterSpacing: -0.2,
+    lineHeight: 18,
     textAlign: 'right',
     writingDirection: 'rtl',
   },
   dayDisabled: {
-    color: '#999',
+    color: '#9CA3AF',
   },
   timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  timeContainerRTL: {
     flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 8,
   },
   timeButton: {
-    backgroundColor: '#E1F5FE',
-    paddingHorizontal: 10,
+    backgroundColor: '#3B82F610',
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 4,
+    borderRadius: 6,
     minWidth: 60,
     alignItems: 'center',
   },
-  timeButtonDisabled: {
-    backgroundColor: '#f0f0f0',
-  },
   timeText: {
-    color: '#0277BD',
+    color: '#3B82F6',
     fontWeight: '500',
-  },
-  timeTextDisabled: {
-    color: '#999',
+    fontSize: 13,
+    letterSpacing: -0.2,
   },
   timeSeparator: {
-    marginHorizontal: 8,
-    fontWeight: 'bold',
+    color: '#9CA3AF',
+    fontWeight: '400',
+    fontSize: 14,
   },
-  divider: {
-    backgroundColor: '#eee',
+  separator: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 0,
   },
   cardActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    padding: 16,
-  },
-  cardActionsRTL: {
     flexDirection: 'row-reverse',
     justifyContent: 'flex-start',
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   saveButton: {
-    marginRight: 8,
+    backgroundColor: '#007AFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    minWidth: 100,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  saveButtonRTL: {
-    marginRight: 0,
-    marginLeft: 8,
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    textAlign: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#F9FAFB',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    minWidth: 100,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  cancelButtonText: {
+    color: '#6B7280',
+    fontSize: 15,
+    fontWeight: '500',
+    letterSpacing: -0.2,
+    textAlign: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
-  },
-  rtlText: {
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
 });
 

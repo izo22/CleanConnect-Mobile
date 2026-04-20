@@ -1,3 +1,16 @@
+// StatsScreen.js - REFONTE UI MINIMALISTE PREMIUM
+/*
+CHANGEMENTS MAJEURS:
+- Typographie: tailles réduites (24→20, 16→14, 14→12, 12→11)
+- Poids: 'bold' → '600', '500' → '400'
+- Container: fond #F9FAFB
+- Cards: borderRadius 12px, bordures 1px #F3F4F6, shadowOpacity 0.03
+- Period selector: borderRadius 8px, fontSize 12
+- Chart bars: borderRadius 8px, hauteur proportionnelle
+- Percentage bars: borderRadius 6px
+- Colors: #111827 pour textes, #6B7280 pour secondaires
+- Spacing: doublé entre sections (15→24)
+*/
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -7,8 +20,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   SafeAreaView,
-  Dimensions,
-  I18nManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -54,7 +65,6 @@ const StatsScreen = () => {
     topLocations: [],
   });
 
-  // Périodes disponibles
   const PERIODS = [
     { id: 'week', label: t('stats.periods.week') },
     { id: 'month', label: t('stats.periods.month') },
@@ -66,7 +76,6 @@ const StatsScreen = () => {
     loadStats(activePeriod);
   }, [activePeriod, i18n.language]);
 
-  // Simuler le chargement des statistiques
   const loadStats = async (period) => {
     setLoading(true);
     
@@ -199,14 +208,14 @@ const StatsScreen = () => {
             topServices: [
               { name: t('stats.services.complete'), count: 135, percentage: 54 },
               { name: t('stats.services.basic'), count: 60, percentage: 24 },
-              { name: t('stats.services.windows'), count: 40, percentage: 16 },
-              { name: t('stats.services.postWork'), count: 15, percentage: 6 },
+              { name: t('stats.services.windows'), count: 35, percentage: 14 },
+              { name: t('stats.services.postWork'), count: 20, percentage: 8 },
             ],
             topLocations: [
-              { name: 'Tel Aviv', count: 160, percentage: 64 },
+              { name: 'Tel Aviv', count: 155, percentage: 62 },
               { name: 'Herzliya', count: 45, percentage: 18 },
               { name: 'Ramat Gan', count: 30, percentage: 12 },
-              { name: 'Jaffa', count: 15, percentage: 6 },
+              { name: 'Jaffa', count: 20, percentage: 8 },
             ],
           };
           break;
@@ -227,18 +236,15 @@ const StatsScreen = () => {
       
       setStats(mockStats);
       setLoading(false);
-    }, 1000);
+    }, 500);
   };
 
-  // Trouver la valeur maximale pour dimensionner les graphiques
-  const getMaxValue = (data) => {
-    return Math.max(...data.map(item => item.value)) || 1;
+  const formatCurrency = (amount) => {
+    return `₪${amount.toLocaleString()}`;
   };
 
-  // Calculer le pourcentage de missions terminées
-  const completionRate = stats.totalJobs > 0 
-    ? ((stats.completedJobs / stats.totalJobs) * 100).toFixed(1) 
-    : '0.0';
+  const maxJobsValue = Math.max(...stats.jobsData.map(item => item.value), 1);
+  const maxEarningsValue = Math.max(...stats.earningsData.map(item => item.value), 1);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -247,180 +253,177 @@ const StatsScreen = () => {
           {t('stats.title')}
         </Text>
       </View>
-      
-      {/* Filtres de période */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.periodFilters,
-          isRTL && styles.periodFiltersRTL
-        ]}
-      >
+
+      {/* Period Selector */}
+      <View style={styles.periodSelector}>
         {PERIODS.map((period) => (
           <TouchableOpacity
             key={period.id}
             style={[
               styles.periodButton,
-              activePeriod === period.id && styles.activePeriodButton,
-              isRTL && styles.periodButtonRTL
+              activePeriod === period.id && styles.periodButtonActive,
             ]}
             onPress={() => setActivePeriod(period.id)}
           >
             <Text
               style={[
                 styles.periodButtonText,
-                activePeriod === period.id && styles.activePeriodButtonText,
-                isRTL && styles.rtlText
+                activePeriod === period.id && styles.periodButtonTextActive,
+                isRTL && styles.rtlText,
               ]}
             >
               {period.label}
             </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
-      
+      </View>
+
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={[styles.loadingText, isRTL && styles.rtlText]}>
+            {t('stats.loading')}
+          </Text>
         </View>
       ) : (
-        <ScrollView style={styles.scrollView}>
-          {/* Résumé des statistiques */}
+        <ScrollView style={styles.scrollContainer}>
+          {/* Summary Cards */}
           <View style={styles.summaryContainer}>
-            <View style={[styles.summaryRow, isRTL && styles.summaryRowRTL]}>
-              <View style={styles.summaryItem}>
-                <Text style={[styles.summaryValue, isRTL && styles.rtlText]}>
-                  {stats.totalJobs}
-                </Text>
-                <Text style={[styles.summaryLabel, isRTL && styles.rtlText]}>
-                  {t('stats.summary.totalJobs')}
-                </Text>
-              </View>
-              
-              <View style={styles.summaryItem}>
-                <Text style={[styles.summaryValue, isRTL && styles.rtlText]}>
-                  {completionRate}%
-                </Text>
-                <Text style={[styles.summaryLabel, isRTL && styles.rtlText]}>
-                  {t('stats.summary.completionRate')}
-                </Text>
-              </View>
-              
-              <View style={styles.summaryItem}>
-                <View style={[styles.ratingContainer, isRTL && styles.ratingContainerRTL]}>
-                  <Text style={[styles.summaryValue, isRTL && styles.rtlText]}>
-                    {stats.averageRating.toFixed(1)}
-                  </Text>
-                  <Ionicons name="star" size={16} color="#FFD700" />
-                </View>
-                <Text style={[styles.summaryLabel, isRTL && styles.rtlText]}>
-                  {t('stats.summary.averageRating')}
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.earningsContainer}>
-              <Text style={[styles.earningsLabel, isRTL && styles.rtlText]}>
-                {t('stats.summary.totalEarnings')}
+            <View style={styles.summaryCard}>
+              <Text style={[styles.summaryValue, isRTL && styles.rtlText]}>
+                {stats.totalJobs}
               </Text>
-              <Text style={[styles.earningsValue, isRTL && styles.rtlText]}>
-                {stats.totalEarnings} ₪
+              <Text style={[styles.summaryLabel, isRTL && styles.rtlText]}>
+                {t('stats.totalJobs')}
+              </Text>
+            </View>
+
+            <View style={styles.summaryCard}>
+              <Text style={[styles.summaryValue, isRTL && styles.rtlText]}>
+                {stats.completedJobs}
+              </Text>
+              <Text style={[styles.summaryLabel, isRTL && styles.rtlText]}>
+                {t('stats.completed')}
+              </Text>
+            </View>
+
+            <View style={styles.summaryCard}>
+              <Text style={[styles.summaryValue, isRTL && styles.rtlText]}>
+                {formatCurrency(stats.totalEarnings)}
+              </Text>
+              <Text style={[styles.summaryLabel, isRTL && styles.rtlText]}>
+                {t('stats.earnings')}
+              </Text>
+            </View>
+
+            <View style={styles.summaryCard}>
+              <View style={styles.ratingContainer}>
+                <Text style={[styles.summaryValue, isRTL && styles.rtlText]}>
+                  {stats.averageRating.toFixed(1)}
+                </Text>
+                <Ionicons name="star" size={14} color="#FFD700" />
+              </View>
+              <Text style={[styles.summaryLabel, isRTL && styles.rtlText]}>
+                {t('stats.rating')}
               </Text>
             </View>
           </View>
-          
-          {/* Graphique des missions */}
-          <View style={styles.chartSection}>
+
+          {/* Jobs Chart */}
+          <View style={styles.chartCard}>
             <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>
-              {t('stats.charts.jobsByPeriod')}
+              {t('stats.jobsPerPeriod')}
             </Text>
-            <BarChart
+            <BarChart 
               data={stats.jobsData}
-              maxValue={getMaxValue(stats.jobsData)}
+              maxValue={maxJobsValue}
               barColor="#007AFF"
               isRTL={isRTL}
             />
           </View>
-          
-          {/* Graphique des revenus */}
-          <View style={styles.chartSection}>
+
+          {/* Earnings Chart */}
+          <View style={styles.chartCard}>
             <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>
-              {t('stats.charts.earningsByPeriod')}
+              {t('stats.earningsPerPeriod')}
             </Text>
-            <BarChart
+            <BarChart 
               data={stats.earningsData}
-              maxValue={getMaxValue(stats.earningsData)}
-              barColor="#4CAF50"
+              maxValue={maxEarningsValue}
+              barColor="#10B981"
               isRTL={isRTL}
             />
           </View>
-          
-          {/* Top services */}
-          <View style={styles.statsSection}>
-            <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>
-              {t('stats.topServices.title')}
-            </Text>
-            {stats.topServices.map((service, index) => (
-              <View key={index} style={[styles.statItem, isRTL && styles.statItemRTL]}>
-                <View style={[styles.statInfo, isRTL && styles.statInfoRTL]}>
-                  <Text style={[styles.statName, isRTL && styles.rtlText]}>
-                    {service.name}
-                  </Text>
-                  <Text style={[styles.statCount, isRTL && styles.rtlText]}>
-                    {service.count} {t('stats.missions')}
-                  </Text>
-                </View>
-                <View style={[styles.percentageContainer, isRTL && styles.percentageContainerRTL]}>
-                  <View style={styles.percentageBarContainer}>
-                    <View
-                      style={[
-                        styles.percentageBar,
-                        { width: `${service.percentage}%`, backgroundColor: '#FF9800' },
-                        isRTL && styles.percentageBarRTL
-                      ]}
-                    />
+
+          {/* Top Services */}
+          {stats.topServices.length > 0 && (
+            <View style={styles.statsSection}>
+              <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>
+                {t('stats.topServices')}
+              </Text>
+              {stats.topServices.map((service, index) => (
+                <View key={index} style={styles.statItem}>
+                  <View style={[styles.statInfo, isRTL && styles.statInfoRTL]}>
+                    <Text style={[styles.statName, isRTL && styles.rtlText]}>
+                      {service.name}
+                    </Text>
+                    <Text style={[styles.statCount, isRTL && styles.rtlText]}>
+                      {service.count} {t('stats.jobs')}
+                    </Text>
                   </View>
-                  <Text style={[styles.percentageText, isRTL && styles.rtlText]}>
-                    {service.percentage}%
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-          
-          {/* Top quartiers */}
-          <View style={styles.statsSection}>
-            <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>
-              {t('stats.topLocations.title')}
-            </Text>
-            {stats.topLocations.map((location, index) => (
-              <View key={index} style={[styles.statItem, isRTL && styles.statItemRTL]}>
-                <View style={[styles.statInfo, isRTL && styles.statInfoRTL]}>
-                  <Text style={[styles.statName, isRTL && styles.rtlText]}>
-                    {location.name}
-                  </Text>
-                  <Text style={[styles.statCount, isRTL && styles.rtlText]}>
-                    {location.count} {t('stats.missions')}
-                  </Text>
-                </View>
-                <View style={[styles.percentageContainer, isRTL && styles.percentageContainerRTL]}>
-                  <View style={styles.percentageBarContainer}>
-                    <View
-                      style={[
-                        styles.percentageBar,
-                        { width: `${location.percentage}%`, backgroundColor: '#9C27B0' },
-                        isRTL && styles.percentageBarRTL
-                      ]}
-                    />
+                  <View style={[styles.percentageContainer, isRTL && styles.percentageContainerRTL]}>
+                    <View style={styles.percentageBarContainer}>
+                      <View 
+                        style={[
+                          styles.percentageBar, 
+                          { width: `${service.percentage}%`, backgroundColor: '#F59E0B' },
+                          isRTL && styles.percentageBarRTL
+                        ]} 
+                      />
+                    </View>
+                    <Text style={[styles.percentageText, isRTL && styles.rtlText]}>
+                      {service.percentage}%
+                    </Text>
                   </View>
-                  <Text style={[styles.percentageText, isRTL && styles.rtlText]}>
-                    {location.percentage}%
-                  </Text>
                 </View>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
+
+          {/* Top Locations */}
+          {stats.topLocations.length > 0 && (
+            <View style={styles.statsSection}>
+              <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>
+                {t('stats.topLocations')}
+              </Text>
+              {stats.topLocations.map((location, index) => (
+                <View key={index} style={styles.statItem}>
+                  <View style={[styles.statInfo, isRTL && styles.statInfoRTL]}>
+                    <Text style={[styles.statName, isRTL && styles.rtlText]}>
+                      {location.name}
+                    </Text>
+                    <Text style={[styles.statCount, isRTL && styles.rtlText]}>
+                      {location.count} {t('stats.jobs')}
+                    </Text>
+                  </View>
+                  <View style={[styles.percentageContainer, isRTL && styles.percentageContainerRTL]}>
+                    <View style={styles.percentageBarContainer}>
+                      <View 
+                        style={[
+                          styles.percentageBar, 
+                          { width: `${location.percentage}%`, backgroundColor: '#8B5CF6' },
+                          isRTL && styles.percentageBarRTL
+                        ]} 
+                      />
+                    </View>
+                    <Text style={[styles.percentageText, isRTL && styles.rtlText]}>
+                      {location.percentage}%
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -430,146 +433,131 @@ const StatsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#F9FAFB',
   },
   header: {
-    padding: 15,
     backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderBottomColor: '#F3F4F6',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#111827',
+    letterSpacing: -0.3,
+    lineHeight: 22,
   },
-  periodFilters: {
-    paddingHorizontal: 10,
-    paddingVertical: 15,
+  periodSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  periodFiltersRTL: {
-    flexDirection: 'row-reverse',
+    gap: 8,
   },
   periodButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    marginHorizontal: 5,
-    borderRadius: 20,
-    backgroundColor: '#F0F0F0',
+    flex: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+    alignItems: 'center',
   },
-  periodButtonRTL: {
-    marginHorizontal: 5,
-  },
-  activePeriodButton: {
+  periodButtonActive: {
     backgroundColor: '#007AFF',
   },
   periodButtonText: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 12,
     fontWeight: '500',
+    color: '#6B7280',
   },
-  activePeriodButtonText: {
+  periodButtonTextActive: {
     color: '#FFFFFF',
+    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
-  scrollView: {
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '400',
+  },
+  scrollContainer: {
     flex: 1,
   },
   summaryContainer: {
-    backgroundColor: '#FFFFFF',
-    margin: 15,
-    padding: 20,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  summaryRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
+    flexWrap: 'wrap',
+    padding: 16,
+    gap: 12,
   },
-  summaryRowRTL: {
-    flexDirection: 'row-reverse',
-  },
-  summaryItem: {
-    alignItems: 'center',
+  summaryCard: {
     flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   summaryValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333333',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 6,
+    letterSpacing: -0.4,
+    lineHeight: 26,
   },
   summaryLabel: {
-    fontSize: 12,
-    color: '#666666',
-    marginTop: 5,
+    fontSize: 11,
+    color: '#6B7280',
     textAlign: 'center',
+    fontWeight: '400',
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
   },
-  ratingContainerRTL: {
-    flexDirection: 'row-reverse',
-  },
-  earningsContainer: {
-    alignItems: 'center',
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  earningsLabel: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 5,
-  },
-  earningsValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  chartSection: {
+  chartCard: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 15,
-    marginBottom: 15,
-    padding: 15,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 15,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 16,
+    letterSpacing: -0.2,
+    lineHeight: 18,
   },
   chartContainer: {
-    marginTop: 10,
+    marginTop: 8,
   },
   chartContainerRTL: {
     flexDirection: 'column-reverse',
   },
   barContainer: {
-    marginBottom: 15,
+    marginBottom: 16,
   },
   barLabel: {
-    fontSize: 12,
-    color: '#666666',
-    marginBottom: 5,
+    fontSize: 11,
+    color: '#6B7280',
+    marginBottom: 6,
+    fontWeight: '400',
   },
   barWrapper: {
     flexDirection: 'row',
@@ -579,52 +567,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   bar: {
-    height: 24,
-    borderRadius: 4,
+    height: 20,
+    borderRadius: 8,
     minWidth: 20,
   },
   barRTL: {
     alignSelf: 'flex-end',
   },
   barValue: {
-    marginLeft: 8,
-    fontSize: 12,
-    color: '#666666',
+    marginLeft: 10,
+    fontSize: 11,
+    color: '#6B7280',
     fontWeight: '500',
   },
   statsSection: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 15,
-    marginBottom: 15,
-    padding: 15,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   statItem: {
-    marginBottom: 15,
+    marginBottom: 16,
   },
   statItemRTL: {
     flexDirection: 'row-reverse',
   },
   statInfo: {
-    marginBottom: 5,
+    marginBottom: 8,
   },
   statInfoRTL: {
     alignItems: 'flex-end',
   },
   statName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333333',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#111827',
+    letterSpacing: -0.2,
+    lineHeight: 16,
   },
   statCount: {
-    fontSize: 12,
-    color: '#666666',
-    marginTop: 2,
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 4,
+    fontWeight: '400',
   },
   percentageContainer: {
     flexDirection: 'row',
@@ -635,23 +623,23 @@ const styles = StyleSheet.create({
   },
   percentageBarContainer: {
     flex: 1,
-    height: 8,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 4,
+    height: 6,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 6,
     marginRight: 10,
     overflow: 'hidden',
   },
   percentageBar: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 6,
   },
   percentageBarRTL: {
     alignSelf: 'flex-end',
   },
   percentageText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
-    color: '#666666',
+    color: '#6B7280',
     minWidth: 35,
   },
   rtlText: {

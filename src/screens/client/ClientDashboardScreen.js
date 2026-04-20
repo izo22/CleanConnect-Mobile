@@ -1,6 +1,20 @@
-// src/screens/client/ClientDashboardScreen.js
-// ✅ VERSION MODERNE - Design startup avec coins arrondis et ombres douces
-// ✅ FIXED - Remplacement Button/Chip par TouchableOpacity
+// src/screens/client/ClientDashboardScreen.js - REFONTE UI MINIMALISTE PREMIUM
+/*
+CHANGEMENTS MAJEURS APPLIQUÉS:
+✓ Header: fond blanc #FFFFFF avec bordure #F3F4F6 au lieu de bleu, titre centré simple
+✓ Container: fond #F9FAFB au lieu de #F5F5F5
+✓ Tabs: style outline minimaliste, borderRadius 8px, hauteur réduite
+✓ Cards: borderRadius 12px, bordures 1px #F3F4F6, elevation/shadow supprimées
+✓ Badges: couleurs à 10% d'opacité, borderRadius 6px, tailles réduites
+✓ Typographie: fontSize réduits de 10-15% (dateTitle 16px, statusChip 11px)
+✓ Poids: '400' par défaut, '600' pour titres/labels importants
+✓ Buttons: hauteur 40px, borderRadius 8px, ombres supprimées
+✓ Colors: #111827 (textes actifs), #6B7280 (secondaires), #9CA3AF (hints)
+✓ letterSpacing: -0.2 à -0.3 pour compression visuelle
+✓ lineHeight: serré (1.3-1.4)
+✓ Phone containers: backgrounds ultra-subtils
+✓ FAB: style minimaliste sans ombre lourde
+*/
 
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Linking, Alert } from 'react-native';
@@ -218,13 +232,13 @@ const ClientDashboardScreen = () => {
     if (booking.providerPhoneVisible && providerPhone) {
       return (
         <View style={styles.phoneContainerCompact}>
-          <Icon name="check-circle" size={16} color="#4CAF50" style={styles.phoneIcon} />
+          <Icon name="check-circle" size={14} color="#4CAF50" style={styles.phoneIcon} />
           <TouchableOpacity 
             style={styles.phoneButtonCompact}
             onPress={() => Linking.openURL(`tel:${providerPhone}`)}
             activeOpacity={0.7}
           >
-            <Icon name="phone" size={14} color="#007AFF" style={{ marginLeft: 4 }} />
+            <Icon name="phone" size={12} color="#007AFF" style={{ marginLeft: 4 }} />
             <Text style={styles.phoneNumberCompact}>{providerPhone}</Text>
           </TouchableOpacity>
         </View>
@@ -233,7 +247,7 @@ const ClientDashboardScreen = () => {
 
     return (
       <View style={styles.phoneContainerCompact}>
-        <Icon name="lock" size={16} color="#FF9800" style={styles.phoneIcon} />
+        <Icon name="lock" size={14} color="#FF9800" style={styles.phoneIcon} />
         <View style={styles.phoneDetailsCompact}>
           <Text style={styles.phoneHiddenCompact}>●●● ●●● ●●●●</Text>
           <Text style={styles.phoneHiddenNoteCompact}>
@@ -265,14 +279,14 @@ const ClientDashboardScreen = () => {
         <Card style={styles.emptyCard}>
           <Card.Content style={styles.emptyCardContent}>
             <View style={styles.emptyIconContainer}>
-              <Icon name="calendar-blank" size={64} color="#E0E0E0" />
+              <Icon name="calendar-blank" size={48} color="#D1D5DB" />
             </View>
             <Text style={styles.emptyText}>{emptyMessage}</Text>
             {activeTab === 'pending' && (
               <TouchableOpacity
                 style={styles.newBookingButton}
                 onPress={handleNewBooking}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
                 <Text style={styles.newBookingButtonText}>הזמן שירות</Text>
               </TouchableOpacity>
@@ -290,14 +304,14 @@ const ClientDashboardScreen = () => {
       >
         <Card.Content>
           <View style={styles.bookingHeader}>
-            <View style={[styles.statusChip, { backgroundColor: BOOKING_STATUS_COLORS[booking.status] }]}>
-              <Text style={styles.statusChipText}>
+            <View style={[styles.statusChip, { backgroundColor: `${BOOKING_STATUS_COLORS[booking.status]}15` }]}>
+              <Text style={[styles.statusChipText, { color: BOOKING_STATUS_COLORS[booking.status] }]}>
                 {getBookingStatusLabel(booking.status)}
               </Text>
             </View>
             
-            <View style={[styles.serviceTypeChip, { backgroundColor: getServiceColor(booking.serviceType) }]}>
-              <Text style={styles.serviceTypeChipText}>
+            <View style={[styles.serviceTypeChip, { backgroundColor: `${getServiceColor(booking.serviceType)}10` }]}>
+              <Text style={[styles.serviceTypeChipText, { color: getServiceColor(booking.serviceType) }]}>
                 {getServiceTypeLabel(booking.serviceType)}
               </Text>
             </View>
@@ -318,44 +332,40 @@ const ClientDashboardScreen = () => {
               <Text style={styles.detailValue}>{booking.duration}h</Text>
             </View>
             
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>ספק:</Text>
-              <Text style={styles.detailValue}>{booking.selectedProvider?.name || "לא הוקצה"}</Text>
-            </View>
-            
-            {renderProviderPhone(booking)}
-            
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>כתובת:</Text>
-              <Text style={styles.detailValue} numberOfLines={1}>
-                {booking.address?.fullAddress || "לא צוין"}
-              </Text>
-            </View>
+            {booking.notes && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>ספק:</Text>
+                <Text style={styles.detailValue}>
+                  {booking.selectedProvider?.name || booking.provider?.name || 'לא שויך'}
+                </Text>
+              </View>
+            )}
           </View>
           
-          <Divider style={styles.divider} />
+          {renderProviderPhone(booking)}
+          
+          <View style={styles.divider} />
           
           <View style={styles.bookingFooter}>
             <Text style={styles.priceText}>
-              {booking.price ? booking.price.toFixed(2) + " ₪" : "--"}
+              ₪{booking.price ? booking.price.toFixed(2) : '0.00'}
             </Text>
             
             <View style={styles.actionButtons}>
               {canManuallyComplete(booking) && (
-                <TouchableOpacity
+                <TouchableOpacity 
                   style={styles.completeButton}
                   onPress={() => handleCompleteService(booking)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.7}
                 >
-                  <Icon name="check-circle" size={16} color="white" style={{ marginLeft: 4 }} />
-                  <Text style={styles.completeButtonText}>הושלם</Text>
+                  <Text style={styles.completeButtonText}>הושלם✓</Text>
                 </TouchableOpacity>
               )}
               
-              <TouchableOpacity
+              <TouchableOpacity 
                 style={[styles.viewButton, { borderColor: getServiceColor(booking.serviceType) }]}
                 onPress={() => handleViewBooking(booking._id)}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
                 <Text style={[styles.viewButtonText, { color: getServiceColor(booking.serviceType) }]}>
                   פרטים
@@ -368,92 +378,85 @@ const ClientDashboardScreen = () => {
     ));
   };
   
+  if (isLoadingBookings && userBookings.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>טוען הזמנות...</Text>
+      </View>
+    );
+  }
+  
   return (
     <View style={styles.container}>
+      {/* HEADER MINIMALISTE BLANC - SIMPLIFIÉ */}
       <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>ההזמנות שלי</Text>
-        </View>
+        <Text style={styles.headerTitle}>הזמנות</Text>
       </View>
       
-      <View style={styles.tabsContainer}>
-        <TouchableOpacity
-          style={[
-            styles.tabButton,
-            activeTab === 'pending' && styles.activeTabButton
-          ]}
+      {/* TABS MINIMALISTES */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity 
+          style={[styles.tabButton, activeTab === 'pending' && styles.activeTabButton]}
           onPress={() => setActiveTab('pending')}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
-          <Text style={activeTab === 'pending' ? styles.activeTabLabel : styles.tabLabel}>
+          <Text style={[styles.tabLabel, activeTab === 'pending' && styles.activeTabLabel]}>
             ממתין
           </Text>
         </TouchableOpacity>
         
-        <TouchableOpacity
-          style={[
-            styles.tabButton,
-            activeTab === 'confirmed' && styles.activeTabButton
-          ]}
+        <TouchableOpacity 
+          style={[styles.tabButton, activeTab === 'confirmed' && styles.activeTabButton]}
           onPress={() => setActiveTab('confirmed')}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
-          <Text style={activeTab === 'confirmed' ? styles.activeTabLabel : styles.tabLabel}>
+          <Text style={[styles.tabLabel, activeTab === 'confirmed' && styles.activeTabLabel]}>
             מאושר
           </Text>
         </TouchableOpacity>
         
-        <TouchableOpacity
-          style={[
-            styles.tabButton,
-            activeTab === 'completed' && styles.activeTabButton
-          ]}
+        <TouchableOpacity 
+          style={[styles.tabButton, activeTab === 'completed' && styles.activeTabButton]}
           onPress={() => setActiveTab('completed')}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
-          <Text style={activeTab === 'completed' ? styles.activeTabLabel : styles.tabLabel}>
+          <Text style={[styles.tabLabel, activeTab === 'completed' && styles.activeTabLabel]}>
             הושלם
           </Text>
         </TouchableOpacity>
       </View>
       
-      {isLoadingBookings && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>טוען את ההזמנות שלך...</Text>
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollViewContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={loadBookings} />
-          }
-        >
-          {bookingError ? (
-            <Card style={styles.errorCard}>
-              <Card.Content>
-                <Text style={styles.errorText}>{bookingError}</Text>
-                <TouchableOpacity
-                  style={styles.retryButton}
-                  onPress={loadBookings}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.retryButtonText}>נסה שוב</Text>
-                </TouchableOpacity>
-              </Card.Content>
-            </Card>
-          ) : (
-            renderBookings()
-          )}
-        </ScrollView>
+      {bookingError && (
+        <Card style={styles.errorCard}>
+          <Card.Content>
+            <Text style={styles.errorText}>{bookingError}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadBookings} activeOpacity={0.7}>
+              <Text style={styles.retryButtonText}>נסה שוב</Text>
+            </TouchableOpacity>
+          </Card.Content>
+        </Card>
       )}
+      
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={loadBookings}
+            colors={['#007AFF']}
+          />
+        }
+      >
+        {renderBookings()}
+      </ScrollView>
       
       <FAB
         style={styles.fab}
         icon="plus"
         onPress={handleNewBooking}
-        color="white"
+        color="#FFFFFF"
       />
     </View>
   );
@@ -462,73 +465,61 @@ const ClientDashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  // ✅ HEADER MODERNE
-  header: {
-    backgroundColor: '#2E86C1',
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: 'white',
+    backgroundColor: '#F9FAFB',
   },
   
-  // ✅ TABS MODERNES
-  tabsContainer: {
-    flexDirection: 'row',
+  // HEADER MINIMALISTE BLANC - SIMPLIFIÉ
+  header: {
+    backgroundColor: '#FFFFFF',
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  headerTitle: {
+    fontSize: 19,
+    fontWeight: '600',
+    color: '#1F2937',
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  
+  // TABS MINIMALISTES
+  tabContainer: {
+    flexDirection: 'row-reverse',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   tabButton: {
     flex: 1,
-    marginHorizontal: 4,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1.5,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
     borderColor: '#E5E7EB',
-    backgroundColor: 'transparent',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    height: 36,
   },
   activeTabButton: {
     backgroundColor: '#2196F3',
     borderColor: '#2196F3',
-    shadowColor: '#2196F3',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
   },
   tabLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
-    fontWeight: '600',
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
   activeTabLabel: {
-    fontSize: 14,
-    color: 'white',
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   
   scrollView: {
@@ -542,158 +533,165 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F9FAFB',
   },
   loadingText: {
     marginTop: 10,
     color: '#6B7280',
-    fontWeight: '500',
+    fontWeight: '400',
+    fontSize: 14,
   },
   
-  // ✅ ERROR CARD MODERNE
+  // ERROR CARD
   errorCard: {
-    marginVertical: 10,
+    marginHorizontal: 16,
+    marginTop: 12,
     padding: 8,
     backgroundColor: '#FEE2E2',
-    borderRadius: 16,
-    elevation: 2,
-    shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
   },
   errorText: {
     color: '#DC2626',
     marginBottom: 12,
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '400',
+    fontSize: 13,
   },
   retryButton: {
     backgroundColor: '#DC2626',
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
     alignItems: 'center',
+    height: 36,
+    justifyContent: 'center',
   },
   retryButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   
-  // ✅ EMPTY CARD MODERNE
+  // EMPTY CARD
   emptyCard: {
     marginVertical: 40,
     padding: 32,
     alignItems: 'center',
-    borderRadius: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   emptyCardContent: {
     alignItems: 'center',
   },
   emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#F3F4F6',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F9FAFB',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   emptyText: {
     textAlign: 'center',
-    marginBottom: 24,
-    fontSize: 16,
+    marginBottom: 20,
+    fontSize: 14,
     color: '#6B7280',
-    fontWeight: '500',
+    fontWeight: '400',
+    letterSpacing: -0.1,
   },
   newBookingButton: {
     backgroundColor: '#2196F3',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 8,
     alignItems: 'center',
-    shadowColor: '#2196F3',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    height: 40,
+    justifyContent: 'center',
   },
   newBookingButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   
-  // ✅ BOOKING CARDS MODERNES
+  // BOOKING CARDS
   bookingCard: {
-    marginVertical: 8,
-    borderRadius: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
+    marginVertical: 6,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   bookingHeader: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     marginBottom: 12,
   },
   
-  // ✅ CHIPS MODERNES
+  // CHIPS
   statusChip: {
-    height: 32,
-    paddingHorizontal: 14,
-    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
   statusChipText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
   serviceTypeChip: {
-    height: 32,
-    paddingHorizontal: 14,
-    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
   serviceTypeChipText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
   
   dateTitle: {
-    fontSize: 18,
-    marginBottom: 12,
+    fontSize: 16,
+    marginBottom: 10,
     textTransform: 'capitalize',
-    fontWeight: '700',
-    color: '#1F2937',
+    fontWeight: '600',
+    color: '#111827',
+    textAlign: 'right',
+    letterSpacing: -0.3,
+    lineHeight: 20,
   },
   bookingDetails: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   detailRow: {
-    flexDirection: 'row',
-    marginBottom: 6,
+    flexDirection: 'row-reverse',
+    marginBottom: 4,
   },
   detailLabel: {
-    width: 85,
-    fontWeight: '600',
+    width: 60,
+    fontWeight: '500',
     color: '#6B7280',
+    fontSize: 13,
+    textAlign: 'right',
+    letterSpacing: -0.1,
   },
   detailValue: {
     flex: 1,
-    color: '#1F2937',
-    fontWeight: '500',
+    color: '#111827',
+    fontWeight: '400',
+    fontSize: 13,
+    textAlign: 'right',
+    letterSpacing: -0.1,
   },
   divider: {
     height: 1,
@@ -701,84 +699,90 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   bookingFooter: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   priceText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1F2937',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    letterSpacing: -0.3,
   },
   
-  // ✅ ACTION BUTTONS MODERNES
+  // ACTION BUTTONS
   actionButtons: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     gap: 8,
   },
   
   completeButton: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
     backgroundColor: '#FF9500',
-    shadowColor: '#FF9500',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
+    height: 32,
   },
   completeButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   
   viewButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    backgroundColor: 'transparent',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   viewButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   
-  // ✅ PHONE STYLES MODERNES
+  // PHONE STYLES
   phoneContainerCompact: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
     padding: 8,
-    borderRadius: 10,
+    borderRadius: 8,
     marginVertical: 6,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   phoneIcon: {
-    marginRight: 8,
+    marginLeft: 8,
   },
   phoneButtonCompact: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     backgroundColor: '#DBEAFE',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
   },
   phoneNumberCompact: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     color: '#007AFF',
+    marginRight: 4,
+    letterSpacing: -0.1,
   },
   phoneDetailsCompact: {
     flex: 1,
   },
   phoneHiddenCompact: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#9CA3AF',
   },
   phoneHiddenNoteCompact: {
@@ -786,22 +790,17 @@ const styles = StyleSheet.create({
     color: '#FF9800',
     marginTop: 2,
     fontStyle: 'italic',
-    fontWeight: '500',
+    fontWeight: '400',
   },
   
-  // ✅ FAB MODERNE
+  // FAB
   fab: {
     position: 'absolute',
     margin: 16,
     right: 0,
     bottom: 0,
     backgroundColor: '#2196F3',
-    borderRadius: 16,
-    shadowColor: '#2196F3',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    borderRadius: 14,
   },
 });
 

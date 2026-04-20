@@ -1,5 +1,7 @@
 // src/screens/client/HomeScreen.js
-// ✅ VERSION MODERNE - Design startup avec header personnalisé
+// ✅ VERSION PREMIUM MINIMALISTE
+// Style ultra-épuré : Stripe, Linear, Revolut
+// Maximum d'espace blanc, typographie légère, accents subtils
 
 import React from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
@@ -15,8 +17,8 @@ const ServiceCard = ({ title, description, color, icon, onPress }) => {
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={[styles.cardIconContainer, { backgroundColor: `${color}15` }]}>
-        <Ionicons name={icon} size={32} color={color} />
+      <View style={[styles.cardIconContainer, { backgroundColor: `${color}10` }]}>
+        <Ionicons name={icon} size={24} color={color} />
       </View>
       
       <View style={styles.cardContent}>
@@ -24,10 +26,13 @@ const ServiceCard = ({ title, description, color, icon, onPress }) => {
         <Text style={styles.cardDescription}>{description}</Text>
       </View>
       
-      <View style={[styles.cardButton, { backgroundColor: color }]}>
-        <Text style={styles.cardButtonText}>הזמן עכשיו</Text>
-        <Ionicons name="arrow-back" size={16} color="white" style={{ marginRight: 4 }} />
-      </View>
+      <TouchableOpacity 
+        style={[styles.cardButton, { borderColor: color }]}
+        onPress={onPress}
+      >
+        <Text style={[styles.cardButtonText, { color }]}>הזמן עכשיו</Text>
+        <Ionicons name="arrow-back" size={14} color={color} style={{ marginRight: 4 }} />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 };
@@ -83,19 +88,20 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* ✅ HEADER MODERNE PERSONNALISÉ */}
+      {/* HEADER MINIMALISTE BLANC */}
       <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.greeting}>
-            שלום, {userInfo?.firstName || 'לקוח'}
-          </Text>
-          <Text style={styles.subtitle}>
-            איזה סוג שירות אתה מחפש?
-          </Text>
-        </View>
+        <Text style={styles.greeting}>
+          שלום, {userInfo?.firstName || 'לקוח'}
+        </Text>
+        
+        <Text style={styles.subtitle}>
+          איזה סוג שירות אתה מחפש?
+        </Text>
+        
+        <View style={styles.blueLine} />
       </View>
 
-      {/* ✅ CARDS DE SERVICES MODERNES */}
+      {/* CARDS DE SERVICES ULTRA-MINIMALISTES */}
       <View style={styles.servicesContainer}>
         {serviceOptions.map((service) => (
           <ServiceCard
@@ -109,14 +115,14 @@ const HomeScreen = ({ navigation }) => {
         ))}
       </View>
 
-      {/* ✅ BOUTONS D'ACTIONS MODERNES */}
+      {/* QUICK ACTIONS MINIMALISTES */}
       <View style={styles.actionsContainer}>
         <TouchableOpacity 
           style={styles.actionCard}
           onPress={() => navigation.navigate('Dashboard')}
         >
           <View style={styles.actionIconContainer}>
-            <Ionicons name="calendar" size={24} color="#2E86C1" />
+            <Ionicons name="calendar-outline" size={20} color="#2E86C1" />
           </View>
           <Text style={styles.actionCardTitle}>ההזמנות שלי</Text>
           <Text style={styles.actionCardSubtitle}>צפה בהזמנות</Text>
@@ -127,7 +133,7 @@ const HomeScreen = ({ navigation }) => {
           onPress={() => navigation.navigate('Profile')}
         >
           <View style={styles.actionIconContainer}>
-            <Ionicons name="person" size={24} color="#2E86C1" />
+            <Ionicons name="person-outline" size={20} color="#2E86C1" />
           </View>
           <Text style={styles.actionCardTitle}>הפרופיל שלי</Text>
           <Text style={styles.actionCardSubtitle}>ערוך פרטים</Text>
@@ -140,58 +146,56 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
   },
   
-  // ✅ HEADER MODERNE
+  // HEADER MINIMALISTE BLANC
   header: {
-    backgroundColor: '#2E86C1',
+    backgroundColor: '#FFFFFF',
     paddingTop: 60,
-    paddingBottom: 32,
+    paddingBottom: 24,
     paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  headerContent: {
-    flex: 1,
   },
   greeting: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: 'white',
-    marginBottom: 8,
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#1F2937',
     textAlign: 'right',
+    letterSpacing: -0.3,
+    marginBottom: 16,
   },
   subtitle: {
-    fontSize: 16,
-    color: 'white',
-    opacity: 0.9,
-    textAlign: 'right',
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#9CA3AF',
+    textAlign: 'center',
+    letterSpacing: -0.2,
+    marginBottom: 16,
+  },
+  blueLine: {
+    height: 3,
+    width: '100%',
+    backgroundColor: '#2E86C1',
+    borderRadius: 2,
   },
   
-  // ✅ CARDS DE SERVICES MODERNES
+  // CARDS DE SERVICES ULTRA-MINIMALISTES
   servicesContainer: {
     padding: 16,
+    paddingTop: 24,
   },
   card: {
     backgroundColor: '#FFFFFF',
     marginBottom: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   cardIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -201,39 +205,38 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cardTitle: {
-    fontWeight: '700',
-    fontSize: 20,
+    fontWeight: '600',
+    fontSize: 16,
     color: '#1F2937',
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: 'right',
+    letterSpacing: -0.3,
   },
   cardDescription: {
     color: '#6B7280',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     textAlign: 'right',
-    fontWeight: '500',
+    fontWeight: '400',
+    letterSpacing: -0.2,
   },
   cardButton: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
+    height: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
   },
   cardButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 16,
+    fontWeight: '500',
+    fontSize: 13,
     textAlign: 'center',
+    letterSpacing: -0.2,
   },
   
-  // ✅ ACTIONS CARDS MODERNES
+  // QUICK ACTIONS ULTRA-MINIMALISTES
   actionsContainer: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
@@ -245,35 +248,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     padding: 20,
-    borderRadius: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   actionIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#DBEAFE',
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: '#2E86C110',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   actionCardTitle: {
     color: '#1F2937',
-    fontWeight: '700',
-    fontSize: 16,
+    fontWeight: '600',
+    fontSize: 14,
     textAlign: 'center',
     marginBottom: 4,
+    letterSpacing: -0.2,
   },
   actionCardSubtitle: {
-    color: '#6B7280',
-    fontSize: 12,
+    color: '#9CA3AF',
+    fontSize: 11,
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '400',
+    letterSpacing: -0.2,
   },
 });
 

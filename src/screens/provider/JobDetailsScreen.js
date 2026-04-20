@@ -1,6 +1,20 @@
-// JobDetailsScreen.js - Corrigé avec les bons champs API
+// JobDetailsScreen.js - REFONTE UI MINIMALISTE PREMIUM
+/*
+CHANGEMENTS MAJEURS:
+- ❌ Suppression complète de i18n / useTranslation / react-i18next
+- ✅ Textes hébreux hardcodés dans l'objet HE (en haut du fichier)
+- ✅ isRTL = true implicite partout (flexDirection: 'row-reverse', textAlign: 'right')
+- ✅ Style ultra-minimaliste premium (Stripe / Linear / Revolut)
+- Typographie: tailles réduites, letterSpacing négatif, lineHeight serré
+- Fond: #F9FAFB, cards blanches avec bordure #F3F4F6
+- Badges: fond opacité 10%, borderRadius 6px, fontSize 11
+- Boutons: outline style, borderRadius 8-10px, hauteur ~44-48px
+- Ombres: supprimées
+- Spacing: structuré par le vide, sections bien séparées
+- Composants locaux extraits: InfoRow, QuickAction, DetailRow
+*/
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -12,698 +26,711 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { providerService } from '../../services/api';
-import { useTranslation } from 'react-i18next';
+
+// ── Textes hébreux hardcodés ─────────────────────────────────────────────────
+const HE = {
+  loading: 'טוען...',
+  retry: 'נסה שוב',
+  error: 'שגיאה',
+  cancel: 'ביטול',
+  unknownClient: 'לקוח לא ידוע',
+  service: 'שירות',
+  atTime: 'בשעה',
+  errors: {
+    loadFailed: 'טעינת פרטי המשימה נכשלה',
+    notFound: 'המשימה לא נמצאה',
+    cannotOpenMaps: 'לא ניתן לפתוח מפות',
+    cannotCall: 'לא ניתן לבצע שיחה',
+    cannotMessage: 'לא ניתן לשלוח הודעה',
+    actionFailed: 'הפעולה נכשלה, נסה שוב',
+  },
+  status: {
+    pending:    'ממתין לאישור',
+    accepted:   'מאושר',
+    inProgress: 'בביצוע',
+    completed:  'הושלם',
+    cancelled:  'בוטל',
+  },
+  actions: {
+    accept:       'קבל משימה',
+    decline:      'דחה',
+    directions:   'ניווט',
+    markComplete: 'סמן כהושלם',
+    cancelJob:    'ביטול משימה',
+  },
+  details:    'פרטי המשימה',
+  duration:   'משך זמן',
+  hours:      'שעות',
+  rooms:      'חדרים',
+  bathrooms:  'חדרי אמבטיה',
+  notes:      'הערות',
+  confirmModal: {
+    title:          'אישור משימה',
+    message:        'האם אתה בטוח שברצונך לקבל את המשימה?',
+    confirm:        'קבל',
+    successTitle:   'המשימה אושרה',
+    successMessage: 'המשימה נוספה לרשימת המשימות שלך',
+  },
+  declineModal: {
+    title:          'דחיית משימה',
+    message:        'האם אתה בטוח שברצונך לדחות את המשימה?',
+    decline:        'דחה',
+    successTitle:   'המשימה נדחתה',
+    successMessage: 'המשימה הוסרה מרשימתך',
+  },
+  completeModal: {
+    title:          'סיום משימה',
+    message:        'האם סיימת את המשימה?',
+    complete:       'סיים',
+    successTitle:   'כל הכבוד!',
+    successMessage: 'המשימה סומנה כהושלמה',
+  },
+  cancelModal: {
+    title:          'ביטול משימה',
+    message:        'האם אתה בטוח שברצונך לבטל את המשימה?',
+    cancel:         'בטל משימה',
+    successTitle:   'המשימה בוטלה',
+    successMessage: 'המשימה בוטלה בהצלחה',
+  },
+};
+// ────────────────────────────────────────────────────────────────────────────
 
 const JobDetailsScreen = ({ navigation, route }) => {
-  const { t, i18n } = useTranslation();
-  const isRTL = i18n.language === 'he';
   const { jobId } = route.params;
-  const [job, setJob] = useState(null);
+  const [job, setJob]         = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError]     = useState(null);
 
-  useEffect(() => {
-    loadJobDetails();
-  }, []);
+  // ── Masquer le header natif du navigator (bleu) ───────────────────────────
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
+
+  useEffect(() => { loadJobDetails(); }, []);
 
   const loadJobDetails = async () => {
     setLoading(true);
     setError(null);
-    
     try {
       const response = await providerService.getJobDetails(jobId);
-      
-      if (response && response.success) {
-        let jobData;
-        
-        if (response.data && typeof response.data === 'object') {
-          jobData = response.data;
-        } else {
-          jobData = response;
-        }
-        
-        console.log('📦 Job complet:', JSON.stringify(jobData, null, 2));
-        setJob(jobData);
+      if (response?.success) {
+        setJob(response.data && typeof response.data === 'object' ? response.data : response);
       } else {
-        throw new Error(response.message || t('jobDetails.errors.loadFailed'));
+        throw new Error(response.message || HE.errors.loadFailed);
       }
-    } catch (err) {
-      setError(t('jobDetails.errors.loadFailed'));
+    } catch {
+      setError(HE.errors.loadFailed);
     } finally {
       setLoading(false);
     }
   };
 
   const formatDateTime = (dateString) => {
-    console.log('📅 Date reçue:', dateString);
-    
     const date = new Date(dateString);
-    
-    if (isNaN(date.getTime())) {
-      console.log('❌ Date invalide');
-      return dateString;
-    }
-    
-    if (isRTL) {
-      // Format hébreu manuel
-      const day = date.getDate();
-      const month = date.getMonth() + 1;
-      const year = date.getFullYear();
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      
-      return `${day}/${month}/${year} בשעה ${hours}:${minutes}`;
-    }
-    
-    // Pour français/anglais
-    const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
-    const dateStr = date.toLocaleDateString(locale);
-    const timeStr = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-    
-    return `${dateStr} ${t('jobDetails.atTime')} ${timeStr}`;
+    if (isNaN(date.getTime())) return dateString;
+    const d = date.getDate();
+    const m = date.getMonth() + 1;
+    const y = date.getFullYear();
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${d}/${m}/${y} ${HE.atTime} ${hh}:${mm}`;
   };
 
   const openMaps = (address) => {
-    const encodedAddress = encodeURIComponent(address);
-    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-    
-    Linking.canOpenURL(googleMapsUrl)
-      .then((supported) => {
-        if (supported) {
-          return Linking.openURL(googleMapsUrl);
-        } else {
-          Alert.alert(t('common.error'), t('jobDetails.errors.cannotOpenMaps'));
-        }
-      })
-      .catch(() => {
-        Alert.alert(t('common.error'), t('jobDetails.errors.cannotOpenMaps'));
-      });
-  };
-
-  const callClient = (phoneNumber) => {
-    const url = `tel:${phoneNumber}`;
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
     Linking.canOpenURL(url)
-      .then((supported) => {
-        if (supported) {
-          return Linking.openURL(url);
-        } else {
-          Alert.alert(t('common.error'), t('jobDetails.errors.cannotCall'));
-        }
-      })
-      .catch(() => {
-        Alert.alert(t('common.error'), t('jobDetails.errors.cannotCall'));
-      });
-  };
-
-  const messageClient = (phoneNumber) => {
-    const url = `sms:${phoneNumber}`;
-    Linking.canOpenURL(url)
-      .then((supported) => {
-        if (supported) {
-          return Linking.openURL(url);
-        } else {
-          Alert.alert(t('common.error'), t('jobDetails.errors.cannotMessage'));
-        }
-      })
-      .catch(() => {
-        Alert.alert(t('common.error'), t('jobDetails.errors.cannotMessage'));
-      });
+      .then((ok) => ok ? Linking.openURL(url) : Alert.alert(HE.error, HE.errors.cannotOpenMaps))
+      .catch(() => Alert.alert(HE.error, HE.errors.cannotOpenMaps));
   };
 
   const confirmJob = () => {
-    Alert.alert(
-      t('jobDetails.confirmModal.title'),
-      t('jobDetails.confirmModal.message'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('jobDetails.confirmModal.confirm'),
-          onPress: async () => {
-            try {
-              await providerService.acceptJob(jobId);
-              loadJobDetails();
-              Alert.alert(
-                t('jobDetails.confirmModal.successTitle'),
-                t('jobDetails.confirmModal.successMessage')
-              );
-            } catch (err) {
-              Alert.alert(
-                t('common.error'),
-                t('jobDetails.confirmModal.errorMessage')
-              );
-            }
-          },
+    Alert.alert(HE.confirmModal.title, HE.confirmModal.message, [
+      { text: HE.cancel, style: 'cancel' },
+      {
+        text: HE.confirmModal.confirm,
+        onPress: async () => {
+          try {
+            await providerService.acceptJob(jobId);
+            loadJobDetails();
+            Alert.alert(HE.confirmModal.successTitle, HE.confirmModal.successMessage);
+          } catch {
+            Alert.alert(HE.error, HE.errors.actionFailed);
+          }
         },
-      ]
-    );
+      },
+    ]);
+  };
+
+  const declineJob = () => {
+    Alert.alert(HE.declineModal.title, HE.declineModal.message, [
+      { text: HE.cancel, style: 'cancel' },
+      {
+        text: HE.declineModal.decline,
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await providerService.declineJob(jobId, { reason: 'declined_by_provider' });
+            navigation.goBack();
+            Alert.alert(HE.declineModal.successTitle, HE.declineModal.successMessage);
+          } catch {
+            Alert.alert(HE.error, HE.errors.actionFailed);
+          }
+        },
+      },
+    ]);
+  };
+
+  const markAsCompleted = () => {
+    Alert.alert(HE.completeModal.title, HE.completeModal.message, [
+      { text: HE.cancel, style: 'cancel' },
+      {
+        text: HE.completeModal.complete,
+        onPress: async () => {
+          try {
+            await providerService.completeJob(jobId);
+            loadJobDetails();
+            Alert.alert(HE.completeModal.successTitle, HE.completeModal.successMessage);
+          } catch {
+            Alert.alert(HE.error, HE.errors.actionFailed);
+          }
+        },
+      },
+    ]);
   };
 
   const cancelJob = () => {
-    Alert.alert(
-      t('jobDetails.cancelModal.title'),
-      t('jobDetails.cancelModal.message'),
-      [
-        { text: t('jobDetails.cancelModal.no'), style: 'cancel' },
-        {
-          text: t('jobDetails.cancelModal.yes'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await providerService.declineJob(jobId);
-              loadJobDetails();
-              Alert.alert(
-                t('jobDetails.cancelModal.successTitle'),
-                t('jobDetails.cancelModal.successMessage')
-              );
-            } catch (err) {
-              Alert.alert(
-                t('common.error'),
-                t('jobDetails.cancelModal.errorMessage')
-              );
-            }
-          },
+    Alert.alert(HE.cancelModal.title, HE.cancelModal.message, [
+      { text: HE.cancel, style: 'cancel' },
+      {
+        text: HE.cancelModal.cancel,
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await providerService.cancelJob(jobId);
+            navigation.goBack();
+            Alert.alert(HE.cancelModal.successTitle, HE.cancelModal.successMessage);
+          } catch {
+            Alert.alert(HE.error, HE.errors.actionFailed);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
-  const completeJob = () => {
-    Alert.alert(
-      t('jobDetails.completeModal.title'),
-      t('jobDetails.completeModal.message'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('jobDetails.completeModal.confirm'),
-          onPress: async () => {
-            try {
-              await providerService.completeJob(jobId);
-              loadJobDetails();
-              Alert.alert(
-                t('jobDetails.completeModal.successTitle'),
-                t('jobDetails.completeModal.successMessage')
-              );
-            } catch (err) {
-              Alert.alert(
-                t('common.error'),
-                t('jobDetails.completeModal.errorMessage')
-              );
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const getStatusLabel = (status) => {
-    // Map API status to UI status
-    const statusMap = {
-      'pending': 'pending',
-      'accepted': 'confirmed',
-      'completed': 'completed',
-      'cancelled': 'cancelled',
+  const getStatusConfig = (status) => {
+    const configs = {
+      pending:     { label: HE.status.pending,    color: '#F59E0B', bg: '#F59E0B1A' },
+      accepted:    { label: HE.status.accepted,   color: '#16A34A', bg: '#16A34A1A' },
+      in_progress: { label: HE.status.inProgress, color: '#3B82F6', bg: '#3B82F61A' },
+      completed:   { label: HE.status.completed,  color: '#16A34A', bg: '#16A34A1A' },
+      cancelled:   { label: HE.status.cancelled,  color: '#DC2626', bg: '#DC26261A' },
     };
-    
-    const mappedStatus = statusMap[status] || status;
-    return t(`providerRequests.status.${mappedStatus}`, mappedStatus);
+    return configs[status?.toLowerCase()] || configs.pending;
   };
 
-  const getDisplayStatus = (status) => {
-    // Pour l'affichage du badge
-    return status === 'accepted' ? 'confirmed' : status;
-  };
-
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <SafeAreaView style={styles.container}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#111827" />
+          <Text style={styles.loadingText}>{HE.loading}</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
+  // ── Error ──────────────────────────────────────────────────────────────────
   if (error || !job) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <Ionicons name="alert-circle" size={60} color="#F44336" />
-        <Text style={[styles.errorText, isRTL && styles.textRTL]}>
-          {error || t('jobDetails.errors.cannotLoad')}
-        </Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={loadJobDetails}
-        >
-          <Text style={styles.retryButtonText}>{t('try_again')}</Text>
-        </TouchableOpacity>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.center}>
+          <Ionicons name="alert-circle-outline" size={40} color="#DC2626" />
+          <Text style={[styles.errorText, styles.rtl]}>{error || HE.errors.notFound}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={loadJobDetails}>
+            <Text style={styles.retryBtnText}>{HE.retry}</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
 
-  const displayStatus = getDisplayStatus(job.status);
+  const statusConfig = getStatusConfig(job.status);
+  const client       = job.client || job.userId || {};
+  const clientName   =
+    client.firstName && client.lastName
+      ? `${client.firstName} ${client.lastName}`
+      : client.name || HE.unknownClient;
+  const jobStatus = job.status?.toLowerCase();
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <View style={styles.header}>
-          <View style={[styles.headerContent, isRTL && styles.headerContentRTL]}>
-            <Text style={[styles.clientName, isRTL && styles.textRTL]}>
-              {job.client.firstName} {job.client.lastName}
-            </Text>
-            <View 
-              style={[
-                styles.statusBadge, 
-                displayStatus === 'confirmed' ? styles.confirmedStatus : 
-                displayStatus === 'pending' ? styles.pendingStatus : 
-                displayStatus === 'completed' ? styles.completedStatus : 
-                styles.cancelledStatus
-              ]}
-            >
-              <Text style={styles.statusText}>
-                {getStatusLabel(job.status)}
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      {/* ── Custom Header (remplace le header bleu du navigator) ─────────── */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.headerBack} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={22} color="#111827" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>פרטי משימה</Text>
+        <View style={{ width: 36 }} />
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+
+        {/* ── Header Card : type + statut + prix ────────────────────────── */}
+        <View style={styles.card}>
+          <View style={styles.headerRow}>
+            {/* Droite : nom du service + badge */}
+            <View style={styles.headerRight}>
+              <Text style={[styles.serviceName, styles.rtl]}>
+                {job.serviceType || HE.service}
               </Text>
+              <View style={[styles.badge, { backgroundColor: statusConfig.bg }]}>
+                <Text style={[styles.badgeText, { color: statusConfig.color }]}>
+                  {statusConfig.label}
+                </Text>
+              </View>
             </View>
+            {/* Gauche : prix */}
+            <Text style={styles.price}>₪{job.totalPrice || job.price || 0}</Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* Infos client intégrées dans la même carte */}
+          <View style={{ marginTop: 12, gap: 8 }}>
+            <InfoRow icon="person-outline" text={clientName} />
+            {job.address && (
+              <InfoRow
+                icon="location-outline"
+                text={job.address}
+                isLink
+                onPress={() => openMaps(job.address)}
+              />
+            )}
+            {job.date && (
+              <InfoRow icon="time-outline" text={formatDateTime(job.date)} />
+            )}
           </View>
         </View>
 
-        {job.status === 'pending' && (
-          <View style={styles.pendingContainer}>
-            <Text style={[styles.pendingTitle, isRTL && styles.textRTL]}>
-              {t('jobDetails.pending.title')}
-            </Text>
-            <Text style={[styles.pendingSubtitle, isRTL && styles.textRTL]}>
-              {t('jobDetails.pending.subtitle')}
-            </Text>
-            
-            <View style={[styles.pendingActions, isRTL && styles.pendingActionsRTL]}>
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={confirmJob}
-              >
-                <Text style={styles.confirmButtonText}>
-                  {t('jobDetails.actions.accept')}
-                </Text>
+        {/* ── Boutons Accept / Decline (status pending) ─────────────────── */}
+        {jobStatus === 'pending' && (
+          <View style={styles.card}>
+            <View style={styles.pendingRow}>
+              <TouchableOpacity style={[styles.btnPrimary, { flex: 1 }]} onPress={confirmJob}>
+                <Text style={styles.btnPrimaryText}>{HE.actions.accept}</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.declineButton}
-                onPress={cancelJob}
-              >
-                <Text style={styles.declineButtonText}>
-                  {t('jobDetails.actions.decline')}
-                </Text>
+              <TouchableOpacity style={[styles.btnDangerOutline, { flex: 1 }]} onPress={declineJob}>
+                <Text style={styles.btnDangerOutlineText}>{HE.actions.decline}</Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
 
-        <View style={styles.section}>
-          <View style={[styles.sectionRow, isRTL && styles.sectionRowRTL]}>
-            <Ionicons name="calendar" size={20} color="#666666" />
-            <Text style={[styles.sectionText, isRTL && styles.textRTL]}>
-              {formatDateTime(job.scheduledDate)}
-            </Text>
-          </View>
-          
-          <View style={[styles.sectionRow, isRTL && styles.sectionRowRTL]}>
-            <Ionicons name="time" size={20} color="#666666" />
-            <Text style={[styles.sectionText, isRTL && styles.textRTL]}>
-              {job.duration} {t('jobDetails.hours')}
-            </Text>
-          </View>
-          
-          <TouchableOpacity 
-            style={[styles.sectionRow, isRTL && styles.sectionRowRTL]}
-            onPress={() => openMaps(job.address)}
-          >
-            <Ionicons name="location" size={20} color="#666666" />
-            <Text style={[styles.sectionText, styles.addressText, isRTL && styles.textRTL]}>
-              {job.address}
-            </Text>
-            <Ionicons name="navigate" size={20} color="#007AFF" />
-          </TouchableOpacity>
-        </View>
-
-        {job.status === 'accepted' && (
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => callClient(job.client.phone)}
-            >
-              <View style={[styles.actionIcon, styles.callIcon]}>
-                <Ionicons name="call" size={24} color="#FFFFFF" />
-              </View>
-              <Text style={[styles.actionText, isRTL && styles.textRTL]}>
-                {t('jobDetails.actions.call')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => messageClient(job.client.phone)}
-            >
-              <View style={[styles.actionIcon, styles.messageIcon]}>
-                <Ionicons name="chatbubble" size={24} color="#FFFFFF" />
-              </View>
-              <Text style={[styles.actionText, isRTL && styles.textRTL]}>
-                {t('jobDetails.actions.message')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => openMaps(job.address)}
-            >
-              <View style={[styles.actionIcon, styles.directionIcon]}>
-                <Ionicons name="navigate" size={24} color="#FFFFFF" />
-              </View>
-              <Text style={[styles.actionText, isRTL && styles.textRTL]}>
-                {t('jobDetails.actions.directions')}
-              </Text>
-            </TouchableOpacity>
+        {/* ── Navigation ────────────────────────────────────────────────── */}
+        {job.address && (
+          <View style={styles.card}>
+            <View style={styles.quickRow}>
+              <QuickAction
+                icon="navigate"
+                label={HE.actions.directions}
+                color="#3B82F6"
+                onPress={() => openMaps(job.address)}
+              />
+            </View>
           </View>
         )}
 
-        <View style={styles.detailSection}>
-          <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
-            {t('jobDetails.serviceDetails.title')}
-          </Text>
-          
-          <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
-            <Text style={[styles.detailLabel, isRTL && styles.textRTL]}>
-              {t('jobDetails.serviceDetails.service')}
-            </Text>
-            <Text style={[styles.detailValue, isRTL && styles.textRTL]}>
-              {job.serviceType}
-            </Text>
-          </View>
-          
-          <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
-            <Text style={[styles.detailLabel, isRTL && styles.textRTL]}>
-              סוג נכס
-            </Text>
-            <Text style={[styles.detailValue, isRTL && styles.textRTL]}>
-              {job.propertyType}
-            </Text>
-          </View>
-          
-          <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
-            <Text style={[styles.detailLabel, isRTL && styles.textRTL]}>
-              {t('jobDetails.serviceDetails.price')}
-            </Text>
-            <Text style={[styles.detailValue, isRTL && styles.textRTL]}>
-              ₪{job.price}
-            </Text>
-          </View>
-          
-          {job.description && (
-            <View style={styles.notesContainer}>
-              <Text style={[styles.notesLabel, isRTL && styles.textRTL]}>
-                {t('jobDetails.serviceDetails.notes')}
-              </Text>
-              <Text style={[styles.notesText, isRTL && styles.textRTL]}>
-                {job.description}
+        {/* ── Détails de la mission ──────────────────────────────────────── */}
+        <View style={styles.card}>
+          <Text style={[styles.sectionTitle, styles.rtl]}>{HE.details}</Text>
+
+          {/* duration peut s'appeler duration ou hours selon le schéma */}
+          <DetailRow
+            label={HE.duration}
+            value={
+              job.duration || job.hours || job.durationHours
+                ? `${job.duration || job.hours || job.durationHours} ${HE.hours}`
+                : '—'
+            }
+          />
+
+          {/* date/heure de la mission */}
+          {(job.date || job.scheduledDate || job.bookingDate) && (
+            <DetailRow
+              label="תאריך ושעה"
+              value={formatDateTime(job.date || job.scheduledDate || job.bookingDate)}
+            />
+          )}
+
+          {/* prix total */}
+          <DetailRow
+            label="מחיר"
+            value={`₪${job.totalPrice || job.price || 0}`}
+          />
+
+          {job.rooms && <DetailRow label={HE.rooms} value={String(job.rooms)} />}
+          {job.bathrooms && <DetailRow label={HE.bathrooms} value={String(job.bathrooms)} />}
+
+          {(job.notes || job.clientNotes || job.description) && (
+            <View style={styles.notesBlock}>
+              <Text style={[styles.detailLabel, styles.rtl]}>{HE.notes}</Text>
+              <Text style={[styles.notesText, styles.rtl]}>
+                {job.notes || job.clientNotes || job.description}
               </Text>
             </View>
           )}
         </View>
 
-        {job.status === 'accepted' && (
-          <>
-            <TouchableOpacity
-              style={styles.completeButton}
-              onPress={completeJob}
-            >
-              <Text style={styles.completeButtonText}>
-                {t('jobDetails.actions.markComplete')}
-              </Text>
+        {/* ── CTA principaux ────────────────────────────────────────────── */}
+        <View style={styles.ctaBlock}>
+          {(jobStatus === 'accepted' || jobStatus === 'in_progress') && (
+            <TouchableOpacity style={styles.btnComplete} onPress={markAsCompleted}>
+              <Text style={styles.btnCompleteText}>{HE.actions.markComplete}</Text>
             </TouchableOpacity>
+          )}
+          {jobStatus !== 'completed' && jobStatus !== 'cancelled' && (
+            <TouchableOpacity style={styles.btnCancelOutline} onPress={cancelJob}>
+              <Text style={styles.btnCancelOutlineText}>{HE.actions.cancelJob}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={cancelJob}
-            >
-              <Text style={styles.cancelButtonText}>
-                {t('jobDetails.actions.cancelJob')}
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
 };
 
+// ── Composants locaux ────────────────────────────────────────────────────────
+
+const InfoRow = ({ icon, text, isLink, onPress }) => (
+  <TouchableOpacity
+    style={styles.infoRow}
+    onPress={onPress}
+    disabled={!isLink}
+    activeOpacity={isLink ? 0.55 : 1}
+  >
+    <Text style={[styles.infoText, styles.rtl, isLink && styles.linkText]}>{text}</Text>
+    <View style={styles.infoIconWrap}>
+      <Ionicons name={icon} size={16} color="#9CA3AF" />
+    </View>
+  </TouchableOpacity>
+);
+
+const QuickAction = ({ icon, label, color, onPress }) => (
+  <TouchableOpacity style={styles.quickAction} onPress={onPress} activeOpacity={0.7}>
+    <View style={[styles.quickActionIcon, { backgroundColor: `${color}18` }]}>
+      <Ionicons name={icon} size={20} color={color} />
+    </View>
+    <Text style={styles.quickActionLabel}>{label}</Text>
+  </TouchableOpacity>
+);
+
+const DetailRow = ({ label, value }) => (
+  <View style={styles.detailRow}>
+    <Text style={[styles.detailValue, styles.rtl]}>{value}</Text>
+    <Text style={[styles.detailLabel, styles.rtl]}>{label}</Text>
+  </View>
+);
+
+// ── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+
+  // Layout
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#F9FAFB',
   },
-  loadingContainer: {
+
+  // Custom header (remplace le header bleu du navigator)
+  header: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    // Compensation Android StatusBar
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : 12,
+  },
+  headerBack: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 40 },
+
+  // States
+  center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8F8F8',
+    padding: 24,
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    fontWeight: '400',
+    textAlign: 'center',
   },
   errorText: {
-    fontSize: 16,
-    color: '#F44336',
+    fontSize: 13,
+    color: '#DC2626',
     textAlign: 'center',
-    marginHorizontal: 30,
-    marginTop: 15,
+    fontWeight: '400',
   },
-  retryButton: {
-    marginTop: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: '#007AFF',
-    borderRadius: 5,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  header: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerContentRTL: {
-    flexDirection: 'row-reverse',
-  },
-  clientName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  confirmedStatus: {
-    backgroundColor: '#E8F5E9',
-  },
-  pendingStatus: {
-    backgroundColor: '#FFF8E1',
-  },
-  completedStatus: {
-    backgroundColor: '#E8F5E9',
-  },
-  cancelledStatus: {
-    backgroundColor: '#FFEBEE',
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  pendingContainer: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    marginBottom: 10,
-    alignItems: 'center',
-  },
-  pendingTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 5,
-  },
-  pendingSubtitle: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  pendingActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 30,
-  },
-  pendingActionsRTL: {
-    flexDirection: 'row-reverse',
-  },
-  confirmButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 25,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  confirmButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  declineButton: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 25,
-    paddingVertical: 12,
+  retryBtn: {
+    marginTop: 4,
+    paddingVertical: 9,
+    paddingHorizontal: 24,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#F44336',
+    borderColor: '#D1D5DB',
   },
-  declineButtonText: {
-    color: '#F44336',
-    fontSize: 16,
-    fontWeight: '500',
+  retryBtnText: {
+    color: '#374151',
+    fontSize: 13,
+    fontWeight: '600',
   },
-  section: {
+
+  // Card (surface blanche)
+  card: {
     backgroundColor: '#FFFFFF',
-    padding: 15,
-    marginBottom: 10,
+    marginTop: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#F3F4F6',
   },
-  sectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 5,
+  divider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginHorizontal: -20,
+    marginTop: 16,
   },
-  sectionRowRTL: {
+
+  // Header
+  headerRow: {
     flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
-  sectionText: {
-    fontSize: 16,
-    color: '#333333',
-    marginLeft: 10,
+  headerRight: {
     flex: 1,
+    alignItems: 'flex-end',
+    gap: 8,
   },
-  addressText: {
-    color: '#007AFF',
-    textDecorationLine: 'underline',
+  serviceName: {
+    fontSize: 19,
+    fontWeight: '600',
+    color: '#111827',
+    letterSpacing: -0.4,
+    lineHeight: 24,
   },
-  actionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 15,
-    marginBottom: 10,
+  badge: {
+    alignSelf: 'flex-end',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 6,
   },
-  actionButton: {
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.1,
+  },
+  price: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#16A34A',
+    letterSpacing: -0.5,
+    marginLeft: 16,
+  },
+
+  // Info rows
+  infoRow: {
+    flexDirection: 'row-reverse',
     alignItems: 'center',
+    gap: 12,
+    paddingVertical: 2,
   },
-  actionIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '400',
+    lineHeight: 20,
+  },
+  linkText: {
+    color: '#2563EB',
+  },
+  infoIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F9FAFB',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 5,
   },
-  callIcon: {
-    backgroundColor: '#4CAF50',
+
+  // Pending actions
+  pendingRow: {
+    flexDirection: 'row-reverse',
+    gap: 10,
   },
-  messageIcon: {
-    backgroundColor: '#FF9800',
+
+  // Quick actions
+  quickRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'center',
+    paddingVertical: 2,
   },
-  directionIcon: {
-    backgroundColor: '#2196F3',
+  quickAction: {
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
   },
-  actionText: {
-    fontSize: 14,
-    color: '#666666',
+  quickActionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  detailSection: {
-    backgroundColor: '#FFFFFF',
-    padding: 15,
-    marginBottom: 10,
+  quickActionLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '400',
   },
+
+  // Details section
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 15,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 12,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  detailRowRTL: {
     flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F9FAFB',
   },
   detailLabel: {
-    fontSize: 16,
-    color: '#666666',
+    fontSize: 13,
+    color: '#9CA3AF',
+    fontWeight: '400',
   },
   detailValue: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333333',
-  },
-  notesContainer: {
-    marginTop: 15,
-  },
-  notesLabel: {
-    fontSize: 16,
-    color: '#666666',
-    marginBottom: 5,
-  },
-  notesText: {
-    fontSize: 16,
-    color: '#333333',
-    lineHeight: 22,
-    backgroundColor: '#F5F5F5',
-    padding: 10,
-    borderRadius: 5,
-  },
-  completeButton: {
-    margin: 15,
-    marginBottom: 5,
-    padding: 15,
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  completeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  cancelButton: {
-    margin: 15,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#F44336',
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 25,
-  },
-  cancelButtonText: {
-    color: '#F44336',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
+    color: '#111827',
+    letterSpacing: -0.2,
   },
-  textRTL: {
+
+  // Notes
+  notesBlock: { marginTop: 14, gap: 8 },
+  notesText: {
+    fontSize: 13,
+    color: '#374151',
+    lineHeight: 20,
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+    fontWeight: '400',
+  },
+
+  // Buttons
+  btnPrimary: {
+    backgroundColor: '#111827',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  btnPrimaryText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  btnDangerOutline: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(220,38,38,0.25)',
+    alignItems: 'center',
+  },
+  btnDangerOutlineText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+
+  // CTA bottom
+  ctaBlock: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    gap: 10,
+  },
+  btnComplete: {
+    paddingVertical: 14,
+    backgroundColor: '#16A34A',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  btnCompleteText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  btnCancelOutline: {
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(220,38,38,0.2)',
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  btnCancelOutlineText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+
+  // RTL global
+  rtl: {
     textAlign: 'right',
     writingDirection: 'rtl',
   },

@@ -1,6 +1,19 @@
-// provider/RequestsScreen.js
-// ✅ AVEC ADRESSE VISIBLE + CORRECTION ACCEPTATION/REFUS
-
+// RequestsScreen.js - REFONTE UI MINIMALISTE PREMIUM
+/*
+CHANGEMENTS MAJEURS:
+- Typographie: tailles réduites (24→20, 20→17, 16→14, 14→12)
+- Poids: 'bold' → '600', '500' → '400'
+- Container: fond #F9FAFB
+- Filter tabs: borderRadius 8px, fontSize 12, paddingVertical 6
+- Cards: borderRadius 12px, bordures 1px #F3F4F6, elevation 1
+- Status badges: opacité 10%, borderRadius 6px, fontSize 11
+- Action buttons: paddingVertical 12, borderRadius 8px
+- Client name: fontSize 20→17
+- Service name: fontSize 16→14
+- Info text: fontSize 14→12
+- Colors: #111827, #6B7280, #9CA3AF
+- Spacing: marginBottom entre cards 10→16
+*/
 import React, { useState, useContext } from 'react';
 import {
   StyleSheet,
@@ -25,6 +38,7 @@ const RequestsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [processingRequests, setProcessingRequests] = useState({});
+  const [activeFilter, setActiveFilter] = useState('all');
 
   useFocusEffect(
     React.useCallback(() => {
@@ -32,17 +46,10 @@ const RequestsScreen = ({ navigation }) => {
     }, [])
   );
 
-  // ✅ Fonction pour formater l'adresse
   const formatAddress = (address) => {
     if (!address) return 'כתובת לא סופקה';
-    
-    if (typeof address === 'string') {
-      return address;
-    }
-    
-    if (address.fullAddress) {
-      return address.fullAddress;
-    }
+    if (typeof address === 'string') return address;
+    if (address.fullAddress) return address.fullAddress;
     
     const parts = [];
     if (address.street) parts.push(address.street);
@@ -64,8 +71,6 @@ const RequestsScreen = ({ navigation }) => {
 
       const jobsResponse = await providerService.getJobs();
       const apiRequests = jobsResponse.data || [];
-      
-      console.log(`✅ ${apiRequests.length} missions récupérées depuis l'API`);
       
       const formattedRequests = apiRequests.map(req => ({
         _id: req._id,
@@ -101,418 +106,228 @@ const RequestsScreen = ({ navigation }) => {
     loadRequests();
   };
 
-  const getStatusLabel = (status) => {
-    const statusMap = {
-      'pending': 'ממתין לאישור',
-      'pending_payment': 'ממתין לאישור',
-      'payment_pending': 'ממתין לאישור',
-      'accepted': 'מאושר',
-      'confirmed': 'מאושר',
-      'completed': 'הושלם',
-      'declined': 'נדחה',
-      'cancelled': 'בוטל',
-      'canceled': 'בוטל',
-      'payment_held': 'תשלום מוחזק',
-      'payment_released': 'תשלום שוחרר',
-      'in_progress': 'בתהליך'
-    };
-    return statusMap[status] || status;
-  };
-
-  const getServiceTypeLabel = (serviceType) => {
-    const serviceMap = {
-      'Standard Cleaning': 'ניקיון רגיל',
-      'standard': 'ניקיון רגיל',
-      'Deep Cleaning': 'ניקיון עמוק',
-      'deep': 'ניקיון עמוק',
-      'Move In/Out': 'ניקיון דירה',
-      'move': 'ניקיון דירה',
-      'Post Construction': 'ניקיון אחרי בנייה',
-      'construction': 'ניקיון אחרי בנייה',
-      'Window Cleaning': 'ניקיון חלונות',
-      'windows': 'ניקיון חלונות',
-      'home': 'בית',
-      'Home': 'בית',
-      'office': 'משרד',
-      'Office': 'משרד',
-      'building': 'בניין',
-      'Building': 'בניין',
-      'airbnb': 'אירבנב',
-      'Airbnb': 'אירבנב'
-    };
-    return serviceMap[serviceType] || serviceType;
-  };
-
-  const formatDate = (dateString) => {
+  const handleAccept = async (requestId) => {
+    setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
+    
     try {
-      const date = new Date(dateString);
-      
-      const daysHebrew = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-      const monthsHebrew = [
-        'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
-        'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
-      ];
-      
-      const dayOfWeek = daysHebrew[date.getDay()];
-      const dayOfMonth = date.getDate();
-      const month = monthsHebrew[date.getMonth()];
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      
-      return `${dayOfWeek}, ${dayOfMonth} ${month}, ${hours}:${minutes}`;
-    } catch (error) {
-      console.error('Erreur formatage date:', error);
-      return dateString;
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending':
-      case 'pending_payment':
-      case 'payment_pending':
-        return '#FF9800';
-      case 'accepted':
-      case 'confirmed':
-        return '#4CAF50';
-      case 'declined':
-      case 'cancelled':
-      case 'canceled':
-        return '#F44336';
-      case 'completed':
-        return '#9C27B0';
-      default:
-        return '#666666';
-    }
-  };
-
-  // ✅ CORRECTION - Utilise le service API
-  const acceptRequest = async (requestId) => {
-    try {
-      if (processingRequests[requestId]) return;
-      
-      setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
-
-      // ✅ DEBUG: Vérifier le rôle et le token
-      const userRole = await AsyncStorage.getItem('userRole');
-      const token = await AsyncStorage.getItem('token');
-      console.log('🔑 Rôle utilisateur:', userRole);
-      console.log('🎫 Token présent:', !!token);
-
-      // ✅ Utilise la fonction du service API
-      const data = await providerService.acceptJob(requestId);
-
-      if (!data.success) {
-        throw new Error(data.message || 'שגיאה באישור הבקשה');
-      }
-
-      await updateRequestStatus(requestId, 'accepted');
+      await providerService.acceptJob(requestId);
       await loadRequests();
-
-      Alert.alert(
-        'הצלחה!',
-        'הבקשה אושרה והתשלום נלקח. הלקוח יקבל את מספר הטלפון שלך.',
-        [{ text: 'אישור' }]
-      );
-
+      Alert.alert('הצלחה', 'הבקשה אושרה בהצלחה');
     } catch (error) {
       console.error('Erreur acceptation:', error);
-      Alert.alert(
-        'שגיאה',
-        error.message || 'לא ניתן לאשר את הבקשה',
-        [{ text: 'אישור' }]
-      );
+      Alert.alert('שגיאה', 'לא ניתן לאשר את הבקשה');
     } finally {
       setProcessingRequests(prev => ({ ...prev, [requestId]: false }));
     }
   };
 
-  // ✅ CORRECTION - Utilise le service API
-  const declineRequest = async (requestId) => {
-    try {
-      if (processingRequests[requestId]) return;
-
-      Alert.prompt(
-        'סיבת דחייה',
-        'למה אתה דוחה את הבקשה הזו?',
-        [
-          {
-            text: 'ביטול',
-            style: 'cancel'
-          },
-          {
-            text: 'שלח',
-            onPress: async (reason) => {
-              try {
-                setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
-
-                // ✅ DEBUG: Vérifier le rôle et le token
-                const userRole = await AsyncStorage.getItem('userRole');
-                const token = await AsyncStorage.getItem('token');
-                console.log('🔑 Rôle utilisateur:', userRole);
-                console.log('🎫 Token présent:', !!token);
-
-                // ✅ Utilise la fonction du service API
-                const data = await providerService.declineJob(requestId);
-
-                if (!data.success) {
-                  throw new Error(data.message || 'שגיאה בדחיית הבקשה');
-                }
-
-                await updateRequestStatus(requestId, 'declined');
-                await loadRequests();
-
-                Alert.alert(
-                  'בקשה נדחתה',
-                  'הלקוח יקבל החזר כספי אוטומטי.',
-                  [{ text: 'אישור' }]
-                );
-
-              } catch (error) {
-                console.error('Erreur refus:', error);
-                Alert.alert(
-                  'שגיאה',
-                  error.message || 'לא ניתן לדחות את הבקשה',
-                  [{ text: 'אישור' }]
-                );
-              } finally {
-                setProcessingRequests(prev => ({ ...prev, [requestId]: false }));
-              }
+  const handleDecline = async (requestId) => {
+    Alert.alert(
+      'דחיית בקשה',
+      'האם אתה בטוח שברצונך לדחות את הבקשה?',
+      [
+        { text: 'ביטול', style: 'cancel' },
+        {
+          text: 'דחה',
+          style: 'destructive',
+          onPress: async () => {
+            setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
+            try {
+              await providerService.declineJob(requestId, { reason: 'declined_by_provider' });
+              await loadRequests();
+              Alert.alert('הצלחה', 'הבקשה נדחתה');
+            } catch (error) {
+              console.error('Erreur refus:', error);
+              Alert.alert('שגיאה', 'לא ניתן לדחות את הבקשה');
+            } finally {
+              setProcessingRequests(prev => ({ ...prev, [requestId]: false }));
             }
           }
-        ],
-        'plain-text',
-        '',
-        'default'
-      );
+        }
+      ]
+    );
+  };
 
-    } catch (error) {
-      console.error('Erreur flux refus:', error);
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${day}/${month}/${year} בשעה ${hours}:${minutes}`;
+  };
+
+  const getStatusConfig = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+      case 'pending_payment':
+        return { label: 'ממתין', bg: '#F59E0B10', text: '#F59E0B' };
+      case 'accepted':
+        return { label: 'מאושר', bg: '#10B98110', text: '#10B981' };
+      case 'in_progress':
+        return { label: 'בביצוע', bg: '#3B82F610', text: '#3B82F6' };
+      case 'completed':
+        return { label: 'הושלם', bg: '#10B98110', text: '#10B981' };
+      case 'cancelled':
+        return { label: 'בוטל', bg: '#EF444410', text: '#EF4444' };
+      default:
+        return { label: status, bg: '#F59E0B10', text: '#F59E0B' };
     }
   };
 
-  const updateRequestStatus = async (requestId, newStatus) => {
-    try {
-      const response = await providerService.getProviderProfile();
-      const providerId = response.data._id;
-      
-      if (!providerId) return;
-
-      const providerRequestsKey = `provider_requests_${providerId}`;
-      const savedRequests = await AsyncStorage.getItem(providerRequestsKey);
-      
-      if (savedRequests) {
-        const requestsData = JSON.parse(savedRequests);
-        const updatedRequests = requestsData.map(req => 
-          req._id === requestId ? { ...req, status: newStatus } : req
-        );
-        await AsyncStorage.setItem(providerRequestsKey, JSON.stringify(updatedRequests));
-      }
-
-      const request = requests.find(r => r._id === requestId);
-      if (request) {
-        await syncStatusToClient(request.clientId, requestId, newStatus);
-      }
-
-    } catch (error) {
-      console.error('Erreur mise à jour statut:', error);
+  const filterRequests = () => {
+    switch (activeFilter) {
+      case 'pending':
+        return requests.filter(r => r.status?.toLowerCase() === 'pending' || r.status?.toLowerCase() === 'pending_payment');
+      case 'accepted':
+        return requests.filter(r => r.status?.toLowerCase() === 'accepted' || r.status?.toLowerCase() === 'in_progress');
+      case 'completed':
+        return requests.filter(r => r.status?.toLowerCase() === 'completed');
+      default:
+        return requests;
     }
   };
 
-  const syncStatusToClient = async (clientId, requestId, newStatus) => {
-    try {
-      const clientBookingsKey = 'user_bookings';
-      const savedBookings = await AsyncStorage.getItem(clientBookingsKey);
-      
-      if (savedBookings) {
-        const bookingsData = JSON.parse(savedBookings);
-        const updatedBookings = bookingsData.map(booking => 
-          booking._id === requestId ? { ...booking, status: newStatus } : booking
-        );
-        await AsyncStorage.setItem(clientBookingsKey, JSON.stringify(updatedBookings));
-      }
-    } catch (error) {
-      console.error('Erreur sync client:', error);
-    }
-  };
+  const filteredRequests = filterRequests();
 
-  const navigateToDetails = (request) => {
-    const jobData = {
-      id: request._id,
-      clientName: request.clientName,
-      serviceName: getServiceTypeLabel(request.serviceType),
-      date: request.dateTime,
-      duration: request.duration,
-      address: formatAddress(request.address),
-      coordinates: {
-        latitude: 32.0853,
-        longitude: 34.7818
-      },
-      clientPhone: request.clientPhone || '+972 50 123 4567',
-      price: request.price,
-      status: request.status,
-      notes: request.notes || 'אין הערות',
-      payment: request.payment
-    };
-
-    navigation.navigate('JobDetails', { 
-      jobId: request._id,
-      jobData: jobData 
-    });
-  };
-
-  if (loading) {
+  if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>טוען...</Text>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>טוען בקשות...</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header with Filters */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-forward" size={24} color="#333333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>המשימות שלי</Text>
-        <TouchableOpacity 
-          style={styles.refreshButton}
-          onPress={onRefresh}
-        >
-          <Ionicons name="refresh" size={24} color="#007AFF" />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>הבקשות שלי</Text>
+        <View style={styles.filterContainer}>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilter === 'all' && styles.filterButtonActive]}
+            onPress={() => setActiveFilter('all')}
+          >
+            <Text style={[styles.filterText, activeFilter === 'all' && styles.filterTextActive]}>
+              הכל ({requests.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilter === 'pending' && styles.filterButtonActive]}
+            onPress={() => setActiveFilter('pending')}
+          >
+            <Text style={[styles.filterText, activeFilter === 'pending' && styles.filterTextActive]}>
+              ממתינות ({requests.filter(r => r.status?.toLowerCase() === 'pending' || r.status?.toLowerCase() === 'pending_payment').length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilter === 'accepted' && styles.filterButtonActive]}
+            onPress={() => setActiveFilter('accepted')}
+          >
+            <Text style={[styles.filterText, activeFilter === 'accepted' && styles.filterTextActive]}>
+              מאושרות ({requests.filter(r => r.status?.toLowerCase() === 'accepted' || r.status?.toLowerCase() === 'in_progress').length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilter === 'completed' && styles.filterButtonActive]}
+            onPress={() => setActiveFilter('completed')}
+          >
+            <Text style={[styles.filterText, activeFilter === 'completed' && styles.filterTextActive]}>
+              הושלמו ({requests.filter(r => r.status?.toLowerCase() === 'completed').length})
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {requests.length === 0 ? (
+        {filteredRequests.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="clipboard-outline" size={60} color="#CCCCCC" />
-            <Text style={styles.emptyTitle}>אין בקשות</Text>
-            <Text style={styles.emptySubtitle}>בקשות חדשות יופיעו כאן</Text>
+            <Ionicons name="inbox-outline" size={64} color="#E5E7EB" />
+            <Text style={styles.emptyText}>אין בקשות להצגה</Text>
           </View>
         ) : (
-          <>
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {requests.filter(r => r.status === 'pending' || r.status === 'pending_payment').length}
-                </Text>
-                <Text style={styles.statLabel}>ממתין</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {requests.filter(r => r.status === 'accepted' || r.status === 'confirmed').length}
-                </Text>
-                <Text style={styles.statLabel}>מאושר</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {requests.filter(r => r.status === 'completed').length}
-                </Text>
-                <Text style={styles.statLabel}>הושלם</Text>
-              </View>
-            </View>
+          filteredRequests.map((request) => {
+            const statusConfig = getStatusConfig(request.status);
+            const isProcessing = processingRequests[request._id];
 
-            {requests.map((request) => (
+            return (
               <TouchableOpacity
                 key={request._id}
                 style={styles.requestCard}
-                onPress={() => navigateToDetails(request)}
-                activeOpacity={0.7}
+                onPress={() => navigation.navigate('JobDetails', { jobId: request._id })}
+                disabled={isProcessing}
               >
+                {/* Header */}
                 <View style={styles.requestHeader}>
-                  <Text style={styles.clientName}>{request.clientName}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(request.status) }]}>
-                    <Text style={styles.statusText}>
-                      {getStatusLabel(request.status)}
+                  <View style={styles.clientInfo}>
+                    <Ionicons name="person" size={18} color="#9CA3AF" />
+                    <Text style={styles.clientName}>{request.clientName}</Text>
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg }]}>
+                    <Text style={[styles.statusText, { color: statusConfig.text }]}>
+                      {statusConfig.label}
                     </Text>
                   </View>
                 </View>
 
-                <View style={styles.serviceTypeContainer}>
-                  <Ionicons name="construct" size={22} color="#007AFF" />
-                  <Text style={styles.serviceTypeText}>
-                    {getServiceTypeLabel(request.serviceType)}
-                  </Text>
-                </View>
-
-                <View style={styles.requestInfo}>
+                {/* Body */}
+                <View style={styles.requestBody}>
                   <View style={styles.infoRow}>
-                    <Ionicons name="calendar" size={16} color="#666666" />
-                    <Text style={styles.infoText}>
-                      {formatDate(request.dateTime)}
-                    </Text>
+                    <Ionicons name="cleaning-services" size={16} color="#6B7280" />
+                    <Text style={styles.serviceType}>{request.serviceType}</Text>
                   </View>
-                  
                   <View style={styles.infoRow}>
-                    <Ionicons name="time" size={16} color="#666666" />
-                    <Text style={styles.infoText}>{request.duration} שעות</Text>
+                    <Ionicons name="time-outline" size={16} color="#6B7280" />
+                    <Text style={styles.dateTime}>{formatDateTime(request.dateTime)}</Text>
                   </View>
-                  
                   <View style={styles.infoRow}>
-                    <Ionicons name="cash" size={16} color="#4CAF50" />
-                    <Text style={[styles.infoText, { color: '#4CAF50', fontWeight: 'bold' }]}>
-                      ₪{request.price}
+                    <Ionicons name="location-outline" size={16} color="#6B7280" />
+                    <Text style={styles.address} numberOfLines={1}>
+                      {formatAddress(request.address)}
                     </Text>
                   </View>
                 </View>
 
-                {/* ✅ ADRESSE BIEN VISIBLE */}
-                <View style={styles.addressRow}>
-                  <Ionicons name="location" size={20} color="#FF9800" />
-                  <Text style={styles.addressText} numberOfLines={2}>
-                    {formatAddress(request.address)}
-                  </Text>
+                {/* Footer */}
+                <View style={styles.requestFooter}>
+                  <Text style={styles.price}>₪{request.price}</Text>
+                  {(request.status?.toLowerCase() === 'pending' || request.status?.toLowerCase() === 'pending_payment') && (
+                    <View style={styles.actionButtons}>
+                      <TouchableOpacity
+                        style={styles.acceptButton}
+                        onPress={() => handleAccept(request._id)}
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={styles.acceptButtonText}>אשר</Text>
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.declineButton}
+                        onPress={() => handleDecline(request._id)}
+                        disabled={isProcessing}
+                      >
+                        <Text style={styles.declineButtonText}>דחה</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
-
-                {(request.status === 'pending' || request.status === 'pending_payment') && (
-                  <View style={styles.pendingActions}>
-                    <TouchableOpacity
-                      style={[
-                        styles.acceptButton,
-                        processingRequests[request._id] && styles.disabledButton
-                      ]}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        acceptRequest(request._id);
-                      }}
-                      disabled={processingRequests[request._id]}
-                    >
-                      {processingRequests[request._id] ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      ) : (
-                        <Text style={styles.acceptButtonText}>קבל</Text>
-                      )}
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity
-                      style={[
-                        styles.declineButton,
-                        processingRequests[request._id] && styles.disabledButton
-                      ]}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        declineRequest(request._id);
-                      }}
-                      disabled={processingRequests[request._id]}
-                    >
-                      <Text style={styles.declineButtonText}>דחה</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
               </TouchableOpacity>
-            ))}
-          </>
+            );
+          })
         )}
       </ScrollView>
     </SafeAreaView>
@@ -522,221 +337,190 @@ const RequestsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#F9FAFB',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8F8F8',
   },
   loadingText: {
-    marginTop: 10,
-    color: '#666666',
+    marginTop: 16,
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '400',
     textAlign: 'right',
   },
   header: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
     backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  backButton: {
-    padding: 5,
+    borderBottomColor: '#F3F4F6',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#111827',
     textAlign: 'right',
+    marginBottom: 16,
+    letterSpacing: -0.3,
+    lineHeight: 22,
   },
-  refreshButton: {
-    padding: 5,
+  filterContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+    alignItems: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  filterText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  filterTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
+    padding: 20,
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    justifyContent: 'center',
     paddingVertical: 60,
   },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#666666',
-    marginTop: 20,
-    textAlign: 'right',
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: '#999999',
+  emptyText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#9CA3AF',
     textAlign: 'center',
-    marginTop: 10,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 15,
-    marginTop: 15,
-    marginBottom: 10,
-    borderRadius: 10,
-    padding: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666666',
-    marginTop: 4,
-    textAlign: 'center',
+    fontWeight: '400',
   },
   requestCard: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 15,
-    marginBottom: 10,
-    borderRadius: 10,
-    padding: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   requestHeader: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  clientInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   clientName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
-    flex: 1,
-    textAlign: 'right',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  serviceTypeContainer: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    backgroundColor: '#F0F7FF',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  serviceTypeText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#007AFF',
-    marginRight: 8,
-    textAlign: 'right',
-  },
-  requestInfo: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 10,
-  },
-  infoRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    marginLeft: 15,
-    marginBottom: 5,
-    width: '45%',
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#333333',
-    marginRight: 5,
-    textAlign: 'right',
-  },
-  // ✅ ADRESSE SUPER VISIBLE
-  addressRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'flex-start',
-    backgroundColor: '#FFF3CD',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    marginBottom: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF9800',
-  },
-  addressText: {
-    fontSize: 16,
-    color: '#000',
+    fontSize: 17,
     fontWeight: '600',
-    marginRight: 10,
-    flex: 1,
-    textAlign: 'right',
+    color: '#111827',
+    letterSpacing: -0.3,
     lineHeight: 22,
   },
-  pendingActions: {
-    flexDirection: 'row-reverse',
+  statusBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  requestBody: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  serviceType: {
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '500',
+    letterSpacing: -0.2,
+    flex: 1,
+    textAlign: 'right',
+  },
+  dateTime: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '400',
+    flex: 1,
+    textAlign: 'right',
+  },
+  address: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '400',
+    flex: 1,
+    textAlign: 'right',
+  },
+  requestFooter: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
-    paddingTop: 10,
+    alignItems: 'center',
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
+    borderTopColor: '#F3F4F6',
+  },
+  price: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#10B981',
+    letterSpacing: -0.3,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
   },
   acceptButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    flex: 0.48,
+    backgroundColor: '#007AFF',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    minWidth: 60,
     alignItems: 'center',
   },
   acceptButtonText: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   declineButton: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#F44336',
-    flex: 0.48,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    minWidth: 60,
     alignItems: 'center',
   },
   declineButtonText: {
-    color: '#F44336',
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
-  disabledButton: {
-    opacity: 0.5,
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
 });
 

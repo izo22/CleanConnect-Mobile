@@ -8,11 +8,13 @@ import { calculatePlatformFees, PLATFORM_FEES } from '../config/constants';
 
 const PriceBreakdown = ({ 
   servicePrice, 
+  serviceType = 'home', // ✅ AJOUT du serviceType avec valeur par défaut
   serviceColor = '#2196F3', 
   showDetails = true,
   isPromo = false 
 }) => {
-  const fees = calculatePlatformFees(servicePrice, isPromo);
+  // ✅ Passer le serviceType à calculatePlatformFees
+  const fees = calculatePlatformFees(servicePrice, isPromo, serviceType);
   const isRTL = true; // תמיד RTL לעברית
   
   const formatPrice = (price) => `${price.toFixed(2)} ${PLATFORM_FEES.CURRENCY}`;
@@ -54,7 +56,10 @@ const PriceBreakdown = ({
           </View>
           
           <View style={[styles.breakdownRow, styles.rtlRow]}>
-            <Text style={[styles.breakdownLabel, styles.textRTL]}>• עמלת פלטפורמה (3%)</Text>
+            <Text style={[styles.breakdownLabel, styles.textRTL]}>
+              {/* ✅ Affichage dynamique du pourcentage */}
+              • עמלת פלטפורמה ({fees.percentage}%)
+            </Text>
             <Text style={[styles.breakdownValue, styles.textRTL]}>{formatPrice(fees.commission)}</Text>
           </View>
           

@@ -19,6 +19,7 @@ const RegisterScreen = ({ navigation }) => {
         mode="contained" 
         onPress={() => navigation.navigate('Login')}
         style={styles.button}
+        labelStyle={styles.buttonLabel}
       >
         חזרה להתחברות
       </Button>
@@ -32,20 +33,37 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F9FAFB',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+    lineHeight: 18 * 1.3,
+    color: '#111827',
+    marginBottom: 12,
   },
   subtitle: {
-    fontSize: 16,
-    marginBottom: 30,
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 14 * 1.4,
+    color: '#6B7280',
+    marginBottom: 32,
     textAlign: 'center',
   },
   button: {
     marginTop: 20,
     width: '100%',
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  buttonLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    lineHeight: 14 * 1.3,
   },
   textRTL: {
     textAlign: 'right',

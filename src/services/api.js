@@ -4,18 +4,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Créer une instance axios avec la configuration de base
 const api = axios.create({
-  // : 'https://cleanconnect-backend-tulh.onrender.com/api',
-  baseURL: 'http://localhost:5000/api',
-
+  baseURL: 'https://cleanconnect-backend-tulh.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 90000, // 90 secondes pour gérer les cold starts de Render
+  timeout: 90000,
 });
-// Intercepteur pour ajouter le token d'authentification et journaliser les requêtes
+
+// Intercepteur pour ajouter le token d'authentification
 api.interceptors.request.use(
   async (config) => {
-    
     const token = await AsyncStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -39,7 +37,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
 
 // Service d'authentification
 export const authService = {
@@ -156,6 +153,19 @@ export const userService = {
 
 // Service prestataire
 export const providerService = {
+  // ✅ AJOUTÉ: Obtenir tous les prestataires
+  getAllProviders: async (city, serviceType) => {
+    try {
+      const params = {};
+      if (city) params.city = city;
+      if (serviceType) params.serviceType = serviceType;
+      const response = await api.get('/providers', { params });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
   // Obtenir le profil du prestataire
   getProviderProfile: async () => {
     try {
@@ -165,7 +175,7 @@ export const providerService = {
       throw error.response ? error.response.data : error;
     }
   },
-  
+
   // Mettre à jour le profil du prestataire
   updateProfile: async (providerData) => {
     try {
@@ -186,7 +196,7 @@ export const providerService = {
     }
   },
 
-  // ✅ Ajouter un service
+  // Ajouter un service
   addService: async (serviceData) => {
     try {
       const response = await api.post('/providers/services', serviceData);
@@ -196,7 +206,7 @@ export const providerService = {
     }
   },
 
-  // ✅ Mettre à jour un service
+  // Mettre à jour un service
   updateService: async (serviceId, serviceData) => {
     try {
       const response = await api.put(`/providers/services/${serviceId}`, serviceData);
@@ -206,7 +216,7 @@ export const providerService = {
     }
   },
 
-  // ✅ Supprimer un service
+  // Supprimer un service
   deleteService: async (serviceId) => {
     try {
       const response = await api.delete(`/providers/services/${serviceId}`);
@@ -216,7 +226,7 @@ export const providerService = {
     }
   },
 
-  // ✅ NOUVEAU: Obtenir les statistiques du dashboard (optimisé)
+  // Obtenir les statistiques du dashboard
   getDashboardStats: async () => {
     try {
       const response = await api.get('/providers/dashboard/stats');
@@ -226,7 +236,7 @@ export const providerService = {
     }
   },
 
-  // ✅ NOUVEAU: Obtenir les missions du jour uniquement (optimisé)
+  // Obtenir les missions du jour uniquement
   getTodayJobs: async () => {
     try {
       const response = await api.get('/providers/dashboard/today');
@@ -259,7 +269,8 @@ export const providerService = {
   // Accepter une mission
   acceptJob: async (jobId) => {
     try {
-      const response = await api.put(`/providers/jobs/${jobId}/accept`);
+      // ✅ FIX — body {} explicite pour éviter le Bad Request du proxy Render sur PUT sans body
+      const response = await api.put(`/providers/jobs/${jobId}/accept`, {});
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;
@@ -269,7 +280,8 @@ export const providerService = {
   // Refuser une mission
   declineJob: async (jobId) => {
     try {
-      const response = await api.put(`/providers/jobs/${jobId}/decline`);
+      // ✅ FIX — body {} explicite pour éviter le Bad Request du proxy Render sur PUT sans body
+      const response = await api.put(`/providers/jobs/${jobId}/decline`, {});
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;
@@ -279,7 +291,8 @@ export const providerService = {
   // Marquer une mission comme terminée
   completeJob: async (jobId) => {
     try {
-      const response = await api.put(`/providers/jobs/${jobId}/complete`);
+      // ✅ FIX — body {} explicite pour éviter le Bad Request du proxy Render sur PUT sans body
+      const response = await api.put(`/providers/jobs/${jobId}/complete`, {});
       return response.data;
     } catch (error) {
       throw error.response ? error.response.data : error;

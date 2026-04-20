@@ -2,22 +2,40 @@
 // ✅ מערכת ערים מתורגמת לעברית
 
 // URL של API
-//export const API_URL = 'https://cleanconnect-backend-tulh.onrender.com/api';
-export const API_URL = 'http://localhost:5000/api';
+export const API_URL = 'https://cleanconnect-backend-tulh.onrender.com/api';
 
 // ✅ עמלות פלטפורמה - מערכת מעורבת
 export const PLATFORM_FEES = {
   BASE_FEE: 10,              // עמלת בסיס קבועה (₪)
-  COMMISSION_RATE: 0.03,     // עמלה 3%
+  COMMISSION_RATE_STANDARD: 0.03,     // עמלה 3% (appart-prive)
+  COMMISSION_RATE_PREMIUM: 0.06,      // עמלה 6% (airbnb, immeuble, bureaux)
   PROMO_BASE_FEE: 8,         // עמלת השקה מבצע (₪)
   CURRENCY: '₪',
   MIN_TOTAL_FEE: 10,         // עמלה מינימלית כוללת (₪)
 };
 
-// פונקציה לחישוב עמלות פלטפורמה
-export const calculatePlatformFees = (servicePrice, isPromo = false) => {
+// ✅ Types de services premium (6% commission)
+const PREMIUM_SERVICE_TYPES = ['airbnb', 'building', 'office', 'immeuble', 'bureaux', 'בניין', 'משרד', 'אירבנב'];
+
+// ✅ Fonction pour déterminer le taux de commission
+const getCommissionRate = (serviceType) => {
+  if (!serviceType) return PLATFORM_FEES.COMMISSION_RATE_STANDARD;
+  
+  const normalizedType = serviceType.toLowerCase();
+  const isPremium = PREMIUM_SERVICE_TYPES.some(type => 
+    normalizedType.includes(type.toLowerCase())
+  );
+  
+  return isPremium 
+    ? PLATFORM_FEES.COMMISSION_RATE_PREMIUM 
+    : PLATFORM_FEES.COMMISSION_RATE_STANDARD;
+};
+
+// ✅ פונקציה לחישוב עמלות פלטפורמה - MODIFIÉE pour prendre serviceType
+export const calculatePlatformFees = (servicePrice, isPromo = false, serviceType = null) => {
   const baseFee = isPromo ? PLATFORM_FEES.PROMO_BASE_FEE : PLATFORM_FEES.BASE_FEE;
-  const commission = servicePrice * PLATFORM_FEES.COMMISSION_RATE;
+  const commissionRate = getCommissionRate(serviceType);
+  const commission = servicePrice * commissionRate;
   const totalFee = baseFee + commission;
   
   // החלת מינימום
@@ -26,6 +44,8 @@ export const calculatePlatformFees = (servicePrice, isPromo = false) => {
   return {
     baseFee,
     commission,
+    commissionRate, // ✅ Retourner le taux pour affichage
+    percentage: commissionRate * 100, // ✅ Pourcentage pour affichage (3 ou 6)
     totalFee: finalFee,
     servicePrice,
     totalClientPays: servicePrice,
@@ -126,7 +146,7 @@ export const SERVICE_TYPES = {
   HOME: 'home',
   OFFICE: 'office',
   BUILDING: 'building',
-  AIRBNB: 'airbnb',  // ✅ NOUVEAU
+  AIRBNB: 'airbnb',
 };
 
 // תרגום סוגי שירותים
@@ -134,10 +154,10 @@ export const SERVICE_TYPE_LABELS = {
   home: 'ניקיון בית',
   office: 'ניקיון משרד',
   building: 'ניקיון בניין',
-  airbnb: 'ניקיון אירבנב',  // ✅ NOUVEAU
+  airbnb: 'ניקיון אירבנב',
 };
 
-// ✅ ✅ ✅ AJOUT ICI - צבעים של סוגי שירותים - COULEURS UNIFIÉES
+// ✅ צבעים של סוגי שירותים - COULEURS PRINCIPALES
 export const SERVICE_COLORS = {
   HOME: '#4A90E2',      // 🏠 בית - כחול (BLEU)
   OFFICE: '#E67E22',    // 🏢 משרד - כתום (ORANGE)
@@ -145,23 +165,57 @@ export const SERVICE_COLORS = {
   AIRBNB: '#FF5A5F',    // 🏨 אירבנב - ורוד (ROSE)
 };
 
+// ✅ Fonds légers pour chaque type de service
+export const SERVICE_BACKGROUND_COLORS = {
+  HOME: '#E3F2FD',      // 🏠 Bleu 50 léger
+  OFFICE: '#FFF3E0',    // 🏢 Orange 50 léger
+  BUILDING: '#E8F5E9',  // 🏗️ Vert 50 léger
+  AIRBNB: '#FCE4EC',    // 🏨 Rose 50 léger
+};
+
 // פונקציה לקבלת צבע לפי סוג שירות - Helper function
 export const getServiceColor = (serviceType) => {
   switch (serviceType?.toLowerCase()) {
     case 'home':
     case 'בית':
+    case 'maison':
       return SERVICE_COLORS.HOME;
     case 'office':
     case 'משרד':
+    case 'bureau':
       return SERVICE_COLORS.OFFICE;
     case 'building':
     case 'בניין':
+    case 'immeuble':
       return SERVICE_COLORS.BUILDING;
     case 'airbnb':
     case 'אירבנב':
       return SERVICE_COLORS.AIRBNB;
     default:
       return '#2196F3'; // צבע ברירת מחדל (bleu par défaut)
+  }
+};
+
+// ✅ Fonction pour obtenir le fond léger
+export const getServiceBackgroundColor = (serviceType) => {
+  switch (serviceType?.toLowerCase()) {
+    case 'home':
+    case 'בית':
+    case 'maison':
+      return SERVICE_BACKGROUND_COLORS.HOME;
+    case 'office':
+    case 'משרד':
+    case 'bureau':
+      return SERVICE_BACKGROUND_COLORS.OFFICE;
+    case 'building':
+    case 'בניין':
+    case 'immeuble':
+      return SERVICE_BACKGROUND_COLORS.BUILDING;
+    case 'airbnb':
+    case 'אירבנב':
+      return SERVICE_BACKGROUND_COLORS.AIRBNB;
+    default:
+      return '#F5F5F5'; // Gris clair par défaut
   }
 };
 
@@ -223,12 +277,12 @@ export const DATETIME_FORMAT = 'DD/MM/YYYY HH:mm';
 
 // מפתחות אחסון מקומי
 export const STORAGE_KEYS = {
-  AUTH_TOKEN: 'auth_token',
-  USER_INFO: 'user_info',
-  LANGUAGE: 'language',
-  USER_BOOKINGS: 'user_bookings',
+  AUTH_TOKEN: 'token',        // utilisé partout dans le projet
+  USER_ROLE: 'userRole',      // AuthContext.js lignes 57, 104, 220, 279
+  USER_DATA: 'userData',      // AuthContext.js lignes 58, 105, 221, 280
+  USER_BOOKINGS: 'user_bookings', // BookingContext.js — déjà correct
+  LANGUAGE: 'language',       // LanguageContext.js
 };
-
 // שפות זמינות
 export const LANGUAGES = {
   HE: 'he',

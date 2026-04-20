@@ -11,11 +11,9 @@ const ServiceDetails = ({ route, navigation }) => {
   const theme = useTheme();
   const { updateBooking } = useBooking();
   
-  // מצב מקומי לאפשרויות שנבחרו
   const [selectedFrequency, setSelectedFrequency] = useState(CLEANING_FREQUENCY.ONE_TIME);
-  const [selectedDuration, setSelectedDuration] = useState(2); // ברירת מחדל 2 שעות
+  const [selectedDuration, setSelectedDuration] = useState(2);
   
-  // צבע משויך לסוג השירות
   const getServiceColor = () => {
     switch (serviceType) {
       case 'home':
@@ -31,7 +29,6 @@ const ServiceDetails = ({ route, navigation }) => {
     }
   };
   
-  // תוכן ספציפי לפי סוג השירות
   const getServiceSpecificContent = () => {
     switch (serviceType) {
       case 'home':
@@ -102,16 +99,13 @@ const ServiceDetails = ({ route, navigation }) => {
   const serviceContent = getServiceSpecificContent();
   const serviceColor = getServiceColor();
   
-  // ניהול המעבר למסך חיפוש ספקים
   const handleContinue = () => {
-    // עדכון הקשר ההזמנה
     updateBooking({
       serviceType: serviceType,
       duration: selectedDuration,
       frequency: selectedFrequency
     });
     
-    // ניווט למסך חיפוש ספקים
     navigation.navigate('ProviderSearch', { 
       serviceType: serviceType,
       duration: selectedDuration,
@@ -155,9 +149,14 @@ const ServiceDetails = ({ route, navigation }) => {
                 onPress={() => setSelectedFrequency(value)}
                 style={[
                   styles.chip, 
-                  selectedFrequency === value ? { backgroundColor: serviceColor } : null
+                  selectedFrequency === value 
+                    ? { backgroundColor: serviceColor } 
+                    : { backgroundColor: `${serviceColor}10` }
                 ]}
-                textStyle={selectedFrequency === value ? styles.selectedChipText : null}
+                textStyle={[
+                  styles.chipText,
+                  selectedFrequency === value ? styles.selectedChipText : { color: serviceColor }
+                ]}
               >
                 {CLEANING_FREQUENCY_LABELS[value]}
               </Chip>
@@ -173,9 +172,14 @@ const ServiceDetails = ({ route, navigation }) => {
                 onPress={() => setSelectedDuration(duration)}
                 style={[
                   styles.chip, 
-                  selectedDuration === duration ? { backgroundColor: serviceColor } : null
+                  selectedDuration === duration 
+                    ? { backgroundColor: serviceColor } 
+                    : { backgroundColor: `${serviceColor}10` }
                 ]}
-                textStyle={selectedDuration === duration ? styles.selectedChipText : null}
+                textStyle={[
+                  styles.chipText,
+                  selectedDuration === duration ? styles.selectedChipText : { color: serviceColor }
+                ]}
               >
                 {duration}h
               </Chip>
@@ -190,7 +194,7 @@ const ServiceDetails = ({ route, navigation }) => {
           buttonColor={serviceColor}
           style={styles.button}
           onPress={handleContinue}
-          labelStyle={{ fontSize: 14, fontWeight: '500' }}
+          labelStyle={styles.buttonLabel}
         >
           {t('find_provider') || 'מצא ספק'}
         </Button>
@@ -202,61 +206,103 @@ const ServiceDetails = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9FAFB',
   },
   header: {
     padding: 20,
     paddingTop: 40,
-    paddingBottom: 30,
+    paddingBottom: 24,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+    lineHeight: 18 * 1.3,
     color: 'white',
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: 13,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 13 * 1.3,
     color: 'white',
-    opacity: 0.8,
+    opacity: 0.9,
   },
   infoCard: {
-    margin: 15,
-    borderRadius: 8,
-    elevation: 4,
+    margin: 16,
+    marginTop: 20,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   description: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 10,
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 14 * 1.5,
+    color: '#4B5563',
+    marginBottom: 8,
   },
   divider: {
     height: 1,
-    marginVertical: 15,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    marginBottom: 10,
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+    lineHeight: 16 * 1.3,
+    color: '#111827',
+    marginBottom: 12,
   },
   featureText: {
-    fontSize: 15,
+    fontSize: 13,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 13 * 1.4,
+    color: '#374151',
   },
   optionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 15,
+    marginBottom: 20,
+    gap: 8,
   },
   chip: {
-    margin: 4,
+    margin: 0,
+    borderRadius: 6,
+    height: 32,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
   selectedChipText: {
     color: 'white',
+    fontWeight: '600',
   },
   buttonContainer: {
-    padding: 15,
-    marginBottom: 30,
+    padding: 16,
+    marginBottom: 32,
   },
   button: {
-    paddingVertical: 8,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  buttonLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    lineHeight: 14 * 1.3,
   }
 });
 

@@ -1,7 +1,69 @@
 // src/screens/auth/ProviderRegistrationScreen.js
+// 🎨 VERSION ULTRA-MINIMALISTE PREMIUM
+// Style inspiré de Stripe, Linear, Revolut
 // גרסה מתורגמת לעברית ללא i18n
 // ✅ MODIFIÉ: Ajout de la catégorie Airbnb + FIX bouton disabled
 // ✅ CORRIGÉ: services → serviceDetails + ajout description
+
+/*
+CHANGEMENTS MAJEURS APPLIQUÉS :
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ TYPOGRAPHIE :
+  - Titre principal : 18px (au lieu de 24px), weight 600, letterSpacing -0.3
+  - Section titles : 16px (au lieu de 18px), weight 600
+  - Labels : 13px (au lieu de 14px), weight 400, letterSpacing -0.2
+  - Inputs : 14px (au lieu de 16px), weight 400
+  - Service titles : 15px (au lieu de 16px), weight 600
+  - Descriptions : 12px (au lieu de 14px), weight 400
+  - Line heights serrés : 1.3-1.4 partout
+
+✅ COULEURS & FONDS :
+  - Fond principal : #F9FAFB (ultra-clair)
+  - formSection : fond blanc pur #FFFFFF
+  - Inputs : fond #FFFFFF (pas #F5F5F5), bordure #F3F4F6
+  - Service items : fond #FAFAFA (ultra-léger)
+  - Service selected : fond #EFF6FF (bleu 10%), bordure #4a90e2
+  - Labels : #6B7280 (gris doux)
+  - Placeholders : #9CA3AF
+
+✅ CARDS/SECTIONS :
+  - Border-radius : 12px (au lieu de 10px/8px)
+  - Bordures ultra-subtiles : #F3F4F6
+  - Ombres quasi-éliminées : shadowOpacity 0.03, elevation 1
+  - Padding augmenté : 20px (au lieu de 15px)
+
+✅ INPUTS :
+  - Hauteur réduite : 40px (au lieu de variable)
+  - Fond blanc pur
+  - Bordures ultra-légères #F3F4F6
+  - Border-radius : 8px
+
+✅ SERVICE TYPE ITEMS :
+  - Border-radius : 10px (au lieu de 8px)
+  - Checkbox : 20px (au lieu de 24px)
+  - Padding augmenté pour respiration
+  - État selected avec fond bleu à 10% d'opacité
+
+✅ BOUTONS :
+  - Hauteur : 40px
+  - Border-radius : 8px
+  - Pas d'ombre
+  - État disabled plus subtil (#93C5FD)
+
+✅ SPACING :
+  - Espacements doublés entre sections : 24px
+  - Marges augmentées pour respiration
+  - Structure par le vide
+
+✅ ICONS :
+  - Taille réduite : 18px pour checkbox (au lieu de 18px gardé car déjà bon)
+  - Couleur grise douce : #9CA3AF
+
+✅ FIX ANDROID :
+  - lineHeight supprimé de input et rateInput (causait texte coupé/invisible sur Android)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+*/
 
 import React, { useState, useContext } from 'react';
 import {
@@ -40,9 +102,12 @@ const ServiceTypeItem = ({
         style={[styles.serviceTypeHeader, isRTL && styles.serviceTypeHeaderRTL]}
         onPress={() => toggleService(serviceKey)}
       >
-        <View style={styles.serviceTypeCheckbox}>
+        <View style={[
+          styles.serviceTypeCheckbox,
+          service.selected && styles.serviceTypeCheckboxSelected
+        ]}>
           {service.selected && (
-            <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+            <Ionicons name="checkmark" size={16} color="#FFFFFF" />
           )}
         </View>
         <View style={styles.serviceTypeContent}>
@@ -65,6 +130,7 @@ const ServiceTypeItem = ({
               value={service.rate}
               onChangeText={(text) => updateRate(serviceKey, text)}
               placeholder="0.00"
+              placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
             />
             <Text style={styles.rateCurrency}>₪/h</Text>
@@ -258,7 +324,8 @@ const ProviderRegistrationScreen = ({ navigation }) => {
         serviceTypes: selectedServices.map(service => service.type),
         serviceCities: serviceCities,
         serviceAreas: serviceCities,
-        serviceDetails: selectedServices  // ✅ CHANGÉ: services → serviceDetails
+        services: selectedServices,        // ← ce que le backend lit
+        serviceDetails: selectedServices   // ← gardé pour cohérence
       };
       
       registerProvider(userData)
@@ -330,6 +397,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholder="הזן את שמך הפרטי"
+                placeholderTextColor="#9CA3AF"
               />
               {errors.firstName && (
                 <Text style={[styles.errorText, isRTL && styles.textRTL]}>
@@ -351,6 +419,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 value={lastName}
                 onChangeText={setLastName}
                 placeholder="הזן את שם המשפחה שלך"
+                placeholderTextColor="#9CA3AF"
               />
               {errors.lastName && (
                 <Text style={[styles.errorText, isRTL && styles.textRTL]}>
@@ -371,6 +440,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="example@email.com"
+                placeholderTextColor="#9CA3AF"
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
@@ -393,6 +463,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 value={phone}
                 onChangeText={setPhone}
                 placeholder="05X-XXX-XXXX"
+                placeholderTextColor="#9CA3AF"
                 keyboardType="phone-pad"
               />
               {errors.phone && (
@@ -507,6 +578,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 onChangeText={setPassword}
                 secureTextEntry
                 placeholder="הזן סיסמה (לפחות 6 תווים)"
+                placeholderTextColor="#9CA3AF"
               />
               {errors.password && (
                 <Text style={[styles.errorText, isRTL && styles.textRTL]}>
@@ -529,6 +601,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 onChangeText={setConfirmPassword}
                 secureTextEntry
                 placeholder="הזן את הסיסמה שוב"
+                placeholderTextColor="#9CA3AF"
               />
               {errors.confirmPassword && (
                 <Text style={[styles.errorText, isRTL && styles.textRTL]}>
@@ -542,7 +615,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
             <Switch
               value={termsAccepted}
               onValueChange={setTermsAccepted}
-              trackColor={{ false: "#D1D1D6", true: "#4CD964" }}
+              trackColor={{ false: "#E5E7EB", true: "#4CD964" }}
             />
             <TouchableOpacity onPress={() => setTermsAccepted(!termsAccepted)}>
               <Text style={[styles.termsText, isRTL && styles.textRTL]}>
@@ -590,97 +663,148 @@ const ProviderRegistrationScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // CONTAINERS
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#F9FAFB', // Fond ultra-clair
   },
   keyboardAvoidView: {
     flex: 1,
   },
   scrollContainer: {
     padding: 20,
+    paddingBottom: 40,
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // HEADER
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   header: {
-    marginBottom: 30,
+    marginBottom: 32,
     alignItems: 'center',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 10,
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+    lineHeight: 18 * 1.3,
+    color: '#111827',
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666666',
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 14 * 1.4,
+    color: '#6B7280',
     textAlign: 'center',
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // FORM SECTIONS (Cards ultra-minimalistes)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   formSection: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 20,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.03,
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 1,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 15,
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+    lineHeight: 16 * 1.3,
+    color: '#111827',
+    marginBottom: 16,
   },
   sectionSubtitle: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 15,
+    fontSize: 12,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 12 * 1.4,
+    color: '#6B7280',
+    marginBottom: 20,
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // INPUTS (Minimalistes, fond blanc, bordures subtiles)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   inputContainer: {
-    marginBottom: 15,
+    marginBottom: 20,
   },
   label: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 5,
+    fontSize: 13,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 13 * 1.3,
+    color: '#6B7280',
+    marginBottom: 6,
   },
   input: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 0,
+    height: 40,
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    // ✅ FIX ANDROID: lineHeight supprimé — causait texte coupé/invisible sur Android
+    // quand combiné avec height fixe. Aucun impact visuel sur iOS.
+    color: '#111827',
   },
   inputError: {
-    borderWidth: 1,
-    borderColor: '#FF3B30',
+    borderColor: '#EF4444',
   },
   errorText: {
-    color: '#FF3B30',
-    fontSize: 12,
-    marginTop: 5,
+    color: '#EF4444',
+    fontSize: 11,
+    fontWeight: '400',
+    letterSpacing: -0.1,
+    lineHeight: 11 * 1.3,
+    marginTop: 4,
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // CITY SELECTOR
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   citySelectorContainer: {
     height: 400,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#F3F4F6',
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
     backgroundColor: '#FFFFFF',
   },
   citySelector: {
     flex: 1,
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // SERVICE TYPE ITEMS (Cards avec état sélectionné)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   serviceTypeItem: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 10,
+    backgroundColor: '#FAFAFA',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 12,
   },
   serviceTypeSelected: {
-    backgroundColor: '#E3F2FD',
-    borderWidth: 1,
-    borderColor: '#007AFF',
+    backgroundColor: '#EFF6FF',
+    borderColor: '#4a90e2',
   },
   serviceTypeHeader: {
     flexDirection: 'row',
@@ -690,39 +814,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   serviceTypeCheckbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#007AFF',
+    borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: 12,
+  },
+  serviceTypeCheckboxSelected: {
+    borderColor: '#4a90e2',
+    backgroundColor: '#4a90e2',
   },
   serviceTypeContent: {
     flex: 1,
   },
   serviceTypeTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 5,
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    lineHeight: 15 * 1.3,
+    color: '#111827',
+    marginBottom: 4,
   },
   serviceTypeDescription: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 12,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 12 * 1.4,
+    color: '#6B7280',
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // RATE CONTAINER (Inside service items)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   rateContainer: {
-    marginTop: 15,
-    paddingTop: 10,
+    marginTop: 16,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: '#F3F4F6',
   },
   rateLabel: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 5,
+    fontSize: 13,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 13 * 1.3,
+    color: '#6B7280',
+    marginBottom: 6,
   },
   rateInputContainer: {
     flexDirection: 'row',
@@ -734,62 +874,97 @@ const styles = StyleSheet.create({
   rateInput: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    padding: 10,
-    fontSize: 16,
-    width: 120,
+    paddingHorizontal: 10,
+    paddingVertical: 0,
+    height: 40,
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    // ✅ FIX ANDROID: lineHeight supprimé — causait texte coupé/invisible sur Android
+    width: 100,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#F3F4F6',
+    color: '#111827',
   },
   rateCurrency: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: '#666666',
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: -0.2,
+    color: '#6B7280',
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // TERMS & CONDITIONS
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   termsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   termsContainerRTL: {
     flexDirection: 'row-reverse',
   },
   termsText: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 13,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 13 * 1.4,
+    color: '#6B7280',
     marginLeft: 10,
     flex: 1,
   },
   termsLink: {
-    color: '#007AFF',
+    color: '#4a90e2',
+    fontWeight: '500',
     textDecorationLine: 'underline',
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // SUBMIT BUTTON (CTA principal)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#4a90e2',
     borderRadius: 8,
-    padding: 15,
+    height: 40,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
   },
   submitButtonDisabled: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: '#93C5FD',
+    opacity: 0.6,
   },
   submitButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    lineHeight: 14 * 1.3,
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // LOGIN LINK (Footer)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   loginLink: {
     alignItems: 'center',
     marginBottom: 30,
   },
   loginLinkText: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 13,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 13 * 1.3,
+    color: '#6B7280',
   },
   loginLinkHighlight: {
-    color: '#007AFF',
-    fontWeight: 'bold',
+    color: '#4a90e2',
+    fontWeight: '600',
   },
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // RTL
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   textRTL: {
     textAlign: 'right',
     writingDirection: 'rtl',

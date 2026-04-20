@@ -2,42 +2,37 @@
 // ✅ גרסה מתורגמת לעברית עם תמיכה ב-RTL
 // ✅ תוקן: נוסף תמיכה ב-Airbnb עם צבע #FF5A5F
 // 🐛 תוקן: החלפת Button ב-TouchableOpacity לפתרון שגיאת labelLarge
+// ✅ REDESIGN: Style premium minimaliste
 
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert, I18nManager, TouchableOpacity } from 'react-native';
-import { Text, Card, Title, Divider, List, Avatar, useTheme, ActivityIndicator } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Text } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { useBooking } from '../../context/BookingContext';
-import { SERVICE_TYPE_LABELS, CLEANING_FREQUENCY_LABELS, getServiceColor } from '../../config/constants';  // ✅ Import getServiceColor
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { SERVICE_TYPE_LABELS, CLEANING_FREQUENCY_LABELS, getServiceColor, getServiceBackgroundColor } from '../../config/constants';
 
 const BookingConfirmationScreen = ({ route, navigation }) => {
-  const theme = useTheme();
   const { userBookings, fetchUserBookings, currentBooking } = useBooking();
   const { bookingId, requestType = 'payment' } = route.params || {};
-  
+
   const [booking, setBooking] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const isRTL = true; // תמיד RTL לעברית
-  
-  // טעינת פרטי ההזמנה
+
   useEffect(() => {
     const loadBookingDetails = async () => {
       setIsLoading(true);
-      
       try {
         await fetchUserBookings();
         const foundBooking = userBookings.find(b => b._id === bookingId);
-        
         if (foundBooking) {
           setBooking(foundBooking);
         } else {
-          // סימולציה של הזמנה להדגמה
           setBooking({
             _id: bookingId || 'temp-booking-id',
             serviceType: currentBooking.serviceType || 'home',
             status: requestType === 'pending' ? 'pending' : 'confirmed',
             dateTime: currentBooking.dateTime || new Date().toISOString(),
-            duration: currentBooking.duration || 2,
+            duration: currentBooking.duration || 1,
             frequency: currentBooking.frequency || 'one_time',
             price: currentBooking.price || 199.99,
             provider: {
@@ -58,279 +53,194 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
         setIsLoading(false);
       }
     };
-    
     loadBookingDetails();
   }, [bookingId, fetchUserBookings, requestType, currentBooking]);
-  
-  // קביעת תוכן הכותרת לפי סוג הבקשה
+
   const getHeaderContent = () => {
     if (requestType === 'pending') {
-      return {
-        icon: "file-document-outline",
-        title: "בקשה נשלחה",
-        subtitle: "בקשתך נשלחה לספק השירות"
-      };
-    } else {
-      return {
-        icon: "check-circle",
-        title: "ההזמנה אושרה",
-        subtitle: "השירות הוזמן בהצלחה"
-      };
+      return { icon: 'document-text-outline', title: 'בקשה נשלחה', subtitle: 'בקשתך נשלחה לספק השירות' };
     }
+    return { icon: 'checkmark-circle-outline', title: 'ההזמנה אושרה', subtitle: 'השירות הוזמן בהצלחה' };
   };
-  
+
   const headerContent = getHeaderContent();
-  
-  // ✅ ✅ ✅ COULEUR DYNAMIQUE depuis constants.js
   const serviceColor = getServiceColor(booking?.serviceType || 'home');
-  
-  // פורמט תאריך
+  const serviceBgColor = getServiceBackgroundColor(booking?.serviceType || 'home');
+
   const formatDate = (dateString) => {
     if (!dateString) return 'לא מוגדר';
-    
-    const date = new Date(dateString);
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString('he-IL', options);
+    return new Date(dateString).toLocaleDateString('he-IL', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
   };
-  
-  // פורמט שעה
+
   const formatTime = (dateString) => {
     if (!dateString) return '';
-    
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    return new Date(dateString).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
   };
-  
-  // פורמט מחיר
-  const formatPrice = (price) => {
-    return `${price.toFixed(2)} ₪`;
-  };
-  
-  // מעבר לפרטי הזמנה
-  const handleViewBookingDetails = () => {
-    navigation.navigate('BookingDetails', { bookingId: booking._id });
-  };
-  
-  // חזרה לדף הבית
-  const handleReturnHome = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'HomeStack' }],
-    });
-  };
-  
-  // צפייה בהזמנות
-  const handleViewBookings = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Dashboard' }],
-    });
-  };
-  
+
+  const formatPrice = (price) => `${price.toFixed(2)} ₪`;
+
+  const handleViewBookingDetails = () => navigation.navigate('BookingDetails', { bookingId: booking._id });
+  const handleReturnHome = () => navigation.reset({ index: 0, routes: [{ name: 'HomeStack' }] });
+  const handleViewBookings = () => navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
+
+  const pendingSteps = [
+    { title: 'ממתין לאישור', text: 'בקשתך נשלחה לספק השירות. הוא חייב לאשר את זמינותו.' },
+    { title: 'התראה', text: 'תקבל התראה ברגע שספק השירות יגיב לבקשתך.' },
+    { title: 'מעקב', text: 'תוכל לעקוב אחר מצב בקשתך בקטע "ההזמנות שלי".' },
+  ];
+
+  const confirmedSteps = [
+    { title: 'אשר את הזמינות שלך', text: 'ודא שתהיה זמין בתאריך ובשעה המתוכננים.' },
+    { title: 'הכנת המקום', text: 'הקל על הגישה לספק השירות ופנה את האזורים לניקוי.' },
+    { title: 'שירות ותשלום', text: 'ספק השירות יגיע בשעה המתוכננת ויבצע את השירות.' },
+  ];
+
+  const steps = requestType === 'pending' ? pendingSteps : confirmedSteps;
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={[styles.loadingText, styles.textRTL]}>טוען את פרטי ההזמנה...</Text>
+        <ActivityIndicator size="small" color={serviceColor} />
+        <Text style={styles.loadingText}>טוען פרטי הזמנה...</Text>
       </View>
     );
   }
-  
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={[styles.header, { backgroundColor: serviceColor }]}>
-        <Icon name={headerContent.icon} size={60} color="white" style={styles.checkIcon} />
-        <Title style={[styles.headerTitle, styles.textRTL]}>{headerContent.title}</Title>
-        <Text style={[styles.headerSubtitle, styles.textRTL]}>{headerContent.subtitle}</Text>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+
+      {/* HEADER */}
+      <View style={[styles.header, { backgroundColor: serviceBgColor }]}>
+        <View style={[styles.iconWrapper, { backgroundColor: `${serviceColor}15` }]}>
+          <Ionicons name={headerContent.icon} size={36} color={serviceColor} />
+        </View>
+        <Text style={[styles.headerTitle, { color: serviceColor }]}>{headerContent.title}</Text>
+        <Text style={styles.headerSubtitle}>{headerContent.subtitle}</Text>
       </View>
-      
-      <Card style={styles.bookingCard}>
-        <Card.Content>
-          <View style={styles.bookingNumberContainer}>
-            <Text style={[styles.bookingNumberLabel, styles.textRTL]}>מספר הזמנה</Text>
-            <Text style={[styles.bookingNumber, styles.textRTL]}>{booking?._id}</Text>
+
+      {/* BOOKING ID */}
+      <View style={styles.idCard}>
+        <Text style={styles.idLabel}>מספר הזמנה</Text>
+        <Text style={styles.idValue}>{booking?._id}</Text>
+      </View>
+
+      {/* DETAILS CARD */}
+      <View style={styles.card}>
+
+        {/* Service */}
+        <View style={styles.row}>
+          <View style={styles.rowRight}>
+            <Text style={styles.rowLabel}>פרטי השירות</Text>
+            <Text style={styles.rowValue}>
+              {SERVICE_TYPE_LABELS[booking?.serviceType] || 'שירות ניקיון'}
+            </Text>
+            <Text style={styles.rowSub}>
+              {booking?.duration}h • {CLEANING_FREQUENCY_LABELS[booking?.frequency]}
+            </Text>
           </View>
-          
-          <Divider style={styles.divider} />
-          
-          <Title style={[styles.sectionTitle, styles.textRTL]}>פרטי השירות</Title>
-          <List.Item
-            title={SERVICE_TYPE_LABELS[booking?.serviceType] || 'שירות ניקיון'}
-            description={`${booking?.duration}h • ${CLEANING_FREQUENCY_LABELS[booking?.frequency]}`}
-            left={props => <List.Icon {...props} icon="broom" color={serviceColor} />}
-            titleStyle={styles.textRTL}
-            descriptionStyle={styles.textRTL}
-          />
-          
-          <Divider style={styles.divider} />
-          
-          <Title style={[styles.sectionTitle, styles.textRTL]}>תאריך ושעה</Title>
-          <List.Item
-            title={formatDate(booking?.dateTime)}
-            description={formatTime(booking?.dateTime)}
-            left={props => <List.Icon {...props} icon="calendar" color={serviceColor} />}
-            titleStyle={styles.textRTL}
-            descriptionStyle={styles.textRTL}
-          />
-          
-          <Divider style={styles.divider} />
-          
-          <Title style={[styles.sectionTitle, styles.textRTL]}>ספק השירות</Title>
-          <List.Item
-            title={booking?.provider?.name}
-            description={`דירוג: ${booking?.provider?.rating}/5`}
-            left={props => (
-              <Avatar.Text 
-                {...props} 
-                size={40} 
-                label={booking?.provider?.name?.charAt(0) || 'P'} 
-                style={{ backgroundColor: serviceColor }}
-              />
-            )}
-            titleStyle={styles.textRTL}
-            descriptionStyle={styles.textRTL}
-          />
-          
-          <Divider style={styles.divider} />
-          
-          <Title style={[styles.sectionTitle, styles.textRTL]}>מיקום השירות</Title>
-          <List.Item
-            title={booking?.address?.name || 'כתובת'}
-            description={booking?.address?.fullAddress}
-            left={props => <List.Icon {...props} icon="map-marker" color={serviceColor} />}
-            titleStyle={styles.textRTL}
-            descriptionStyle={styles.textRTL}
-          />
-          
-          <Divider style={styles.divider} />
-          
-          <View style={[styles.priceContainer, styles.rtlRow]}>
-            <Text style={[styles.priceLabel, styles.textRTL]}>מחיר משוער:</Text>
-            <Text style={[styles.priceValue, styles.textRTL]}>{formatPrice(booking?.price || 0)}</Text>
+          <View style={[styles.iconBadge, { backgroundColor: `${serviceColor}10` }]}>
+            <Ionicons name="brush-outline" size={18} color={serviceColor} />
           </View>
-        </Card.Content>
-      </Card>
-      
-      {requestType === 'pending' ? (
-        <Card style={styles.instructionsCard}>
-          <Card.Content>
-            <Title style={[styles.sectionTitle, styles.textRTL]}>מידע חשוב</Title>
-            
-            <View style={styles.instructionItem}>
-              <View style={[styles.instructionNumber, { backgroundColor: serviceColor }]}>
-                <Text style={styles.instructionNumberText}>1</Text>
-              </View>
-              <View style={styles.instructionContent}>
-                <Text style={[styles.instructionTitle, styles.textRTL]}>ממתין לאישור</Text>
-                <Text style={[styles.instructionText, styles.textRTL]}>
-                  בקשתך נשלחה לספק השירות. הוא חייב לאשר את זמינותו.
-                </Text>
-              </View>
+        </View>
+
+        <View style={styles.separator} />
+
+        {/* Date */}
+        <View style={styles.row}>
+          <View style={styles.rowRight}>
+            <Text style={styles.rowLabel}>תאריך ושעה</Text>
+            <Text style={styles.rowValue}>{formatDate(booking?.dateTime)}</Text>
+            <Text style={styles.rowSub}>{formatTime(booking?.dateTime)}</Text>
+          </View>
+          <View style={[styles.iconBadge, { backgroundColor: `${serviceColor}10` }]}>
+            <Ionicons name="calendar-outline" size={18} color={serviceColor} />
+          </View>
+        </View>
+
+        <View style={styles.separator} />
+
+        {/* Provider */}
+        <View style={styles.row}>
+          <View style={styles.rowRight}>
+            <Text style={styles.rowLabel}>ספק השירות</Text>
+            <Text style={styles.rowValue}>{booking?.selectedProvider?.name || booking?.provider?.name}</Text>
+            <Text style={styles.rowSub}>
+              דירוג: {booking?.selectedProvider?.rating || booking?.provider?.rating}/5
+            </Text>
+          </View>
+          <View style={[styles.iconBadge, { backgroundColor: `${serviceColor}10` }]}>
+            <Ionicons name="person-outline" size={18} color={serviceColor} />
+          </View>
+        </View>
+
+        <View style={styles.separator} />
+
+        {/* Address */}
+        <View style={styles.row}>
+          <View style={styles.rowRight}>
+            <Text style={styles.rowLabel}>מיקום השירות</Text>
+            <Text style={styles.rowValue}>{booking?.address?.name || 'כתובת'}</Text>
+            <Text style={styles.rowSub}>{booking?.address?.fullAddress}</Text>
+          </View>
+          <View style={[styles.iconBadge, { backgroundColor: `${serviceColor}10` }]}>
+            <Ionicons name="location-outline" size={18} color={serviceColor} />
+          </View>
+        </View>
+
+        <View style={styles.separator} />
+
+        {/* Price */}
+        <View style={styles.priceRow}>
+          <Text style={[styles.priceValue, { color: serviceColor }]}>
+            {formatPrice(booking?.price || 0)}
+          </Text>
+          <Text style={styles.priceLabel}>מחיר משוער</Text>
+        </View>
+
+      </View>
+
+      {/* STEPS CARD */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>
+          {requestType === 'pending' ? 'מידע חשוב' : 'השלבים הבאים'}
+        </Text>
+
+        {steps.map((step, i) => (
+          <View key={i} style={styles.stepRow}>
+            <View style={styles.stepContent}>
+              <Text style={styles.stepTitle}>{step.title}</Text>
+              <Text style={styles.stepText}>{step.text}</Text>
             </View>
-            
-            <View style={styles.instructionItem}>
-              <View style={[styles.instructionNumber, { backgroundColor: serviceColor }]}>
-                <Text style={styles.instructionNumberText}>2</Text>
-              </View>
-              <View style={styles.instructionContent}>
-                <Text style={[styles.instructionTitle, styles.textRTL]}>התראה</Text>
-                <Text style={[styles.instructionText, styles.textRTL]}>
-                  תקבל התראה ברגע שספק השירות יגיב לבקשתך.
-                </Text>
-              </View>
+            <View style={[styles.stepBadge, { backgroundColor: `${serviceColor}10` }]}>
+              <Text style={[styles.stepNumber, { color: serviceColor }]}>{i + 1}</Text>
             </View>
-            
-            <View style={styles.instructionItem}>
-              <View style={[styles.instructionNumber, { backgroundColor: serviceColor }]}>
-                <Text style={styles.instructionNumberText}>3</Text>
-              </View>
-              <View style={styles.instructionContent}>
-                <Text style={[styles.instructionTitle, styles.textRTL]}>מעקב</Text>
-                <Text style={[styles.instructionText, styles.textRTL]}>
-                  תוכל לעקוב אחר מצב בקשתך בקטע "ההזמנות שלי".
-                </Text>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
-      ) : (
-        <Card style={styles.instructionsCard}>
-          <Card.Content>
-            <Title style={[styles.sectionTitle, styles.textRTL]}>השלבים הבאים</Title>
-            
-            <View style={styles.instructionItem}>
-              <View style={[styles.instructionNumber, { backgroundColor: serviceColor }]}>
-                <Text style={styles.instructionNumberText}>1</Text>
-              </View>
-              <View style={styles.instructionContent}>
-                <Text style={[styles.instructionTitle, styles.textRTL]}>אשר את הזמינות שלך</Text>
-                <Text style={[styles.instructionText, styles.textRTL]}>
-                  ודא שתהיה זמין בתאריך ובשעה המתוכננים.
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.instructionItem}>
-              <View style={[styles.instructionNumber, { backgroundColor: serviceColor }]}>
-                <Text style={styles.instructionNumberText}>2</Text>
-              </View>
-              <View style={styles.instructionContent}>
-                <Text style={[styles.instructionTitle, styles.textRTL]}>הכנת המקום</Text>
-                <Text style={[styles.instructionText, styles.textRTL]}>
-                  הקל על הגישה לספק השירות ופנה את האזורים לניקוי.
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.instructionItem}>
-              <View style={[styles.instructionNumber, { backgroundColor: serviceColor }]}>
-                <Text style={styles.instructionNumberText}>3</Text>
-              </View>
-              <View style={styles.instructionContent}>
-                <Text style={[styles.instructionTitle, styles.textRTL]}>שירות ותשלום</Text>
-                <Text style={[styles.instructionText, styles.textRTL]}>
-                  ספק השירות יגיע בשעה המתוכננת ויבצע את השירות.
-                  {booking?.paymentMethod === 'cash' ? ' אל תשכח להכין את התשלום במזומן.' : ''}
-                </Text>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
-      )}
-      
+          </View>
+        ))}
+      </View>
+
+      {/* BUTTONS */}
       <View style={styles.buttonContainer}>
-        {requestType === 'pending' ? (
-          <TouchableOpacity
-            style={[styles.containedButton, { backgroundColor: serviceColor }]}
-            onPress={handleViewBookings}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.containedButtonText}>
-              צפה בהזמנות שלי
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.containedButton, { backgroundColor: serviceColor }]}
-            onPress={handleViewBookingDetails}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.containedButtonText}>
-              צפה בפרטי ההזמנה
-            </Text>
-          </TouchableOpacity>
-        )}
-        
         <TouchableOpacity
-          style={[styles.outlinedButton, { borderColor: serviceColor }]}
+          style={[styles.primaryButton, { backgroundColor: serviceColor }]}
+          onPress={requestType === 'pending' ? handleViewBookings : handleViewBookingDetails}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.primaryButtonText}>
+            {requestType === 'pending' ? 'צפה בהזמנות שלי' : 'צפה בפרטי ההזמנה'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.outlineButton, { borderColor: serviceColor }]}
           onPress={handleReturnHome}
           activeOpacity={0.8}
         >
-          <Text style={[styles.outlinedButtonText, { color: serviceColor }]}>
-            חזרה לדף הבית
-          </Text>
+          <Text style={[styles.outlineButtonText, { color: serviceColor }]}>חזרה לדף הבית</Text>
         </TouchableOpacity>
       </View>
+
     </ScrollView>
   );
 };
@@ -338,160 +248,229 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9FAFB',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    gap: 12,
   },
   loadingText: {
-    marginTop: 20,
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    fontSize: 13,
+    color: '#9CA3AF',
+    fontWeight: '400',
   },
+
+  // Header
   header: {
-    padding: 20,
-    paddingTop: 40,
-    paddingBottom: 40,
+    paddingTop: 64,
+    paddingBottom: 32,
+    paddingHorizontal: 24,
     alignItems: 'center',
   },
-  checkIcon: {
-    marginBottom: 10,
+  iconWrapper: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+    fontSize: 20,
+    fontWeight: '600',
+    letterSpacing: -0.4,
+    marginBottom: 6,
     textAlign: 'center',
   },
   headerSubtitle: {
-    fontSize: 16,
-    color: 'white',
-    opacity: 0.8,
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '400',
     textAlign: 'center',
   },
-  bookingCard: {
-    margin: 15,
-    marginBottom: 10,
-    borderRadius: 8,
-    elevation: 4,
-  },
-  bookingNumberContainer: {
+
+  // ID Card
+  idCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
     alignItems: 'center',
-    marginBottom: 10,
   },
-  bookingNumberLabel: {
-    fontSize: 14,
-    color: '#666',
+  idLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
+    letterSpacing: 0.3,
+    marginBottom: 4,
+    textAlign: 'center',
   },
-  bookingNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  idValue: {
+    fontSize: 12,
+    color: '#111827',
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
-  instructionsCard: {
-    margin: 15,
-    marginTop: 5,
-    borderRadius: 8,
-    elevation: 4,
+
+  // Card
+  card: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
-  sectionTitle: {
-    fontSize: 18,
-    marginBottom: 5,
-    marginTop: 5,
-  },
-  divider: {
-    height: 1,
-    marginVertical: 15,
-  },
-  instructionItem: {
-    flexDirection: 'row-reverse',
+  cardTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+    textAlign: 'right',
+    letterSpacing: -0.2,
     marginBottom: 20,
+  },
+
+  // Row
+  row: {
+    flexDirection: 'row-reverse',
     alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
-  instructionNumber: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 15,
-    marginTop: 3,
-  },
-  instructionNumberText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  instructionContent: {
+  rowRight: {
     flex: 1,
+    alignItems: 'flex-end',
+    paddingRight: 0,
   },
-  instructionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
+  rowLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
+    letterSpacing: 0.3,
+    marginBottom: 4,
+    textAlign: 'right',
   },
-  instructionText: {
+  rowValue: {
     fontSize: 14,
-    color: '#444',
-    lineHeight: 20,
+    color: '#111827',
+    fontWeight: '500',
+    textAlign: 'right',
+    letterSpacing: -0.2,
+    marginBottom: 2,
   },
-  priceContainer: {
+  rowSub: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '400',
+    textAlign: 'right',
+  },
+  iconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#F9FAFB',
+    marginVertical: 16,
+  },
+
+  // Price
+  priceRow: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
   },
   priceLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '400',
   },
   priceValue: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4CAF50',
+    fontWeight: '600',
+    letterSpacing: -0.3,
   },
+
+  // Steps
+  stepRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  stepContent: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  stepTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+    textAlign: 'right',
+    letterSpacing: -0.2,
+    marginBottom: 4,
+  },
+  stepText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '400',
+    textAlign: 'right',
+    lineHeight: 18,
+  },
+  stepBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+    marginTop: 2,
+  },
+  stepNumber: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  // Buttons
   buttonContainer: {
-    padding: 15,
-    marginBottom: 30,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 40,
+    gap: 10,
   },
-  
-  // ✅ Boutons personnalisés
-  containedButton: {
-    paddingVertical: 14,
+  primaryButton: {
+    height: 44,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
-    elevation: 2,
   },
-  containedButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
-  outlinedButton: {
-    paddingVertical: 12,
+  outlineButton: {
+    height: 40,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: '#FFFFFF',
   },
-  outlinedButtonText: {
-    fontSize: 16,
+  outlineButtonText: {
+    fontSize: 13,
     fontWeight: '500',
-    textAlign: 'center',
-  },
-  
-  rtlRow: {
-    flexDirection: 'row-reverse',
-  },
-  textRTL: {
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    letterSpacing: -0.2,
   },
 });
 
