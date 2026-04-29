@@ -4,6 +4,7 @@
 // גרסה מתורגמת לעברית ללא i18n
 // ✅ MODIFIÉ: Ajout de la catégorie Airbnb + FIX bouton disabled
 // ✅ CORRIGÉ: services → serviceDetails + ajout description
+// ✅ MODIFIÉ: Ajout champ bio
 
 /*
 CHANGEMENTS MAJEURS APPLIQUÉS :
@@ -154,6 +155,8 @@ const ProviderRegistrationScreen = ({ navigation }) => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  // ✅ AJOUT: champ bio
+  const [bio, setBio] = useState('');
   
   const [services, setServices] = useState({
     homeCleaning: { selected: false, rate: '' },
@@ -325,7 +328,8 @@ const ProviderRegistrationScreen = ({ navigation }) => {
         serviceCities: serviceCities,
         serviceAreas: serviceCities,
         services: selectedServices,        // ← ce que le backend lit
-        serviceDetails: selectedServices   // ← gardé pour cohérence
+        serviceDetails: selectedServices,  // ← gardé pour cohérence
+        bio: bio.trim(),                   // ✅ AJOUT: bio envoyée au backend
       };
       
       registerProvider(userData)
@@ -558,6 +562,32 @@ const ProviderRegistrationScreen = ({ navigation }) => {
               />
             </View>
           </View>
+
+          {/* ✅ AJOUT: Section bio */}
+          <View style={styles.formSection}>
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+              קצת עליי
+            </Text>
+            <Text style={[styles.sectionSubtitle, isRTL && styles.textRTL]}>
+              ספר ללקוחות על עצמך — ניסיון, לאום, שפות וכל מה שיעזור להם לבחור אותך.{'\n'}
+              ניתן לכתוב בעברית, באנגלית או בצרפתית.
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                styles.bioInput,
+                isRTL && styles.textRTL
+              ]}
+              value={bio}
+              onChangeText={setBio}
+              placeholder="לדוגמה: אני מנקה מקצועי עם 5 שנות ניסיון, דובר עברית ורוסית..."
+              placeholderTextColor="#9CA3AF"
+              multiline
+              maxLength={500}
+              textAlignVertical="top"
+            />
+            <Text style={styles.bioCounter}>{bio.length}/500</Text>
+          </View>
           
           <View style={styles.formSection}>
             <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
@@ -773,6 +803,18 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.1,
     lineHeight: 11 * 1.3,
+    marginTop: 4,
+  },
+
+  // ✅ AJOUT: styles bio
+  bioInput: {
+    height: 100,
+    paddingVertical: 10,
+  },
+  bioCounter: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    textAlign: 'left',
     marginTop: 4,
   },
   
