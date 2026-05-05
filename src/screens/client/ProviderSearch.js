@@ -1,6 +1,7 @@
 // src/screens/client/ProviderSearch.js
 // ✅ FIX : serviceCities → serviceAreas (mismatch avec le modèle Provider.js)
 // 🔍 VERSION DEBUG — logs temporaires pour diagnostiquer le filtre ville
+// ✅ MODIFIÉ: Affichage de la bio du prestataire dans la card
 
 import React, { useState, useEffect, useContext } from 'react';
 import {
@@ -210,6 +211,13 @@ const ProviderSearch = ({ navigation }) => {
                   {item.rating || 'חדש'}
                 </Text>
               </View>
+
+              {/* ✅ AJOUT: Bio du prestataire */}
+              {item.bio ? (
+                <Text style={styles.bioText} numberOfLines={2}>
+                  {item.bio}
+                </Text>
+              ) : null}
             </View>
             
             <View style={styles.priceContainer}>
@@ -484,6 +492,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#6B7280',
     fontWeight: '400',
+  },
+  // ✅ AJOUT: style bio
+  bioText: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '400',
+    textAlign: 'right',
+    marginTop: 4,
+    lineHeight: 16,
   },
   priceContainer: {
     alignItems: 'flex-end',
