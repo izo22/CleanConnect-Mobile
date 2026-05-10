@@ -2,6 +2,7 @@
 // ✅ FIX : serviceCities → serviceAreas (mismatch avec le modèle Provider.js)
 // 🔍 VERSION DEBUG — logs temporaires pour diagnostiquer le filtre ville
 // ✅ MODIFIÉ: Affichage de la bio du prestataire dans la card
+// ✅ MODIFIÉ: providerBio passé dans la navigation vers ScheduleScreen
 
 import React, { useState, useEffect, useContext } from 'react';
 import {
@@ -86,11 +87,9 @@ const ProviderSearch = ({ navigation }) => {
     );
   }, [searchQuery, providers]);
 
-  
-
   const loadProviders = async () => {
     const clientCity  = userInfo?.city ?? null;
-    const sType       = currentBooking?.serviceType || 'home'; // ✅ bonne variable
+    const sType       = currentBooking?.serviceType || 'home';
   
     console.log('═══════════ PROVIDER SEARCH DEBUG ═══════════');
     console.log('[1] userInfo :', JSON.stringify(userInfo, null, 2));
@@ -108,14 +107,15 @@ const ProviderSearch = ({ navigation }) => {
       console.log('[5] Nombre de prestataires :', response?.length ?? 0);
   
       setProviders(response ?? []);
-      setFilteredProviders(response ?? []); // ✅ important aussi
+      setFilteredProviders(response ?? []);
     } catch (err) {
       console.error('[!] Erreur loadProviders :', err.message);
       setError('שגיאה בטעינת הספקים');
     } finally {
-      setLoading(false); // ✅ toujours appelé
+      setLoading(false);
     }
   };
+
   const handleSelectProvider = (provider) => {
     if (selectProvider && typeof selectProvider === 'function') {
       selectProvider(provider);
@@ -123,6 +123,7 @@ const ProviderSearch = ({ navigation }) => {
         providerId: provider._id,
         providerName: `${provider.firstName} ${provider.lastName}`,
         hourlyRate: provider.hourlyRate,
+        providerBio: provider.bio, // ✅ AJOUT
       });
     } else {
       Alert.alert(
@@ -195,7 +196,6 @@ const ProviderSearch = ({ navigation }) => {
                 {item.firstName} {item.lastName}
               </Text>
               
-              {/* ✅ FIX : serviceAreas au lieu de serviceCities */}
               {item.serviceAreas && item.serviceAreas.length > 0 && (
                 <View style={styles.locationRow}>
                   <Ionicons name="location" size={12} color="#9CA3AF" />
@@ -212,7 +212,6 @@ const ProviderSearch = ({ navigation }) => {
                 </Text>
               </View>
 
-              {/* ✅ AJOUT: Bio du prestataire */}
               {item.bio ? (
                 <Text style={styles.bioText} numberOfLines={2}>
                   {item.bio}
@@ -493,7 +492,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '400',
   },
-  // ✅ AJOUT: style bio
   bioText: {
     fontSize: 11,
     color: '#6B7280',

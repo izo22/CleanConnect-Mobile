@@ -153,7 +153,7 @@ export const userService = {
 
 // Service prestataire
 export const providerService = {
-  // ✅ AJOUTÉ: Obtenir tous les prestataires
+  // ✅ Obtenir tous les prestataires
   getAllProviders: async (city, serviceType) => {
     try {
       const params = {};
@@ -226,6 +226,17 @@ export const providerService = {
     }
   },
 
+  // ✅ AJOUTÉ — Mettre à jour les zones de service
+  // { serviceAreas } obligatoire pour que req.body.serviceAreas soit défini côté backend
+  updateServiceAreas: async (serviceAreas) => {
+    try {
+      const response = await api.put('/providers/service-areas', { serviceAreas });
+      return response.data;
+    } catch (error) {
+      throw error.response ? error.response.data : error;
+    }
+  },
+
   // Obtenir les statistiques du dashboard
   getDashboardStats: async () => {
     try {
@@ -236,7 +247,7 @@ export const providerService = {
     }
   },
 
-  // Obtenir les missions du jour uniquement
+  // Obtenir les missions du jour
   getTodayJobs: async () => {
     try {
       const response = await api.get('/providers/dashboard/today');
@@ -269,7 +280,7 @@ export const providerService = {
   // Accepter une mission
   acceptJob: async (jobId) => {
     try {
-      // ✅ FIX — body {} explicite pour éviter le Bad Request du proxy Render sur PUT sans body
+      // ✅ body {} explicite pour éviter le Bad Request du proxy Render sur PUT sans body
       const response = await api.put(`/providers/jobs/${jobId}/accept`, {});
       return response.data;
     } catch (error) {
@@ -280,7 +291,7 @@ export const providerService = {
   // Refuser une mission
   declineJob: async (jobId) => {
     try {
-      // ✅ FIX — body {} explicite pour éviter le Bad Request du proxy Render sur PUT sans body
+      // ✅ body {} explicite pour éviter le Bad Request du proxy Render sur PUT sans body
       const response = await api.put(`/providers/jobs/${jobId}/decline`, {});
       return response.data;
     } catch (error) {
@@ -291,7 +302,7 @@ export const providerService = {
   // Marquer une mission comme terminée
   completeJob: async (jobId) => {
     try {
-      // ✅ FIX — body {} explicite pour éviter le Bad Request du proxy Render sur PUT sans body
+      // ✅ body {} explicite pour éviter le Bad Request du proxy Render sur PUT sans body
       const response = await api.put(`/providers/jobs/${jobId}/complete`, {});
       return response.data;
     } catch (error) {

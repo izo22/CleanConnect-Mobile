@@ -61,7 +61,8 @@ const isToday = (date) => {
 const ScheduleScreen = ({ route, navigation }) => {
   const theme = useTheme();
   const { currentBooking, updateBooking } = useBooking();
-  const { providerId, providerName } = route?.params || {};
+  // ✅ MODIFIÉ : ajout de providerBio
+  const { providerId, providerName, providerBio } = route?.params || {};
   const isRTL = true;
   
   const serviceColor = getServiceColor(currentBooking?.serviceType || 'home');
@@ -236,7 +237,7 @@ const ScheduleScreen = ({ route, navigation }) => {
       return acc;
     }, []);
     const dateBookings = existingBookings.filter(booking => {
-      if (!booking.date) return false;           // ← ajoute cette ligne
+      if (!booking.date) return false;
       const bookingDate = new Date(booking.date);
       return bookingDate.toDateString() === targetDate.toDateString() && 
              booking.status !== 'cancelled';
@@ -355,7 +356,7 @@ const ScheduleScreen = ({ route, navigation }) => {
       const minutesStr = String(minutes).padStart(2, '0');
       
       const localDate = new Date(year, month, day, hours, minutes);
-      const dateTimeISO = localDate.toISOString(); // UTC correct → getHours() affichera 16h en Israël ✓      
+      const dateTimeISO = localDate.toISOString();
       updateBooking({ 
         dateTime: dateTimeISO,
         duration: localDuration
@@ -414,6 +415,13 @@ const ScheduleScreen = ({ route, navigation }) => {
               <View style={{ width: 40 }} />
             </View>
           </View>
+
+          {/* ✅ AJOUT : BIO COMPLÈTE DU PRESTATAIRE */}
+          {providerBio ? (
+            <View style={styles.bioCard}>
+              <Text style={[styles.bioText, styles.textRTL]}>{providerBio}</Text>
+            </View>
+          ) : null}
 
           <ScrollView style={{ backgroundColor: serviceBgColor }}>
             {/* CALENDAR CARD */}
@@ -683,6 +691,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     flex: 1,
     letterSpacing: -0.3,
+  },
+
+  // ✅ AJOUT : styles bio
+  bioCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 0,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  bioText: {
+    fontSize: 13,
+    color: '#4B5563',
+    lineHeight: 20,
+    fontWeight: '400',
   },
   
   calendarCard: { 

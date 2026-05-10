@@ -1,294 +1,285 @@
-// EditServiceScreen.js - REFONTE UI MINIMALISTE PREMIUM
-// ✅ Navigation vers Dashboard qui fonctionne
-// ✅ Alert qui s'affiche correctement
-// ✅ Logs de debug pour tracer le problème
-// ✅ Style minimaliste premium appliqué
+// screens/provider/EditServiceScreen.js
+// ✅ Multi-services : 4 types avec checkbox + tarif individuel
+// ✅ CityMultiSelector : toutes les villes d'Israël (même composant que l'inscription)
+// ✅ Sauvegarde en un seul appel via updateProfile
 
 import React, { useState } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  ScrollView, 
-  Alert, 
-  KeyboardAvoidingView, 
-  Platform, 
-  Text, 
-  TextInput as NativeTextInput, 
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  TextInput,
   TouchableOpacity,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { providerService } from '../../services/api';
-import DropDownPicker from 'react-native-dropdown-picker';
-import { useTranslation } from 'react-i18next';
+import CityMultiSelector from '../../components/CityMultiSelector';
 
+// ─── Correspondance clé → valeur hébreu ────────────────────────────────────
+const SERVICE_TYPE_MAP = {
+  homeCleaning:     'בית',
+  buildingCleaning: 'בניין',
+  officeCleaning:   'משרד',
+  airbnb:           'אירבנב',
+};
+
+const SERVICE_LABELS = {
+  homeCleaning:     { title: 'ניקיון בית',     description: 'ניקיון דירות, בתים פרטיים ומגורים' },
+  buildingCleaning: { title: 'ניקיון בניינים', description: 'ניקיון חדרי מדרגות, מבואות וחלקים משותפים' },
+  officeCleaning:   { title: 'ניקיון משרדים',  description: 'ניקיון משרדים ומקומות עבודה' },
+  airbnb:           { title: 'ניקיון אירבנב',  description: 'ניקיון דירות אירבנב בין check-out לcheck-in' },
+};
+
+// ─── Initialise l'état des services depuis serviceDetails existants ─────────
+const initServices = (serviceDetails = []) => {
+  const initial = {
+    homeCleaning:     { selected: false, rate: '' },
+    buildingCleaning: { selected: false, rate: '' },
+    officeCleaning:   { selected: false, rate: '' },
+    airbnb:           { selected: false, rate: '' },
+  };
+
+  serviceDetails.forEach(detail => {
+    const key = Object.keys(SERVICE_TYPE_MAP).find(
+      k => SERVICE_TYPE_MAP[k] === detail.type
+    );
+    if (key) {
+      initial[key] = {
+        selected: true,
+        rate: detail.hourlyRate?.toString() || '',
+      };
+    }
+  });
+
+  return initial;
+};
+
+// ─── Composant ServiceTypeItem (identique à l'inscription) ─────────────────
+const ServiceTypeItem = ({ serviceKey, service, toggleService, updateRate, error }) => {
+  const { title, description } = SERVICE_LABELS[serviceKey];
+
+  return (
+    <View style={[styles.serviceTypeItem, service.selected && styles.serviceTypeSelected]}>
+      <TouchableOpacity
+        style={styles.serviceTypeHeader}
+        onPress={() => toggleService(serviceKey)}
+      >
+        <View style={[
+          styles.serviceTypeCheckbox,
+          service.selected && styles.serviceTypeCheckboxSelected
+        ]}>
+          {service.selected && (
+            <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+          )}
+        </View>
+        <View style={styles.serviceTypeContent}>
+          <Text style={[styles.serviceTypeTitle, styles.textRTL]}>{title}</Text>
+          <Text style={[styles.serviceTypeDescription, styles.textRTL]}>{description}</Text>
+        </View>
+      </TouchableOpacity>
+
+      {service.selected && (
+        <View style={styles.rateContainer}>
+          <Text style={[styles.rateLabel, styles.textRTL]}>תעריף לשעה:</Text>
+          <View style={styles.rateInputContainer}>
+            <TextInput
+              style={[styles.rateInput, error && styles.inputError]}
+              value={service.rate}
+              onChangeText={(text) => updateRate(serviceKey, text.replace(/[^0-9.]/g, ''))}
+              placeholder="0.00"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="numeric"
+            />
+            <Text style={styles.rateCurrency}>₪/h</Text>
+          </View>
+          {error && (
+            <Text style={[styles.errorText, styles.textRTL]}>{error}</Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
+};
+
+// ─── Écran principal ────────────────────────────────────────────────────────
 const EditServiceScreen = ({ route }) => {
-  console.log('🟣🟣🟣 EditServiceScreen OUVERT 🟣🟣🟣');
-  console.log('🟣 Route params:', JSON.stringify(route.params, null, 2));
-  
   const navigation = useNavigation();
-  const { service } = route.params || {};
-  const isEditMode = !!service;
-  const { t, i18n } = useTranslation();
-  const isRTL = i18n.language === 'he';
+  const { serviceDetails: initialDetails, serviceAreas: initialAreas } = route.params || {};
 
-  console.log('🟣 Service reçu:', service);
-  console.log('🟣 Service._id:', service?._id);
-  console.log('🟣 IsEditMode:', isEditMode);
-
+  const [services, setServices] = useState(() => initServices(initialDetails));
+  const [serviceCities, setServiceCities] = useState(initialAreas || []);
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [type, setType] = useState(service?.type || '');
-  const [hourlyRate, setHourlyRate] = useState(service?.hourlyRate?.toString() || '');
-  const [description, setDescription] = useState(service?.description || '');
-  const [open, setOpen] = useState(false);
-  
-  const [items, setItems] = useState([
-    { label: 'בית פרטי', value: 'בית' },
-    { label: 'בניין', value: 'בניין' },
-    { label: 'משרד', value: 'משרד' },
-    { label: 'Airbnb', value: 'אירבנב' }
-  ]);
-  
-  const [errors, setErrors] = useState({ type: '', hourlyRate: '' });
 
-  console.log('🟣 État initial - type:', type, 'hourlyRate:', hourlyRate);
+  const toggleService = (key) => {
+    setServices(prev => ({
+      ...prev,
+      [key]: { ...prev[key], selected: !prev[key].selected }
+    }));
+  };
 
-  const validateForm = () => {
+  const updateRate = (key, rate) => {
+    setServices(prev => ({
+      ...prev,
+      [key]: { ...prev[key], rate }
+    }));
+  };
+
+  const validate = () => {
+    const newErrors = {};
     let isValid = true;
-    const newErrors = { type: '', hourlyRate: '' };
-    
-    if (!type) {
-      newErrors.type = 'סוג שירות הוא שדה חובה';
+
+    const anySelected = Object.values(services).some(s => s.selected);
+    if (!anySelected) {
+      newErrors.services = 'אנא בחר לפחות סוג שירות אחד';
       isValid = false;
     }
-    
-    if (!hourlyRate) {
-      newErrors.hourlyRate = 'מחיר הוא שדה חובה';
-      isValid = false;
-    } else if (isNaN(hourlyRate) || parseFloat(hourlyRate) <= 0) {
-      newErrors.hourlyRate = 'מחיר לא תקין';
+
+    const rateErrors = {};
+    Object.entries(services).forEach(([key, s]) => {
+      if (s.selected) {
+        if (!s.rate.trim()) {
+          rateErrors[key] = 'תעריף הוא שדה חובה';
+          isValid = false;
+        } else if (isNaN(parseFloat(s.rate)) || parseFloat(s.rate) <= 0) {
+          rateErrors[key] = 'נדרש תעריף תקין';
+          isValid = false;
+        }
+      }
+    });
+    if (Object.keys(rateErrors).length > 0) newErrors.serviceRates = rateErrors;
+
+    if (serviceCities.length === 0) {
+      newErrors.serviceCities = 'אנא בחר לפחות עיר אחת';
       isValid = false;
     }
-    
+
     setErrors(newErrors);
     return isValid;
   };
 
   const handleSubmit = async () => {
-    console.log('🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣');
-    console.log('🟣 HANDLESUBMIT APPELÉ');
-    console.log('🟣 Service._id:', service?._id);
-    console.log('🟣 Type:', type);
-    console.log('🟣 HourlyRate:', hourlyRate);
-    console.log('🟣 Description:', description);
-    console.log('🟣 IsEditMode:', isEditMode);
-    console.log('🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣');
-    
-    if (!validateForm()) {
-      console.log('❌ Validation échouée');
-      return;
-    }
-    
+    if (!validate()) return;
+
     setLoading(true);
-    
     try {
-      const serviceData = { 
-        type, 
-        hourlyRate: parseFloat(hourlyRate), 
-        description 
-      };
-      
-      console.log('🟣 Service data à envoyer:', JSON.stringify(serviceData, null, 2));
-      
-      if (isEditMode && service._id) {
-        console.log('🟣 MODE ÉDITION - Appel providerService.updateService...');
-        console.log('🟣 URL sera: /providers/services/' + service._id);
-        
-        const response = await providerService.updateService(service._id, serviceData);
-        
-        console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
-        console.log('🟢 UPDATE SERVICE RÉUSSI !');
-        console.log('🟢 Réponse complète:', JSON.stringify(response, null, 2));
-        console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
-      } else {
-        console.log('🟣 MODE CRÉATION - Appel providerService.addService...');
-        
-        const response = await providerService.addService(serviceData);
-        
-        console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
-        console.log('🟢 ADD SERVICE RÉUSSI !');
-        console.log('🟢 Réponse complète:', JSON.stringify(response, null, 2));
-        console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
-      }
-      
-      // ✅ L'API a réussi, maintenant on affiche l'Alert
-      console.log('🔔🔔🔔 AFFICHAGE DE L\'ALERT 🔔🔔🔔');
-      
-      Alert.alert(
-        'הצלחה',
-        'השירות עודכן בהצלחה',
-        [
-          {
-            text: 'אישור',
-            onPress: () => {
-              console.log('🎯🎯🎯 BOUTON ALERT CLIQUÉ 🎯🎯🎯');
-              console.log('🎯 Tentative de navigation vers Dashboard...');
-              console.log('🎯 Navigation object:', navigation);
-              console.log('🎯 Parent navigator:', navigation.getParent());
-              
-              try {
-                // ✅ Navigation vers Dashboard via le parent
-                const parent = navigation.getParent();
-                
-                if (parent) {
-                  console.log('✅ Parent trouvé, navigation vers Dashboard...');
-                  parent.navigate('Dashboard');
-                  console.log('✅✅✅ NAVIGATION RÉUSSIE ✅✅✅');
-                } else {
-                  console.log('⚠️ Pas de parent, utilisation de goBack()');
-                  navigation.goBack();
-                }
-              } catch (navError) {
-                console.error('❌ Erreur navigation:', navError);
-                console.error('❌ Message:', navError.message);
-                // Fallback
-                navigation.goBack();
-              }
-            }
-          }
-        ]
-      );
-      
-      console.log('🔔 Alert.alert() appelé avec succès');
-      
+      // Construit serviceDetails depuis l'état
+      const serviceDetails = Object.entries(services)
+        .filter(([_, s]) => s.selected)
+        .map(([key, s]) => ({
+          type: SERVICE_TYPE_MAP[key],
+          hourlyRate: parseFloat(s.rate),
+          description: '',
+        }));
+
+      const serviceTypes = serviceDetails.map(s => s.type);
+
+      const avgRate = serviceDetails.reduce((sum, s) => sum + s.hourlyRate, 0) / serviceDetails.length;
+
+      // Un seul appel API — met tout à jour d'un coup
+      await providerService.updateProfile({
+        serviceDetails,
+        serviceTypes,
+        serviceAreas: serviceCities,
+        hourlyRate: avgRate,
+      });
+
+      Alert.alert('הצלחה', 'הפרופיל עודכן בהצלחה', [
+        {
+          text: 'אישור',
+          onPress: () => navigation.goBack(),
+        },
+      ]);
     } catch (error) {
-      console.log('🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴');
-      console.error('🔴 ERREUR LORS DE LA SAUVEGARDE');
-      console.error('🔴 Error message:', error.message);
-      console.error('🔴 Error response:', error.response);
-      console.error('🔴 Response data:', error.response?.data);
-      console.error('🔴 Response status:', error.response?.status);
-      console.error('🔴 Error complet:', JSON.stringify(error, null, 2));
-      console.log('🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴');
-      
+      console.error('❌ Erreur EditService:', error.response?.data || error.message);
       Alert.alert(
-        'שגיאה', 
-        error.response?.data?.message || error.message || 'לא ניתן לשמור את השירות'
+        'שגיאה',
+        error.response?.data?.message || error.message || 'לא ניתן לשמור את השינויים'
       );
     } finally {
       setLoading(false);
-      console.log('🟣 handleSubmit terminé, loading=false');
     }
   };
 
-  // ✅ Bouton Annuler
-  const handleCancel = () => {
-    console.log('🔙 Bouton Annuler cliqué - goBack()');
-    navigation.goBack();
-  };
-
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.card}>
-          <View style={styles.cardContent}>
-            <Text style={[styles.title, isRTL && styles.textRTL]}>
-              {isEditMode ? 'ערוך שירות' : 'הוסף שירות חדש'}
-            </Text>
 
-            {/* Sélecteur de type de service */}
-            <View style={styles.inputContainer}>
-              <Text style={[styles.label, isRTL && styles.textRTL]}>
-                סוג שירות
-              </Text>
-              <DropDownPicker
-                open={open}
-                value={type}
-                items={items}
-                setOpen={setOpen}
-                setValue={setType}
-                setItems={setItems}
-                placeholder="בחר סוג שירות"
-                style={[styles.dropdown, errors.type ? styles.errorBorder : null]}
-                dropDownContainerStyle={styles.dropdownContainer}
-                textStyle={styles.dropdownText}
-                zIndex={3000}
-                zIndexInverse={1000}
-              />
-              {errors.type ? (
-                <Text style={[styles.errorText, styles.textRTL]}>{errors.type}</Text>
-              ) : null}
-            </View>
+        {/* ── Section services ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, styles.textRTL]}>סוגי שירותים</Text>
+          <Text style={[styles.sectionSubtitle, styles.textRTL]}>
+            בחר את השירותים שאתה מציע והזן את התעריף השעתי לכל אחד
+          </Text>
 
-            {/* Prix par heure */}
-            <View style={styles.inputContainer}>
-              <Text style={[styles.label, isRTL && styles.textRTL]}>
-                מחיר לשעה (₪)
-              </Text>
-              <NativeTextInput
-                style={[
-                  styles.input, 
-                  errors.hourlyRate ? styles.errorBorder : null,
-                  styles.textRTL
-                ]}
-                placeholder="הזן מחיר לשעה"
-                placeholderTextColor="#D1D5DB"
-                value={hourlyRate}
-                onChangeText={setHourlyRate}
-                keyboardType="numeric"
-              />
-              {errors.hourlyRate ? (
-                <Text style={[styles.errorText, styles.textRTL]}>{errors.hourlyRate}</Text>
-              ) : null}
-            </View>
+          {errors.services && (
+            <Text style={[styles.errorText, styles.textRTL]}>{errors.services}</Text>
+          )}
 
-            {/* Description */}
-            <View style={styles.inputContainer}>
-              <Text style={[styles.label, isRTL && styles.textRTL]}>
-                תיאור (אופציונלי)
-              </Text>
-              <NativeTextInput
-                style={[styles.input, styles.textArea, styles.textRTL]}
-                placeholder="תאר את השירות"
-                placeholderTextColor="#D1D5DB"
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                numberOfLines={4}
-              />
-            </View>
+          {Object.keys(SERVICE_LABELS).map(key => (
+            <ServiceTypeItem
+              key={key}
+              serviceKey={key}
+              service={services[key]}
+              toggleService={toggleService}
+              updateRate={updateRate}
+              error={errors.serviceRates?.[key]}
+            />
+          ))}
+        </View>
 
-            {/* Boutons */}
-            <View style={styles.buttonContainer}>
-              {/* ✅ BOUTON SAUVEGARDER */}
-              <TouchableOpacity
-                style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleSubmit}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text style={styles.primaryButtonText}>
-                    {isEditMode ? 'שמור שינויים' : 'הוסף שירות'}
-                  </Text>
-                )}
-              </TouchableOpacity>
+        {/* ── Section villes ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, styles.textRTL]}>ערים בהן אתה מספק שירות</Text>
+          <Text style={[styles.sectionSubtitle, styles.textRTL]}>
+            בחר את הערים שבהן אתה מעוניין לספק שירותים
+          </Text>
 
-              {/* ✅ BOUTON ANNULER */}
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={handleCancel}
-                disabled={loading}
-              >
-                <Text style={styles.secondaryButtonText}>ביטול</Text>
-              </TouchableOpacity>
-            </View>
+          {errors.serviceCities && (
+            <Text style={[styles.errorText, styles.textRTL]}>{errors.serviceCities}</Text>
+          )}
+
+          <View style={[
+            styles.citySelectorContainer,
+            errors.serviceCities && styles.inputError
+          ]}>
+            <CityMultiSelector
+              selectedCities={serviceCities}
+              onChange={setServiceCities}
+            />
           </View>
         </View>
+
+        {/* ── Boutons ── */}
+        <TouchableOpacity
+          style={[styles.primaryButton, loading && styles.buttonDisabled]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <Text style={styles.primaryButtonText}>שמור שינויים</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => navigation.goBack()}
+          disabled={loading}
+        >
+          <Text style={styles.secondaryButtonText}>ביטול</Text>
+        </TouchableOpacity>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -301,84 +292,142 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     padding: 20,
+    paddingBottom: 40,
   },
-  card: {
+
+  // ── Sections ──
+  section: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
     borderWidth: 1,
     borderColor: '#F3F4F6',
-    overflow: 'hidden',
   },
-  cardContent: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 20,
+  sectionTitle: {
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 24,
+    letterSpacing: -0.3,
     color: '#111827',
-    letterSpacing: -0.4,
-    lineHeight: 26,
-  },
-  inputContainer: {
-    marginBottom: 20,
-    zIndex: 1,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
     marginBottom: 8,
-    color: '#111827',
-    letterSpacing: -0.2,
   },
-  input: {
+  sectionSubtitle: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#6B7280',
+    marginBottom: 20,
+    lineHeight: 17,
+  },
+
+  // ── Service items ──
+  serviceTypeItem: {
+    backgroundColor: '#FAFAFA',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 12,
+  },
+  serviceTypeSelected: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#4a90e2',
+  },
+  serviceTypeHeader: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+  },
+  serviceTypeCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  serviceTypeCheckboxSelected: {
+    borderColor: '#4a90e2',
+    backgroundColor: '#4a90e2',
+  },
+  serviceTypeContent: {
+    flex: 1,
+  },
+  serviceTypeTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  serviceTypeDescription: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+
+  // ── Rate ──
+  rateContainer: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  rateLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 6,
+  },
+  rateInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rateInput: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    height: 40,
+    fontSize: 14,
+    width: 100,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    color: '#111827',
+  },
+  rateCurrency: {
+    marginLeft: 8,
     fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+
+  // ── City selector ──
+  citySelectorContainer: {
+    height: 400,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 12,
     backgroundColor: '#FFFFFF',
-    color: '#111827',
-    fontWeight: '400',
   },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  dropdown: {
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    minHeight: 44,
-  },
-  dropdownContainer: {
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-  },
-  dropdownText: {
-    fontSize: 14,
-    color: '#111827',
-    fontWeight: '400',
-  },
-  errorBorder: {
-    borderColor: '#EF4444',
-  },
+
+  // ── Erreurs ──
   errorText: {
     color: '#EF4444',
     fontSize: 12,
-    marginTop: 6,
-    fontWeight: '400',
+    marginTop: 4,
+    marginBottom: 8,
   },
-  buttonContainer: {
-    marginTop: 24,
-    gap: 12,
+  inputError: {
+    borderColor: '#EF4444',
   },
+
+  // ── Boutons ──
   primaryButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 12,
+    backgroundColor: '#4a90e2',
+    paddingVertical: 13,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 12,
   },
   primaryButtonText: {
     color: '#FFFFFF',
@@ -388,7 +437,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: '#F9FAFB',
-    paddingVertical: 12,
+    paddingVertical: 13,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -399,11 +448,12 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 15,
     fontWeight: '500',
-    letterSpacing: -0.2,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
+
+  // ── RTL ──
   textRTL: {
     textAlign: 'right',
     writingDirection: 'rtl',

@@ -219,7 +219,10 @@ const ProviderProfileScreen = () => {
           )}
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => navigation.navigate('EditService')}
+            onPress={() => navigation.navigate('EditService', {
+              serviceDetails: provider.serviceDetails || [],
+              serviceAreas: provider.serviceAreas || [],
+            })}
             >
             <Icon name="edit" size={18} color="#007AFF" />
             <Text style={[styles.editButtonText, styles.textRTL]}>ערוך שירותים</Text>
