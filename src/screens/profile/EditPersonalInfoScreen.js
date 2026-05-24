@@ -1,5 +1,6 @@
 // src/screens/profile/EditPersonalInfoScreen.js
 // ✅ VERSION CORRIGÉE: Navigation immédiate sans Alert
+// ✅ FIX: Ajout des champs ville et adresse pour les clients
 import React, { useState, useContext } from 'react';
 import {
   View,
@@ -153,9 +154,12 @@ const EditPersonalInfoScreen = () => {
   
   const [formData, setFormData] = useState({
     firstName: userData.firstName || '',
-    lastName: userData.lastName || '',
-    email: userData.email || '',
-    phone: userData.phone || '',
+    lastName:  userData.lastName  || '',
+    email:     userData.email     || '',
+    phone:     userData.phone     || '',
+    // ✅ FIX: Ajout ville et adresse (clients uniquement)
+    city:      userData.city      || '',
+    address:   userData.address   || '',
   });
   
   const [services, setServices] = useState(initializeServices());
@@ -269,18 +273,18 @@ const EditPersonalInfoScreen = () => {
       try {
         const updatedData = {
           firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
+          lastName:  formData.lastName,
+          email:     formData.email,
+          phone:     formData.phone,
         };
         
         if (isProvider) {
           // ✅ FIX: Préparer serviceDetails pour l'API
           const serviceTypeMapping = {
-            homeCleaning: 'בית',
+            homeCleaning:     'בית',
             buildingCleaning: 'בניין',
-            officeCleaning: 'משרד',
-            airbnb: 'אירבנב'
+            officeCleaning:   'משרד',
+            airbnb:           'אירבנב'
           };
           
           const selectedServices = Object.entries(services)
@@ -291,7 +295,7 @@ const EditPersonalInfoScreen = () => {
             }));
           
           // ✅ Le backend calculera automatiquement hourlyRate
-          updatedData.serviceTypes = selectedServices.map(service => service.type);
+          updatedData.serviceTypes   = selectedServices.map(service => service.type);
           updatedData.serviceDetails = selectedServices;
           
           console.log('📤 ===== ENVOI DES DONNÉES AU BACKEND =====');
@@ -302,7 +306,6 @@ const EditPersonalInfoScreen = () => {
           await providerService.updateProfile(updatedData);
           console.log('✅ API appelée avec succès');
           
-          // ✅✅✅ NAVIGATION IMMÉDIATE ✅✅✅
           setIsLoading(false);
           
           console.log('🎯🎯🎯 Navigation vers Dashboard Provider...');
@@ -318,7 +321,12 @@ const EditPersonalInfoScreen = () => {
           }
           
         } else {
-          // Pour les clients: utilise le context + navigation
+          // ✅ FIX: Inclure ville et adresse pour les clients
+          updatedData.city    = formData.city;
+          updatedData.address = formData.address;
+
+          console.log('📤 Mise à jour profil client:', updatedData);
+
           updateUserInfo({ ...userData, ...updatedData });
           setIsLoading(false);
           
@@ -358,60 +366,39 @@ const EditPersonalInfoScreen = () => {
           <View style={styles.formContainer}>
             {/* שם פרטי */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, styles.textRTL]}>
-                שם פרטי
-              </Text>
+              <Text style={[styles.label, styles.textRTL]}>שם פרטי</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  errors.firstName ? styles.inputError : null,
-                  styles.inputRTL
-                ]}
+                style={[styles.input, errors.firstName ? styles.inputError : null, styles.inputRTL]}
                 value={formData.firstName}
                 onChangeText={(text) => handleChange('firstName', text)}
                 placeholder="הזן שם פרטי"
                 autoCapitalize="words"
               />
               {errors.firstName ? (
-                <Text style={[styles.errorText, styles.textRTL]}>
-                  {errors.firstName}
-                </Text>
+                <Text style={[styles.errorText, styles.textRTL]}>{errors.firstName}</Text>
               ) : null}
             </View>
 
             {/* שם משפחה */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, styles.textRTL]}>
-                שם משפחה
-              </Text>
+              <Text style={[styles.label, styles.textRTL]}>שם משפחה</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  errors.lastName ? styles.inputError : null,
-                  styles.inputRTL
-                ]}
+                style={[styles.input, errors.lastName ? styles.inputError : null, styles.inputRTL]}
                 value={formData.lastName}
                 onChangeText={(text) => handleChange('lastName', text)}
                 placeholder="הזן שם משפחה"
                 autoCapitalize="words"
               />
               {errors.lastName ? (
-                <Text style={[styles.errorText, styles.textRTL]}>
-                  {errors.lastName}
-                </Text>
+                <Text style={[styles.errorText, styles.textRTL]}>{errors.lastName}</Text>
               ) : null}
             </View>
 
             {/* אימייל */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, styles.textRTL]}>
-                אימייל
-              </Text>
+              <Text style={[styles.label, styles.textRTL]}>אימייל</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  errors.email ? styles.inputError : null,
-                ]}
+                style={[styles.input, errors.email ? styles.inputError : null]}
                 value={formData.email}
                 onChangeText={(text) => handleChange('email', text)}
                 placeholder="email@example.com"
@@ -419,33 +406,51 @@ const EditPersonalInfoScreen = () => {
                 autoCapitalize="none"
               />
               {errors.email ? (
-                <Text style={[styles.errorText, styles.textRTL]}>
-                  {errors.email}
-                </Text>
+                <Text style={[styles.errorText, styles.textRTL]}>{errors.email}</Text>
               ) : null}
             </View>
 
             {/* טלפון */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, styles.textRTL]}>
-                טלפון
-              </Text>
+              <Text style={[styles.label, styles.textRTL]}>טלפון</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  errors.phone ? styles.inputError : null,
-                ]}
+                style={[styles.input, errors.phone ? styles.inputError : null]}
                 value={formData.phone}
                 onChangeText={(text) => handleChange('phone', text)}
                 placeholder="05X-XXXXXXX"
                 keyboardType="phone-pad"
               />
               {errors.phone ? (
-                <Text style={[styles.errorText, styles.textRTL]}>
-                  {errors.phone}
-                </Text>
+                <Text style={[styles.errorText, styles.textRTL]}>{errors.phone}</Text>
               ) : null}
             </View>
+
+            {/* ✅ FIX: Champs ville + adresse (clients uniquement) */}
+            {!isProvider && (
+              <>
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, styles.textRTL]}>עיר</Text>
+                  <TextInput
+                    style={[styles.input, styles.inputRTL]}
+                    value={formData.city}
+                    onChangeText={(text) => handleChange('city', text)}
+                    placeholder="הזן עיר"
+                    autoCapitalize="words"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, styles.textRTL]}>כתובת</Text>
+                  <TextInput
+                    style={[styles.input, styles.inputRTL]}
+                    value={formData.address}
+                    onChangeText={(text) => handleChange('address', text)}
+                    placeholder="רחוב ומספר בית"
+                    autoCapitalize="words"
+                  />
+                </View>
+              </>
+            )}
 
             {/* ✅ SECTION SERVICES (seulement pour providers) */}
             {isProvider && (

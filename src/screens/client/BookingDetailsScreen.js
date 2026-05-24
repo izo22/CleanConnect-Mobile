@@ -211,7 +211,8 @@ const BookingDetailsScreen = () => {
           status: BOOKING_STATUS.CANCELLED,
         });
         
-        Alert.alert('ההזמנה בוטלה', 'ההזמנה שלך בוטלה בהצלחה');
+        // ✅ MODIF : message remboursement
+        Alert.alert('ההזמנה בוטלה', 'הכסף יוחזר לכרטיסך תוך 3-5 ימי עסקים');
       } else {
         Alert.alert('שגיאה', result.message || 'לא ניתן לבטל את ההזמנה');
       }
@@ -239,15 +240,9 @@ const BookingDetailsScreen = () => {
     }
   };
   
+  // ✅ MODIF : annulation uniquement si status === 'pending' (Option A)
   const canBeCancelled = () => {
-    if (!booking || booking.status === BOOKING_STATUS.CANCELLED) return false;
-    
-    const bookingDate = new Date(booking.dateTime);
-    const now = new Date();
-    const diffTime = bookingDate.getTime() - now.getTime();
-    const diffHours = diffTime / (1000 * 60 * 60);
-    
-    return diffHours >= 24;
+    return booking?.status === BOOKING_STATUS.PENDING;
   };
   
   const canBeRated = () => {

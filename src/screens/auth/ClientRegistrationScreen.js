@@ -1,6 +1,7 @@
 // src/screens/auth/ClientRegistrationScreen.js
 // 🎨 VERSION ULTRA-MINIMALISTE PREMIUM
 // Style inspiré de Stripe, Linear, Revolut
+// ✅ AJOUT: TermsModal intégré sur le lien Terms & Conditions
 
 /*
 CHANGEMENTS MAJEURS APPLIQUÉS :
@@ -69,10 +70,12 @@ import {
   Alert,
   Platform,
   KeyboardAvoidingView,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../../context/AuthContext';
 import CityModalSelector from '../../components/CityModalSelector';
+import TermsModal from '../../components/TermsModal'; // ✅ AJOUT
 
 const ClientRegistrationScreen = ({ navigation }) => {
   const isRTL = true;
@@ -89,6 +92,8 @@ const ClientRegistrationScreen = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false); // ✅ AJOUT
+  const [termsVisible, setTermsVisible] = useState(false);   // ✅ AJOUT
   
   // État pour les erreurs de validation
   const [errors, setErrors] = useState({});
@@ -147,6 +152,12 @@ const ClientRegistrationScreen = ({ navigation }) => {
       isValid = false;
     }
 
+    // ✅ AJOUT: validation acceptation CGU
+    if (!termsAccepted) {
+      newErrors.terms = 'עליך לקבל את התנאים וההגבלות';
+      isValid = false;
+    }
+
     setErrors(newErrors);
     return isValid;
   };
@@ -188,7 +199,6 @@ const ClientRegistrationScreen = ({ navigation }) => {
 
   const handleCitySelect = (selectedCity) => {
     setCity(selectedCity);
-    // Effacer l'erreur de ville si elle existe
     if (errors.city) {
       setErrors({ ...errors, city: null });
     }
@@ -209,60 +219,39 @@ const ClientRegistrationScreen = ({ navigation }) => {
 
       {/* Prénom */}
       <View style={styles.inputContainer}>
-        <Text style={[styles.label, styles.textRTL]}>
-          שם פרטי
-        </Text>
+        <Text style={[styles.label, styles.textRTL]}>שם פרטי</Text>
         <TextInput
-          style={[
-            styles.input,
-            errors.firstName && styles.inputError,
-            styles.textRTL
-          ]}
+          style={[styles.input, errors.firstName && styles.inputError, styles.textRTL]}
           placeholder="הזן את שמך הפרטי"
           placeholderTextColor="#9CA3AF"
           value={firstName}
           onChangeText={setFirstName}
         />
         {errors.firstName && (
-          <Text style={[styles.errorText, styles.textRTL]}>
-            {errors.firstName}
-          </Text>
+          <Text style={[styles.errorText, styles.textRTL]}>{errors.firstName}</Text>
         )}
       </View>
 
       {/* Nom */}
       <View style={styles.inputContainer}>
-        <Text style={[styles.label, styles.textRTL]}>
-          שם משפחה
-        </Text>
+        <Text style={[styles.label, styles.textRTL]}>שם משפחה</Text>
         <TextInput
-          style={[
-            styles.input,
-            errors.lastName && styles.inputError,
-            styles.textRTL
-          ]}
+          style={[styles.input, errors.lastName && styles.inputError, styles.textRTL]}
           placeholder="הזן את שם המשפחה שלך"
           placeholderTextColor="#9CA3AF"
           value={lastName}
           onChangeText={setLastName}
         />
         {errors.lastName && (
-          <Text style={[styles.errorText, styles.textRTL]}>
-            {errors.lastName}
-          </Text>
+          <Text style={[styles.errorText, styles.textRTL]}>{errors.lastName}</Text>
         )}
       </View>
 
       {/* Email */}
       <View style={styles.inputContainer}>
-        <Text style={[styles.label, styles.textRTL]}>
-          אימייל
-        </Text>
+        <Text style={[styles.label, styles.textRTL]}>אימייל</Text>
         <TextInput
-          style={[
-            styles.input,
-            errors.email && styles.inputError
-          ]}
+          style={[styles.input, errors.email && styles.inputError]}
           placeholder="example@email.com"
           placeholderTextColor="#9CA3AF"
           value={email}
@@ -271,22 +260,15 @@ const ClientRegistrationScreen = ({ navigation }) => {
           autoCapitalize="none"
         />
         {errors.email && (
-          <Text style={[styles.errorText, styles.textRTL]}>
-            {errors.email}
-          </Text>
+          <Text style={[styles.errorText, styles.textRTL]}>{errors.email}</Text>
         )}
       </View>
 
       {/* Téléphone */}
       <View style={styles.inputContainer}>
-        <Text style={[styles.label, styles.textRTL]}>
-          טלפון
-        </Text>
+        <Text style={[styles.label, styles.textRTL]}>טלפון</Text>
         <TextInput
-          style={[
-            styles.input,
-            errors.phone && styles.inputError
-          ]}
+          style={[styles.input, errors.phone && styles.inputError]}
           placeholder="05X-XXX-XXXX"
           placeholderTextColor="#9CA3AF"
           value={phone}
@@ -294,116 +276,69 @@ const ClientRegistrationScreen = ({ navigation }) => {
           keyboardType="phone-pad"
         />
         {errors.phone && (
-          <Text style={[styles.errorText, styles.textRTL]}>
-            {errors.phone}
-          </Text>
+          <Text style={[styles.errorText, styles.textRTL]}>{errors.phone}</Text>
         )}
       </View>
 
-      {/* Champ Adresse */}
+      {/* Adresse */}
       <View style={styles.inputContainer}>
-        <Text style={[styles.label, styles.textRTL]}>
-          כתובת
-        </Text>
+        <Text style={[styles.label, styles.textRTL]}>כתובת</Text>
         <TextInput
-          style={[
-            styles.input,
-            errors.address && styles.inputError,
-            styles.textRTL
-          ]}
+          style={[styles.input, errors.address && styles.inputError, styles.textRTL]}
           placeholder="רחוב ומספר בית"
           placeholderTextColor="#9CA3AF"
           value={address}
           onChangeText={setAddress}
         />
         {errors.address && (
-          <Text style={[styles.errorText, styles.textRTL]}>
-            {errors.address}
-          </Text>
+          <Text style={[styles.errorText, styles.textRTL]}>{errors.address}</Text>
         )}
       </View>
 
-      {/* Sélecteur de ville - VERSION MODAL */}
+      {/* Ville */}
       <View style={styles.inputContainer}>
-        <Text style={[styles.label, styles.textRTL]}>
-          עיר
-        </Text>
+        <Text style={[styles.label, styles.textRTL]}>עיר</Text>
         <TouchableOpacity
-          style={[
-            styles.cityButton,
-            errors.city && styles.inputError
-          ]}
+          style={[styles.cityButton, errors.city && styles.inputError]}
           onPress={() => setShowCityModal(true)}
           activeOpacity={0.7}
         >
-          <Ionicons 
-            name="chevron-down" 
-            size={20} 
-            color="#9CA3AF"
-            style={styles.cityIcon}
-          />
-          <Text style={[
-            styles.cityButtonText,
-            !city && styles.cityPlaceholder
-          ]}>
+          <Ionicons name="chevron-down" size={20} color="#9CA3AF" style={styles.cityIcon} />
+          <Text style={[styles.cityButtonText, !city && styles.cityPlaceholder]}>
             {city || 'בחר עיר'}
           </Text>
         </TouchableOpacity>
         {errors.city && (
-          <Text style={[styles.errorText, styles.textRTL]}>
-            {errors.city}
-          </Text>
+          <Text style={[styles.errorText, styles.textRTL]}>{errors.city}</Text>
         )}
       </View>
 
       {/* Mot de passe */}
       <View style={styles.inputContainer}>
-        <Text style={[styles.label, styles.textRTL]}>
-          סיסמה
-        </Text>
+        <Text style={[styles.label, styles.textRTL]}>סיסמה</Text>
         <View style={styles.passwordContainer}>
           <TextInput
-            style={[
-              styles.input, 
-              styles.passwordInput, 
-              errors.password && styles.inputError,
-              styles.textRTL
-            ]}
+            style={[styles.input, styles.passwordInput, errors.password && styles.inputError, styles.textRTL]}
             placeholder="הזן סיסמה (לפחות 6 תווים)"
             placeholderTextColor="#9CA3AF"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
           />
-          <TouchableOpacity
-            style={styles.passwordToggle}
-            onPress={toggleShowPassword}
-          >
-            <Ionicons
-              name={showPassword ? 'eye-off' : 'eye'}
-              size={20}
-              color="#9CA3AF"
-            />
+          <TouchableOpacity style={styles.passwordToggle} onPress={toggleShowPassword}>
+            <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#9CA3AF" />
           </TouchableOpacity>
         </View>
         {errors.password && (
-          <Text style={[styles.errorText, styles.textRTL]}>
-            {errors.password}
-          </Text>
+          <Text style={[styles.errorText, styles.textRTL]}>{errors.password}</Text>
         )}
       </View>
 
-      {/* Confirmation du mot de passe */}
+      {/* Confirmation mot de passe */}
       <View style={styles.inputContainer}>
-        <Text style={[styles.label, styles.textRTL]}>
-          אימות סיסמה
-        </Text>
+        <Text style={[styles.label, styles.textRTL]}>אימות סיסמה</Text>
         <TextInput
-          style={[
-            styles.input,
-            errors.confirmPassword && styles.inputError,
-            styles.textRTL
-          ]}
+          style={[styles.input, errors.confirmPassword && styles.inputError, styles.textRTL]}
           placeholder="הזן את הסיסמה שוב"
           placeholderTextColor="#9CA3AF"
           value={confirmPassword}
@@ -411,13 +346,33 @@ const ClientRegistrationScreen = ({ navigation }) => {
           secureTextEntry={!showPassword}
         />
         {errors.confirmPassword && (
-          <Text style={[styles.errorText, styles.textRTL]}>
-            {errors.confirmPassword}
-          </Text>
+          <Text style={[styles.errorText, styles.textRTL]}>{errors.confirmPassword}</Text>
         )}
       </View>
 
-      {/* Bouton d'inscription */}
+      {/* ✅ AJOUT: Terms & Conditions */}
+      <View style={styles.termsContainer}>
+        <Switch
+          value={termsAccepted}
+          onValueChange={setTermsAccepted}
+          trackColor={{ false: '#E5E7EB', true: '#4CD964' }}
+        />
+        <Text style={[styles.termsText, styles.textRTL]}>
+          אני מסכים ל
+          <Text style={styles.termsLink} onPress={() => setTermsVisible(true)}>
+            תנאים והגבלות
+          </Text>
+          {' '}ו
+          <Text style={styles.termsLink} onPress={() => setTermsVisible(true)}>
+            מדיניות הפרטיות
+          </Text>
+        </Text>
+      </View>
+      {errors.terms && (
+        <Text style={[styles.errorText, styles.textRTL]}>{errors.terms}</Text>
+      )}
+
+      {/* Bouton inscription */}
       <TouchableOpacity
         style={[styles.button, isSubmitting && styles.buttonDisabled]}
         onPress={handleRegister}
@@ -426,29 +381,21 @@ const ClientRegistrationScreen = ({ navigation }) => {
         {isSubmitting ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>
-            הירשם
-          </Text>
+          <Text style={styles.buttonText}>הירשם</Text>
         )}
       </TouchableOpacity>
 
-      {/* Lien vers la page de connexion */}
+      {/* Lien login */}
       <View style={[styles.loginContainer, styles.loginContainerRTL]}>
-        <Text style={[styles.loginText, styles.textRTL]}>
-          כבר יש לך חשבון?
-        </Text>
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('Login', { role: 'client' })}
-        >
-          <Text style={[styles.loginLink, { marginRight: 5, marginLeft: 0 }]}>
-            התחבר
-          </Text>
+        <Text style={[styles.loginText, styles.textRTL]}>כבר יש לך חשבון?</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Login', { role: 'client' })}>
+          <Text style={[styles.loginLink, { marginRight: 5, marginLeft: 0 }]}>התחבר</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
-  // Rendu différent pour Web vs Mobile
+  // Rendu Web
   if (Platform.OS === 'web') {
     return (
       <View style={styles.webContainer}>
@@ -461,11 +408,17 @@ const ClientRegistrationScreen = ({ navigation }) => {
           onSelect={handleCitySelect}
           selectedCity={city}
         />
+        {/* ✅ AJOUT: Modal CGU */}
+        <TermsModal
+          visible={termsVisible}
+          onClose={() => setTermsVisible(false)}
+          initialLang="he"
+        />
       </View>
     );
   }
 
-  // ✅ FIX ANDROID: KeyboardAvoidingView ajouté — le clavier ne cache plus les champs
+  // ✅ FIX ANDROID: KeyboardAvoidingView
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -485,6 +438,12 @@ const ClientRegistrationScreen = ({ navigation }) => {
           onSelect={handleCitySelect}
           selectedCity={city}
         />
+        {/* ✅ AJOUT: Modal CGU */}
+        <TermsModal
+          visible={termsVisible}
+          onClose={() => setTermsVisible(false)}
+          initialLang="he"
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -496,7 +455,7 @@ const styles = StyleSheet.create({
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB', // Fond ultra-clair
+    backgroundColor: '#F9FAFB',
   },
   webContainer: {
     width: '100%',
@@ -519,69 +478,67 @@ const styles = StyleSheet.create({
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // CARD PRINCIPALE (Ultra-minimaliste)
+  // CARD PRINCIPALE
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   formContainer: {
-    backgroundColor: '#FFFFFF', // Blanc pur
-    borderRadius: 12, // Arrondi légèrement augmenté
-    padding: 24, // Padding augmenté pour respiration
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 24,
     borderWidth: 1,
-    borderColor: '#F3F4F6', // Bordure ultra-subtile
-    // Ombres quasi-éliminées
+    borderColor: '#F3F4F6',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03, // Ultra-subtil
+    shadowOpacity: 0.03,
     shadowRadius: 2,
-    elevation: 1, // Minimal
+    elevation: 1,
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // TYPOGRAPHIE (Tailles réduites, weights légers, spacing serré)
+  // TYPOGRAPHIE
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   title: {
-    fontSize: 18, // Réduit de 24px à 18px
-    fontWeight: '600', // Semibold pour titre principal
+    fontSize: 18,
+    fontWeight: '600',
     letterSpacing: -0.3,
-    lineHeight: 18 * 1.3, // Line height serré
-    marginBottom: 24, // Espacement doublé
+    lineHeight: 18 * 1.3,
+    marginBottom: 24,
     textAlign: 'center',
-    color: '#111827', // Noir profond
+    color: '#111827',
   },
   label: {
-    fontSize: 13, // Réduit de 16px à 13px
-    fontWeight: '400', // Regular
+    fontSize: 13,
+    fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 13 * 1.3,
-    marginBottom: 6, // Légèrement augmenté pour respiration
-    color: '#6B7280', // Gris doux
+    marginBottom: 6,
+    color: '#6B7280',
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // INPUTS (Minimalistes, fond blanc, bordures subtiles)
+  // INPUTS
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   inputContainer: {
-    marginBottom: 24, // Espacement doublé (était 15px)
+    marginBottom: 24,
   },
   input: {
-    height: 40, // Réduit de 50px à 40px
+    height: 40,
     borderWidth: 1,
-    borderColor: '#F3F4F6', // Bordure ultra-claire
+    borderColor: '#F3F4F6',
     borderRadius: 8,
     paddingHorizontal: 12,
-    fontSize: 14, // Réduit de 16px à 14px
+    fontSize: 14,
     fontWeight: '400',
     letterSpacing: -0.2,
     // ✅ FIX ANDROID: lineHeight supprimé — causait texte coupé/invisible sur Android
-    // quand combiné avec height fixe. Aucun impact visuel sur iOS.
-    backgroundColor: '#FFFFFF', // Blanc pur (pas #f9f9f9)
+    backgroundColor: '#FFFFFF',
     color: '#111827',
   },
   inputError: {
-    borderColor: '#EF4444', // Rouge vif pour erreurs
+    borderColor: '#EF4444',
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // CITY SELECTOR (Même style que inputs)
+  // CITY SELECTOR
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   cityButton: {
     height: 40,
@@ -603,33 +560,33 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   cityPlaceholder: {
-    color: '#9CA3AF', // Gris clair pour placeholder
+    color: '#9CA3AF',
   },
   cityIcon: {
     marginLeft: 8,
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // PASSWORD (Container pour icône)
+  // PASSWORD
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   passwordContainer: {
     position: 'relative',
   },
   passwordInput: {
-    paddingRight: 44, // Espace pour l'icône
+    paddingRight: 44,
   },
   passwordToggle: {
     position: 'absolute',
     left: 12,
-    top: 10, // Ajusté pour hauteur 40px
+    top: 10,
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ERREURS (Textes subtils)
+  // ERREURS
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   errorText: {
     color: '#EF4444',
-    fontSize: 11, // Réduit de 12px à 11px
+    fontSize: 11,
     fontWeight: '400',
     letterSpacing: -0.1,
     lineHeight: 11 * 1.3,
@@ -644,44 +601,66 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // TERMS & CONDITIONS ✅ AJOUT
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  termsContainer: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 10,
+  },
+  termsText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '400',
+    letterSpacing: -0.2,
+    lineHeight: 13 * 1.4,
+    color: '#6B7280',
+  },
+  termsLink: {
+    color: '#4a90e2',
+    fontWeight: '500',
+    textDecorationLine: 'underline',
+  },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // BOUTON CTA (Hauteur réduite, pas d'ombre)
+  // BOUTON CTA
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   button: {
     backgroundColor: '#4a90e2',
-    height: 40, // Réduit de 50px à 40px
+    height: 40,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
-    // Pas d'ombre
   },
   buttonDisabled: {
-    backgroundColor: '#93C5FD', // Plus subtil (était #a5c6ef)
+    backgroundColor: '#93C5FD',
     opacity: 0.6,
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 14, // Réduit de 16px à 14px
-    fontWeight: '600', // Semibold pour CTA
+    fontSize: 14,
+    fontWeight: '600',
     letterSpacing: -0.2,
     lineHeight: 14 * 1.3,
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // LOGIN LINK (Footer minimaliste)
+  // LOGIN LINK
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24, // Espacement augmenté
+    marginTop: 24,
   },
   loginContainerRTL: {
     flexDirection: 'row-reverse',
   },
   loginText: {
-    color: '#6B7280', // Gris doux
+    color: '#6B7280',
     fontSize: 13,
     fontWeight: '400',
     letterSpacing: -0.2,
@@ -690,7 +669,7 @@ const styles = StyleSheet.create({
   loginLink: {
     color: '#4a90e2',
     fontSize: 13,
-    fontWeight: '600', // Semibold pour lien
+    fontWeight: '600',
     letterSpacing: -0.2,
     lineHeight: 13 * 1.3,
     marginLeft: 5,

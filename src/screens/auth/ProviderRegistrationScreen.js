@@ -1,10 +1,12 @@
 // src/screens/auth/ProviderRegistrationScreen.js
 // 🎨 VERSION ULTRA-MINIMALISTE PREMIUM
 // Style inspiré de Stripe, Linear, Revolut
-// גרסה מתורגמת לעברית ללא i18n
 // ✅ MODIFIÉ: Ajout de la catégorie Airbnb + FIX bouton disabled
 // ✅ CORRIGÉ: services → serviceDetails + ajout description
 // ✅ MODIFIÉ: Ajout champ bio
+// ✅ AJOUT: Sélecteur de langue EN/HE avec RTL automatique
+// ✅ FIX: SafeAreaView importé depuis react-native-safe-area-context (fix Android status bar)
+// ✅ AJOUT: TermsModal intégré sur le lien Terms & Conditions
 
 /*
 CHANGEMENTS MAJEURS APPLIQUÉS :
@@ -76,14 +78,136 @@ import {
   TextInput,
   Switch,
   Alert,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../../context/AuthContext';
 import CityMultiSelector from '../../components/CityMultiSelector';
+import TermsModal from '../../components/TermsModal';
 
+// ─── Traductions ───────────────────────────────────────────────────────────────
+const translations = {
+  he: {
+    title:             'הרשמת ספק שירות',
+    subtitle:          'הצטרף לרשת אנשי המקצוע שלנו',
+    sectionPersonal:   'פרטים אישיים',
+    firstName:         'שם פרטי',
+    firstNamePh:       'הזן את שמך הפרטי',
+    lastName:          'שם משפחה',
+    lastNamePh:        'הזן את שם המשפחה שלך',
+    email:             'אימייל',
+    phone:             'טלפון',
+    sectionServices:   'סוגי שירותים',
+    servicesSubtitle:  'בחר את סוגי השירותים שאתה מציע והזן את התעריף השעתי עבור כל שירות',
+    rateLabel:         'תעריף לשעה:',
+    homeTitle:         'ניקיון בית',
+    homeDesc:          'ניקיון דירות, בתים פרטיים ומגורים',
+    buildingTitle:     'ניקיון בניינים',
+    buildingDesc:      'ניקיון חדרי מדרגות, מבואות וחלקים משותפים',
+    officeTitle:       'ניקיון משרדים',
+    officeDesc:        'ניקיון משרדים ומקומות עבודה',
+    airbnbTitle:       'ניקיון אירבנב',
+    airbnbDesc:        'ניקיון דירות אירבנב בין check-out לcheck-in',
+    sectionCities:     'ערים בהן אתה מספק שירות',
+    citiesSubtitle:    'בחר את הערים שבהן אתה מעוניין לספק שירותים',
+    sectionBio:        'קצת עליי',
+    bioSubtitle:       'ספר ללקוחות על עצמך — ניסיון, לאום, שפות וכל מה שיעזור להם לבחור אותך.\nניתן לכתוב בעברית, באנגלית או בצרפתית.',
+    bioPh:             'לדוגמה: אני מנקה מקצועי עם 5 שנות ניסיון, דובר עברית ורוסית...',
+    sectionSecurity:   'אבטחה',
+    password:          'סיסמה',
+    passwordPh:        'הזן סיסמה (לפחות 6 תווים)',
+    confirmPassword:   'אימות סיסמה',
+    confirmPasswordPh: 'הזן את הסיסמה שוב',
+    termsText:         'אני מסכים ל',
+    termsAnd:          ' ו',
+    termsLink1:        'תנאים והגבלות',
+    termsLink2:        'מדיניות הפרטיות',
+    submitBtn:         'הירשם כספק שירות',
+    alreadyRegistered: 'כבר רשום?',
+    loginLink:         'התחבר',
+    errFirstName:      'שם פרטי הוא שדה חובה',
+    errLastName:       'שם משפחה הוא שדה חובה',
+    errEmail:          'נדרשת כתובת אימייל תקינה',
+    errPhone:          'מספר טלפון הוא שדה חובה',
+    errPassword:       'הסיסמה חייבת להכיל לפחות 6 תווים',
+    errConfirmPw:      'הסיסמאות אינן תואמות',
+    errServices:       'אנא בחר לפחות סוג שירות אחד',
+    errRate:           'תעריף הוא שדה חובה',
+    errRateInvalid:    'נדרש תעריף תקין',
+    errCities:         'אנא בחר לפחות עיר אחת',
+    errTerms:          'עליך לקבל את התנאים וההגבלות',
+    alertSuccessTitle: 'הרשמה הצליחה!',
+    alertSuccessMsg:   'החשבון שלך נוצר בהצלחה. אתה יכול להתחבר כעת.',
+    alertSuccessBtn:   'אישור',
+    alertErrorTitle:   'שגיאה',
+    alertErrorMsg:     'ההרשמה נכשלה. אנא נסה שוב.',
+    alertFormTitle:    'שגיאת טופס',
+    alertFormMsg:      'אנא תקן את השגיאות בטופס לפני השליחה',
+    alertFormBtn:      'אישור',
+  },
+  en: {
+    title:             'Service Provider Registration',
+    subtitle:          'Join our professional network',
+    sectionPersonal:   'Personal Information',
+    firstName:         'First name',
+    firstNamePh:       'Enter your first name',
+    lastName:          'Last name',
+    lastNamePh:        'Enter your last name',
+    email:             'Email',
+    phone:             'Phone',
+    sectionServices:   'Service Types',
+    servicesSubtitle:  'Select the services you offer and enter your hourly rate for each',
+    rateLabel:         'Hourly rate:',
+    homeTitle:         'Home Cleaning',
+    homeDesc:          'Apartments, private homes and residential spaces',
+    buildingTitle:     'Building Cleaning',
+    buildingDesc:      'Stairwells, lobbies and common areas',
+    officeTitle:       'Office Cleaning',
+    officeDesc:        'Offices and workplaces',
+    airbnbTitle:       'Airbnb Cleaning',
+    airbnbDesc:        'Airbnb apartments between check-out and check-in',
+    sectionCities:     'Service Cities',
+    citiesSubtitle:    'Select the cities where you are available to provide services',
+    sectionBio:        'About Me',
+    bioSubtitle:       'Tell clients about yourself — experience, languages, and anything that will help them choose you.\nYou can write in Hebrew, English or French.',
+    bioPh:             'e.g. Professional cleaner with 5 years of experience, fluent in Hebrew and English...',
+    sectionSecurity:   'Security',
+    password:          'Password',
+    passwordPh:        'Enter a password (at least 6 characters)',
+    confirmPassword:   'Confirm password',
+    confirmPasswordPh: 'Enter your password again',
+    termsText:         'I agree to the ',
+    termsAnd:          ' and ',
+    termsLink1:        'Terms & Conditions',
+    termsLink2:        'Privacy Policy',
+    submitBtn:         'Register as Service Provider',
+    alreadyRegistered: 'Already registered?',
+    loginLink:         'Log in',
+    errFirstName:      'First name is required',
+    errLastName:       'Last name is required',
+    errEmail:          'A valid email address is required',
+    errPhone:          'Phone number is required',
+    errPassword:       'Password must be at least 6 characters',
+    errConfirmPw:      'Passwords do not match',
+    errServices:       'Please select at least one service type',
+    errRate:           'Rate is required',
+    errRateInvalid:    'Please enter a valid rate',
+    errCities:         'Please select at least one city',
+    errTerms:          'You must accept the terms and conditions',
+    alertSuccessTitle: 'Registration successful!',
+    alertSuccessMsg:   'Your account has been created. You can now log in.',
+    alertSuccessBtn:   'OK',
+    alertErrorTitle:   'Error',
+    alertErrorMsg:     'Registration failed. Please try again.',
+    alertFormTitle:    'Form error',
+    alertFormMsg:      'Please fix the errors before submitting',
+    alertFormBtn:      'OK',
+  },
+};
+
+// ─── ServiceTypeItem ───────────────────────────────────────────────────────────
 const ServiceTypeItem = ({ 
   serviceKey, 
   service, 
@@ -92,6 +216,7 @@ const ServiceTypeItem = ({
   toggleService, 
   updateRate,
   error,
+  rateLabel,
   isRTL
 }) => {
   return (
@@ -120,7 +245,7 @@ const ServiceTypeItem = ({
       {service.selected && (
         <View style={styles.rateContainer}>
           <Text style={[styles.rateLabel, isRTL && styles.textRTL]}>
-            תעריף לשעה:
+            {rateLabel}
           </Text>
           <View style={[styles.rateInputContainer, isRTL && styles.rateInputContainerRTL]}>
             <TextInput
@@ -145,8 +270,12 @@ const ServiceTypeItem = ({
   );
 };
 
+// ─── Screen ───────────────────────────────────────────────────────────────────
 const ProviderRegistrationScreen = ({ navigation }) => {
-  const isRTL = true;
+  const [lang, setLang] = useState('he');
+  const isRTL = lang === 'he';
+  const t = translations[lang];
+
   const { registerProvider } = useContext(AuthContext);
 
   const [firstName, setFirstName] = useState('');
@@ -155,14 +284,14 @@ const ProviderRegistrationScreen = ({ navigation }) => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  // ✅ AJOUT: champ bio
   const [bio, setBio] = useState('');
+  const [termsVisible, setTermsVisible] = useState(false); // ✅ AJOUT: state modal CGU
   
   const [services, setServices] = useState({
-    homeCleaning: { selected: false, rate: '' },
+    homeCleaning:     { selected: false, rate: '' },
     buildingCleaning: { selected: false, rate: '' },
-    officeCleaning: { selected: false, rate: '' },
-    airbnb: { selected: false, rate: '' }
+    officeCleaning:   { selected: false, rate: '' },
+    airbnb:           { selected: false, rate: '' }
   });
   
   const [serviceCities, setServiceCities] = useState([]);
@@ -170,7 +299,6 @@ const ProviderRegistrationScreen = ({ navigation }) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [errors, setErrors] = useState({});
   
-  // ✅ FIX: Fonction pour vérifier si tous les tarifs des services sélectionnés sont valides
   const areServiceRatesValid = () => {
     const selectedServices = Object.values(services).filter(service => service.selected);
     if (selectedServices.length === 0) return false;
@@ -224,38 +352,38 @@ const ProviderRegistrationScreen = ({ navigation }) => {
     let isValid = true;
     
     if (!firstName.trim()) {
-      tempErrors.firstName = 'שם פרטי הוא שדה חובה';
+      tempErrors.firstName = t.errFirstName;
       isValid = false;
     }
     
     if (!lastName.trim()) {
-      tempErrors.lastName = 'שם משפחה הוא שדה חובה';
+      tempErrors.lastName = t.errLastName;
       isValid = false;
     }
     
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim() || !emailRegex.test(email)) {
-      tempErrors.email = 'נדרשת כתובת אימייל תקינה';
+      tempErrors.email = t.errEmail;
       isValid = false;
     }
     
     if (!phone.trim()) {
-      tempErrors.phone = 'מספר טלפון הוא שדה חובה';
+      tempErrors.phone = t.errPhone;
       isValid = false;
     }
     
     if (password.length < 6) {
-      tempErrors.password = 'הסיסמה חייבת להכיל לפחות 6 תווים';
+      tempErrors.password = t.errPassword;
       isValid = false;
     }
     
     if (password !== confirmPassword) {
-      tempErrors.confirmPassword = 'הסיסמאות אינן תואמות';
+      tempErrors.confirmPassword = t.errConfirmPw;
       isValid = false;
     }
     
     if (!isAnyServiceSelected) {
-      tempErrors.services = 'אנא בחר לפחות סוג שירות אחד';
+      tempErrors.services = t.errServices;
       isValid = false;
     } else {
       const serviceRatesErrors = {};
@@ -263,10 +391,10 @@ const ProviderRegistrationScreen = ({ navigation }) => {
       Object.entries(services).forEach(([key, service]) => {
         if (service.selected) {
           if (!service.rate.trim()) {
-            serviceRatesErrors[key] = 'תעריף הוא שדה חובה';
+            serviceRatesErrors[key] = t.errRate;
             isValid = false;
           } else if (isNaN(parseFloat(service.rate)) || parseFloat(service.rate) <= 0) {
-            serviceRatesErrors[key] = 'נדרש תעריף תקין';
+            serviceRatesErrors[key] = t.errRateInvalid;
             isValid = false;
           }
         }
@@ -278,12 +406,12 @@ const ProviderRegistrationScreen = ({ navigation }) => {
     }
     
     if (serviceCities.length === 0) {
-      tempErrors.serviceCities = 'אנא בחר לפחות עיר אחת';
+      tempErrors.serviceCities = t.errCities;
       isValid = false;
     }
     
     if (!termsAccepted) {
-      tempErrors.terms = 'עליך לקבל את התנאים וההגבלות';
+      tempErrors.terms = t.errTerms;
       isValid = false;
     }
     
@@ -293,21 +421,19 @@ const ProviderRegistrationScreen = ({ navigation }) => {
 
   const handleSubmit = () => {
     if (validateForm()) {
-      // ✅ FIX: Mapping en hébreu pour correspondre au backend
       const serviceTypeMapping = {
-        homeCleaning: 'בית',
+        homeCleaning:     'בית',
         buildingCleaning: 'בניין',
-        officeCleaning: 'משרד',
-        airbnb: 'אירבנב'
+        officeCleaning:   'משרד',
+        airbnb:           'אירבנב'
       };
       
-      // ✅ CORRECTION 1: Ajout du champ description
       const selectedServices = Object.entries(services)
         .filter(([_, service]) => service.selected)
         .map(([key, service]) => ({
-          type: serviceTypeMapping[key],
-          hourlyRate: parseFloat(service.rate),
-          description: ''  // ✅ AJOUTÉ
+          type:        serviceTypeMapping[key],
+          hourlyRate:  parseFloat(service.rate),
+          description: ''
         }));
       
       const averageHourlyRate = selectedServices.reduce(
@@ -315,51 +441,48 @@ const ProviderRegistrationScreen = ({ navigation }) => {
         0
       ) / selectedServices.length;
       
-      // ✅ CORRECTION 2: services → serviceDetails
       const userData = {
         firstName,
         lastName,
         email,
         phone,
         password,
-        userType: 'provider',
-        hourlyRate: averageHourlyRate,
-        serviceTypes: selectedServices.map(service => service.type),
-        serviceCities: serviceCities,
-        serviceAreas: serviceCities,
-        services: selectedServices,        // ← ce que le backend lit
-        serviceDetails: selectedServices,  // ← gardé pour cohérence
-        bio: bio.trim(),                   // ✅ AJOUT: bio envoyée au backend
+        userType:       'provider',
+        hourlyRate:     averageHourlyRate,
+        serviceTypes:   selectedServices.map(service => service.type),
+        serviceCities,
+        serviceAreas:   serviceCities,
+        services:       selectedServices,
+        serviceDetails: selectedServices,
+        bio:            bio.trim(),
       };
       
       registerProvider(userData)
         .then(() => {
           Alert.alert(
-            'הרשמה הצליחה!',
-            'החשבון שלך נוצר בהצלחה. אתה יכול להתחבר כעת.',
+            t.alertSuccessTitle,
+            t.alertSuccessMsg,
             [{ 
-              text: 'אישור', 
+              text: t.alertSuccessBtn, 
               onPress: () => navigation.navigate('Login') 
             }]
           );
         })
         .catch(error => {
           Alert.alert(
-            'שגיאה', 
-            error.message || 'ההרשמה נכשלה. אנא נסה שוב.'
+            t.alertErrorTitle, 
+            error.message || t.alertErrorMsg
           );
         });
     } else {
-      // ✅ FIX: Afficher une alerte pour indiquer les erreurs
       Alert.alert(
-        'שגיאת טופס',
-        'אנא תקן את השגיאות בטופס לפני השליחה',
-        [{ text: 'אישור' }]
+        t.alertFormTitle,
+        t.alertFormMsg,
+        [{ text: t.alertFormBtn }]
       );
     }
   };
 
-  // ✅ FIX: Bouton disabled basé sur toutes les validations nécessaires
   const isFormValid = () => {
     return isAnyServiceSelected && 
            termsAccepted && 
@@ -368,79 +491,69 @@ const ProviderRegistrationScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidView}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
+
+          {/* ── Sélecteur de langue ── */}
+          <View style={styles.langToggleContainer}>
+            <TouchableOpacity
+              style={[styles.langBtn, lang === 'en' && styles.langBtnActive]}
+              onPress={() => setLang('en')}
+            >
+              <Text style={[styles.langBtnText, lang === 'en' && styles.langBtnTextActive]}>EN</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.langBtn, lang === 'he' && styles.langBtnActive]}
+              onPress={() => setLang('he')}
+            >
+              <Text style={[styles.langBtnText, lang === 'he' && styles.langBtnTextActive]}>HE</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.header}>
-            <Text style={[styles.title, isRTL && styles.textRTL]}>
-              הרשמת ספק שירות
-            </Text>
-            <Text style={[styles.subtitle, isRTL && styles.textRTL]}>
-              הצטרף לרשת אנשי המקצוע שלנו
-            </Text>
+            <Text style={[styles.title, isRTL && styles.textRTL]}>{t.title}</Text>
+            <Text style={[styles.subtitle, isRTL && styles.textRTL]}>{t.subtitle}</Text>
           </View>
           
           <View style={styles.formSection}>
-            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
-              פרטים אישיים
-            </Text>
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>{t.sectionPersonal}</Text>
             
             <View style={styles.inputContainer}>
-              <Text style={[styles.label, isRTL && styles.textRTL]}>
-                שם פרטי
-              </Text>
+              <Text style={[styles.label, isRTL && styles.textRTL]}>{t.firstName}</Text>
               <TextInput
-                style={[
-                  styles.input, 
-                  errors.firstName ? styles.inputError : null,
-                  isRTL && styles.textRTL
-                ]}
+                style={[styles.input, errors.firstName ? styles.inputError : null, isRTL && styles.textRTL]}
                 value={firstName}
                 onChangeText={setFirstName}
-                placeholder="הזן את שמך הפרטי"
+                placeholder={t.firstNamePh}
                 placeholderTextColor="#9CA3AF"
               />
               {errors.firstName && (
-                <Text style={[styles.errorText, isRTL && styles.textRTL]}>
-                  {errors.firstName}
-                </Text>
+                <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.firstName}</Text>
               )}
             </View>
             
             <View style={styles.inputContainer}>
-              <Text style={[styles.label, isRTL && styles.textRTL]}>
-                שם משפחה
-              </Text>
+              <Text style={[styles.label, isRTL && styles.textRTL]}>{t.lastName}</Text>
               <TextInput
-                style={[
-                  styles.input, 
-                  errors.lastName ? styles.inputError : null,
-                  isRTL && styles.textRTL
-                ]}
+                style={[styles.input, errors.lastName ? styles.inputError : null, isRTL && styles.textRTL]}
                 value={lastName}
                 onChangeText={setLastName}
-                placeholder="הזן את שם המשפחה שלך"
+                placeholder={t.lastNamePh}
                 placeholderTextColor="#9CA3AF"
               />
               {errors.lastName && (
-                <Text style={[styles.errorText, isRTL && styles.textRTL]}>
-                  {errors.lastName}
-                </Text>
+                <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.lastName}</Text>
               )}
             </View>
             
             <View style={styles.inputContainer}>
-              <Text style={[styles.label, isRTL && styles.textRTL]}>
-                אימייל
-              </Text>
+              <Text style={[styles.label, isRTL && styles.textRTL]}>{t.email}</Text>
               <TextInput
-                style={[
-                  styles.input, 
-                  errors.email ? styles.inputError : null
-                ]}
+                style={[styles.input, errors.email ? styles.inputError : null]}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="example@email.com"
@@ -449,21 +562,14 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 autoCapitalize="none"
               />
               {errors.email && (
-                <Text style={[styles.errorText, isRTL && styles.textRTL]}>
-                  {errors.email}
-                </Text>
+                <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.email}</Text>
               )}
             </View>
             
             <View style={styles.inputContainer}>
-              <Text style={[styles.label, isRTL && styles.textRTL]}>
-                טלפון
-              </Text>
+              <Text style={[styles.label, isRTL && styles.textRTL]}>{t.phone}</Text>
               <TextInput
-                style={[
-                  styles.input, 
-                  errors.phone ? styles.inputError : null
-                ]}
+                style={[styles.input, errors.phone ? styles.inputError : null]}
                 value={phone}
                 onChangeText={setPhone}
                 placeholder="05X-XXX-XXXX"
@@ -471,90 +577,74 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 keyboardType="phone-pad"
               />
               {errors.phone && (
-                <Text style={[styles.errorText, isRTL && styles.textRTL]}>
-                  {errors.phone}
-                </Text>
+                <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.phone}</Text>
               )}
             </View>
           </View>
           
           <View style={styles.formSection}>
-            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
-              סוגי שירותים
-            </Text>
-            <Text style={[styles.sectionSubtitle, isRTL && styles.textRTL]}>
-              בחר את סוגי השירותים שאתה מציע והזן את התעריף השעתי עבור כל שירות
-            </Text>
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>{t.sectionServices}</Text>
+            <Text style={[styles.sectionSubtitle, isRTL && styles.textRTL]}>{t.servicesSubtitle}</Text>
             
             {errors.services && (
-              <Text style={[styles.errorText, isRTL && styles.textRTL]}>
-                {errors.services}
-              </Text>
+              <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.services}</Text>
             )}
             
             <ServiceTypeItem
               serviceKey="homeCleaning"
               service={services.homeCleaning}
-              title="ניקיון בית"
-              description="ניקיון דירות, בתים פרטיים ומגורים"
+              title={t.homeTitle}
+              description={t.homeDesc}
               toggleService={toggleServiceType}
               updateRate={updateServiceRate}
               error={errors.serviceRates?.homeCleaning}
+              rateLabel={t.rateLabel}
               isRTL={isRTL}
             />
-            
             <ServiceTypeItem
               serviceKey="buildingCleaning"
               service={services.buildingCleaning}
-              title="ניקיון בניינים"
-              description="ניקיון חדרי מדרגות, מבואות וחלקים משותפים"
+              title={t.buildingTitle}
+              description={t.buildingDesc}
               toggleService={toggleServiceType}
               updateRate={updateServiceRate}
               error={errors.serviceRates?.buildingCleaning}
+              rateLabel={t.rateLabel}
               isRTL={isRTL}
             />
-            
             <ServiceTypeItem
               serviceKey="officeCleaning"
               service={services.officeCleaning}
-              title="ניקיון משרדים"
-              description="ניקיון משרדים ומקומות עבודה"
+              title={t.officeTitle}
+              description={t.officeDesc}
               toggleService={toggleServiceType}
               updateRate={updateServiceRate}
               error={errors.serviceRates?.officeCleaning}
+              rateLabel={t.rateLabel}
               isRTL={isRTL}
             />
-            
             <ServiceTypeItem
               serviceKey="airbnb"
               service={services.airbnb}
-              title="ניקיון אירבנב"
-              description="ניקיון דירות אירבנב בין check-out לcheck-in"
+              title={t.airbnbTitle}
+              description={t.airbnbDesc}
               toggleService={toggleServiceType}
               updateRate={updateServiceRate}
               error={errors.serviceRates?.airbnb}
+              rateLabel={t.rateLabel}
               isRTL={isRTL}
             />
           </View>
           
           <View style={styles.formSection}>
-            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
-              ערים בהן אתה מספק שירות
-            </Text>
-            <Text style={[styles.sectionSubtitle, isRTL && styles.textRTL]}>
-              בחר את הערים שבהן אתה מעוניין לספק שירותים
-            </Text>
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>{t.sectionCities}</Text>
+            <Text style={[styles.sectionSubtitle, isRTL && styles.textRTL]}>{t.citiesSubtitle}</Text>
             
             {errors.serviceCities && (
-              <Text style={[styles.errorText, isRTL && styles.textRTL]}>
-                {errors.serviceCities}
-              </Text>
+              <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.serviceCities}</Text>
             )}
             
-            <View style={[
-              styles.citySelectorContainer,
-              errors.serviceCities && styles.inputError
-            ]}>
+            <View style={[styles.citySelectorContainer, errors.serviceCities && styles.inputError]}>
               <CityMultiSelector
                 selectedCities={serviceCities}
                 onChange={setServiceCities}
@@ -563,24 +653,14 @@ const ProviderRegistrationScreen = ({ navigation }) => {
             </View>
           </View>
 
-          {/* ✅ AJOUT: Section bio */}
           <View style={styles.formSection}>
-            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
-              קצת עליי
-            </Text>
-            <Text style={[styles.sectionSubtitle, isRTL && styles.textRTL]}>
-              ספר ללקוחות על עצמך — ניסיון, לאום, שפות וכל מה שיעזור להם לבחור אותך.{'\n'}
-              ניתן לכתוב בעברית, באנגלית או בצרפתית.
-            </Text>
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>{t.sectionBio}</Text>
+            <Text style={[styles.sectionSubtitle, isRTL && styles.textRTL]}>{t.bioSubtitle}</Text>
             <TextInput
-              style={[
-                styles.input,
-                styles.bioInput,
-                isRTL && styles.textRTL
-              ]}
+              style={[styles.input, styles.bioInput, isRTL && styles.textRTL]}
               value={bio}
               onChangeText={setBio}
-              placeholder="לדוגמה: אני מנקה מקצועי עם 5 שנות ניסיון, דובר עברית ורוסית..."
+              placeholder={t.bioPh}
               placeholderTextColor="#9CA3AF"
               multiline
               maxLength={500}
@@ -590,89 +670,67 @@ const ProviderRegistrationScreen = ({ navigation }) => {
           </View>
           
           <View style={styles.formSection}>
-            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
-              אבטחה
-            </Text>
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>{t.sectionSecurity}</Text>
             
             <View style={styles.inputContainer}>
-              <Text style={[styles.label, isRTL && styles.textRTL]}>
-                סיסמה
-              </Text>
+              <Text style={[styles.label, isRTL && styles.textRTL]}>{t.password}</Text>
               <TextInput
-                style={[
-                  styles.input, 
-                  errors.password ? styles.inputError : null,
-                  isRTL && styles.textRTL
-                ]}
+                style={[styles.input, errors.password ? styles.inputError : null, isRTL && styles.textRTL]}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
-                placeholder="הזן סיסמה (לפחות 6 תווים)"
+                placeholder={t.passwordPh}
                 placeholderTextColor="#9CA3AF"
               />
               {errors.password && (
-                <Text style={[styles.errorText, isRTL && styles.textRTL]}>
-                  {errors.password}
-                </Text>
+                <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.password}</Text>
               )}
             </View>
             
             <View style={styles.inputContainer}>
-              <Text style={[styles.label, isRTL && styles.textRTL]}>
-                אימות סיסמה
-              </Text>
+              <Text style={[styles.label, isRTL && styles.textRTL]}>{t.confirmPassword}</Text>
               <TextInput
-                style={[
-                  styles.input, 
-                  errors.confirmPassword ? styles.inputError : null,
-                  isRTL && styles.textRTL
-                ]}
+                style={[styles.input, errors.confirmPassword ? styles.inputError : null, isRTL && styles.textRTL]}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
-                placeholder="הזן את הסיסמה שוב"
+                placeholder={t.confirmPasswordPh}
                 placeholderTextColor="#9CA3AF"
               />
               {errors.confirmPassword && (
-                <Text style={[styles.errorText, isRTL && styles.textRTL]}>
-                  {errors.confirmPassword}
-                </Text>
+                <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.confirmPassword}</Text>
               )}
             </View>
           </View>
-          
+
+          {/* ✅ MODIF: Switch accepte les CGU, lien ouvre le modal */}
           <View style={[styles.termsContainer, isRTL && styles.termsContainerRTL]}>
             <Switch
               value={termsAccepted}
               onValueChange={setTermsAccepted}
               trackColor={{ false: "#E5E7EB", true: "#4CD964" }}
             />
-            <TouchableOpacity onPress={() => setTermsAccepted(!termsAccepted)}>
-              <Text style={[styles.termsText, isRTL && styles.textRTL]}>
-                אני מסכים ל
-                <Text style={styles.termsLink}>תנאים והגבלות</Text>
-                {' '}ו
-                <Text style={styles.termsLink}>מדיניות הפרטיות</Text>
+            <Text style={[styles.termsText, isRTL && styles.textRTL]}>
+              {t.termsText}
+              <Text style={styles.termsLink} onPress={() => setTermsVisible(true)}>
+                {t.termsLink1}
               </Text>
-            </TouchableOpacity>
+              {t.termsAnd}
+              <Text style={styles.termsLink} onPress={() => setTermsVisible(true)}>
+                {t.termsLink2}
+              </Text>
+            </Text>
           </View>
           {errors.terms && (
-            <Text style={[styles.errorText, isRTL && styles.textRTL]}>
-              {errors.terms}
-            </Text>
+            <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.terms}</Text>
           )}
           
           <TouchableOpacity 
-            style={[
-              styles.submitButton, 
-              !isFormValid() && styles.submitButtonDisabled
-            ]}
+            style={[styles.submitButton, !isFormValid() && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={!isFormValid()}
           >
-            <Text style={styles.submitButtonText}>
-              הירשם כספק שירות
-            </Text>
+            <Text style={styles.submitButtonText}>{t.submitBtn}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -680,14 +738,20 @@ const ProviderRegistrationScreen = ({ navigation }) => {
             onPress={() => navigation.navigate('Login')}
           >
             <Text style={[styles.loginLinkText, isRTL && styles.textRTL]}>
-              כבר רשום?{' '}
-              <Text style={styles.loginLinkHighlight}>
-                התחבר
-              </Text>
+              {t.alreadyRegistered}{' '}
+              <Text style={styles.loginLinkHighlight}>{t.loginLink}</Text>
             </Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ✅ AJOUT: Modal CGU — s'ouvre au clic sur les liens terms */}
+      <TermsModal
+        visible={termsVisible}
+        onClose={() => setTermsVisible(false)}
+        initialLang={lang}
+      />
+
     </SafeAreaView>
   );
 };
@@ -698,7 +762,7 @@ const styles = StyleSheet.create({
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB', // Fond ultra-clair
+    backgroundColor: '#F9FAFB',
   },
   keyboardAvoidView: {
     flex: 1,
@@ -706,6 +770,37 @@ const styles = StyleSheet.create({
   scrollContainer: {
     padding: 20,
     paddingBottom: 40,
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // SÉLECTEUR DE LANGUE
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  langToggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 16,
+    gap: 6,
+  },
+  langBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  langBtnActive: {
+    backgroundColor: '#4a90e2',
+    borderColor: '#4a90e2',
+  },
+  langBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+    letterSpacing: -0.2,
+  },
+  langBtnTextActive: {
+    color: '#FFFFFF',
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -733,7 +828,7 @@ const styles = StyleSheet.create({
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // FORM SECTIONS (Cards ultra-minimalistes)
+  // FORM SECTIONS
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   formSection: {
     backgroundColor: '#FFFFFF',
@@ -766,7 +861,7 @@ const styles = StyleSheet.create({
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // INPUTS (Minimalistes, fond blanc, bordures subtiles)
+  // INPUTS
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   inputContainer: {
     marginBottom: 20,
@@ -790,8 +885,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     letterSpacing: -0.2,
-    // ✅ FIX ANDROID: lineHeight supprimé — causait texte coupé/invisible sur Android
-    // quand combiné avec height fixe. Aucun impact visuel sur iOS.
     color: '#111827',
   },
   inputError: {
@@ -805,8 +898,6 @@ const styles = StyleSheet.create({
     lineHeight: 11 * 1.3,
     marginTop: 4,
   },
-
-  // ✅ AJOUT: styles bio
   bioInput: {
     height: 100,
     paddingVertical: 10,
@@ -834,7 +925,7 @@ const styles = StyleSheet.create({
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // SERVICE TYPE ITEMS (Cards avec état sélectionné)
+  // SERVICE TYPE ITEMS
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   serviceTypeItem: {
     backgroundColor: '#FAFAFA',
@@ -890,7 +981,7 @@ const styles = StyleSheet.create({
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // RATE CONTAINER (Inside service items)
+  // RATE CONTAINER
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   rateContainer: {
     marginTop: 16,
@@ -922,7 +1013,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     letterSpacing: -0.2,
-    // ✅ FIX ANDROID: lineHeight supprimé — causait texte coupé/invisible sur Android
     width: 100,
     borderWidth: 1,
     borderColor: '#F3F4F6',
@@ -963,7 +1053,7 @@ const styles = StyleSheet.create({
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // SUBMIT BUTTON (CTA principal)
+  // SUBMIT BUTTON
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   submitButton: {
     backgroundColor: '#4a90e2',
@@ -986,7 +1076,7 @@ const styles = StyleSheet.create({
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // LOGIN LINK (Footer)
+  // LOGIN LINK
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   loginLink: {
     alignItems: 'center',

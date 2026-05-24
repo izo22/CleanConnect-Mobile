@@ -13,48 +13,83 @@ CHANGEMENTS MAJEURS APPLIQUÉS:
 ✓ Spacing: augmenté entre sections pour respiration
 ✓ Logo: poids ajusté (700→600 pour Clean, 300→400 pour Co)
 ✓ Ombres: supprimées ou ultra-subtiles (shadowOpacity 0.03)
+✓ AJOUT: Sélecteur de langue EN/HE avec RTL automatique
+✓ FIX: SafeAreaView importé depuis react-native-safe-area-context (fix Android status bar)
 */
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  SafeAreaView,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+// ─── Traductions ───────────────────────────────────────────────────────────────
+const translations = {
+  he: {
+    tagline:      'הפתרון הפשוט לכל צרכי הניקיון שלך',
+    sectionTitle: 'איך נוכל לעזור לך?',
+    clientTitle:  'אני מחפש שירות',
+    clientDesc:   'מצא מנקים מקצועיים באזור שלך',
+    providerTitle:'אני מציע שירותים',
+    providerDesc: 'הצטרף למקצוענים שלנו והתחל לעבוד',
+    loginText:    'כבר יש לך חשבון?',
+    loginBtn:     'התחבר',
+  },
+  en: {
+    tagline:      'The simple solution for all your cleaning needs',
+    sectionTitle: 'How can we help you?',
+    clientTitle:  "I'm looking for a service",
+    clientDesc:   'Find professional cleaners in your area',
+    providerTitle:'I offer services',
+    providerDesc: 'Join our professionals and start working',
+    loginText:    'Already have an account?',
+    loginBtn:     'Log in',
+  },
+};
+
 const WelcomeScreen = () => {
   const navigation = useNavigation();
-
-  const handleClientRegistration = () => {
-    navigation.navigate('ClientRegistration');
-  };
-
-  const handleProviderRegistration = () => {
-    navigation.navigate('ProviderRegistration');
-  };
-
-  const handleLogin = () => {
-    navigation.navigate('Login');
-  };
+  const [lang, setLang] = useState('he');
+  const isRTL = lang === 'he';
+  const t = translations[lang];
 
   return (
     <LinearGradient
       colors={['#F0F9FF', '#E0F2FE', '#DBEAFE']}
       style={styles.container}
     >
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="dark-content" />
-        <ScrollView 
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+
+      {/* SafeAreaView depuis react-native-safe-area-context — gère correctement Android */}
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
+          {/* ── Sélecteur de langue ── */}
+          <View style={styles.langToggleContainer}>
+            <TouchableOpacity
+              style={[styles.langBtn, lang === 'en' && styles.langBtnActive]}
+              onPress={() => setLang('en')}
+            >
+              <Text style={[styles.langBtnText, lang === 'en' && styles.langBtnTextActive]}>EN</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.langBtn, lang === 'he' && styles.langBtnActive]}
+              onPress={() => setLang('he')}
+            >
+              <Text style={[styles.langBtnText, lang === 'he' && styles.langBtnTextActive]}>HE</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Logo Section */}
           <View style={styles.logoSection}>
             <View style={styles.logoContainer}>
@@ -62,67 +97,63 @@ const WelcomeScreen = () => {
               <Ionicons name="sparkles" size={28} color="#2E86C1" style={styles.sparkleIcon} />
               <Text style={styles.logoCo}>Co</Text>
             </View>
-            <Text style={styles.tagline}>
-              הפתרון הפשוט לכל צרכי הניקיון שלך
+            <Text style={[styles.tagline, isRTL && styles.textRTL]}>
+              {t.tagline}
             </Text>
           </View>
 
           {/* Options Section */}
           <View style={styles.optionsSection}>
-            <Text style={styles.sectionTitle}>
-              איך נוכל לעזור לך?
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+              {t.sectionTitle}
             </Text>
-            
+
             {/* Card Client */}
             <TouchableOpacity
               style={styles.optionCard}
-              onPress={handleClientRegistration}
+              onPress={() => navigation.navigate('ClientRegistration')}
               activeOpacity={0.7}
             >
               <View style={styles.iconCircle}>
                 <Ionicons name="home" size={20} color="#2E86C1" />
               </View>
               <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>אני מחפש שירות</Text>
-                <Text style={styles.cardDescription}>
-                  מצא מנקים מקצועיים באזור שלך
-                </Text>
+                <Text style={[styles.cardTitle, isRTL && styles.textRTL]}>{t.clientTitle}</Text>
+                <Text style={[styles.cardDescription, isRTL && styles.textRTL]}>{t.clientDesc}</Text>
               </View>
               <View style={styles.arrowBubble}>
-                <Ionicons name="chevron-back" size={18} color="#2E86C1" />
+                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#2E86C1" />
               </View>
             </TouchableOpacity>
 
             {/* Card Provider */}
             <TouchableOpacity
               style={styles.optionCard}
-              onPress={handleProviderRegistration}
+              onPress={() => navigation.navigate('ProviderRegistration')}
               activeOpacity={0.7}
             >
               <View style={styles.iconCircle}>
                 <Ionicons name="briefcase" size={20} color="#2E86C1" />
               </View>
               <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>אני מציע שירותים</Text>
-                <Text style={styles.cardDescription}>
-                  הצטרף למקצוענים שלנו והתחל לעבוד
-                </Text>
+                <Text style={[styles.cardTitle, isRTL && styles.textRTL]}>{t.providerTitle}</Text>
+                <Text style={[styles.cardDescription, isRTL && styles.textRTL]}>{t.providerDesc}</Text>
               </View>
               <View style={styles.arrowBubble}>
-                <Ionicons name="chevron-back" size={18} color="#2E86C1" />
+                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#2E86C1" />
               </View>
             </TouchableOpacity>
           </View>
 
           {/* Login Section */}
-          <View style={styles.loginSection}>
-            <Text style={styles.loginText}>כבר יש לך חשבון?</Text>
-            <TouchableOpacity 
+          <View style={[styles.loginSection, isRTL && styles.loginSectionRTL]}>
+            <Text style={styles.loginText}>{t.loginText}</Text>
+            <TouchableOpacity
               style={styles.loginButton}
-              onPress={handleLogin}
+              onPress={() => navigation.navigate('Login')}
               activeOpacity={0.7}
             >
-              <Text style={styles.loginButtonText}>התחבר</Text>
+              <Text style={styles.loginButtonText}>{t.loginBtn}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -145,11 +176,40 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-  
+
+  // ── Sélecteur de langue
+  langToggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 8,
+    gap: 6,
+  },
+  langBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  langBtnActive: {
+    backgroundColor: '#2E86C1',
+    borderColor: '#2E86C1',
+  },
+  langBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+    letterSpacing: -0.2,
+  },
+  langBtnTextActive: {
+    color: '#FFFFFF',
+  },
+
   // Logo Section
   logoSection: {
     alignItems: 'center',
-    marginTop: 80,
+    marginTop: 60,
     marginBottom: 60,
   },
   logoContainer: {
@@ -182,7 +242,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     letterSpacing: -0.2,
   },
-  
+
   // Options Section
   optionsSection: {
     marginBottom: 40,
@@ -244,13 +304,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
+
   // Login Section
   loginSection: {
     flexDirection: 'row-reverse',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 20,
+  },
+  loginSectionRTL: {
+    flexDirection: 'row-reverse',
   },
   loginText: {
     fontSize: 14,
@@ -268,6 +331,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2E86C1',
     letterSpacing: -0.2,
+  },
+
+  // RTL
+  textRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
 });
 
