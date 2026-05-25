@@ -24,6 +24,11 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#2D8FEF"
       },
+      "splash": {
+        "image": "./assets/icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#2D8FEF"
+      },
       "package": "com.cleanconnect18.cleanconnect",
       "runtimeVersion": "1.0.0",
       "googleServicesFile": "./google-services.json"
@@ -40,7 +45,15 @@
       "expo-font",
       "expo-localization",
       "@react-native-community/datetimepicker",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#2D8FEF"
+        }
+      ]
     ],
     "updates": {
       "url": "https://u.expo.dev/af7a1ce0-1a74-4d89-8876-ba0ed01e1b8b"
