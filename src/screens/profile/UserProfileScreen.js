@@ -10,19 +10,15 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   Switch,
   ActivityIndicator,
   Alert,
-  Platform,
 } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import * as RootNavigation from '../../navigation/RootNavigation';
 
 // Composant pour les options du profil
 const ProfileOption = ({ icon, title, onPress, value, rightComponent, isRTL }) => {
@@ -112,112 +108,16 @@ const UserProfileScreen = () => {
 
   // Fonction de déconnexion - VERSION WEB (sans Alert)
   const handleLogout = async () => {
-    console.log('🔴🔴🔴 DÉBUT DÉCONNEXION !!! 🔴🔴🔴');
-    
     try {
       setIsLoading(true);
-      
-      console.log('🔴 Début de la déconnexion...');
-      
-      // ✅ Vider toutes les données AsyncStorage
-      await AsyncStorage.clear();
-      console.log('✅ AsyncStorage vidé');
-      
-      // ✅ Réinitialiser le contexte d'authentification
-      if (authContext) {
-        if (authContext.setUserToken) {
-          authContext.setUserToken(null);
-          console.log('✅ Token réinitialisé');
-        }
-        if (authContext.setUserInfo) {
-          authContext.setUserInfo(null);
-          console.log('✅ UserInfo réinitialisé');
-        }
-        if (authContext.setUserRole) {
-          authContext.setUserRole(null);
-          console.log('✅ UserRole réinitialisé');
-        }
-        
-        // Appeler logout si la fonction existe
-        if (authContext.logout && typeof authContext.logout === 'function') {
-          await authContext.logout();
-          console.log('✅ Fonction logout appelée');
-        }
-      }
-      
-      console.log('🔄 Tentative de redirection...');
-      
-      // ✅ Essayer plusieurs méthodes de navigation
-      
-      // Méthode 1 : Navigation avec reset
-      try {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Welcome' }],
-        });
-        console.log('✅ Méthode 1 réussie - navigation.reset vers Welcome');
-        return;
-      } catch (e) {
-        console.log('❌ Méthode 1 échouée:', e.message);
-      }
-      
-      // Méthode 2 : RootNavigation
-      try {
-        RootNavigation.reset({
-          index: 0,
-          routes: [{ name: 'Welcome' }],
-        });
-        console.log('✅ Méthode 2 réussie - RootNavigation.reset');
-        return;
-      } catch (e) {
-        console.log('❌ Méthode 2 échouée:', e.message);
-      }
-      
-      // Méthode 3 : Essayer Auth
-      try {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Auth' }],
-        });
-        console.log('✅ Méthode 3 réussie - navigation vers Auth');
-        return;
-      } catch (e) {
-        console.log('❌ Méthode 3 échouée:', e.message);
-      }
-      
-      // Méthode 4 : Navigate simple vers Login
-      try {
-        navigation.navigate('Login');
-        console.log('✅ Méthode 4 réussie - navigate vers Login');
-        return;
-      } catch (e) {
-        console.log('❌ Méthode 4 échouée:', e.message);
-      }
-      
-      // Méthode 5 : Navigate simple vers Welcome
-      try {
-        navigation.navigate('Welcome');
-        console.log('✅ Méthode 5 réussie - navigate vers Welcome');
-        return;
-      } catch (e) {
-        console.log('❌ Méthode 5 échouée:', e.message);
-      }
-      
-      // Méthode 6 : Forcer le rechargement
-      console.log('⚠️ Toutes les méthodes ont échoué, tentative de rechargement...');
-      if (Platform.OS === 'web') {
-        window.location.href = '/';
-        console.log('✅ Redirection web forcée');
-      }
-      
+      await authContext.logout();
     } catch (error) {
       console.error('❌ Erreur lors de la déconnexion:', error);
+      Alert.alert('שגיאה', 'אירעה שגיאה בעת ההתנתקות. נסה שוב.');
     } finally {
       setIsLoading(false);
-      console.log('🏁 Fin du processus de déconnexion');
     }
   };
-
   // Gérer la suppression du compte
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -229,28 +129,21 @@ const UserProfileScreen = () => {
           style: 'cancel',
         },
         {
-          text: 'מחק',
-          onPress: async () => {
-            Alert.alert(
-              'החשבון נמחק',
-              'החשבון שלך נמחק בהצלחה'
-            );
-            
-            await AsyncStorage.clear();
-            
-            if (authContext) {
-              if (authContext.setUserToken) authContext.setUserToken(null);
-              if (authContext.setUserInfo) authContext.setUserInfo(null);
-              if (authContext.setUserRole) authContext.setUserRole(null);
-            }
-            
-            RootNavigation.reset({
-              index: 0,
-              routes: [{ name: 'Welcome' }],
-            });
+          
+            text: 'מחק',
+            onPress: async () => {
+              Alert.alert(
+                'החשבון נמחק',
+                'החשבון שלך נמחק בהצלחה'
+              );
+              try {
+                await authContext.logout();
+              } catch (e) {
+                console.error('❌ Erreur suppression compte:', e);
+              }
+            },
+            style: 'destructive',
           },
-          style: 'destructive',
-        },
       ]
     );
   };
