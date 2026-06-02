@@ -149,11 +149,10 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     setError(null);
     try {
-      setIsLoading(true);
+      // ❌ SUPPRIMÉ : setIsLoading(true);
       
       console.log('🚪 Déconnexion en cours...');
       
-      // ✅ NOUVEAU : Supprimer le push token du serveur (sauf sur web)
       if (Platform.OS !== 'web') {
         try {
           await notificationService.removePushTokenFromServer();
@@ -162,19 +161,17 @@ export const AuthProvider = ({ children }) => {
         }
       }
       
-      // Tenter d'appeler le service de déconnexion
       try {
         await authService.logout();
       } catch (serviceError) {
         console.log('⚠️ Erreur backend lors de la déconnexion (ignorée):', serviceError);
       }
       
-      // Nettoyer les données d'authentification
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('userRole');
       await AsyncStorage.removeItem('userData');
       
-      // Réinitialiser les états
+      // Ces 3 setState déclenchent le re-render vers AuthStack directement
       setUserToken(null);
       setUserInfo(null);
       setUserRole(null);
@@ -187,9 +184,8 @@ export const AuthProvider = ({ children }) => {
       const errorMessage = err.message || 'Erreur lors de la déconnexion';
       setError(errorMessage);
       throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
     }
+    // ❌ SUPPRIMÉ : finally { setIsLoading(false); }
   };
 
   // ✅ Inscription d'un client - AVEC INITIALISATION DES NOTIFICATIONS
