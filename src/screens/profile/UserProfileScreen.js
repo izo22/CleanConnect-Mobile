@@ -3,6 +3,7 @@
 // ✅ תוקן: הצגת עיר אמיתית מהפרופיל
 // ✅ נוסף: גישה לוידאו של הנכס
 // ✅ תוקן: עריכת כתובת ועיר דרך EditPersonalInfo
+// ✅ תוקן: fix écran noir lors de la déconnexion
 
 import React, { useState, useContext, useEffect } from 'react';
 import {
@@ -12,7 +13,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
@@ -50,23 +50,20 @@ const ProfileSection = ({ title, children, isRTL }) => {
 const UserProfileScreen = () => {
   const authContext = useContext(AuthContext);
   const navigation = useNavigation();
-  const isRTL = true; // ✅ תמיד RTL לעברית
-  
-  const [isLoading, setIsLoading] = useState(false);
+  const isRTL = true;
+
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  
-  // ✅ CORRECTION : Données du profil depuis authContext.userInfo
+
   const [profileData, setProfileData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
-    city: '', // ✅ Ajout du champ ville
+    city: '',
     address: '',
     language: 'עברית',
   });
 
-  // ✅ Charger les vraies données du profil depuis authContext
   useEffect(() => {
     if (authContext?.userInfo) {
       setProfileData({
@@ -74,11 +71,11 @@ const UserProfileScreen = () => {
         lastName: authContext.userInfo.lastName || '',
         email: authContext.userInfo.email || 'email@example.com',
         phone: authContext.userInfo.phone || 'לא צוין',
-        city: authContext.userInfo.city || 'לא צוין', // ✅ Ville depuis userInfo
+        city: authContext.userInfo.city || 'לא צוין',
         address: authContext.userInfo.address || 'לא צוינה',
         language: authContext.userInfo.language || 'עברית',
       });
-      
+
       console.log('📋 נתוני פרופיל:', {
         city: authContext.userInfo.city,
         address: authContext.userInfo.address
@@ -86,39 +83,32 @@ const UserProfileScreen = () => {
     }
   }, [authContext?.userInfo]);
 
-  // Gérer le changement de langue
   const handleLanguageChange = () => {
     navigation.navigate('LanguageSettings');
   };
 
-  // Gérer l'édition des informations personnelles
   const handleEditPersonalInfo = () => {
     navigation.navigate('EditPersonalInfo', { profileData });
   };
 
-  // ✅ CORRECTION : Naviguer vers EditPersonalInfo pour éditer ville/adresse
   const handleEditAddress = () => {
     navigation.navigate('EditPersonalInfo', { profileData });
   };
 
-  // ✅ NOUVEAU : Gérer l'accès à la vidéo de propriété
   const handlePropertyVideo = () => {
     navigation.navigate('PropertyVideo');
   };
 
-  // Fonction de déconnexion - VERSION WEB (sans Alert)
+  // ✅ FIX écran noir : pas de setIsLoading local, l'écran va être démonté immédiatement
   const handleLogout = async () => {
     try {
-      setIsLoading(true);
       await authContext.logout();
     } catch (error) {
       console.error('❌ Erreur lors de la déconnexion:', error);
       Alert.alert('שגיאה', 'אירעה שגיאה בעת ההתנתקות. נסה שוב.');
-    } finally {
-      setIsLoading(false);
     }
   };
-  // Gérer la suppression du compte
+
   const handleDeleteAccount = () => {
     Alert.alert(
       'מחיקת חשבון',
@@ -129,33 +119,23 @@ const UserProfileScreen = () => {
           style: 'cancel',
         },
         {
-          
-            text: 'מחק',
-            onPress: async () => {
-              Alert.alert(
-                'החשבון נמחק',
-                'החשבון שלך נמחק בהצלחה'
-              );
-              try {
-                await authContext.logout();
-              } catch (e) {
-                console.error('❌ Erreur suppression compte:', e);
-              }
-            },
-            style: 'destructive',
+          text: 'מחק',
+          onPress: async () => {
+            Alert.alert('החשבון נמחק', 'החשבון שלך נמחק בהצלחה');
+            try {
+              await authContext.logout();
+            } catch (e) {
+              console.error('❌ Erreur suppression compte:', e);
+            }
           },
+          style: 'destructive',
+        },
       ]
     );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {isLoading && (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
-        </View>
-      )}
-      
       <ScrollView>
         {/* En-tête du profil */}
         <View style={styles.profileHeader}>
@@ -188,7 +168,7 @@ const UserProfileScreen = () => {
           />
         </ProfileSection>
 
-        {/* ✅ Adresse, ville et VIDÉO */}
+        {/* Adresse, ville et vidéo */}
         <ProfileSection title="הנכס שלי" isRTL={isRTL}>
           <ProfileOption
             icon="location-outline"
@@ -204,7 +184,6 @@ const UserProfileScreen = () => {
             onPress={handleEditAddress}
             isRTL={isRTL}
           />
-          {/* ✅ NOUVEAU : Option vidéo de propriété */}
           <ProfileOption
             icon="videocam-outline"
             title="וידאו של הנכס"
@@ -242,9 +221,8 @@ const UserProfileScreen = () => {
 
         {/* Compte */}
         <ProfileSection title="חשבון" isRTL={isRTL}>
-          {/* Bouton de déconnexion direct */}
-          <TouchableOpacity 
-            style={[styles.optionContainer, { backgroundColor: '#ffebee' }]} 
+          <TouchableOpacity
+            style={[styles.optionContainer, { backgroundColor: '#ffebee' }]}
             onPress={handleLogout}
           >
             <View style={[styles.optionLeft, styles.optionLeftRTL]}>
@@ -255,15 +233,15 @@ const UserProfileScreen = () => {
             </View>
             <Ionicons name="chevron-back" size={20} color="#e74c3c" />
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount}>
             <Text style={[styles.deleteAccountText, styles.textRTL]}>
               מחק חשבון
             </Text>
           </TouchableOpacity>
         </ProfileSection>
-        
-        {/* ✅ Informations de débogage (à retirer en production) */}
+
+        {/* Informations de débogage */}
         {__DEV__ && (
           <ProfileSection title="מידע דיבאג (למפתחים)" isRTL={isRTL}>
             <View style={styles.debugContainer}>
@@ -285,17 +263,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  loaderContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    zIndex: 1000,
   },
   profileHeader: {
     alignItems: 'center',
