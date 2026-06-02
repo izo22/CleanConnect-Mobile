@@ -286,25 +286,23 @@ if (isLoading) {
   );
 }
 
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {userToken ? (
-        userRole === 'provider' ? (
-          <Stack.Screen name="ProviderTabs" component={ProviderTabs} />
-        ) : (
-          <Stack.Screen name="ClientTabs" component={ClientTabs} />
-        )
-      ) : (
-        <>
-          <Stack.Screen name="Welcome"              component={WelcomeScreen} />
-          <Stack.Screen name="Login"                component={LoginScreen} />
-          <Stack.Screen name="ClientRegistration"   component={ClientRegistrationScreen} />
-          <Stack.Screen name="ProviderRegistration" component={ProviderRegistrationScreen} />
-          <Stack.Screen name="ForgotPassword"       component={ForgotPasswordScreen} />
-        </>
-      )}
-    </Stack.Navigator>
-  );
+return (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    {!userToken ? (
+      <>
+        <Stack.Screen name="Welcome"              component={WelcomeScreen} />
+        <Stack.Screen name="Login"                component={LoginScreen} />
+        <Stack.Screen name="ClientRegistration"   component={ClientRegistrationScreen} />
+        <Stack.Screen name="ProviderRegistration" component={ProviderRegistrationScreen} />
+        <Stack.Screen name="ForgotPassword"       component={ForgotPasswordScreen} />
+      </>
+    ) : userRole === 'provider' ? (
+      <Stack.Screen name="ProviderTabs" component={ProviderTabs} />
+    ) : (
+      <Stack.Screen name="ClientTabs" component={ClientTabs} />
+    )}
+  </Stack.Navigator>
+);
 };
 
 export default AppNavigator;
