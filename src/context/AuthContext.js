@@ -4,7 +4,7 @@
 //    setAuthState() → 1 seul rerender atomique au lieu de 3 rerenders séparés
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { Platform } from 'react-native';
+import { Platform, InteractionManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService, userService, providerService } from '../services/api';
 import notificationService from '../services/notificationService';
@@ -156,8 +156,6 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     setError(null);
     try {
-      // ❌ PAS de setIsLoading(true) ici → évite le flash de l'écran de chargement
-
       console.log('🚪 Déconnexion en cours...');
 
       if (Platform.OS !== 'web') {
@@ -178,7 +176,8 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.removeItem('userRole');
       await AsyncStorage.removeItem('userData');
 
-      // ✅ FIX ÉCRAN NOIR : un seul setState atomique → 1 seul rerender → WelcomeScreen direct
+      // ✅ FIX APK : laisser React Navigation finir ses animations avant de switcher
+      await new Promise(resolve => InteractionManager.runAfterInteractions(resolve));
       setAuthState({ userToken: null, userInfo: null, userRole: null });
 
       console.log('✅ Déconnexion réussie');
@@ -190,9 +189,7 @@ export const AuthProvider = ({ children }) => {
       setError(errorMessage);
       throw new Error(errorMessage);
     }
-    // ❌ PAS de finally setIsLoading(false)
   };
-
   // ✅ Inscription d'un client
   const registerClient = async (userData) => {
     setError(null);
