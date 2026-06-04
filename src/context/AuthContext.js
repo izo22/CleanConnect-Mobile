@@ -1,10 +1,10 @@
 // src/context/AuthContext.js
 // ✅ VERSION AVEC NOTIFICATIONS PUSH INTÉGRÉES + FIX TIMING ASYNCSTORAGE + FIX VAPID WEB
-// ✅ FIX ÉCRAN NOIR DÉCONNEXION : états userToken/userInfo/userRole regroupés en un seul
-//    setAuthState() → 1 seul rerender atomique au lieu de 3 rerenders séparés
+// ✅ FIX ÉCRAN NOIR DÉCONNEXION : setAuthState EN PREMIER → navigator switche immédiatement
+//    vers le groupe auth, cleanup AsyncStorage/backend se fait après en arrière-plan
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { Platform, InteractionManager } from 'react-native';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService, userService, providerService } from '../services/api';
 import notificationService from '../services/notificationService';
@@ -152,11 +152,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Fonction de déconnexion - FIX ÉCRAN NOIR : setAuthState atomique
+  // ✅ Fonction de déconnexion
+  // FIX ÉCRAN NOIR APK : setAuthState EN PREMIER
+  // userToken passe à null → AppNavigator switche immédiatement vers le groupe auth
+  // (Welcome, Login...) sans attendre les appels réseau.
+  // Le cleanup AsyncStorage + backend se fait après, en arrière-plan.
   const logout = async () => {
     setError(null);
     try {
       console.log('🚪 Déconnexion en cours...');
+
+      // ✅ ÉTAPE 1 : vider l'état immédiatement → navigation vers Welcome instantanée
+      setAuthState({ userToken: null, userInfo: null, userRole: null });
+
+      // ✅ ÉTAPE 2 : cleanup en arrière-plan (ne bloque plus React Navigation)
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('userRole');
+      await AsyncStorage.removeItem('userData');
 
       if (Platform.OS !== 'web') {
         try {
@@ -172,16 +184,7 @@ export const AuthProvider = ({ children }) => {
         console.log('⚠️ Erreur backend lors de la déconnexion (ignorée):', serviceError);
       }
 
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('userRole');
-      await AsyncStorage.removeItem('userData');
-
-      // ✅ FIX APK : laisser React Navigation finir ses animations avant de switcher
-      await new Promise(resolve => InteractionManager.runAfterInteractions(resolve));
-      setAuthState({ userToken: null, userInfo: null, userRole: null });
-
       console.log('✅ Déconnexion réussie');
-
       return { success: true };
     } catch (err) {
       console.error('❌ Erreur déconnexion:', err);
@@ -190,6 +193,7 @@ export const AuthProvider = ({ children }) => {
       throw new Error(errorMessage);
     }
   };
+
   // ✅ Inscription d'un client
   const registerClient = async (userData) => {
     setError(null);

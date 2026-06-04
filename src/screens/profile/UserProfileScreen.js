@@ -3,7 +3,7 @@
 // ✅ תוקן: הצגת עיר אמיתית מהפרופיל
 // ✅ נוסף: גישה לוידאו של הנכס
 // ✅ תוקן: עריכת כתובת ועיר דרך EditPersonalInfo
-// ✅ תוקן: fix écran noir lors de la déconnexion
+// ✅ תוקן: fix écran noir lors de la déconnexion — navigation.reset() appelé avant setAuthState
 
 import React, { useState, useContext, useEffect } from 'react';
 import {
@@ -99,15 +99,19 @@ const UserProfileScreen = () => {
     navigation.navigate('PropertyVideo');
   };
 
-  // ✅ FIX écran noir : pas de setIsLoading local, l'écran va être démonté immédiatement
-  const handleLogout = async () => {
-    try {
-      await authContext.logout();
-    } catch (error) {
-      console.error('❌ Erreur lors de la déconnexion:', error);
-      Alert.alert('שגיאה', 'אירעה שגיאה בעת ההתנתקות. נסה שוב.');
-    }
-  };
+  // ✅ FIX ÉCRAN NOIR APK :
+  // navigation.reset() est appelé en PREMIER → React Navigation détruit la stack
+  // de façon impérative avant que le setAuthState() dans logout() ne déclenche
+  // un rerender. Plus d'état incohérent entre les deux layers (JS + natif Android).
+  // ✅ NOUVEAU — le fix est dans AuthContext.logout(), rien à faire ici
+const handleLogout = async () => {
+  try {
+    await authContext.logout();
+  } catch (error) {
+    console.error('❌ Erreur lors de la déconnexion:', error);
+    Alert.alert('שגיאה', 'אירעה שגיאה בעת ההתנתקות. נסה שוב.');
+  }
+};
 
   const handleDeleteAccount = () => {
     Alert.alert(
