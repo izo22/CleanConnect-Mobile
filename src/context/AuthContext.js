@@ -4,7 +4,7 @@
 //    vers le groupe auth, cleanup AsyncStorage/backend se fait après en arrière-plan
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService, userService, providerService } from '../services/api';
 import notificationService from '../services/notificationService';
@@ -152,41 +152,43 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Fonction de déconnexion
-  // FIX ÉCRAN NOIR APK : setAuthState EN PREMIER
-  // userToken passe à null → AppNavigator switche immédiatement vers le groupe auth
-  // (Welcome, Login...) sans attendre les appels réseau.
-  // Le cleanup AsyncStorage + backend se fait après, en arrière-plan.
+  // ✅ DEBUG : alertes visuelles pour identifier où logout() se bloque sur APK
   const logout = async () => {
     setError(null);
     try {
       console.log('🚪 Déconnexion en cours...');
+      Alert.alert('DEBUG 1', 'début logout');
 
       // ✅ ÉTAPE 1 : vider l'état immédiatement → navigation vers Welcome instantanée
       setAuthState({ userToken: null, userInfo: null, userRole: null });
+      Alert.alert('DEBUG 2', 'setAuthState null OK');
 
       // ✅ ÉTAPE 2 : cleanup en arrière-plan (ne bloque plus React Navigation)
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('userRole');
       await AsyncStorage.removeItem('userData');
+      Alert.alert('DEBUG 3', 'AsyncStorage clear OK');
 
       if (Platform.OS !== 'web') {
         try {
           await notificationService.removePushTokenFromServer();
+          Alert.alert('DEBUG 4', 'removePushToken OK');
         } catch (e) {
-          console.log('⚠️ Erreur suppression push token (ignorée):', e.message);
+          Alert.alert('DEBUG 4 ERR', e.message);
         }
       }
 
       try {
         await authService.logout();
+        Alert.alert('DEBUG 5', 'authService.logout OK');
       } catch (serviceError) {
-        console.log('⚠️ Erreur backend lors de la déconnexion (ignorée):', serviceError);
+        Alert.alert('DEBUG 5 ERR', serviceError.message);
       }
 
       console.log('✅ Déconnexion réussie');
       return { success: true };
     } catch (err) {
+      Alert.alert('DEBUG ERR GLOBAL', err.message);
       console.error('❌ Erreur déconnexion:', err);
       const errorMessage = err.message || 'Erreur lors de la déconnexion';
       setError(errorMessage);
