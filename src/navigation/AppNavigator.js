@@ -1,48 +1,56 @@
-import React, { useContext } from 'react';
+// src/navigation/AppNavigator.js
+// ✅ VERSION DEBUG ÉCRAN NOIR — logs sur chaque render et switch de navigator
+
+import React, { useContext, useEffect, useRef } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Text, View, TouchableOpacity, Platform, StatusBar } from 'react-native';
 
-// Contexte d'authentification
 import { AuthContext } from '../context/AuthContext';
 
-// Écrans d'authentification
-import WelcomeScreen from '../screens/auth/WelcomeScreen';
-import LoginScreen from '../screens/auth/LoginScreen';
-import ClientRegistrationScreen from '../screens/auth/ClientRegistrationScreen';
+import WelcomeScreen              from '../screens/auth/WelcomeScreen';
+import LoginScreen                from '../screens/auth/LoginScreen';
+import ClientRegistrationScreen   from '../screens/auth/ClientRegistrationScreen';
 import ProviderRegistrationScreen from '../screens/auth/ProviderRegistrationScreen';
 
-// Écrans prestataires
 import ProviderDashboardScreen from '../screens/provider/ProviderDashboardScreen';
-import ProviderProfileScreen from '../screens/provider/ProviderProfileScreen';
-import EditServiceScreen from '../screens/provider/EditServiceScreen';
-import EditAvailabilityScreen from '../screens/provider/EditAvailabilityScreen';
-import JobDetailsScreen from '../screens/provider/JobDetailsScreen';
-import CalendarScreen from '../screens/provider/CalendarScreen';
-import AvailabilityScreen from '../screens/provider/AvailabilityScreen';
-import StatsScreen from '../screens/provider/StatsScreen';
-import RequestsScreen from '../screens/provider/RequestsScreen';
-import EditPersonalInfoScreen from '../screens/profile/EditPersonalInfoScreen';
+import ProviderProfileScreen   from '../screens/provider/ProviderProfileScreen';
+import EditServiceScreen       from '../screens/provider/EditServiceScreen';
+import EditAvailabilityScreen  from '../screens/provider/EditAvailabilityScreen';
+import JobDetailsScreen        from '../screens/provider/JobDetailsScreen';
+import CalendarScreen          from '../screens/provider/CalendarScreen';
+import AvailabilityScreen      from '../screens/provider/AvailabilityScreen';
+import StatsScreen             from '../screens/provider/StatsScreen';
+import RequestsScreen          from '../screens/provider/RequestsScreen';
+import EditPersonalInfoScreen  from '../screens/profile/EditPersonalInfoScreen';
 
-// Écrans client
-import HomeScreen from '../screens/client/HomeScreen';
-import ServiceDetailsScreen from '../screens/client/ServiceDetails';
-import ProviderSearchScreen from '../screens/client/ProviderSearch';
+import HomeScreen            from '../screens/client/HomeScreen';
+import ServiceDetailsScreen  from '../screens/client/ServiceDetails';
+import ProviderSearchScreen  from '../screens/client/ProviderSearch';
 import ClientDashboardScreen from '../screens/client/ClientDashboardScreen';
-import BookingDetailsScreen from '../screens/client/BookingDetailsScreen';
+import BookingDetailsScreen  from '../screens/client/BookingDetailsScreen';
 
-// Écrans booking
-import ScheduleScreen from '../screens/booking/ScheduleScreen';
-import BookingSummaryScreen from '../screens/booking/BookingSummaryScreen';
-import BookingNotesScreen from '../screens/booking/BookingNotesScreen';
-import PaymentScreen from '../screens/booking/PaymentScreen';
+import ScheduleScreen          from '../screens/booking/ScheduleScreen';
+import BookingSummaryScreen    from '../screens/booking/BookingSummaryScreen';
+import BookingNotesScreen      from '../screens/booking/BookingNotesScreen';
+import PaymentScreen           from '../screens/booking/PaymentScreen';
 import BookingConfirmationScreen from '../screens/booking/BookingConfirmationScreen';
-import AddressSelectionScreen from '../screens/client/AddressSelection';
+import AddressSelectionScreen  from '../screens/client/AddressSelection';
 
 import ProfileStackNavigator from './ProfileStackNavigator';
 
-// ── Écrans temporaires ───────────────────────────────────────────────────────
+// ── Logger ───────────────────────────────────────────────────────────────────
+const LOG_PREFIX = '🧭 [AppNavigator]';
+const log = (msg, data) => {
+  if (data !== undefined) {
+    console.log(`${LOG_PREFIX} ${msg}`, JSON.stringify(data));
+  } else {
+    console.log(`${LOG_PREFIX} ${msg}`);
+  }
+};
+
+// ── Écrans temporaires ────────────────────────────────────────────────────────
 const ForgotPasswordScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
     <Text>שכחתי סיסמה</Text>
@@ -55,14 +63,9 @@ const ReviewsScreen = () => (
   </View>
 );
 
-// ── Design system : header premium minimaliste ───────────────────────────────
-//
-//  Remplace partout l'ancien header bleu #2E86C1.
-//  Utilisé dans screenOptions et getHeaderOptions.
-//
+// ── Design system ─────────────────────────────────────────────────────────────
 const HEADER_STYLE = {
   backgroundColor: '#FFFFFF',
-  // Supprime l'ombre native iOS et Android
   elevation: 0,
   shadowOpacity: 0,
   borderBottomWidth: 1,
@@ -76,233 +79,242 @@ const HEADER_TITLE_STYLE = {
   letterSpacing: -0.3,
 };
 
-// screenOptions à copier dans chaque Stack.Navigator / ProviderStack.Navigator
 const STACK_SCREEN_OPTIONS = {
   headerShown: true,
   headerStyle: HEADER_STYLE,
-  headerTintColor: '#111827',   // couleur de la flèche retour
+  headerTintColor: '#111827',
   headerTitleStyle: HEADER_TITLE_STYLE,
   headerTitleAlign: 'center',
-  // Supprime le titre par défaut sur Android (évite le doublon)
   headerBackTitleVisible: false,
 };
 
-// Helper pour les écrans nommés
-const getHeaderOptions = (title) => ({
-  ...STACK_SCREEN_OPTIONS,
-  title,
-});
+const getHeaderOptions = (title) => ({ ...STACK_SCREEN_OPTIONS, title });
 
-// ── Navigateurs de piles ─────────────────────────────────────────────────────
-const Stack = createStackNavigator();
-const Tab = createBottomTabNavigator();
-const ProviderStack = createStackNavigator();
-const ClientStack = createStackNavigator();
+// ── Navigateurs ───────────────────────────────────────────────────────────────
+const Stack                = createStackNavigator();
+const Tab                  = createBottomTabNavigator();
+const ProviderStack        = createStackNavigator();
+const ClientStack          = createStackNavigator();
 const ProviderProfileStack = createStackNavigator();
 
-// ── Stack Client ─────────────────────────────────────────────────────────────
-const ClientMainStack = () => (
-  <ClientStack.Navigator screenOptions={STACK_SCREEN_OPTIONS}>
-    <ClientStack.Screen
-      name="Home"
-      component={HomeScreen}
-      options={{ headerShown: false }}
-    />
-    <ClientStack.Screen
-      name="ServiceDetails"
-      component={ServiceDetailsScreen}
-      options={getHeaderOptions('פרטי שירות')}
-    />
-    <ClientStack.Screen
-      name="ProviderSearch"
-      component={ProviderSearchScreen}
-      options={{ headerShown: false }}
-    />
-    <ClientStack.Screen
-      name="AddressSelection"
-      component={AddressSelectionScreen}
-      options={getHeaderOptions('בחירת כתובת')}
-    />
-    <ClientStack.Screen
-      name="ScheduleScreen"
-      component={ScheduleScreen}
-      options={{ headerShown: false }}
-    />
-    <ClientStack.Screen
-      name="BookingSummary"
-      component={BookingSummaryScreen}
-      options={{ headerShown: false }}
-    />
-    <ClientStack.Screen
-      name="BookingNotes"
-      component={BookingNotesScreen}
-      options={getHeaderOptions('הערות להזמנה')}
-    />
-    <ClientStack.Screen
-      name="PaymentScreen"
-      component={PaymentScreen}
-      options={{ headerShown: false }}
-    />
-    <ClientStack.Screen
-      name="BookingConfirmation"
-      component={BookingConfirmationScreen}
-      options={getHeaderOptions('אישור הזמנה')}
-    />
-    <ClientStack.Screen
-     name="BookingDetails"
-     component={BookingDetailsScreen}
-     options={{ headerShown: false }}
-    />
-  </ClientStack.Navigator>
-);
+// ── Stack Client ──────────────────────────────────────────────────────────────
+const ClientMainStack = () => {
+  log('📦 ClientMainStack render');
+  return (
+    <ClientStack.Navigator screenOptions={STACK_SCREEN_OPTIONS}>
+      <ClientStack.Screen name="Home"               component={HomeScreen}               options={{ headerShown: false }} />
+      <ClientStack.Screen name="ServiceDetails"     component={ServiceDetailsScreen}     options={getHeaderOptions('פרטי שירות')} />
+      <ClientStack.Screen name="ProviderSearch"     component={ProviderSearchScreen}     options={{ headerShown: false }} />
+      <ClientStack.Screen name="AddressSelection"   component={AddressSelectionScreen}   options={getHeaderOptions('בחירת כתובת')} />
+      <ClientStack.Screen name="ScheduleScreen"     component={ScheduleScreen}           options={{ headerShown: false }} />
+      <ClientStack.Screen name="BookingSummary"     component={BookingSummaryScreen}     options={{ headerShown: false }} />
+      <ClientStack.Screen name="BookingNotes"       component={BookingNotesScreen}       options={getHeaderOptions('הערות להזמנה')} />
+      <ClientStack.Screen name="PaymentScreen"      component={PaymentScreen}            options={{ headerShown: false }} />
+      <ClientStack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} options={getHeaderOptions('אישור הזמנה')} />
+      <ClientStack.Screen name="BookingDetails"     component={BookingDetailsScreen}     options={{ headerShown: false }} />
+    </ClientStack.Navigator>
+  );
+};
 
-// ── Tabs Client ──────────────────────────────────────────────────────────────
-const ClientTabs = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color, size }) => {
-        const icons = {
-          HomeStack: focused ? 'home' : 'home-outline',
-          Dashboard: focused ? 'calendar' : 'calendar-outline',
-          Profile:   focused ? 'person' : 'person-outline',
-        };
-        return <Ionicons name={icons[route.name]} size={size} color={color} />;
-      },
-      tabBarActiveTintColor: '#111827',
-      tabBarInactiveTintColor: '#9CA3AF',
-      tabBarStyle: {
-        backgroundColor: '#FFFFFF',
-        borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
-        elevation: 0,
-        shadowOpacity: 0,
-      },
-      headerShown: false,
-    })}
-  >
-    <Tab.Screen name="HomeStack"  component={ClientMainStack}      options={{ title: 'בית' }} />
-    <Tab.Screen name="Dashboard"  component={ClientDashboardScreen} options={{ title: 'הזמנות', headerShown: false }} />
-    <Tab.Screen name="Profile"    component={ProfileStackNavigator} options={{ title: 'פרופיל' }} />
-  </Tab.Navigator>
-);
+// ── Tabs Client ───────────────────────────────────────────────────────────────
+const ClientTabs = () => {
+  log('📦 ClientTabs render');
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons = {
+            HomeStack: focused ? 'home'     : 'home-outline',
+            Dashboard: focused ? 'calendar' : 'calendar-outline',
+            Profile:   focused ? 'person'   : 'person-outline',
+          };
+          return <Ionicons name={icons[route.name]} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#111827',
+        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarStyle: {
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#F3F4F6',
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        headerShown: false,
+      })}
+    >
+      <Tab.Screen name="HomeStack"  component={ClientMainStack}       options={{ title: 'בית' }} />
+      <Tab.Screen name="Dashboard"  component={ClientDashboardScreen}  options={{ title: 'הזמנות', headerShown: false }} />
+      <Tab.Screen name="Profile"    component={ProfileStackNavigator}  options={{ title: 'פרופיל' }} />
+    </Tab.Navigator>
+  );
+};
 
-// ── Stack Profil Prestataire ─────────────────────────────────────────────────
-const ProviderProfileNavigator = () => (
-  <ProviderProfileStack.Navigator screenOptions={STACK_SCREEN_OPTIONS}>
-    <ProviderProfileStack.Screen name="ProviderProfile"  component={ProviderProfileScreen}  options={getHeaderOptions('הפרופיל שלי')} />
-    <ProviderProfileStack.Screen name="EditService"      component={EditServiceScreen}       options={getHeaderOptions('עריכת שירות')} />
-    <ProviderProfileStack.Screen name="AddService"       component={EditServiceScreen}       options={getHeaderOptions('הוסף שירות')} />
-    <ProviderProfileStack.Screen name="EditAvailability" component={EditAvailabilityScreen}  options={getHeaderOptions('ניהול זמינות')} />
-    <ProviderProfileStack.Screen name="EditServiceAreas" component={AvailabilityScreen}      options={getHeaderOptions('אזורי שירות')} />
-    <ProviderProfileStack.Screen name="EditContact"      component={ProfileStackNavigator}   options={getHeaderOptions('פרטי קשר')} />
-    <ProviderProfileStack.Screen name="EditExperience"   component={ProfileStackNavigator}   options={getHeaderOptions('ניסיון')} />
-    <ProviderProfileStack.Screen name="EditPersonalInfo" component={EditPersonalInfoScreen}  options={getHeaderOptions('מידע אישי')} />
-  </ProviderProfileStack.Navigator>
-);
+// ── Stack Profil Prestataire ──────────────────────────────────────────────────
+const ProviderProfileNavigator = () => {
+  log('📦 ProviderProfileNavigator render');
+  return (
+    <ProviderProfileStack.Navigator screenOptions={STACK_SCREEN_OPTIONS}>
+      <ProviderProfileStack.Screen name="ProviderProfile"  component={ProviderProfileScreen}  options={getHeaderOptions('הפרופיל שלי')} />
+      <ProviderProfileStack.Screen name="EditService"      component={EditServiceScreen}       options={getHeaderOptions('עריכת שירות')} />
+      <ProviderProfileStack.Screen name="AddService"       component={EditServiceScreen}       options={getHeaderOptions('הוסף שירות')} />
+      <ProviderProfileStack.Screen name="EditAvailability" component={EditAvailabilityScreen}  options={getHeaderOptions('ניהול זמינות')} />
+      <ProviderProfileStack.Screen name="EditServiceAreas" component={AvailabilityScreen}      options={getHeaderOptions('אזורי שירות')} />
+      <ProviderProfileStack.Screen name="EditContact"      component={ProfileStackNavigator}   options={getHeaderOptions('פרטי קשר')} />
+      <ProviderProfileStack.Screen name="EditExperience"   component={ProfileStackNavigator}   options={getHeaderOptions('ניסיון')} />
+      <ProviderProfileStack.Screen name="EditPersonalInfo" component={EditPersonalInfoScreen}  options={getHeaderOptions('מידע אישי')} />
+    </ProviderProfileStack.Navigator>
+  );
+};
 
-// ── Stack Missions Prestataire ───────────────────────────────────────────────
-const ProviderJobsNavigator = () => (
-  <ProviderStack.Navigator screenOptions={STACK_SCREEN_OPTIONS}>
-    <ProviderStack.Screen name="JobList"        component={RequestsScreen}  options={getHeaderOptions('כל הבקשות')} />
-    <ProviderStack.Screen name="RequestsScreen" component={RequestsScreen}  options={getHeaderOptions('כל הבקשות')} />
-    <ProviderStack.Screen name="JobDetails"     component={JobDetailsScreen} options={getHeaderOptions('פרטי משימה')} />
-    <ProviderStack.Screen name="Stats"          component={StatsScreen}     options={getHeaderOptions('סטטיסטיקות')} />
-    <ProviderStack.Screen name="Availability"   component={AvailabilityScreen} options={getHeaderOptions('זמינות')} />
-    <ProviderStack.Screen name="Reviews"        component={ReviewsScreen}   options={getHeaderOptions('ביקורות')} />
-  </ProviderStack.Navigator>
-);
+// ── Stack Missions Prestataire ────────────────────────────────────────────────
+const ProviderJobsNavigator = () => {
+  log('📦 ProviderJobsNavigator render');
+  return (
+    <ProviderStack.Navigator screenOptions={STACK_SCREEN_OPTIONS}>
+      <ProviderStack.Screen name="JobList"        component={RequestsScreen}     options={getHeaderOptions('כל הבקשות')} />
+      <ProviderStack.Screen name="RequestsScreen" component={RequestsScreen}     options={getHeaderOptions('כל הבקשות')} />
+      <ProviderStack.Screen name="JobDetails"     component={JobDetailsScreen}   options={getHeaderOptions('פרטי משימה')} />
+      <ProviderStack.Screen name="Stats"          component={StatsScreen}        options={getHeaderOptions('סטטיסטיקות')} />
+      <ProviderStack.Screen name="Availability"   component={AvailabilityScreen} options={getHeaderOptions('זמינות')} />
+      <ProviderStack.Screen name="Reviews"        component={ReviewsScreen}      options={getHeaderOptions('ביקורות')} />
+    </ProviderStack.Navigator>
+  );
+};
 
-// ── Tabs Prestataire ─────────────────────────────────────────────────────────
-const ProviderTabs = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color, size }) => {
-        const icons = {
-          Dashboard: focused ? 'home'     : 'home-outline',
-          Jobs:      focused ? 'list'     : 'list-outline',
-          Calendar:  focused ? 'calendar' : 'calendar-outline',
-          Profile:   focused ? 'person'   : 'person-outline',
-        };
-        return <Ionicons name={icons[route.name]} size={size} color={color} />;
-      },
-      tabBarActiveTintColor: '#111827',
-      tabBarInactiveTintColor: '#9CA3AF',
-      tabBarStyle: {
-        backgroundColor: '#FFFFFF',
-        borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
-        elevation: 0,
-        shadowOpacity: 0,
-      },
-      headerShown: false,
-    })}
-  >
-    <Tab.Screen
-      name="Dashboard"
-      component={ProviderDashboardScreen}
-      options={{
-        title: 'לוח בקרה',
-        headerShown: true,
-        headerStyle: HEADER_STYLE,
-        headerTitleStyle: HEADER_TITLE_STYLE,
-        headerTitleAlign: 'center',
-        headerTitle: 'לוח בקרה',
-      }}
-    />
-    <Tab.Screen name="Jobs"     component={ProviderJobsNavigator} options={{ title: 'משימות' }} />
-    <Tab.Screen
-      name="Calendar"
-      component={CalendarScreen}
-      options={{
-        title: 'יומן',
-        headerShown: true,
-        headerStyle: HEADER_STYLE,
-        headerTitleStyle: HEADER_TITLE_STYLE,
-        headerTitleAlign: 'center',
-        headerTitle: 'יומן',
-      }}
-    />
-    <Tab.Screen name="Profile"  component={ProviderProfileNavigator} options={{ title: 'פרופיל' }} />
-  </Tab.Navigator>
-);
+// ── Tabs Prestataire ──────────────────────────────────────────────────────────
+const ProviderTabs = () => {
+  log('📦 ProviderTabs render');
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons = {
+            Dashboard: focused ? 'home'     : 'home-outline',
+            Jobs:      focused ? 'list'     : 'list-outline',
+            Calendar:  focused ? 'calendar' : 'calendar-outline',
+            Profile:   focused ? 'person'   : 'person-outline',
+          };
+          return <Ionicons name={icons[route.name]} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#111827',
+        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarStyle: {
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#F3F4F6',
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        headerShown: false,
+      })}
+    >
+      <Tab.Screen
+        name="Dashboard"
+        component={ProviderDashboardScreen}
+        options={{
+          title: 'לוח בקרה',
+          headerShown: true,
+          headerStyle: HEADER_STYLE,
+          headerTitleStyle: HEADER_TITLE_STYLE,
+          headerTitleAlign: 'center',
+          headerTitle: 'לוח בקרה',
+        }}
+      />
+      <Tab.Screen name="Jobs"     component={ProviderJobsNavigator}    options={{ title: 'משימות' }} />
+      <Tab.Screen
+        name="Calendar"
+        component={CalendarScreen}
+        options={{
+          title: 'יומן',
+          headerShown: true,
+          headerStyle: HEADER_STYLE,
+          headerTitleStyle: HEADER_TITLE_STYLE,
+          headerTitleAlign: 'center',
+          headerTitle: 'יומן',
+        }}
+      />
+      <Tab.Screen name="Profile" component={ProviderProfileNavigator} options={{ title: 'פרופיל' }} />
+    </Tab.Navigator>
+  );
+};
 
-// ── AppNavigator principal ───────────────────────────────────────────────────
+// ── AppNavigator principal ────────────────────────────────────────────────────
 const AppNavigator = () => {
   const { userToken, userRole, isLoading } = useContext(AuthContext);
 
- // REMPLACE le bloc isLoading actuel par :
-if (isLoading) {
-  return (
-    <View style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#FFFFFF',   // ← fix écran noir
-    }}>
-      <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '400' }}>
-        טוען...
-      </Text>
-    </View>
-  );
-}
+  // Ref pour détecter les changements de state
+  const prevState = useRef({ userToken, userRole, isLoading });
 
-return (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    {!userToken ? (
-      <>
-        <Stack.Screen name="Welcome"              component={WelcomeScreen} />
-        <Stack.Screen name="Login"                component={LoginScreen} />
-        <Stack.Screen name="ClientRegistration"   component={ClientRegistrationScreen} />
-        <Stack.Screen name="ProviderRegistration" component={ProviderRegistrationScreen} />
-        <Stack.Screen name="ForgotPassword"       component={ForgotPasswordScreen} />
-      </>
-    ) : userRole === 'provider' ? (
-      <Stack.Screen name="ProviderTabs" component={ProviderTabs} />
-    ) : (
-      <Stack.Screen name="ClientTabs" component={ClientTabs} />
-    )}
-  </Stack.Navigator>
-);
+  log(`🔄 AppNavigator render — token=${userToken ? 'PRÉSENT' : 'NULL'} role=${userRole || 'NULL'} isLoading=${isLoading}`);
+
+  // Log quand les valeurs changent
+  useEffect(() => {
+    const prev = prevState.current;
+    const tokenChanged   = prev.userToken  !== userToken;
+    const roleChanged    = prev.userRole   !== userRole;
+    const loadingChanged = prev.isLoading  !== isLoading;
+
+    if (tokenChanged || roleChanged || loadingChanged) {
+      log('⚡ STATE CHANGÉ dans AppNavigator:', {
+        token:   { from: prev.userToken  ? 'PRÉSENT' : 'NULL', to: userToken  ? 'PRÉSENT' : 'NULL', changed: tokenChanged },
+        role:    { from: prev.userRole   || 'NULL',             to: userRole   || 'NULL',             changed: roleChanged },
+        loading: { from: prev.isLoading,                        to: isLoading,                        changed: loadingChanged },
+      });
+
+      if (tokenChanged && !userToken) {
+        log('🚨 TOKEN → NULL : switch vers Auth Stack en cours...');
+      }
+      if (tokenChanged && userToken) {
+        log('🎉 TOKEN → PRÉSENT : switch vers App Stack en cours...');
+      }
+    }
+
+    prevState.current = { userToken, userRole, isLoading };
+  });
+
+  // ── Écran de chargement ──────────────────────────────────────────────────
+  if (isLoading) {
+    log('⏳ isLoading=true → affichage écran de chargement');
+    return (
+      <View style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+      }}>
+        <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '400' }}>
+          טוען...
+        </Text>
+      </View>
+    );
+  }
+
+  // ── Navigator conditionnel ───────────────────────────────────────────────
+  if (!userToken) {
+    log('📱 Rendu AUTH STACK (Welcome, Login...)');
+  } else if (userRole === 'provider') {
+    log('📱 Rendu PROVIDER TABS');
+  } else {
+    log('📱 Rendu CLIENT TABS');
+  }
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!userToken ? (
+        <>
+          <Stack.Screen name="Welcome"              component={WelcomeScreen} />
+          <Stack.Screen name="Login"                component={LoginScreen} />
+          <Stack.Screen name="ClientRegistration"   component={ClientRegistrationScreen} />
+          <Stack.Screen name="ProviderRegistration" component={ProviderRegistrationScreen} />
+          <Stack.Screen name="ForgotPassword"       component={ForgotPasswordScreen} />
+        </>
+      ) : userRole === 'provider' ? (
+        <Stack.Screen name="ProviderTabs" component={ProviderTabs} />
+      ) : (
+        <Stack.Screen name="ClientTabs" component={ClientTabs} />
+      )}
+    </Stack.Navigator>
+  );
 };
 
 export default AppNavigator;

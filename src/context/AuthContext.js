@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
     userInfo: null,
     userRole: null,
   });
-
+  const [logoutTrigger, setLogoutTrigger] = useState(false);
   // Destructure pour garder la compatibilité avec tout le reste du code
   const { userToken, userInfo, userRole } = authState;
 
@@ -38,6 +38,25 @@ export const AuthProvider = ({ children }) => {
   // ✅ Initialiser les notifications quand l'utilisateur est connecté
   useNotifications(userRole);
 
+  useEffect(() => {
+    if (!logoutTrigger) return;
+    console.log('🧹 [AuthContext] Cleanup post-logout démarré');
+    const cleanup = async () => {
+      try {
+        await AsyncStorage.multiRemove(['token', 'userRole', 'userData']);
+        console.log('✅ [AuthContext] AsyncStorage vidé');
+        if (Platform.OS !== 'web') {
+          try { await notificationService.removePushTokenFromServer(); } catch (_) {}
+        }
+        try { await authService.logout(); } catch (_) {}
+      } catch (e) {
+        console.error('❌ [AuthContext] Cleanup erreur:', e);
+      } finally {
+        setLogoutTrigger(false);
+      }
+    };
+    cleanup();
+  }, [logoutTrigger]);
   // Vérifier si c'est la première fois que l'app est lancée
   useEffect(() => {
     const checkFirstLaunch = async () => {
@@ -153,48 +172,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ✅ DEBUG : alertes visuelles pour identifier où logout() se bloque sur APK
-  const logout = async () => {
-    setError(null);
-    try {
-      console.log('🚪 Déconnexion en cours...');
-      Alert.alert('DEBUG 1', 'début logout');
-
-      // ✅ ÉTAPE 1 : vider l'état immédiatement → navigation vers Welcome instantanée
-      setAuthState({ userToken: null, userInfo: null, userRole: null });
-      Alert.alert('DEBUG 2', 'setAuthState null OK');
-
-      // ✅ ÉTAPE 2 : cleanup en arrière-plan (ne bloque plus React Navigation)
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('userRole');
-      await AsyncStorage.removeItem('userData');
-      Alert.alert('DEBUG 3', 'AsyncStorage clear OK');
-
-      if (Platform.OS !== 'web') {
-        try {
-          await notificationService.removePushTokenFromServer();
-          Alert.alert('DEBUG 4', 'removePushToken OK');
-        } catch (e) {
-          Alert.alert('DEBUG 4 ERR', e.message);
-        }
-      }
-
-      try {
-        await authService.logout();
-        Alert.alert('DEBUG 5', 'authService.logout OK');
-      } catch (serviceError) {
-        Alert.alert('DEBUG 5 ERR', serviceError.message);
-      }
-
-      console.log('✅ Déconnexion réussie');
-      return { success: true };
-    } catch (err) {
-      Alert.alert('DEBUG ERR GLOBAL', err.message);
-      console.error('❌ Erreur déconnexion:', err);
-      const errorMessage = err.message || 'Erreur lors de la déconnexion';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    }
-  };
+const logout = () => {
+  console.log('🚪 [AuthContext] logout() appelé — synchrone');
+  setError(null);
+  setAuthState({ userToken: null, userInfo: null, userRole: null });
+  console.log('🚪 [AuthContext] setAuthState null OK — cleanup via useEffect');
+  setLogoutTrigger(true);
+};
 
   // ✅ Inscription d'un client
   const registerClient = async (userData) => {
