@@ -12,6 +12,8 @@ import AppNavigator from './src/navigation/AppNavigator';
 import theme from './src/config/theme';
 import { navigationRef } from './src/navigation/RootNavigation';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Font from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -21,7 +23,9 @@ export default function App() {
   useEffect(() => {
     const init = async () => {
       try {
-        console.log('✅ Données d\'authentification nettoyées (si activé)');
+        console.log('✅ Chargement des fonts...');
+        await Font.loadAsync(Ionicons.font);
+        console.log('✅ Fonts chargées');
         I18nManager.allowRTL(true);
         await SplashScreen.hideAsync();
         setTimeout(() => setIsReady(true), 1500);

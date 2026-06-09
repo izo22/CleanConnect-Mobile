@@ -1,3 +1,6 @@
+// src/services/notificationService.js (FRONTEND)
+// ✅ FIX ÉCRAN NOIR : setNotificationChannelAsync retiré → géré dans useNotifications.js
+
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -53,15 +56,7 @@ class NotificationService {
       const token = (await Promise.race([tokenPromise, timeoutPromise])).data;
       console.log('✅ Push token obtenu:', token.substring(0, 30) + '...');
 
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
-          name: 'default',
-          importance: Notifications.AndroidImportance.MAX,
-          vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#FF231F7C',
-          sound: 'default',
-        });
-      }
+      // ✅ setNotificationChannelAsync retiré d'ici → dans useNotifications.js après cancelled check
 
       return token;
     } catch (error) {

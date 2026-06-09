@@ -1,7 +1,9 @@
 // hooks/useNotifications.js
-// ✅ VERSION DEBUG ÉCRAN NOIR — logs détaillés + fix double-trigger useCallback
+// ✅ FIX ÉCRAN NOIR LOGOUT : setNotificationChannelAsync déplacé ici avec cancelled check
 
 import { useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import notificationService from '../services/notificationService';
 import * as RootNavigation from '../navigation/RootNavigation';
 
@@ -18,16 +20,13 @@ const logError = (msg, err) => {
 };
 
 export const useNotifications = (userRole) => {
-  // ✅ Ref pour lire userRole sans en faire une dépendance du useEffect
   const userRoleRef = useRef(userRole);
 
-  // Sync de la ref à chaque changement de userRole
   useEffect(() => {
     log(`userRoleRef mis à jour: ${userRole || 'NULL'}`);
     userRoleRef.current = userRole;
   }, [userRole]);
 
-  // ── Effect principal ─────────────────────────────────────────────────────
   useEffect(() => {
     log(`useEffect déclenché — userRole=${userRole || 'NULL'}`);
 
@@ -39,7 +38,6 @@ export const useNotifications = (userRole) => {
     let cancelled = false;
     log(`▶️  initNotifications démarré pour role=${userRole}`);
 
-    // ── Handlers définis DANS le useEffect → pas de dépendance externe ─────
     const handleNotificationReceived = (notification) => {
       log('📩 Notification reçue en premier plan', {
         title: notification?.request?.content?.title,
@@ -83,7 +81,6 @@ export const useNotifications = (userRole) => {
       }
     };
 
-    // ── Init async ───────────────────────────────────────────────────────
     const initNotifications = async () => {
       try {
         log('📱 registerForPushNotifications...');
@@ -96,6 +93,22 @@ export const useNotifications = (userRole) => {
 
         if (!token) {
           log('❌ Push token non obtenu — notifications désactivées');
+          return;
+        }
+
+        // ✅ FIX ÉCRAN NOIR : channel Android ici, après cancelled check
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF231F7C',
+            sound: 'default',
+          });
+        }
+
+        if (cancelled) {
+          log('🛑 Annulé après setNotificationChannelAsync (logout détecté)');
           return;
         }
 
@@ -128,7 +141,6 @@ export const useNotifications = (userRole) => {
 
     initNotifications();
 
-    // ── Cleanup ──────────────────────────────────────────────────────────
     return () => {
       log(`🧹 Cleanup useNotifications — userRole=${userRole || 'NULL'} → cancelled=true`);
       cancelled = true;
@@ -136,9 +148,8 @@ export const useNotifications = (userRole) => {
       log('✅ removeNotificationListeners appelé');
     };
 
-  }, [userRole]); // ✅ userRole UNIQUEMENT — plus de double-trigger
+  }, [userRole]);
 
-  // ── clearBadge ───────────────────────────────────────────────────────────
   const clearBadge = async () => {
     log('🔴 clearBadge appelé');
     await notificationService.clearBadge();
