@@ -50,33 +50,7 @@ export const BookingProvider = ({ children }) => {
     loadSavedBookings();
   }, []);
 
-  // Créer un booking de test si aucun n'existe
-  useEffect(() => {
-    if (userBookings.length === 0) {
-      const testBooking = {
-        _id: 'test-booking-' + Date.now(),
-        serviceType: 'home',
-        dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        duration: 2,
-        frequency: 'one_time',
-        price: 100,
-        status: 'pending',
-        selectedProvider: {
-          _id: 'provider-1',
-          name: 'CleanPro Services',
-          rating: 4.8,
-        },
-        address: {
-          id: '1',
-          name: 'Domicile',
-          fullAddress: '123 Rue Principale',
-        },
-        created: new Date().toISOString(),
-      };
-      
-      setUserBookings([testBooking]);
-    }
-  }, [userBookings.length]);
+ 
 
   // Sauvegarder les bookings automatiquement
   useEffect(() => {
