@@ -15,6 +15,7 @@ CHANGEMENTS MAJEURS APPLIQUÉS:
 ✓ Ombres: supprimées ou ultra-subtiles (shadowOpacity 0.03)
 ✓ AJOUT: Sélecteur de langue EN/HE avec RTL automatique
 ✓ FIX: SafeAreaView importé depuis react-native-safe-area-context (fix Android status bar)
+✓ FIX ÉCRAN NOIR: LinearGradient remplacé par View simple (crash silencieux APK release)
 */
 import React, { useState } from 'react';
 import {
@@ -28,7 +29,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 
 // ─── Traductions ───────────────────────────────────────────────────────────────
 const translations = {
@@ -61,13 +61,9 @@ const WelcomeScreen = () => {
   const t = translations[lang];
 
   return (
-    <LinearGradient
-      colors={['#F0F9FF', '#E0F2FE', '#DBEAFE']}
-      style={styles.container}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F0F9FF" translucent={false} />
 
-      {/* SafeAreaView depuis react-native-safe-area-context — gère correctement Android */}
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <ScrollView
           style={styles.scrollView}
@@ -158,13 +154,14 @@ const WelcomeScreen = () => {
           </View>
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F0F9FF',
   },
   safeArea: {
     flex: 1,
