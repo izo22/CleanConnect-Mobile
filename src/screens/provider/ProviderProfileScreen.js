@@ -61,7 +61,7 @@ const ProviderProfileScreen = () => {
     }, [])
   );
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Alert.alert(
       'התנתקות',
       'האם אתה בטוח שברצונך להתנתק?',
@@ -73,14 +73,8 @@ const ProviderProfileScreen = () => {
         {
           text: 'התנתק',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              setLoading(true);
-              await logout();
-            } catch (error) {
-              Alert.alert('שגיאה', 'שגיאה בהתנתקות. אנא נסה שוב.');
-              setLoading(false);
-            }
+          onPress: () => {
+            logout();
           }
         }
       ]

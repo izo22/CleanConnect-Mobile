@@ -5,7 +5,6 @@ import React, { useContext, useEffect, useRef } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { Text, View, TouchableOpacity, Platform, StatusBar } from 'react-native';
 
 import { AuthContext } from '../context/AuthContext';
 
@@ -39,7 +38,7 @@ import BookingConfirmationScreen from '../screens/booking/BookingConfirmationScr
 import AddressSelectionScreen  from '../screens/client/AddressSelection';
 
 import ProfileStackNavigator from './ProfileStackNavigator';
-
+import { Text, View, Alert } from 'react-native';
 // ── Logger ───────────────────────────────────────────────────────────────────
 const LOG_PREFIX = '🧭 [AppNavigator]';
 const log = (msg, data) => {
@@ -242,39 +241,19 @@ const ProviderTabs = () => {
 const AppNavigator = () => {
   const { userToken, userRole, isLoading } = useContext(AuthContext);
 
-  // Ref pour détecter les changements de state
-  const prevState = useRef({ userToken, userRole, isLoading });
+  const prevTokenRef = React.useRef(userToken);
 
-  log(`🔄 AppNavigator render — token=${userToken ? 'PRÉSENT' : 'NULL'} role=${userRole || 'NULL'} isLoading=${isLoading}`);
-
-  // Log quand les valeurs changent
-  useEffect(() => {
-    const prev = prevState.current;
-    const tokenChanged   = prev.userToken  !== userToken;
-    const roleChanged    = prev.userRole   !== userRole;
-    const loadingChanged = prev.isLoading  !== isLoading;
-
-    if (tokenChanged || roleChanged || loadingChanged) {
-      log('⚡ STATE CHANGÉ dans AppNavigator:', {
-        token:   { from: prev.userToken  ? 'PRÉSENT' : 'NULL', to: userToken  ? 'PRÉSENT' : 'NULL', changed: tokenChanged },
-        role:    { from: prev.userRole   || 'NULL',             to: userRole   || 'NULL',             changed: roleChanged },
-        loading: { from: prev.isLoading,                        to: isLoading,                        changed: loadingChanged },
-      });
-
-      if (tokenChanged && !userToken) {
-        log('🚨 TOKEN → NULL : switch vers Auth Stack en cours...');
-      }
-      if (tokenChanged && userToken) {
-        log('🎉 TOKEN → PRÉSENT : switch vers App Stack en cours...');
-      }
+  React.useEffect(() => {
+    if (prevTokenRef.current !== userToken) {
+      Alert.alert(
+        'NAV DEBUG',
+        `token: ${prevTokenRef.current ? 'PRÉSENT' : 'NULL'} → ${userToken ? 'PRÉSENT' : 'NULL'}\nrole: ${userRole || 'NULL'}\nisLoading: ${isLoading}`
+      );
+      prevTokenRef.current = userToken;
     }
-
-    prevState.current = { userToken, userRole, isLoading };
   });
 
-  // ── Écran de chargement ──────────────────────────────────────────────────
   if (isLoading) {
-    log('⏳ isLoading=true → affichage écran de chargement');
     return (
       <View style={{
         flex: 1,
@@ -287,15 +266,6 @@ const AppNavigator = () => {
         </Text>
       </View>
     );
-  }
-
-  // ── Navigator conditionnel ───────────────────────────────────────────────
-  if (!userToken) {
-    log('📱 Rendu AUTH STACK (Welcome, Login...)');
-  } else if (userRole === 'provider') {
-    log('📱 Rendu PROVIDER TABS');
-  } else {
-    log('📱 Rendu CLIENT TABS');
   }
 
   return (

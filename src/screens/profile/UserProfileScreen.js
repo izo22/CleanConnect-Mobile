@@ -104,14 +104,9 @@ const UserProfileScreen = () => {
   // de façon impérative avant que le setAuthState() dans logout() ne déclenche
   // un rerender. Plus d'état incohérent entre les deux layers (JS + natif Android).
   // ✅ NOUVEAU — le fix est dans AuthContext.logout(), rien à faire ici
-const handleLogout = async () => {
-  try {
-    await authContext.logout();
-  } catch (error) {
-    console.error('❌ Erreur lors de la déconnexion:', error);
-    Alert.alert('שגיאה', 'אירעה שגיאה בעת ההתנתקות. נסה שוב.');
-  }
-};
+  const handleLogout = () => {
+    authContext.logout();
+  };
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -124,13 +119,9 @@ const handleLogout = async () => {
         },
         {
           text: 'מחק',
-          onPress: async () => {
+          onPress: () => {
             Alert.alert('החשבון נמחק', 'החשבון שלך נמחק בהצלחה');
-            try {
-              await authContext.logout();
-            } catch (e) {
-              console.error('❌ Erreur suppression compte:', e);
-            }
+            authContext.logout();
           },
           style: 'destructive',
         },
