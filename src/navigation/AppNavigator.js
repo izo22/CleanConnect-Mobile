@@ -61,7 +61,11 @@ const ReviewsScreen = () => (
     <Text>ביקורות</Text>
   </View>
 );
-
+const TempWelcome = () => (
+  <View style={{ flex: 1, backgroundColor: 'red', justifyContent: 'center', alignItems: 'center' }}>
+    <Text style={{ color: 'white', fontSize: 24 }}>WELCOME OK</Text>
+  </View>
+);
 // ── Design system ─────────────────────────────────────────────────────────────
 const HEADER_STYLE = {
   backgroundColor: '#FFFFFF',
@@ -272,7 +276,7 @@ const AppNavigator = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!userToken ? (
         <>
-          <Stack.Screen name="Welcome"              component={WelcomeScreen} />
+<Stack.Screen name="Welcome" component={TempWelcome} />
           <Stack.Screen name="Login"                component={LoginScreen} />
           <Stack.Screen name="ClientRegistration"   component={ClientRegistrationScreen} />
           <Stack.Screen name="ProviderRegistration" component={ProviderRegistrationScreen} />
