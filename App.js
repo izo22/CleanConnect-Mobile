@@ -1,11 +1,13 @@
 // App.js - VERSION SANS i18n
+// ✅ FIX ÉCRAN NOIR LOGOUT : key={userToken ? 'app' : 'auth'} sur NavigationContainer
+//    → remount complet du container à chaque login/logout, aucun état natif résiduel
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { View, Image, Text, StyleSheet, I18nManager } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AuthProvider } from './src/context/AuthContext';
+import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { BookingProvider } from './src/context/BookingContext';
 import { ProviderDataProvider } from './src/context/ProviderDataContext';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -16,6 +18,22 @@ import * as Font from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 
 SplashScreen.preventAutoHideAsync();
+
+// ✅ Composant interne : consomme AuthContext pour piloter le key du container.
+// key change → React démonte ET remonte NavigationContainer + toute la stack
+// → impossible d'avoir un écran détaché/orphelin côté natif.
+const RootNavigation = () => {
+  const { userToken } = useContext(AuthContext);
+
+  return (
+    <NavigationContainer
+      ref={navigationRef}
+      key={userToken ? 'app' : 'auth'}
+    >
+      <AppNavigator />
+    </NavigationContainer>
+  );
+};
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
@@ -56,9 +74,7 @@ export default function App() {
         <BookingProvider>
           <ProviderDataProvider>
             <PaperProvider theme={theme}>
-              <NavigationContainer ref={navigationRef}>
-                <AppNavigator />
-              </NavigationContainer>
+              <RootNavigation />
             </PaperProvider>
           </ProviderDataProvider>
         </BookingProvider>
