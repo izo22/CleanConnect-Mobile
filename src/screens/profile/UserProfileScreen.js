@@ -120,8 +120,9 @@ const UserProfileScreen = () => {
         {
           text: 'מחק',
           onPress: () => {
-            Alert.alert('החשבון נמחק', 'החשבון שלך נמחק בהצלחה');
-            authContext.logout();
+            setTimeout(() => {
+              authContext.logout();
+            }, 300);
           },
           style: 'destructive',
         },

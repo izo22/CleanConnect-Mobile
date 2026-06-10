@@ -1,17 +1,7 @@
 // ProviderProfileScreen.js - REFONTE UI MINIMALISTE PREMIUM
-/*
-CHANGEMENTS MAJEURS:
-- Typographie: tailles réduites (28→24, 24→20, 16→14, 14→12)
-- Poids: 'bold' → '600', '500' → '400'  
-- Container: fond #F9FAFB
-- Cards: borderRadius 12px, bordures 1px #F3F4F6, shadowOpacity 0.03
-- Badges: backgroundColor à 10% d'opacité, borderRadius 6px
-- Stats: fontSize 24→20, fontWeight 'bold'→'600'
-- Buttons: paddingVertical 12, borderRadius 8px
-- Icons: size réduits (50→40, 24→20)
-- Colors: #111827 pour textes, #6B7280 pour secondaires, #9CA3AF pour disabled
-- Spacing: doublé entre sections (16→32)
-*/
+// ✅ FIX ÉCRAN NOIR LOGOUT : logout() différé via setTimeout — l'Alert natif doit
+//    se fermer COMPLÈTEMENT avant le démontage du navigator (bug Android release :
+//    dismiss du dialog natif + teardown de la stack en simultané = écran noir)
 import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
@@ -61,6 +51,8 @@ const ProviderProfileScreen = () => {
     }, [])
   );
 
+  // ✅ FIX ÉCRAN NOIR : setTimeout(300) laisse l'Alert natif se fermer
+  // avant que setAuthState(null) ne démonte tout le navigator
   const handleLogout = () => {
     Alert.alert(
       'התנתקות',
@@ -74,7 +66,9 @@ const ProviderProfileScreen = () => {
           text: 'התנתק',
           style: 'destructive',
           onPress: () => {
-            logout();
+            setTimeout(() => {
+              logout();
+            }, 300);
           }
         }
       ]
