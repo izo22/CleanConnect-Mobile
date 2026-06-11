@@ -1,5 +1,9 @@
 // src/services/notificationService.js (FRONTEND)
 // ✅ FIX ÉCRAN NOIR : setNotificationChannelAsync retiré → géré dans useNotifications.js
+// ✅ FIX ÉCRAN NOIR LOGOUT (ROOT CAUSE) : removeNotificationSubscription() supprimée
+//    d'expo-notifications 0.32 → throw "is not a function" dans le cleanup du
+//    useEffect au logout → crash JS silencieux → écran noir sur APK release.
+//    Remplacée par la nouvelle API listener.remove().
 
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -55,8 +59,6 @@ class NotificationService {
 
       const token = (await Promise.race([tokenPromise, timeoutPromise])).data;
       console.log('✅ Push token obtenu:', token.substring(0, 30) + '...');
-
-      // ✅ setNotificationChannelAsync retiré d'ici → dans useNotifications.js après cancelled check
 
       return token;
     } catch (error) {
@@ -132,11 +134,23 @@ class NotificationService {
     });
   }
 
+  // ✅ ROOT CAUSE FIX : nouvelle API listener.remove()
+  // (removeNotificationSubscription supprimée d'expo-notifications 0.32 / SDK 54)
+  // try/catch par sécurité : un throw ici pendant le cleanup du useEffect
+  // ferait tomber tout l'arbre React au logout
   removeNotificationListeners() {
-    if (this.notificationListener)
-      Notifications.removeNotificationSubscription(this.notificationListener);
-    if (this.responseListener)
-      Notifications.removeNotificationSubscription(this.responseListener);
+    try {
+      this.notificationListener?.remove();
+    } catch (e) {
+      console.log('⚠️ Erreur remove notificationListener:', e?.message);
+    }
+    try {
+      this.responseListener?.remove();
+    } catch (e) {
+      console.log('⚠️ Erreur remove responseListener:', e?.message);
+    }
+    this.notificationListener = null;
+    this.responseListener = null;
   }
 
   async getBadgeCount()        { return await Notifications.getBadgeCountAsync(); }

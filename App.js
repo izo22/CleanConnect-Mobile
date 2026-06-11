@@ -1,9 +1,9 @@
 // App.js - VERSION SANS i18n
-// ✅ FIX ÉCRAN NOIR LOGOUT : key={userToken ? 'app' : 'auth'} sur NavigationContainer
-//    → remount complet du container à chaque login/logout, aucun état natif résiduel
+// ✅ FIX ÉCRAN NOIR LOGOUT : key sur NavigationContainer (remount complet)
+// ✅ DEBUG : ErrorBoundary → affiche le crash JS à l'écran au lieu de l'écran noir
 
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Image, Text, StyleSheet, I18nManager } from 'react-native';
+import { View, Image, Text, StyleSheet, I18nManager, ScrollView } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -19,9 +19,43 @@ import { Ionicons } from '@expo/vector-icons';
 
 SplashScreen.preventAutoHideAsync();
 
+// ── ErrorBoundary : transforme l'écran noir en message d'erreur lisible ──────
+class ErrorBoundary extends React.Component {
+  state = { error: null };
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('💥 [ErrorBoundary] Crash capturé:', error?.message);
+    console.error('💥 [ErrorBoundary] Component stack:', info?.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <ScrollView
+          style={{ flex: 1, backgroundColor: '#FFFFFF' }}
+          contentContainerStyle={{ padding: 24, paddingTop: 80 }}
+        >
+          <Text style={{ color: '#EF4444', fontSize: 16, fontWeight: '600', marginBottom: 12 }}>
+            💥 CRASH DÉTECTÉ
+          </Text>
+          <Text style={{ color: '#111827', fontSize: 13, marginBottom: 16 }}>
+            {String(this.state.error?.message || this.state.error)}
+          </Text>
+          <Text style={{ color: '#6B7280', fontSize: 10, fontFamily: 'monospace' }}>
+            {String(this.state.error?.stack || '').slice(0, 1500)}
+          </Text>
+        </ScrollView>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ✅ Composant interne : consomme AuthContext pour piloter le key du container.
-// key change → React démonte ET remonte NavigationContainer + toute la stack
-// → impossible d'avoir un écran détaché/orphelin côté natif.
 const RootNavigation = () => {
   const { userToken } = useContext(AuthContext);
 
@@ -69,17 +103,19 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <BookingProvider>
-          <ProviderDataProvider>
-            <PaperProvider theme={theme}>
-              <RootNavigation />
-            </PaperProvider>
-          </ProviderDataProvider>
-        </BookingProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <BookingProvider>
+            <ProviderDataProvider>
+              <PaperProvider theme={theme}>
+                <RootNavigation />
+              </PaperProvider>
+            </ProviderDataProvider>
+          </BookingProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
 
