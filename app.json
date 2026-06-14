@@ -5,11 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#E3EFFC"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -23,11 +18,6 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#2D8FEF"
-      },
-      "splash": {
-        "image": "./assets/splash.png",
-        "resizeMode": "cover",
-        "backgroundColor": "#E3EFFC"
       },
       "package": "com.cleanconnect18.cleanconnect",
       "runtimeVersion": "1.0.0",
@@ -50,7 +40,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash.png",
-          "resizeMode": "cover",
+          "resizeMode": "contain",
           "backgroundColor": "#E3EFFC"
         }
       ]
