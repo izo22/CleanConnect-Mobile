@@ -1,9 +1,10 @@
 // App.js - VERSION SANS i18n
 // ✅ FIX ÉCRAN NOIR LOGOUT : key sur NavigationContainer (remount complet)
 // ✅ DEBUG : ErrorBoundary → affiche le crash JS à l'écran au lieu de l'écran noir
+// ✅ SPLASH : géré uniquement par le splash natif (app.json) — pas de splash JS
 
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Image, Text, StyleSheet, I18nManager, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, I18nManager, ScrollView } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -80,9 +81,9 @@ export default function App() {
         console.log('✅ Fonts chargées');
         I18nManager.allowRTL(true);
         await SplashScreen.hideAsync();
-        setTimeout(() => setIsReady(true), 1500);
       } catch (error) {
-        console.error('❌ Erreur lors du nettoyage:', error);
+        console.error('❌ Erreur lors du chargement:', error);
+      } finally {
         setIsReady(true);
       }
     };
@@ -90,16 +91,7 @@ export default function App() {
   }, []);
 
   if (!isReady) {
-    return (
-      <View style={styles.splash}>
-        <Image
-          source={require('./assets/icon.png')}
-          style={styles.logo}
-        />
-        <Text style={styles.title}>CLEANCO</Text>
-        <Text style={styles.subtitle}>שירותי ניקיון מקצועיים</Text>
-      </View>
-    );
+    return <View style={{ flex: 1, backgroundColor: '#E3EFFC' }} />;
   }
 
   return (
@@ -118,28 +110,3 @@ export default function App() {
     </ErrorBoundary>
   );
 }
-
-const styles = StyleSheet.create({
-  splash: {
-    flex: 1,
-    backgroundColor: '#2D8FEF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
-    letterSpacing: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 8,
-  },
-});
