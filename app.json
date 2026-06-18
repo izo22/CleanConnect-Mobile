@@ -20,7 +20,7 @@
         "backgroundColor": "#2D8FEF"
       },
       "package": "com.cleanconnect18.cleanconnect",
-      "versionCode": 3,
+      "versionCode": 4,
       "runtimeVersion": "1.0.0",
       "googleServicesFile": "./google-services.json"
     },
