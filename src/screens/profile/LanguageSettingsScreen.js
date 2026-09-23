@@ -70,14 +70,14 @@ const LanguageSettingsScreen = () => {
       onPress={() => handleSelectLanguage(item)}
     >
       <View style={[styles.languageDetails, isRTL && styles.languageDetailsRTL]}>
-        <Ionicons name={item.icon} size={24} color="#3498db" />
+        <Ionicons name={item.icon} size={24} color="#256FA8" />
         <View style={[styles.languageNames, isRTL && styles.languageNamesRTL]}>
           <Text style={[styles.languageName, isRTL && styles.textRTL]}>{item.name}</Text>
           <Text style={[styles.nativeName, isRTL && styles.textRTL]}>{item.nativeName}</Text>
         </View>
       </View>
       {selectedLanguage === item.name && (
-        <Ionicons name="checkmark" size={24} color="#3498db" />
+        <Ionicons name="checkmark" size={24} color="#256FA8" />
       )}
     </TouchableOpacity>
   );
@@ -90,7 +90,7 @@ const LanguageSettingsScreen = () => {
           onPress={() => navigation.goBack()}
           disabled={isLoading}
         >
-          <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color="#333" />
+          <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color="#1B2A36" />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, isRTL && styles.textRTL]}>
           {t('languageSettings.title')}
@@ -100,7 +100,7 @@ const LanguageSettingsScreen = () => {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
+          <ActivityIndicator size="large" color="#256FA8" />
           <Text style={[styles.loadingText, isRTL && styles.textRTL]}>
             {t('languageSettings.changing')}
           </Text>
@@ -120,7 +120,7 @@ const LanguageSettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F6FAFD',
   },
   header: {
     flexDirection: 'row',
@@ -130,10 +130,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#EEF3F7',
   },
   backButton: {
     padding: 8,
+    borderRadius: 999,
   },
   headerTitle: {
     fontSize: 18,
@@ -141,6 +142,7 @@ const styles = StyleSheet.create({
   },
   placeholderButton: {
     width: 40,
+    borderRadius: 999,
   },
   listContainer: {
     padding: 16,
@@ -150,12 +152,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: 'white',
-    borderRadius: 10,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 2,
   },
@@ -176,11 +178,11 @@ const styles = StyleSheet.create({
   languageName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#1B2A36',
   },
   nativeName: {
     fontSize: 14,
-    color: '#666',
+    color: '#5E6E7C',
     marginTop: 2,
   },
   loadingContainer: {
@@ -191,7 +193,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: '#5E6E7C',
   },
   textRTL: {
     writingDirection: 'rtl',

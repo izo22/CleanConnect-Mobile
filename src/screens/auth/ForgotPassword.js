@@ -64,12 +64,18 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 20,
+    backgroundColor: '#F4F8FB',
+    borderColor: '#E1ECF4',
+    borderWidth: 1,
+    borderRadius: 16,
   },
   button: {
     marginTop: 10,
+    borderRadius: 999,
   },
   linkButton: {
     marginTop: 20,
+    borderRadius: 999,
   },
   textRTL: {
     textAlign: 'right',

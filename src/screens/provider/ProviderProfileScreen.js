@@ -78,7 +78,7 @@ const ProviderProfileScreen = () => {
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#256FA8" />
         <Text style={[styles.loadingText, styles.textRTL]}>טוען...</Text>
       </View>
     );
@@ -212,7 +212,7 @@ const ProviderProfileScreen = () => {
               serviceAreas: provider.serviceAreas || [],
             })}
             >
-            <Icon name="edit" size={18} color="#007AFF" />
+            <Icon name="edit" size={18} color="#256FA8" />
             <Text style={[styles.editButtonText, styles.textRTL]}>ערוך שירותים</Text>
           </TouchableOpacity>
         </View>
@@ -256,7 +256,7 @@ const ProviderProfileScreen = () => {
               style={styles.editButton}
               onPress={() => navigation.navigate('EditAvailability', { availability: provider.availability })}
             >
-              <Icon name="edit" size={18} color="#007AFF" />
+              <Icon name="edit" size={18} color="#256FA8" />
               <Text style={[styles.editButtonText, styles.textRTL]}>ערוך זמינות</Text>
             </TouchableOpacity>
           </View>
@@ -308,7 +308,7 @@ const ProviderProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   scrollContainer: {
     flex: 1,
@@ -318,12 +318,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
   },
   errorText: {
@@ -336,15 +336,15 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'center',
     fontWeight: '400',
   },
   retryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#256FA8',
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 999,
   },
   retryButtonText: {
     color: '#FFFFFF',
@@ -354,18 +354,18 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 20,
     padding: 20,
     marginHorizontal: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E1ECF4',
   },
   profileHeader: {
     marginBottom: 24,
     paddingBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#EEF3F7',
   },
   headerInfo: {
     gap: 8,
@@ -373,25 +373,25 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.4,
     lineHeight: 31,
   },
   email: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
     lineHeight: 18,
   },
   phone: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
     lineHeight: 18,
   },
   joinDate: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     fontWeight: '400',
     marginTop: 4,
   },
@@ -406,13 +406,13 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#256FA8',
     letterSpacing: -0.4,
     lineHeight: 26,
   },
   statLabel: {
     fontSize: 11,
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'center',
     marginTop: 6,
     fontWeight: '400',
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     marginBottom: 16,
     letterSpacing: -0.3,
     lineHeight: 22,
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   },
   serviceItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#EEF3F7',
   },
   serviceInfo: {
     gap: 4,
@@ -438,19 +438,19 @@ const styles = StyleSheet.create({
   serviceType: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.2,
     lineHeight: 18,
   },
   serviceRate: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
     lineHeight: 16,
   },
   emptyMessage: {
     fontStyle: 'italic',
-    color: '#9CA3AF',
+    color: '#8A99A6',
     textAlign: 'center',
     marginVertical: 12,
     fontSize: 13,
@@ -464,11 +464,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     marginTop: 16,
-    borderRadius: 8,
-    backgroundColor: '#007AFF10',
+    borderRadius: 999,
+    backgroundColor: '#EAF4FB',
   },
   editButtonText: {
-    color: '#007AFF',
+    color: '#256FA8',
     fontSize: 14,
     fontWeight: '500',
     letterSpacing: -0.2,
@@ -483,10 +483,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F610',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 999,
   },
   areaBadgeText: {
-    color: '#3B82F6',
+    color: '#256FA8',
     fontSize: 12,
     fontWeight: '500',
   },
@@ -500,16 +500,16 @@ const styles = StyleSheet.create({
   },
   availabilityItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#EEF3F7',
   },
   dayName: {
     fontWeight: '600',
     fontSize: 14,
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.2,
   },
   timeSlot: {
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontSize: 13,
     fontWeight: '400',
   },
@@ -519,12 +519,12 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '500',
   },
   infoValue: {
     fontSize: 14,
-    color: '#111827',
+    color: '#1B2A36',
     fontWeight: '400',
     lineHeight: 18,
   },
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 999,
     backgroundColor: '#EF444410',
   },
   logoutButtonText: {

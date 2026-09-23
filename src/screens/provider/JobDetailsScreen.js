@@ -6,7 +6,7 @@ CHANGEMENTS MAJEURS:
 - ✅ isRTL = true implicite partout (flexDirection: 'row-reverse', textAlign: 'right')
 - ✅ Style ultra-minimaliste premium (Stripe / Linear / Revolut)
 - Typographie: tailles réduites, letterSpacing négatif, lineHeight serré
-- Fond: #F9FAFB, cards blanches avec bordure #F3F4F6
+- Fond: #F6FAFD, cards blanches avec bordure #EEF3F7
 - Badges: fond opacité 10%, borderRadius 6px, fontSize 11
 - Boutons: outline style, borderRadius 8-10px, hauteur ~44-48px
 - Ombres: supprimées
@@ -225,7 +225,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
     const configs = {
       pending:     { label: HE.status.pending,    color: '#F59E0B', bg: '#F59E0B1A' },
       accepted:    { label: HE.status.accepted,   color: '#16A34A', bg: '#16A34A1A' },
-      in_progress: { label: HE.status.inProgress, color: '#3B82F6', bg: '#3B82F61A' },
+      in_progress: { label: HE.status.inProgress, color: '#256FA8', bg: '#3B82F61A' },
       completed:   { label: HE.status.completed,  color: '#16A34A', bg: '#16A34A1A' },
       cancelled:   { label: HE.status.cancelled,  color: '#DC2626', bg: '#DC26261A' },
     };
@@ -237,7 +237,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#111827" />
+          <ActivityIndicator size="large" color="#1B2A36" />
           <Text style={styles.loadingText}>{HE.loading}</Text>
         </View>
       </SafeAreaView>
@@ -274,7 +274,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
       {/* ── Custom Header (remplace le header bleu du navigator) ─────────── */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerBack} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={22} color="#111827" />
+          <Ionicons name="chevron-back" size={22} color="#1B2A36" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>פרטי משימה</Text>
         <View style={{ width: 36 }} />
@@ -344,7 +344,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
               <QuickAction
                 icon="navigate"
                 label={HE.actions.directions}
-                color="#3B82F6"
+                color="#256FA8"
                 onPress={() => openMaps(job.address)}
               />
             </View>
@@ -422,7 +422,7 @@ const InfoRow = ({ icon, text, isLink, onPress }) => (
   >
     <Text style={[styles.infoText, styles.rtl, isLink && styles.linkText]}>{text}</Text>
     <View style={styles.infoIconWrap}>
-      <Ionicons name={icon} size={16} color="#9CA3AF" />
+      <Ionicons name={icon} size={16} color="#8A99A6" />
     </View>
   </TouchableOpacity>
 );
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   // Layout
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
 
   // Custom header (remplace le header bleu du navigator)
@@ -461,22 +461,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#EEF3F7',
     // Compensation Android StatusBar
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : 12,
   },
   headerBack: {
     width: 36,
     height: 36,
-    borderRadius: 8,
-    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    backgroundColor: '#F6FAFD',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.3,
     textAlign: 'center',
   },
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     fontWeight: '400',
     textAlign: 'center',
   },
@@ -507,12 +507,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingVertical: 9,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: '#DCE8F1',
   },
   retryBtnText: {
-    color: '#374151',
+    color: '#3A4A57',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -525,11 +525,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#EEF3F7',
+    borderRadius: 20,
   },
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#EEF3F7',
     marginHorizontal: -20,
     marginTop: 16,
   },
@@ -548,7 +549,7 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 19,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.4,
     lineHeight: 24,
   },
@@ -556,7 +557,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     paddingVertical: 4,
     paddingHorizontal: 10,
-    borderRadius: 6,
+    borderRadius: 999,
   },
   badgeText: {
     fontSize: 11,
@@ -581,18 +582,18 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: '#3A4A57',
     fontWeight: '400',
     lineHeight: 20,
   },
   linkText: {
-    color: '#2563EB',
+    color: '#256FA8',
   },
   infoIconWrap: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F9FAFB',
+    borderRadius: 20,
+    backgroundColor: '#F6FAFD',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -623,7 +624,7 @@ const styles = StyleSheet.create({
   },
   quickActionLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
   },
 
@@ -631,7 +632,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginBottom: 12,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -642,17 +643,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor: '#F9FAFB',
+    borderBottomColor: '#F6FAFD',
   },
   detailLabel: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     fontWeight: '400',
   },
   detailValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.2,
   },
 
@@ -660,19 +661,19 @@ const styles = StyleSheet.create({
   notesBlock: { marginTop: 14, gap: 8 },
   notesText: {
     fontSize: 13,
-    color: '#374151',
+    color: '#3A4A57',
     lineHeight: 20,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 14,
     fontWeight: '400',
   },
 
   // Buttons
   btnPrimary: {
-    backgroundColor: '#111827',
+    backgroundColor: '#1B2A36',
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: 'center',
   },
   btnPrimaryText: {
@@ -684,7 +685,7 @@ const styles = StyleSheet.create({
   btnDangerOutline: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: 'rgba(220,38,38,0.25)',
     alignItems: 'center',
@@ -705,7 +706,7 @@ const styles = StyleSheet.create({
   btnComplete: {
     paddingVertical: 14,
     backgroundColor: '#16A34A',
-    borderRadius: 10,
+    borderRadius: 999,
     alignItems: 'center',
   },
   btnCompleteText: {
@@ -718,7 +719,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     borderWidth: 1,
     borderColor: 'rgba(220,38,38,0.2)',
-    borderRadius: 10,
+    borderRadius: 999,
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
   },

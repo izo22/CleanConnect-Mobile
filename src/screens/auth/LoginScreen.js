@@ -14,11 +14,11 @@ CHANGEMENTS MAJEURS APPLIQUÉS :
   - Line heights serrés : 1.3-1.4 partout
 
 ✅ COULEURS & FONDS :
-  - Fond principal container : #F9FAFB (ultra-clair)
+  - Fond principal container : #F6FAFD (ultra-clair)
   - formContainer : fond blanc pur #FFFFFF
-  - Inputs : fond #FFFFFF (pas #f9f9f9), bordure #F3F4F6
-  - Textes : #6B7280 (gris doux)
-  - Liens : #4a90e2 conservée
+  - Inputs : fond #FFFFFF (pas #F6FAFD), bordure #EEF3F7
+  - Textes : #5E6E7C (gris doux)
+  - Liens : #256FA8 conservée
   - Erreurs : #EF4444
 
 ✅ BOUTONS :
@@ -29,15 +29,15 @@ CHANGEMENTS MAJEURS APPLIQUÉS :
 
 ✅ CARD :
   - Border-radius : 12px (au lieu de 10px)
-  - Bordure ultra-subtile : #F3F4F6, 1px
+  - Bordure ultra-subtile : #EEF3F7, 1px
   - Ombres quasi-éliminées : shadowOpacity 0.03, elevation 1
   - Padding augmenté : 24px (au lieu de 20px)
 
 ✅ INPUTS :
   - Hauteur réduite : 40px (au lieu de 50px)
   - Fond blanc pur
-  - Bordures ultra-légères #F3F4F6
-  - Placeholder en #9CA3AF
+  - Bordures ultra-légères #EEF3F7
+  - Placeholder en #8A99A6
 
 ✅ SPACING :
   - Espacements augmentés entre sections : 20px au lieu de 15px
@@ -46,7 +46,7 @@ CHANGEMENTS MAJEURS APPLIQUÉS :
 
 ✅ ICONS :
   - Taille réduite : 20px (au lieu de 24px)
-  - Couleur grise douce : #9CA3AF
+  - Couleur grise douce : #8A99A6
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 */
 
@@ -121,7 +121,7 @@ const LoginScreen = ({ navigation, route }) => {
             <TextInput
               style={[styles.input, styles.textRTL]}
               placeholder="אימייל"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#8A99A6"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -133,7 +133,7 @@ const LoginScreen = ({ navigation, route }) => {
             <TextInput
               style={[styles.input, styles.textRTL, { paddingLeft: 44 }]}
               placeholder="סיסמה"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#8A99A6"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -145,7 +145,7 @@ const LoginScreen = ({ navigation, route }) => {
               <Ionicons
                 name={showPassword ? 'eye-off' : 'eye'}
                 size={20}
-                color="#9CA3AF"
+                color="#8A99A6"
               />
             </TouchableOpacity>
           </View>
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#F9FAFB', // Fond ultra-clair
+    backgroundColor: '#F6FAFD', // Fond ultra-clair
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -202,14 +202,14 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     backgroundColor: '#FFFFFF', // Blanc pur
-    borderRadius: 12, // Arrondi augmenté
+    borderRadius: 18, // Arrondi augmenté
     padding: 24, // Padding augmenté
     borderWidth: 1,
-    borderColor: '#F3F4F6', // Bordure ultra-subtile
+    borderColor: '#EEF3F7', // Bordure ultra-subtile
     // Ombres quasi-éliminées
-    shadowColor: '#000',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03, // Ultra-subtil
+    shadowOpacity: 0.06, // Ultra-subtil
     shadowRadius: 2,
     elevation: 1, // Minimal
   },
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     lineHeight: 18 * 1.3, // Line height serré
     marginBottom: 24, // Espacement augmenté
     textAlign: 'center',
-    color: '#111827', // Noir profond
+    color: '#1B2A36', // Noir profond
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -237,15 +237,15 @@ const styles = StyleSheet.create({
   input: {
     height: 40, // Réduit de 50px à 40px
     borderWidth: 1,
-    borderColor: '#F3F4F6', // Bordure ultra-claire
-    borderRadius: 8,
+    borderColor: '#E1ECF4', // Bordure ultra-claire
+    borderRadius: 16,
     paddingHorizontal: 12,
     fontSize: 14, // Réduit de 16px à 14px
     fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 14 * 1.4,
-    backgroundColor: '#FFFFFF', // Blanc pur (pas #f9f9f9)
-    color: '#111827',
+    backgroundColor: '#F4F8FB', // Blanc pur (pas #F6FAFD)
+    color: '#1B2A36',
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   forgotPasswordText: {
-    color: '#4a90e2',
+    color: '#256FA8',
     fontSize: 13, // Réduit de 14px à 13px
     fontWeight: '500', // Légèrement plus prononcé
     letterSpacing: -0.2,
@@ -283,17 +283,18 @@ const styles = StyleSheet.create({
   // BOUTON CTA (Hauteur réduite, pas d'ombre)
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   button: {
-    backgroundColor: '#4a90e2',
+    backgroundColor: '#256FA8',
     height: 40, // Réduit de 50px à 40px
-    borderRadius: 8,
+    borderRadius: 999,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
     // Pas d'ombre
   },
   buttonDisabled: {
-    backgroundColor: '#93C5FD', // Plus subtil
+    backgroundColor: '#5BA4D9', // Plus subtil
     opacity: 0.6,
+    borderRadius: 999,
   },
   buttonText: {
     color: '#FFFFFF',
@@ -315,14 +316,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   registerText: {
-    color: '#6B7280', // Gris doux
+    color: '#5E6E7C', // Gris doux
     fontSize: 13,
     fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 13 * 1.3,
   },
   registerLink: {
-    color: '#4a90e2',
+    color: '#256FA8',
     fontSize: 13,
     fontWeight: '600', // Semibold pour lien
     letterSpacing: -0.2,

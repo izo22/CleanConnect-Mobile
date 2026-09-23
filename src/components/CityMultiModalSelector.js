@@ -109,7 +109,7 @@ const CityMultiModalSelector = ({ visible, onClose, onConfirm, selectedCities = 
           <Ionicons
             name={isSelected ? 'checkbox' : 'square-outline'}
             size={24}
-            color={isSelected ? '#4a90e2' : '#999'}
+            color={isSelected ? '#256FA8' : '#8A99A6'}
           />
         </View>
         <Text style={[
@@ -138,7 +138,7 @@ const CityMultiModalSelector = ({ visible, onClose, onConfirm, selectedCities = 
             style={styles.closeButton}
             onPress={handleCancel}
           >
-            <Ionicons name="close" size={28} color="#333" />
+            <Ionicons name="close" size={28} color="#1B2A36" />
           </TouchableOpacity>
           
           <Text style={styles.headerTitle}>בחר עיריות</Text>
@@ -186,7 +186,7 @@ const CityMultiModalSelector = ({ visible, onClose, onConfirm, selectedCities = 
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+          <Ionicons name="search" size={20} color="#5E6E7C" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="חפש עיר..."
@@ -199,7 +199,7 @@ const CityMultiModalSelector = ({ visible, onClose, onConfirm, selectedCities = 
               onPress={() => setSearchQuery('')}
               style={styles.clearButton}
             >
-              <Ionicons name="close-circle" size={20} color="#999" />
+              <Ionicons name="close-circle" size={20} color="#8A99A6" />
             </TouchableOpacity>
           )}
         </View>
@@ -215,7 +215,7 @@ const CityMultiModalSelector = ({ visible, onClose, onConfirm, selectedCities = 
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="location-outline" size={48} color="#ccc" />
+              <Ionicons name="location-outline" size={48} color="#DCE8F1" />
               <Text style={styles.emptyText}>לא נמצאו עיריות</Text>
             </View>
           }
@@ -244,23 +244,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    backgroundColor: '#f8f9fa',
+    borderBottomColor: '#E1ECF4',
+    backgroundColor: '#F6FAFD',
   },
   closeButton: {
     padding: 5,
+    borderRadius: 999,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1B2A36',
     textAlign: 'center',
   },
   confirmButton: {
     paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: '#4a90e2',
-    borderRadius: 6,
+    backgroundColor: '#256FA8',
+    borderRadius: 999,
   },
   confirmButtonText: {
     color: '#fff',
@@ -268,11 +269,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   selectedContainer: {
-    backgroundColor: '#f0f8ff',
+    backgroundColor: '#EAF4FB',
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#E1ECF4',
   },
   selectedHeader: {
     flexDirection: 'row-reverse',
@@ -283,7 +284,7 @@ const styles = StyleSheet.create({
   selectedCount: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4a90e2',
+    color: '#256FA8',
   },
   clearAllText: {
     fontSize: 14,
@@ -297,8 +298,8 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    backgroundColor: '#4a90e2',
-    borderRadius: 20,
+    backgroundColor: '#256FA8',
+    borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginHorizontal: 4,
@@ -317,10 +318,10 @@ const styles = StyleSheet.create({
     margin: 15,
     paddingHorizontal: 15,
     height: 50,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
+    backgroundColor: '#F6FAFD',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#E1ECF4',
   },
   searchIcon: {
     marginLeft: 10,
@@ -329,11 +330,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     textAlign: 'right',
-    color: '#333',
+    color: '#1B2A36',
+    backgroundColor: '#F4F8FB',
+    borderColor: '#E1ECF4',
+    borderWidth: 1,
+    borderRadius: 16,
   },
   clearButton: {
     padding: 5,
     marginRight: 5,
+    borderRadius: 999,
   },
   list: {
     flex: 1,
@@ -347,7 +353,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#EEF3F7',
   },
   checkboxContainer: {
     marginLeft: 15,
@@ -355,11 +361,11 @@ const styles = StyleSheet.create({
   cityText: {
     flex: 1,
     fontSize: 17,
-    color: '#333',
+    color: '#1B2A36',
     textAlign: 'right',
   },
   cityTextSelected: {
-    color: '#4a90e2',
+    color: '#256FA8',
     fontWeight: '600',
   },
   emptyContainer: {
@@ -371,18 +377,18 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 15,
     fontSize: 16,
-    color: '#999',
+    color: '#8A99A6',
   },
   footer: {
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    backgroundColor: '#f8f9fa',
+    borderTopColor: '#E1ECF4',
+    backgroundColor: '#F6FAFD',
   },
   footerText: {
     fontSize: 14,
-    color: '#666',
+    color: '#5E6E7C',
     textAlign: 'center',
   },
 });

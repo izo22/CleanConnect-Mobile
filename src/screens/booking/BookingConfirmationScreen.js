@@ -248,7 +248,7 @@ const BookingConfirmationScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   loadingContainer: {
     flex: 1,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     fontWeight: '400',
   },
 
@@ -286,8 +286,8 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '400',
+    color: '#5E6E7C',
+    fontWeight: '600',
     textAlign: 'center',
   },
 
@@ -297,14 +297,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E1ECF4',
     alignItems: 'center',
   },
   idLabel: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     fontWeight: '500',
     letterSpacing: 0.3,
     marginBottom: 4,
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   },
   idValue: {
     fontSize: 12,
-    color: '#111827',
+    color: '#1B2A36',
     fontWeight: '600',
     letterSpacing: -0.2,
     textAlign: 'center',
@@ -324,14 +324,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 12,
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E1ECF4',
   },
   cardTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     textAlign: 'right',
     letterSpacing: -0.2,
     marginBottom: 20,
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     fontWeight: '500',
     letterSpacing: 0.3,
     marginBottom: 4,
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   },
   rowValue: {
     fontSize: 14,
-    color: '#111827',
+    color: '#1B2A36',
     fontWeight: '500',
     textAlign: 'right',
     letterSpacing: -0.2,
@@ -366,21 +366,21 @@ const styles = StyleSheet.create({
   },
   rowSub: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     fontWeight: '400',
     textAlign: 'right',
   },
   iconBadge: {
     width: 36,
     height: 36,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,
   },
   separator: {
     height: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
     marginVertical: 16,
   },
 
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   },
   priceLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     fontWeight: '400',
   },
   priceValue: {
@@ -414,14 +414,14 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     textAlign: 'right',
     letterSpacing: -0.2,
     marginBottom: 4,
   },
   stepText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
     textAlign: 'right',
     lineHeight: 18,
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   stepBadge: {
     width: 28,
     height: 28,
-    borderRadius: 6,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     height: 44,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   },
   outlineButton: {
     height: 40,
-    borderRadius: 8,
+    borderRadius: 999,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

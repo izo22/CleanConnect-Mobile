@@ -204,7 +204,7 @@ const JobListScreen = ({ navigation }) => {
       case 'completed':
         return '#9C27B0';
       default:
-        return '#666666';
+        return '#5E6E7C';
     }
   };
 
@@ -460,7 +460,7 @@ const JobListScreen = ({ navigation }) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#256FA8" />
         <Text style={styles.loadingText}>טוען...</Text>
       </SafeAreaView>
     );
@@ -470,7 +470,7 @@ const JobListScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       {/* Barre de recherche */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#999999" style={styles.searchIcon} />
+        <Ionicons name="search" size={20} color="#8A99A6" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="חפש לקוח או כתובת..."
@@ -479,7 +479,7 @@ const JobListScreen = ({ navigation }) => {
         />
         {searchQuery !== '' && (
           <TouchableOpacity onPress={() => handleSearch('')} style={styles.clearButton}>
-            <Ionicons name="close-circle" size={20} color="#999999" />
+            <Ionicons name="close-circle" size={20} color="#8A99A6" />
           </TouchableOpacity>
         )}
       </View>
@@ -493,7 +493,7 @@ const JobListScreen = ({ navigation }) => {
           <Ionicons 
             name="list" 
             size={16} 
-            color={activeFilter === 'הכל' ? '#FFFFFF' : '#666666'} 
+            color={activeFilter === 'הכל' ? '#FFFFFF' : '#5E6E7C'} 
           />
           <Text style={[styles.filterText, activeFilter === 'הכל' && styles.activeFilterText]}>
             הכל
@@ -507,7 +507,7 @@ const JobListScreen = ({ navigation }) => {
           <Ionicons 
             name="time" 
             size={16} 
-            color={activeFilter === 'ממתין' ? '#FFFFFF' : '#666666'} 
+            color={activeFilter === 'ממתין' ? '#FFFFFF' : '#5E6E7C'} 
           />
           <Text style={[styles.filterText, activeFilter === 'ממתין' && styles.activeFilterText]}>
             ממתין
@@ -521,7 +521,7 @@ const JobListScreen = ({ navigation }) => {
           <Ionicons 
             name="checkmark-circle" 
             size={16} 
-            color={activeFilter === 'מאושר' ? '#FFFFFF' : '#666666'} 
+            color={activeFilter === 'מאושר' ? '#FFFFFF' : '#5E6E7C'} 
           />
           <Text style={[styles.filterText, activeFilter === 'מאושר' && styles.activeFilterText]}>
             מאושר
@@ -535,7 +535,7 @@ const JobListScreen = ({ navigation }) => {
           <Ionicons 
             name="checkmark-done" 
             size={16} 
-            color={activeFilter === 'הושלם' ? '#FFFFFF' : '#666666'} 
+            color={activeFilter === 'הושלם' ? '#FFFFFF' : '#5E6E7C'} 
           />
           <Text style={[styles.filterText, activeFilter === 'הושלם' && styles.activeFilterText]}>
             הושלם
@@ -551,7 +551,7 @@ const JobListScreen = ({ navigation }) => {
       >
         {filteredRequests.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="clipboard-outline" size={60} color="#CCCCCC" />
+            <Ionicons name="clipboard-outline" size={60} color="#DCE8F1" />
             <Text style={styles.emptyTitle}>אין בקשות</Text>
             <Text style={styles.emptySubtitle}>בקשות חדשות יופיעו כאן</Text>
           </View>
@@ -598,32 +598,32 @@ const JobListScreen = ({ navigation }) => {
 
                 <View style={styles.requestInfo}>
                   <View style={styles.infoRow}>
-                    <Ionicons name="construct" size={16} color="#666666" />
+                    <Ionicons name="construct" size={16} color="#5E6E7C" />
                     <Text style={styles.infoText}>
                       {getServiceTypeLabel(request.serviceType)}
                     </Text>
                   </View>
                   
                   <View style={styles.infoRow}>
-                    <Ionicons name="calendar" size={16} color="#666666" />
+                    <Ionicons name="calendar" size={16} color="#5E6E7C" />
                     <Text style={styles.infoText}>
                       {formatDate(request.dateTime)}
                     </Text>
                   </View>
                   
                   <View style={styles.infoRow}>
-                    <Ionicons name="time" size={16} color="#666666" />
+                    <Ionicons name="time" size={16} color="#5E6E7C" />
                     <Text style={styles.infoText}>{request.duration} שעות</Text>
                   </View>
                   
                   <View style={styles.infoRow}>
-                    <Ionicons name="cash" size={16} color="#666666" />
+                    <Ionicons name="cash" size={16} color="#5E6E7C" />
                     <Text style={styles.infoText}>₪{request.price}</Text>
                   </View>
                 </View>
 
                 <View style={styles.addressRow}>
-                  <Ionicons name="location" size={16} color="#666666" />
+                  <Ionicons name="location" size={16} color="#5E6E7C" />
                   <Text style={styles.addressText} numberOfLines={2}>
                     {formatAddress(request.address)}
                   </Text>
@@ -676,17 +676,17 @@ const JobListScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#F6FAFD',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#F6FAFD',
   },
   loadingText: {
     marginTop: 10,
-    color: '#666666',
+    color: '#5E6E7C',
     textAlign: 'right',
   },
   searchContainer: {
@@ -695,12 +695,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     margin: 15,
     marginBottom: 10,
-    borderRadius: 10,
+    borderRadius: 16,
     paddingHorizontal: 15,
     paddingVertical: 5,
-    shadowColor: '#000',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 2,
   },
@@ -711,11 +711,16 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     fontSize: 16,
-    color: '#333333',
+    color: '#1B2A36',
     textAlign: 'right',
+    backgroundColor: '#F4F8FB',
+    borderColor: '#E1ECF4',
+    borderWidth: 1,
+    borderRadius: 16,
   },
   clearButton: {
     padding: 5,
+    borderRadius: 999,
   },
   filterContainer: {
     flexDirection: 'row-reverse',
@@ -725,19 +730,20 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    backgroundColor: '#F0F0F0',
-    borderRadius: 20,
+    backgroundColor: '#EEF3F7',
+    borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginLeft: 8,
   },
   activeFilterButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#256FA8',
+    borderRadius: 999,
   },
   filterText: {
     marginRight: 5,
     fontSize: 12,
-    color: '#666666',
+    color: '#5E6E7C',
   },
   activeFilterText: {
     color: '#FFFFFF',
@@ -756,13 +762,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#666666',
+    color: '#5E6E7C',
     marginTop: 20,
     textAlign: 'right',
   },
   emptySubtitle: {
     fontSize: 16,
-    color: '#999999',
+    color: '#8A99A6',
     textAlign: 'center',
     marginTop: 10,
   },
@@ -772,12 +778,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
     marginTop: 5,
     marginBottom: 10,
-    borderRadius: 10,
+    borderRadius: 16,
     padding: 20,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
   },
   statItem: {
@@ -787,11 +793,11 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: '#256FA8',
   },
   statLabel: {
     fontSize: 12,
-    color: '#666666',
+    color: '#5E6E7C',
     marginTop: 4,
     textAlign: 'center',
   },
@@ -799,12 +805,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     marginHorizontal: 15,
     marginBottom: 10,
-    borderRadius: 10,
+    borderRadius: 20,
     padding: 15,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
   },
   requestHeader: {
@@ -816,14 +822,14 @@ const styles = StyleSheet.create({
   clientName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333333',
+    color: '#1B2A36',
     flex: 1,
     textAlign: 'right',
   },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 999,
   },
   statusText: {
     fontSize: 12,
@@ -844,7 +850,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    color: '#333333',
+    color: '#1B2A36',
     marginRight: 5,
     textAlign: 'right',
   },
@@ -855,7 +861,7 @@ const styles = StyleSheet.create({
   },
   addressText: {
     fontSize: 14,
-    color: '#666666',
+    color: '#5E6E7C',
     marginRight: 5,
     flex: 1,
     textAlign: 'right',
@@ -866,13 +872,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
+    borderTopColor: '#EEF3F7',
   },
   acceptButton: {
     backgroundColor: '#4CAF50',
     paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: 6,
+    borderRadius: 999,
     flex: 0.45,
     alignItems: 'center',
   },
@@ -885,7 +891,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: 6,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: '#F44336',
     flex: 0.45,
@@ -898,6 +904,7 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.5,
+    borderRadius: 999,
   },
 });
 

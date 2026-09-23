@@ -331,7 +331,7 @@ const BookingNotesScreen = ({ route, navigation }) => {
               <Icon 
                 name="information" 
                 size={16} 
-                color="#666"
+                color="#5E6E7C"
                 style={styles.iconRTL}
               />
               <Text style={[styles.mediaInfoText, styles.textRTL]}>
@@ -359,7 +359,7 @@ const BookingNotesScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F6FAFD',
   },
   content: {
     padding: 15,
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     marginBottom: 15,
-    color: '#444',
+    color: '#3A4A57',
   },
   textInput: {
     backgroundColor: 'white',
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   examplesTitle: {
     fontSize: 16,
     marginBottom: 10,
-    color: '#666',
+    color: '#5E6E7C',
   },
   exampleChips: {
     flexDirection: 'row-reverse',
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   exampleChip: {
     margin: 4,
-    borderRadius: 20,
+    borderRadius: 999,
   },
   exampleChipLabel: {
     fontSize: 12,
@@ -409,22 +409,22 @@ const styles = StyleSheet.create({
   mediaSectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1B2A36',
   },
   mediaCount: {
     fontSize: 14,
-    color: '#666',
+    color: '#5E6E7C',
     fontWeight: '500',
   },
   mediaDescription: {
     fontSize: 13,
-    color: '#666',
+    color: '#5E6E7C',
     marginBottom: 15,
     lineHeight: 18,
   },
   mediaCard: {
     marginBottom: 12,
-    borderRadius: 8,
+    borderRadius: 20,
     elevation: 2,
   },
   mediaContainer: {
@@ -434,8 +434,8 @@ const styles = StyleSheet.create({
   mediaThumbnail: {
     width: '100%',
     height: 180,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    borderRadius: 14,
+    backgroundColor: '#EEF3F7',
   },
   videoThumbnailContainer: {
     position: 'relative',
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 8,
+    borderRadius: 14,
   },
   mediaInfo: {
     flexDirection: 'row-reverse',
@@ -469,37 +469,38 @@ const styles = StyleSheet.create({
   mediaFileName: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
+    color: '#1B2A36',
     marginBottom: 2,
   },
   mediaSize: {
     fontSize: 12,
-    color: '#666',
+    color: '#5E6E7C',
   },
   removeButtonRTL: {
     position: 'absolute',
     top: 5,
     left: 5,
     backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 999,
   },
   addMediaButton: {
     marginTop: 10,
-    borderRadius: 8,
+    borderRadius: 999,
     borderWidth: 2,
     borderStyle: 'dashed',
   },
   mediaInfoBox: {
     flexDirection: 'row-reverse',
     alignItems: 'flex-start',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: '#EAF4FB',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 14,
     marginTop: 15,
   },
   mediaInfoText: {
     flex: 1,
     fontSize: 12,
-    color: '#666',
+    color: '#5E6E7C',
     marginRight: 8,
     lineHeight: 18,
   },
@@ -509,6 +510,7 @@ const styles = StyleSheet.create({
   },
   button: {
     paddingVertical: 8,
+    borderRadius: 999,
   },
   rtlRow: {
     flexDirection: 'row-reverse',

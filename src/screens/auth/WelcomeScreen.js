@@ -1,13 +1,13 @@
 // WelcomeScreen.js - REFONTE UI MINIMALISTE PREMIUM
 /*
 CHANGEMENTS MAJEURS APPLIQUÉS:
-✓ LinearGradient bleu subtil (#F0F9FF→#DBEAFE) pour chaleur visuelle
+✓ LinearGradient bleu subtil (#EAF4FB→#EAF4FB) pour chaleur visuelle
 ✓ Typographie: fontSize réduits de 10-15% (logo 42px, sectionTitle 18px, cardTitle 16px)
 ✓ Poids: '400' par défaut, '600' uniquement pour titres/CTA
-✓ Cards: borderRadius 24px→12px, ombres lourdes supprimées, bordures 1px #F3F4F6
+✓ Cards: borderRadius 24px→12px, ombres lourdes supprimées, bordures 1px #EEF3F7
 ✓ Icons: tailles réduites (32px→20px), circles plus petits (64px→48px)
 ✓ Buttons: hauteur 40px, style outline pour login
-✓ Colors: #111827 (textes actifs), #6B7280 (secondaires), #9CA3AF (hints)
+✓ Colors: #1B2A36 (textes actifs), #5E6E7C (secondaires), #8A99A6 (hints)
 ✓ letterSpacing: -0.2 à -0.4 pour compression visuelle
 ✓ lineHeight: serré (1.3-1.4)
 ✓ Spacing: augmenté entre sections pour respiration
@@ -62,7 +62,7 @@ const WelcomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F0F9FF" translucent={false} />
+      <StatusBar barStyle="dark-content" backgroundColor="#EAF4FB" translucent={false} />
 
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <ScrollView
@@ -90,7 +90,7 @@ const WelcomeScreen = () => {
           <View style={styles.logoSection}>
             <View style={styles.logoContainer}>
               <Text style={styles.logoClean}>Clean</Text>
-              <Ionicons name="sparkles" size={28} color="#2E86C1" style={styles.sparkleIcon} />
+              <Ionicons name="sparkles" size={28} color="#256FA8" style={styles.sparkleIcon} />
               <Text style={styles.logoCo}>Co</Text>
             </View>
             <Text style={[styles.tagline, isRTL && styles.textRTL]}>
@@ -111,14 +111,14 @@ const WelcomeScreen = () => {
               activeOpacity={0.7}
             >
               <View style={styles.iconCircle}>
-                <Ionicons name="home" size={20} color="#2E86C1" />
+                <Ionicons name="home" size={20} color="#256FA8" />
               </View>
               <View style={styles.cardContent}>
                 <Text style={[styles.cardTitle, isRTL && styles.textRTL]}>{t.clientTitle}</Text>
                 <Text style={[styles.cardDescription, isRTL && styles.textRTL]}>{t.clientDesc}</Text>
               </View>
               <View style={styles.arrowBubble}>
-                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#2E86C1" />
+                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#256FA8" />
               </View>
             </TouchableOpacity>
 
@@ -129,14 +129,14 @@ const WelcomeScreen = () => {
               activeOpacity={0.7}
             >
               <View style={styles.iconCircle}>
-                <Ionicons name="briefcase" size={20} color="#2E86C1" />
+                <Ionicons name="briefcase" size={20} color="#256FA8" />
               </View>
               <View style={styles.cardContent}>
                 <Text style={[styles.cardTitle, isRTL && styles.textRTL]}>{t.providerTitle}</Text>
                 <Text style={[styles.cardDescription, isRTL && styles.textRTL]}>{t.providerDesc}</Text>
               </View>
               <View style={styles.arrowBubble}>
-                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#2E86C1" />
+                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#256FA8" />
               </View>
             </TouchableOpacity>
           </View>
@@ -161,7 +161,7 @@ const WelcomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#EAF4FB',
   },
   safeArea: {
     flex: 1,
@@ -184,19 +184,20 @@ const styles = StyleSheet.create({
   langBtn: {
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E1ECF4',
     backgroundColor: '#FFFFFF',
   },
   langBtnActive: {
-    backgroundColor: '#2E86C1',
-    borderColor: '#2E86C1',
+    backgroundColor: '#256FA8',
+    borderColor: '#256FA8',
+    borderRadius: 999,
   },
   langBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#5E6E7C',
     letterSpacing: -0.2,
   },
   langBtnTextActive: {
@@ -218,7 +219,7 @@ const styles = StyleSheet.create({
   logoClean: {
     fontSize: 42,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.4,
   },
   sparkleIcon: {
@@ -227,13 +228,13 @@ const styles = StyleSheet.create({
   logoCo: {
     fontSize: 42,
     fontWeight: '600',
-    color: '#2E86C1',
+    color: '#256FA8',
     letterSpacing: -0.4,
   },
   tagline: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'center',
     maxWidth: '85%',
     lineHeight: 18,
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     marginBottom: 24,
     textAlign: 'center',
     letterSpacing: -0.3,
@@ -257,9 +258,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E1ECF4',
     padding: 20,
     marginBottom: 12,
   },
@@ -279,7 +280,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     marginBottom: 4,
     textAlign: 'right',
     letterSpacing: -0.2,
@@ -288,7 +289,7 @@ const styles = StyleSheet.create({
   cardDescription: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'right',
     lineHeight: 17,
     letterSpacing: -0.1,
@@ -296,8 +297,8 @@ const styles = StyleSheet.create({
   arrowBubble: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F9FAFB',
+    borderRadius: 20,
+    backgroundColor: '#F6FAFD',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -315,18 +316,19 @@ const styles = StyleSheet.create({
   loginText: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginLeft: 8,
     letterSpacing: -0.1,
   },
   loginButton: {
     paddingVertical: 8,
     paddingHorizontal: 4,
+    borderRadius: 999,
   },
   loginButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2E86C1',
+    color: '#256FA8',
     letterSpacing: -0.2,
   },
 

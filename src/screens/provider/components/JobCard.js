@@ -40,14 +40,14 @@ const JobCard = ({ job, onPress }) => {
       </View>
       
       <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
-        <Ionicons name="person-outline" size={16} color="#666" />
+        <Ionicons name="person-outline" size={16} color="#5E6E7C" />
         <Text style={[styles.detailText, isRTL && styles.detailTextRTL]}>
           {job.clientName}
         </Text>
       </View>
       
       <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
-        <Ionicons name="location-outline" size={16} color="#666" />
+        <Ionicons name="location-outline" size={16} color="#5E6E7C" />
         <Text style={[styles.detailText, isRTL && styles.detailTextRTL]}>
           {job.address}
         </Text>
@@ -55,7 +55,7 @@ const JobCard = ({ job, onPress }) => {
       
       <View style={[styles.footer, isRTL && styles.footerRTL]}>
         <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
-          <Ionicons name="time-outline" size={16} color="#666" />
+          <Ionicons name="time-outline" size={16} color="#5E6E7C" />
           <Text style={[styles.detailText, isRTL && styles.detailTextRTL]}>
             {formatDate(job.date)} • {job.duration}h
           </Text>
@@ -72,11 +72,11 @@ const JobCard = ({ job, onPress }) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 20,
     padding: 16,
     marginVertical: 8,
     borderWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: '#E1ECF4',
   },
   header: {
     flexDirection: 'row',
@@ -90,12 +90,12 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333333',
+    color: '#1B2A36',
   },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 999,
   },
   statusConfirmed: {
     backgroundColor: '#E6F7EE',
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#333333',
+    color: '#1B2A36',
   },
   detailRow: {
     flexDirection: 'row',
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#666666',
+    color: '#5E6E7C',
     marginLeft: 8,
   },
   detailTextRTL: {
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: '#256FA8',
   },
   rtlText: {
     writingDirection: 'rtl',

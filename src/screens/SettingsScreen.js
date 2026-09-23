@@ -80,7 +80,7 @@ const SettingsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F6FAFD',
   },
   content: {
     flex: 1,
@@ -88,18 +88,18 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 15,
-    borderRadius: 8,
+    borderRadius: 20,
     elevation: 2,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#333',
+    color: '#1B2A36',
   },
   debugText: {
     fontSize: 12,
-    color: '#666',
+    color: '#5E6E7C',
     fontFamily: 'monospace',
   },
 });

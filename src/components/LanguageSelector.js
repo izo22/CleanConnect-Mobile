@@ -77,7 +77,7 @@ const LanguageSelector = ({ containerStyle, showTitle = true }) => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
-    borderRadius: 8,
+    borderRadius: 14,
     overflow: 'hidden',
   },
   title: {
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     padding: 15,
     paddingBottom: 10,
-    color: '#333',
+    color: '#1B2A36',
   },
   languageItem: {
     flexDirection: 'row',
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   languageName: {
     fontSize: 16,
-    color: '#333',
+    color: '#1B2A36',
   },
   rightContent: {
     marginLeft: 10,
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 14,
-    color: '#666',
+    color: '#5E6E7C',
   },
 });
 

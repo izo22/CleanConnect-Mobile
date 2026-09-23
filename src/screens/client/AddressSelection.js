@@ -27,7 +27,7 @@ const AddressSelectionScreen = ({ navigation }) => {
   
   const getServiceColor = () => {
     switch (currentBooking.serviceType) {
-      case 'home': return theme.colors.homeService || '#007AFF';
+      case 'home': return theme.colors.homeService || '#256FA8';
       case 'office': return theme.colors.officeService || '#34C759';
       case 'building': return theme.colors.buildingService || '#FF9500';
       default: return theme.colors.primary;
@@ -234,7 +234,7 @@ const AddressSelectionScreen = ({ navigation }) => {
                   value={newAddress.street}
                   onChangeText={t => setNewAddress({...newAddress, street: t})}
                   style={[styles.textInput, styles.rtlText, { borderColor: serviceColor }]}
-                  placeholderTextColor="#999"
+                  placeholderTextColor="#8A99A6"
                 />
               </View>
               
@@ -244,7 +244,7 @@ const AddressSelectionScreen = ({ navigation }) => {
                   value={newAddress.city}
                   onChangeText={t => setNewAddress({...newAddress, city: t})}
                   style={[styles.textInput, styles.rtlText, { borderColor: serviceColor }]}
-                  placeholderTextColor="#999"
+                  placeholderTextColor="#8A99A6"
                 />
               </View>
               
@@ -254,7 +254,7 @@ const AddressSelectionScreen = ({ navigation }) => {
                   value={newAddress.country}
                   onChangeText={t => setNewAddress({...newAddress, country: t})}
                   style={[styles.textInput, styles.rtlText, { borderColor: serviceColor }]}
-                  placeholderTextColor="#999"
+                  placeholderTextColor="#8A99A6"
                 />
               </View>
               
@@ -265,7 +265,7 @@ const AddressSelectionScreen = ({ navigation }) => {
                   onChangeText={t => setNewAddress({...newAddress, additionalInfo: t})}
                   style={[styles.textInput, styles.textInputMultiline, styles.rtlText, { borderColor: serviceColor }]}
                   placeholder="לדוגמה: קומה 3, דירה 12"
-                  placeholderTextColor="#999"
+                  placeholderTextColor="#8A99A6"
                   multiline
                   numberOfLines={3}
                 />
@@ -313,7 +313,7 @@ const AddressSelectionScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#f5f5f5' 
+    backgroundColor: '#F6FAFD' 
   },
   content: { 
     flex: 1 
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   },
   card: { 
     margin: 15, 
-    borderRadius: 8, 
+    borderRadius: 20, 
     elevation: 4 
   },
   sectionTitle: {
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   },
   noAddressText: {
     fontSize: 16,
-    color: '#666',
+    color: '#5E6E7C',
     marginBottom: 20,
   },
   addressItem: { 
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   addressText: { 
-    color: '#666', 
+    color: '#5E6E7C', 
     fontSize: 14, 
     marginTop: 4 
   },
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   badge: { 
     paddingHorizontal: 8, 
     paddingVertical: 2,
-    borderRadius: 10 
+    borderRadius: 999,
   },
   badgeText: { 
     color: 'white', 
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 14,
     padding: 12,
     fontSize: 16,
     backgroundColor: 'white',
@@ -409,13 +409,14 @@ const styles = StyleSheet.create({
   },
   button: {
     padding: 15,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 20,
   },
   buttonDisabled: {
     opacity: 0.5,
+    borderRadius: 999,
   },
   buttonText: {
     color: 'white',
@@ -426,7 +427,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderWidth: 2,
     padding: 15,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
@@ -452,9 +453,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 6,
-    shadowColor: '#000',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.06,
     shadowRadius: 4,
   },
   rtlText: {

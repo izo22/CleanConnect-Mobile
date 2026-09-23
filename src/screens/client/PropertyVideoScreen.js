@@ -1,16 +1,16 @@
 // screens/client/PropertyVideoScreen.js - REFONTE UI MINIMALISTE PREMIUM
 /*
 CHANGEMENTS MAJEURS APPLIQUÉS:
-✓ Container: fond #F9FAFB au lieu de #F5F5F5
-✓ Cards: borderRadius 12px, bordures 1px #F3F4F6, elevation/shadow supprimées
+✓ Container: fond #F6FAFD au lieu de #F6FAFD
+✓ Cards: borderRadius 12px, bordures 1px #EEF3F7, elevation/shadow supprimées
 ✓ Typographie: fontSize réduits de 10-15% (title 24px, subtitle 14px)
 ✓ Poids: '400' par défaut, '600' pour titres/CTA
 ✓ Buttons: hauteur 40px, borderRadius 8px, ombres supprimées
-✓ Colors: #111827 (textes actifs), #6B7280 (secondaires), #9CA3AF (hints)
+✓ Colors: #1B2A36 (textes actifs), #5E6E7C (secondaires), #8A99A6 (hints)
 ✓ letterSpacing: -0.2 à -0.3 pour compression visuelle
 ✓ lineHeight: serré (1.3-1.4)
 ✓ Spacing: doublé entre sections
-✓ InfoBox: background subtil #F0F9FF, borderColor ultra-léger
+✓ InfoBox: background subtil #EAF4FB, borderColor ultra-léger
 ✓ Icons emoji: conservés mais taille réduite
 ✓ Video container: bordure au lieu d'ombre
 */
@@ -184,7 +184,7 @@ export default function PropertyVideoScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#256FA8" />
         <Text style={styles.loadingText}>טוען...</Text>
       </View>
     );
@@ -271,7 +271,7 @@ export default function PropertyVideoScreen({ navigation }) {
 
       {uploading && (
         <View style={styles.uploadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#256FA8" />
           <Text style={styles.uploadingText}>מעלה וידאו...</Text>
           {uploadProgress > 0 && (
             <Text style={styles.progressText}>{Math.round(uploadProgress)}%</Text>
@@ -293,7 +293,7 @@ export default function PropertyVideoScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB'
+    backgroundColor: '#F6FAFD'
   },
   contentContainer: {
     padding: 20,
@@ -303,12 +303,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB'
+    backgroundColor: '#F6FAFD'
   },
   loadingText: {
     marginTop: 10,
     fontSize: 14,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
     letterSpacing: -0.1
   },
@@ -321,31 +321,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
     textAlign: 'right',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.3,
     lineHeight: 30,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'right',
     lineHeight: 18,
-    fontWeight: '400',
+    fontWeight: '600',
     letterSpacing: -0.1,
   },
   videoContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#EEF3F7',
     padding: 16,
     marginBottom: 16,
   },
   video: {
     width: '100%',
     height: 300,
-    borderRadius: 8,
-    backgroundColor: '#000',
+    borderRadius: 14,
+    backgroundColor: '#1B2A36',
     marginBottom: 12
   },
   videoInfo: {
@@ -354,15 +354,15 @@ const styles = StyleSheet.create({
   },
   videoDate: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     fontWeight: '400',
     letterSpacing: -0.1,
   },
   emptyContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#EEF3F7',
     padding: 24,
     alignItems: 'center',
     marginBottom: 16,
@@ -376,13 +376,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
     textAlign: 'center',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.3,
     lineHeight: 24,
   },
   emptyText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 24,
@@ -394,19 +394,19 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   recordButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#256FA8',
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: 'center',
     height: 40,
     justifyContent: 'center',
   },
   galleryButton: {
-    backgroundColor: '#5AC8FA',
+    backgroundColor: '#5BA4D9',
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: 'center',
     height: 40,
     justifyContent: 'center',
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF9500',
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: 'center',
     height: 40,
     justifyContent: 'center',
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     borderColor: '#FF3B30',
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: 'center',
     height: 40,
     justifyContent: 'center',
@@ -439,9 +439,9 @@ const styles = StyleSheet.create({
   },
   uploadingContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#EEF3F7',
     padding: 24,
     alignItems: 'center',
     marginBottom: 16,
@@ -449,36 +449,36 @@ const styles = StyleSheet.create({
   uploadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#007AFF',
+    color: '#256FA8',
     fontWeight: '600',
     letterSpacing: -0.2,
   },
   progressText: {
     marginTop: 8,
     fontSize: 20,
-    color: '#007AFF',
+    color: '#256FA8',
     fontWeight: '600',
     letterSpacing: -0.3,
   },
   infoBox: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 12,
+    backgroundColor: '#EAF4FB',
+    borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E0F2FE',
+    borderColor: '#E1ECF4',
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
     textAlign: 'right',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.2,
     lineHeight: 20,
   },
   infoItem: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginBottom: 6,
     textAlign: 'right',
     lineHeight: 18,

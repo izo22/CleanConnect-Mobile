@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     padding: 12,
     backgroundColor: '#E8F5E9',
-    borderRadius: 8,
+    borderRadius: 14,
     borderLeftWidth: 4,
     borderLeftColor: '#4CAF50',
   },
@@ -141,23 +141,25 @@ const styles = StyleSheet.create({
   viewModeContainer: {
     flexDirection: 'row',
     marginBottom: 15,
-    borderRadius: 8,
+    borderRadius: 14,
     overflow: 'hidden',
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#EEF3F7',
   },
   viewModeButton: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#EEF3F7',
+    borderRadius: 999,
   },
   viewModeButtonActive: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#256FA8',
+    borderRadius: 999,
   },
   viewModeText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666',
+    color: '#5E6E7C',
   },
   viewModeTextActive: {
     color: 'white',
@@ -171,7 +173,7 @@ const styles = StyleSheet.create({
   zoneTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: '#256FA8',
     marginBottom: 5,
     paddingLeft: 10,
   },
@@ -184,7 +186,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
+    color: '#8A99A6',
     textAlign: 'center',
   },
 });

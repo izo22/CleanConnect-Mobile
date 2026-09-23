@@ -25,13 +25,13 @@ const ProfileOption = ({ icon, title, onPress, value, rightComponent, isRTL }) =
   return (
     <TouchableOpacity style={styles.optionContainer} onPress={onPress}>
       <View style={[styles.optionLeft, isRTL && styles.optionLeftRTL]}>
-        <Ionicons name={icon} size={24} color="#3498db" />
+        <Ionicons name={icon} size={24} color="#256FA8" />
         <Text style={[styles.optionTitle, isRTL && styles.textRTL]}>{title}</Text>
       </View>
       <View style={[styles.optionRight, isRTL && styles.optionRightRTL]}>
         {value && <Text style={[styles.optionValue, isRTL && styles.textRTL]}>{value}</Text>}
         {rightComponent}
-        <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color="#999" />
+        <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color="#8A99A6" />
       </View>
     </TouchableOpacity>
   );
@@ -205,9 +205,9 @@ const UserProfileScreen = () => {
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
-                trackColor={{ false: '#ccc', true: '#a3d4ff' }}
-                thumbColor={notificationsEnabled ? '#3498db' : '#f4f3f4'}
-                ios_backgroundColor="#ccc"
+                trackColor={{ false: '#DCE8F1', true: '#5BA4D9' }}
+                thumbColor={notificationsEnabled ? '#256FA8' : '#f4f3f4'}
+                ios_backgroundColor="#DCE8F1"
               />
             }
             onPress={() => setNotificationsEnabled(!notificationsEnabled)}
@@ -258,20 +258,20 @@ const UserProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F6FAFD',
   },
   profileHeader: {
     alignItems: 'center',
     paddingVertical: 30,
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#EEF3F7',
   },
   initialsContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#3498db',
+    backgroundColor: '#256FA8',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
@@ -288,17 +288,17 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: 16,
-    color: '#666',
+    color: '#5E6E7C',
   },
   sectionContainer: {
     marginTop: 20,
     backgroundColor: 'white',
-    borderRadius: 10,
+    borderRadius: 20,
     overflow: 'hidden',
     marginHorizontal: 15,
-    shadowColor: '#000',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
@@ -307,10 +307,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     paddingHorizontal: 15,
     paddingVertical: 12,
-    color: '#333',
-    backgroundColor: '#f9f9f9',
+    color: '#1B2A36',
+    backgroundColor: '#F6FAFD',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#EEF3F7',
   },
   optionContainer: {
     flexDirection: 'row',
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#EEF3F7',
   },
   optionLeft: {
     flexDirection: 'row',
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 16,
     marginLeft: 12,
-    color: '#333',
+    color: '#1B2A36',
   },
   optionRight: {
     flexDirection: 'row',
@@ -342,12 +342,13 @@ const styles = StyleSheet.create({
   },
   optionValue: {
     fontSize: 16,
-    color: '#999',
+    color: '#8A99A6',
     marginRight: 10,
   },
   deleteAccountButton: {
     paddingVertical: 15,
     alignItems: 'center',
+    borderRadius: 999,
   },
   deleteAccountText: {
     color: '#e74c3c',
@@ -355,11 +356,11 @@ const styles = StyleSheet.create({
   },
   debugContainer: {
     padding: 15,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#EEF3F7',
   },
   debugText: {
     fontSize: 12,
-    color: '#666',
+    color: '#5E6E7C',
     marginBottom: 5,
   },
   textRTL: {

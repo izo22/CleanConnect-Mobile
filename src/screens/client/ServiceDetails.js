@@ -206,7 +206,7 @@ const ServiceDetails = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   header: {
     padding: 20,
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 13,
-    fontWeight: '400',
+    fontWeight: '600',
     letterSpacing: -0.2,
     lineHeight: 13 * 1.3,
     color: 'white',
@@ -231,13 +231,13 @@ const styles = StyleSheet.create({
   infoCard: {
     margin: 16,
     marginTop: 20,
-    borderRadius: 12,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
+    borderColor: '#E1ECF4',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 1,
   },
@@ -246,12 +246,12 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 14 * 1.5,
-    color: '#4B5563',
+    color: '#3A4A57',
     marginBottom: 8,
   },
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#EEF3F7',
     marginVertical: 20,
   },
   sectionTitle: {
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.3,
     lineHeight: 16 * 1.3,
-    color: '#111827',
+    color: '#1B2A36',
     marginBottom: 12,
   },
   featureText: {
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 13 * 1.4,
-    color: '#374151',
+    color: '#3A4A57',
   },
   optionsContainer: {
     flexDirection: 'row',
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     margin: 0,
-    borderRadius: 6,
+    borderRadius: 999,
     height: 32,
   },
   chipText: {
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 40,
-    borderRadius: 8,
+    borderRadius: 999,
     justifyContent: 'center',
   },
   buttonLabel: {

@@ -3,13 +3,13 @@
 CHANGEMENTS MAJEURS APPLIQUÉS:
 ✓ Typographie: fontSize réduits de 10-15% (title 17px, description 13px, dayName 14px)
 ✓ Poids: '400' par défaut, '600' uniquement pour titres/CTA/prix
-✓ Container: fond #F9FAFB (gris ultra-clair)
-✓ Card: borderRadius 12px, bordures 1px #F3F4F6, ombres supprimées
+✓ Container: fond #F6FAFD (gris ultra-clair)
+✓ Card: borderRadius 12px, bordures 1px #EEF3F7, ombres supprimées
 ✓ Time buttons: backgroundColor à 10% d'opacité (#3B82F610), borderRadius 6px
 ✓ Switch: couleur moderne (#10B981 pour actif)
-✓ Separators: bordures ultra-subtiles #F3F4F6
+✓ Separators: bordures ultra-subtiles #EEF3F7
 ✓ Buttons: hauteur 40px, style outline pour cancel, filled pour save
-✓ Colors: #111827 (textes actifs), #6B7280 (secondaires), #9CA3AF (disabled)
+✓ Colors: #1B2A36 (textes actifs), #5E6E7C (secondaires), #8A99A6 (disabled)
 ✓ Spacing: doublé entre sections (24px)
 ✓ letterSpacing: -0.2 à -0.3 pour compression visuelle
 ✓ lineHeight: serré (1.3-1.4)
@@ -211,9 +211,9 @@ const EditAvailabilityScreen = ({ route }) => {
                     <Switch
                       value={day.enabled}
                       onValueChange={() => handleDayToggle(index)}
-                      trackColor={{ false: "#E5E7EB", true: "#10B981" }}
+                      trackColor={{ false: "#E1ECF4", true: "#10B981" }}
                       thumbColor="#FFFFFF"
-                      ios_backgroundColor="#E5E7EB"
+                      ios_backgroundColor="#E1ECF4"
                     />
                     <Text style={[
                       styles.dayName,
@@ -301,7 +301,7 @@ const EditAvailabilityScreen = ({ route }) => {
 
       {loading && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#256FA8" />
         </View>
       )}
     </View>
@@ -311,28 +311,28 @@ const EditAvailabilityScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   scrollContainer: {
     padding: 20,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E1ECF4',
     overflow: 'hidden',
   },
   cardHeader: {
     paddingVertical: 20,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#EEF3F7',
   },
   title: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.3,
     lineHeight: 22,
     textAlign: 'right',
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   },
   description: {
     marginBottom: 24,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontSize: 13,
     fontWeight: '400',
     lineHeight: 17,
@@ -364,14 +364,14 @@ const styles = StyleSheet.create({
   dayName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.2,
     lineHeight: 18,
     textAlign: 'right',
     writingDirection: 'rtl',
   },
   dayDisabled: {
-    color: '#9CA3AF',
+    color: '#8A99A6',
   },
   timeContainer: {
     flexDirection: 'row-reverse',
@@ -382,24 +382,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F610',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 999,
     minWidth: 60,
     alignItems: 'center',
   },
   timeText: {
-    color: '#3B82F6',
+    color: '#256FA8',
     fontWeight: '500',
     fontSize: 13,
     letterSpacing: -0.2,
   },
   timeSeparator: {
-    color: '#9CA3AF',
+    color: '#8A99A6',
     fontWeight: '400',
     fontSize: 14,
   },
   separator: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#EEF3F7',
     marginVertical: 0,
   },
   cardActions: {
@@ -408,13 +408,13 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#EEF3F7',
   },
   saveButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#256FA8',
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 999,
     minWidth: 100,
     height: 40,
     alignItems: 'center',
@@ -428,19 +428,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cancelButton: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 999,
     minWidth: 100,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E1ECF4',
   },
   cancelButtonText: {
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontSize: 15,
     fontWeight: '500',
     letterSpacing: -0.2,
@@ -448,6 +448,7 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
+    borderRadius: 999,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,

@@ -15,11 +15,11 @@ CHANGEMENTS MAJEURS APPLIQUÉS :
   - Line heights serrés : 1.3-1.4 partout
 
 ✅ COULEURS & FONDS :
-  - Fond principal : #F9FAFB (ultra-clair)
+  - Fond principal : #F6FAFD (ultra-clair)
   - formContainer : fond blanc pur #FFFFFF
-  - Inputs : fond #FFFFFF (pas #f9f9f9), bordure #F3F4F6
-  - Textes labels : #6B7280 (gris doux)
-  - Couleur primaire : #4a90e2 conservée
+  - Inputs : fond #FFFFFF (pas #F6FAFD), bordure #EEF3F7
+  - Textes labels : #5E6E7C (gris doux)
+  - Couleur primaire : #256FA8 conservée
 
 ✅ BOUTONS :
   - Hauteur réduite : 40px (au lieu de 50px)
@@ -29,15 +29,15 @@ CHANGEMENTS MAJEURS APPLIQUÉS :
 
 ✅ CARDS :
   - Border-radius : 12px (au lieu de 10px)
-  - Bordure ultra-subtile : #F3F4F6, 1px
+  - Bordure ultra-subtile : #EEF3F7, 1px
   - Ombres quasi-éliminées : shadowOpacity 0.03, elevation 1
   - Padding augmenté : 24px (au lieu de 20px)
 
 ✅ INPUTS :
   - Hauteur réduite : 40px (au lieu de 50px)
   - Fond blanc pur
-  - Bordures ultra-légères #F3F4F6
-  - Placeholder en #9CA3AF
+  - Bordures ultra-légères #EEF3F7
+  - Placeholder en #8A99A6
 
 ✅ SPACING :
   - Espacements doublés entre sections : 24px (au lieu de 15px)
@@ -46,7 +46,7 @@ CHANGEMENTS MAJEURS APPLIQUÉS :
 
 ✅ ICONS :
   - Taille réduite : 20px (au lieu de 24px)
-  - Couleur grise douce : #9CA3AF
+  - Couleur grise douce : #8A99A6
 
 ✅ ERREURS :
   - Font-size réduit : 11px (au lieu de 12px)
@@ -223,7 +223,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
         <TextInput
           style={[styles.input, errors.firstName && styles.inputError, styles.textRTL]}
           placeholder="הזן את שמך הפרטי"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#8A99A6"
           value={firstName}
           onChangeText={setFirstName}
         />
@@ -238,7 +238,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
         <TextInput
           style={[styles.input, errors.lastName && styles.inputError, styles.textRTL]}
           placeholder="הזן את שם המשפחה שלך"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#8A99A6"
           value={lastName}
           onChangeText={setLastName}
         />
@@ -253,7 +253,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
         <TextInput
           style={[styles.input, errors.email && styles.inputError]}
           placeholder="example@email.com"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#8A99A6"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -270,7 +270,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
         <TextInput
           style={[styles.input, errors.phone && styles.inputError]}
           placeholder="05X-XXX-XXXX"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#8A99A6"
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
@@ -286,7 +286,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
         <TextInput
           style={[styles.input, errors.address && styles.inputError, styles.textRTL]}
           placeholder="רחוב ומספר בית"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#8A99A6"
           value={address}
           onChangeText={setAddress}
         />
@@ -303,7 +303,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
           onPress={() => setShowCityModal(true)}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-down" size={20} color="#9CA3AF" style={styles.cityIcon} />
+          <Ionicons name="chevron-down" size={20} color="#8A99A6" style={styles.cityIcon} />
           <Text style={[styles.cityButtonText, !city && styles.cityPlaceholder]}>
             {city || 'בחר עיר'}
           </Text>
@@ -320,13 +320,13 @@ const ClientRegistrationScreen = ({ navigation }) => {
           <TextInput
             style={[styles.input, styles.passwordInput, errors.password && styles.inputError, styles.textRTL]}
             placeholder="הזן סיסמה (לפחות 6 תווים)"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#8A99A6"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
           />
           <TouchableOpacity style={styles.passwordToggle} onPress={toggleShowPassword}>
-            <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#9CA3AF" />
+            <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#8A99A6" />
           </TouchableOpacity>
         </View>
         {errors.password && (
@@ -340,7 +340,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
         <TextInput
           style={[styles.input, errors.confirmPassword && styles.inputError, styles.textRTL]}
           placeholder="הזן את הסיסמה שוב"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#8A99A6"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry={!showPassword}
@@ -355,7 +355,7 @@ const ClientRegistrationScreen = ({ navigation }) => {
         <Switch
           value={termsAccepted}
           onValueChange={setTermsAccepted}
-          trackColor={{ false: '#E5E7EB', true: '#4CD964' }}
+          trackColor={{ false: '#E1ECF4', true: '#4CD964' }}
         />
         <Text style={[styles.termsText, styles.textRTL]}>
           אני מסכים ל
@@ -455,12 +455,12 @@ const styles = StyleSheet.create({
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   webContainer: {
     width: '100%',
     minHeight: '100vh',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
     overflowY: 'auto',
     overflowX: 'hidden',
   },
@@ -482,13 +482,13 @@ const styles = StyleSheet.create({
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   formContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 18,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
+    borderColor: '#EEF3F7',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 1,
   },
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     lineHeight: 18 * 1.3,
     marginBottom: 24,
     textAlign: 'center',
-    color: '#111827',
+    color: '#1B2A36',
   },
   label: {
     fontSize: 13,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     lineHeight: 13 * 1.3,
     marginBottom: 6,
-    color: '#6B7280',
+    color: '#5E6E7C',
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -523,15 +523,15 @@ const styles = StyleSheet.create({
   input: {
     height: 40,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    borderRadius: 8,
+    borderColor: '#E1ECF4',
+    borderRadius: 16,
     paddingHorizontal: 12,
     fontSize: 14,
     fontWeight: '400',
     letterSpacing: -0.2,
     // ✅ FIX ANDROID: lineHeight supprimé — causait texte coupé/invisible sur Android
-    backgroundColor: '#FFFFFF',
-    color: '#111827',
+    backgroundColor: '#F4F8FB',
+    color: '#1B2A36',
   },
   inputError: {
     borderColor: '#EF4444',
@@ -543,8 +543,8 @@ const styles = StyleSheet.create({
   cityButton: {
     height: 40,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    borderRadius: 8,
+    borderColor: '#EEF3F7',
+    borderRadius: 999,
     paddingHorizontal: 12,
     flexDirection: 'row-reverse',
     alignItems: 'center',
@@ -556,11 +556,11 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 14 * 1.4,
-    color: '#111827',
+    color: '#1B2A36',
     textAlign: 'right',
   },
   cityPlaceholder: {
-    color: '#9CA3AF',
+    color: '#8A99A6',
   },
   cityIcon: {
     marginLeft: 8,
@@ -574,6 +574,10 @@ const styles = StyleSheet.create({
   },
   passwordInput: {
     paddingRight: 44,
+    backgroundColor: '#F4F8FB',
+    borderColor: '#E1ECF4',
+    borderWidth: 1,
+    borderRadius: 16,
   },
   passwordToggle: {
     position: 'absolute',
@@ -617,10 +621,10 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 13 * 1.4,
-    color: '#6B7280',
+    color: '#5E6E7C',
   },
   termsLink: {
-    color: '#4a90e2',
+    color: '#256FA8',
     fontWeight: '500',
     textDecorationLine: 'underline',
   },
@@ -629,16 +633,17 @@ const styles = StyleSheet.create({
   // BOUTON CTA
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   button: {
-    backgroundColor: '#4a90e2',
+    backgroundColor: '#256FA8',
     height: 40,
-    borderRadius: 8,
+    borderRadius: 999,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
   buttonDisabled: {
-    backgroundColor: '#93C5FD',
+    backgroundColor: '#5BA4D9',
     opacity: 0.6,
+    borderRadius: 999,
   },
   buttonText: {
     color: '#FFFFFF',
@@ -660,14 +665,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   loginText: {
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontSize: 13,
     fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 13 * 1.3,
   },
   loginLink: {
-    color: '#4a90e2',
+    color: '#256FA8',
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: -0.2,

@@ -92,7 +92,7 @@ const ManageAddressesScreen = () => {
             style={styles.actionButton}
             onPress={() => handleEditAddress(item)}
           >
-            <Ionicons name="create-outline" size={20} color="#3498db" />
+            <Ionicons name="create-outline" size={20} color="#256FA8" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
@@ -130,7 +130,7 @@ const ManageAddressesScreen = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color="#333" />
+          <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color="#1B2A36" />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, isRTL && styles.textRTL]}>
           {t('manageAddresses.title')}
@@ -145,7 +145,7 @@ const ManageAddressesScreen = () => {
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="location-outline" size={64} color="#ccc" />
+            <Ionicons name="location-outline" size={64} color="#DCE8F1" />
             <Text style={[styles.emptyText, isRTL && styles.textRTL]}>
               {t('manageAddresses.noAddressesMessage')}
             </Text>
@@ -164,29 +164,29 @@ const ManageAddressesScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
-  backButton: { padding: 8 },
+  container: { flex: 1, backgroundColor: '#F6FAFD' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#EEF3F7' },
+  backButton: { padding: 8, borderRadius: 999 },
   headerTitle: { fontSize: 18, fontWeight: '600' },
-  placeholderButton: { width: 40 },
+  placeholderButton: { width: 40, borderRadius: 999 },
   listContainer: { padding: 16, paddingBottom: 100 },
-  addressCard: { backgroundColor: 'white', borderRadius: 10, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  addressCard: { backgroundColor: 'white', borderRadius: 20, padding: 16, marginBottom: 12, shadowColor: '#1B4F7A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
   addressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   addressHeaderRTL: { flexDirection: 'row-reverse' },
   nameContainer: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  addressName: { fontSize: 18, fontWeight: '600', color: '#333' },
-  defaultBadge: { backgroundColor: '#3498db', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4, marginLeft: 8 },
+  addressName: { fontSize: 18, fontWeight: '600', color: '#1B2A36' },
+  defaultBadge: { backgroundColor: '#256FA8', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4, marginLeft: 8 },
   defaultText: { color: 'white', fontSize: 12, fontWeight: '500' },
   actionsContainer: { flexDirection: 'row', gap: 8 },
   actionsContainerRTL: { flexDirection: 'row-reverse' },
-  actionButton: { padding: 8 },
+  actionButton: { padding: 8, borderRadius: 999 },
   addressDetails: { marginBottom: 12 },
-  addressText: { fontSize: 14, color: '#666', marginBottom: 4 },
-  setDefaultButton: { borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 12 },
-  setDefaultText: { fontSize: 14, color: '#3498db', fontWeight: '500' },
+  addressText: { fontSize: 14, color: '#5E6E7C', marginBottom: 4 },
+  setDefaultButton: { borderTopWidth: 1, borderTopColor: '#EEF3F7', paddingTop: 12, borderRadius: 999 },
+  setDefaultText: { fontSize: 14, color: '#256FA8', fontWeight: '500' },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 },
-  emptyText: { marginTop: 16, fontSize: 16, color: '#999' },
-  addButton: { position: 'absolute', bottom: 20, left: 20, right: 20, backgroundColor: '#3498db', borderRadius: 10, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 6 },
+  emptyText: { marginTop: 16, fontSize: 16, color: '#8A99A6' },
+  addButton: { position: 'absolute', bottom: 20, left: 20, right: 20, backgroundColor: '#256FA8', borderRadius: 999, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: '#1B4F7A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 6 },
   addButtonText: { color: 'white', fontSize: 16, fontWeight: '600', marginLeft: 8 },
   textRTL: { writingDirection: 'rtl', textAlign: 'right' },
 });

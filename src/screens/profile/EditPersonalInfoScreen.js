@@ -355,7 +355,7 @@ const EditPersonalInfoScreen = () => {
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <Ionicons name="arrow-forward" size={24} color="#333" />
+              <Ionicons name="arrow-forward" size={24} color="#1B2A36" />
             </TouchableOpacity>
             <Text style={[styles.headerTitle, styles.textRTL]}>
               עריכת פרטים אישיים
@@ -537,7 +537,7 @@ const EditPersonalInfoScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F6FAFD',
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -553,10 +553,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#EEF3F7',
   },
   backButton: {
     padding: 8,
+    borderRadius: 999,
   },
   headerTitle: {
     fontSize: 18,
@@ -564,38 +565,47 @@ const styles = StyleSheet.create({
   },
   placeholderButton: {
     width: 40,
+    borderRadius: 999,
   },
   formContainer: {
     backgroundColor: 'white',
-    borderRadius: 10,
+    borderRadius: 16,
     margin: 16,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
   inputGroup: {
     marginBottom: 20,
+    backgroundColor: '#F4F8FB',
+    borderColor: '#E1ECF4',
+    borderWidth: 1,
+    borderRadius: 16,
   },
   label: {
     fontSize: 16,
     marginBottom: 8,
     fontWeight: '500',
-    color: '#333',
+    color: '#1B2A36',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderColor: '#E1ECF4',
+    borderRadius: 16,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#F4F8FB',
   },
   inputRTL: {
     textAlign: 'right',
     writingDirection: 'rtl',
+    backgroundColor: '#F4F8FB',
+    borderColor: '#E1ECF4',
+    borderWidth: 1,
+    borderRadius: 16,
   },
   inputError: {
     borderColor: '#e74c3c',
@@ -606,8 +616,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   saveButton: {
-    backgroundColor: '#3498db',
-    borderRadius: 8,
+    backgroundColor: '#256FA8',
+    borderRadius: 999,
     padding: 15,
     alignItems: 'center',
     marginTop: 10,
@@ -628,24 +638,24 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1B2A36',
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#5E6E7C',
     marginBottom: 15,
   },
   serviceTypeItem: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
+    backgroundColor: '#F6FAFD',
+    borderRadius: 14,
     padding: 15,
     marginBottom: 10,
   },
   serviceTypeSelected: {
-    backgroundColor: '#e3f2fd',
+    backgroundColor: '#EAF4FB',
     borderWidth: 1,
-    borderColor: '#3498db',
+    borderColor: '#256FA8',
   },
   serviceTypeHeader: {
     flexDirection: 'row',
@@ -657,16 +667,16 @@ const styles = StyleSheet.create({
   serviceTypeCheckbox: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 2,
-    borderColor: '#3498db',
+    borderColor: '#256FA8',
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
   },
   serviceTypeCheckboxSelected: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#256FA8',
   },
   serviceTypeContent: {
     flex: 1,
@@ -674,22 +684,22 @@ const styles = StyleSheet.create({
   serviceTypeTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1B2A36',
     marginBottom: 5,
   },
   serviceTypeDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#5E6E7C',
   },
   rateContainer: {
     marginTop: 15,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: '#E1ECF4',
   },
   rateLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#5E6E7C',
     marginBottom: 5,
   },
   rateInputContainer: {
@@ -700,18 +710,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   rateInput: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    backgroundColor: '#F4F8FB',
+    borderRadius: 16,
     padding: 10,
     fontSize: 16,
     width: 120,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#E1ECF4',
   },
   rateCurrency: {
     marginLeft: 10,
     fontSize: 16,
-    color: '#666',
+    color: '#5E6E7C',
   },
 });
 

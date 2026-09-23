@@ -3,12 +3,12 @@
 CHANGEMENTS MAJEURS:
 - Typographie: tailles réduites (24→20, 16→14, 14→12, 12→11)
 - Poids: 'bold' → '600', '500' → '400'
-- Container: fond #F9FAFB
-- Cards: borderRadius 12px, bordures 1px #F3F4F6, shadowOpacity 0.03
+- Container: fond #F6FAFD
+- Cards: borderRadius 12px, bordures 1px #EEF3F7, shadowOpacity 0.03
 - Period selector: borderRadius 8px, fontSize 12
 - Chart bars: borderRadius 8px, hauteur proportionnelle
 - Percentage bars: borderRadius 6px
-- Colors: #111827 pour textes, #6B7280 pour secondaires
+- Colors: #1B2A36 pour textes, #5E6E7C pour secondaires
 - Spacing: doublé entre sections (15→24)
 */
 import React, { useState, useEffect } from 'react';
@@ -280,7 +280,7 @@ const StatsScreen = () => {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#256FA8" />
           <Text style={[styles.loadingText, isRTL && styles.rtlText]}>
             {t('stats.loading')}
           </Text>
@@ -337,7 +337,7 @@ const StatsScreen = () => {
             <BarChart 
               data={stats.jobsData}
               maxValue={maxJobsValue}
-              barColor="#007AFF"
+              barColor="#256FA8"
               isRTL={isRTL}
             />
           </View>
@@ -433,19 +433,19 @@ const StatsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   header: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#EEF3F7',
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.3,
     lineHeight: 22,
   },
@@ -461,17 +461,18 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 6,
     paddingHorizontal: 8,
-    borderRadius: 8,
-    backgroundColor: '#F9FAFB',
+    borderRadius: 999,
+    backgroundColor: '#F6FAFD',
     alignItems: 'center',
   },
   periodButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#256FA8',
+    borderRadius: 999,
   },
   periodButtonText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#5E6E7C',
   },
   periodButtonTextActive: {
     color: '#FFFFFF',
@@ -486,7 +487,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
   },
   scrollContainer: {
@@ -497,28 +498,29 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     padding: 16,
     gap: 12,
+    borderRadius: 20,
   },
   summaryCard: {
     flex: 1,
     minWidth: '45%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 20,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E1ECF4',
   },
   summaryValue: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     marginBottom: 6,
     letterSpacing: -0.4,
     lineHeight: 26,
   },
   summaryLabel: {
     fontSize: 11,
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'center',
     fontWeight: '400',
   },
@@ -532,14 +534,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 16,
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E1ECF4',
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     marginBottom: 16,
     letterSpacing: -0.2,
     lineHeight: 18,
@@ -555,7 +557,7 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     fontSize: 11,
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginBottom: 6,
     fontWeight: '400',
   },
@@ -568,7 +570,7 @@ const styles = StyleSheet.create({
   },
   bar: {
     height: 20,
-    borderRadius: 8,
+    borderRadius: 14,
     minWidth: 20,
   },
   barRTL: {
@@ -577,7 +579,7 @@ const styles = StyleSheet.create({
   barValue: {
     marginLeft: 10,
     fontSize: 11,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '500',
   },
   statsSection: {
@@ -585,9 +587,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 16,
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#EEF3F7',
   },
   statItem: {
     marginBottom: 16,
@@ -604,13 +606,13 @@ const styles = StyleSheet.create({
   statName: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.2,
     lineHeight: 16,
   },
   statCount: {
     fontSize: 11,
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginTop: 4,
     fontWeight: '400',
   },
@@ -624,14 +626,14 @@ const styles = StyleSheet.create({
   percentageBarContainer: {
     flex: 1,
     height: 6,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 6,
+    backgroundColor: '#EEF3F7',
+    borderRadius: 12,
     marginRight: 10,
     overflow: 'hidden',
   },
   percentageBar: {
     height: '100%',
-    borderRadius: 6,
+    borderRadius: 12,
   },
   percentageBarRTL: {
     alignSelf: 'flex-end',
@@ -639,7 +641,7 @@ const styles = StyleSheet.create({
   percentageText: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#5E6E7C',
     minWidth: 35,
   },
   rtlText: {

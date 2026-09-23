@@ -7,7 +7,7 @@ const StatsSummary = ({ stats, onPress }) => {
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.header}>
         <Text style={styles.title}>סטטיסטיקות</Text>
-        <Ionicons name={I18nManager.isRTL ? "chevron-back" : "chevron-forward"} size={20} color="#007AFF" />
+        <Ionicons name={I18nManager.isRTL ? "chevron-back" : "chevron-forward"} size={20} color="#256FA8" />
       </View>
       
       <View style={styles.statsContainer}>
@@ -41,12 +41,12 @@ const StatsSummary = ({ stats, onPress }) => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 16,
     padding: 15,
     margin: 15,
-    shadowColor: '#000',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 3,
     elevation: 3,
   },
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333333',
+    color: '#1B2A36',
     textAlign: I18nManager.isRTL ? 'right' : 'left',
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
   },
@@ -74,12 +74,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333333',
+    color: '#1B2A36',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666666',
+    color: '#5E6E7C',
     textAlign: 'center',
   },
   ratingContainer: {

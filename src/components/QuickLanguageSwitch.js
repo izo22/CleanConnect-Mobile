@@ -60,18 +60,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f5',
+    borderRadius: 999,
+    backgroundColor: '#F6FAFD',
     borderWidth: 1.5,
-    borderColor: '#e0e0e0',
+    borderColor: '#E1ECF4',
     gap: 6,
   },
   activeButton: {
-    backgroundColor: '#4A90E2',
-    borderColor: '#4A90E2',
+    backgroundColor: '#256FA8',
+    borderColor: '#256FA8',
+    borderRadius: 999,
   },
   disabledButton: {
     opacity: 0.5,
+    borderRadius: 999,
   },
   flag: {
     fontSize: 18,
@@ -79,7 +81,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
+    color: '#5E6E7C',
   },
   activeLabel: {
     color: '#fff',

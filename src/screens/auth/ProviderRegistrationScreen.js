@@ -22,24 +22,24 @@ CHANGEMENTS MAJEURS APPLIQUÉS :
   - Line heights serrés : 1.3-1.4 partout
 
 ✅ COULEURS & FONDS :
-  - Fond principal : #F9FAFB (ultra-clair)
+  - Fond principal : #F6FAFD (ultra-clair)
   - formSection : fond blanc pur #FFFFFF
-  - Inputs : fond #FFFFFF (pas #F5F5F5), bordure #F3F4F6
-  - Service items : fond #FAFAFA (ultra-léger)
-  - Service selected : fond #EFF6FF (bleu 10%), bordure #4a90e2
-  - Labels : #6B7280 (gris doux)
-  - Placeholders : #9CA3AF
+  - Inputs : fond #FFFFFF (pas #F6FAFD), bordure #EEF3F7
+  - Service items : fond #F6FAFD (ultra-léger)
+  - Service selected : fond #EAF4FB (bleu 10%), bordure #256FA8
+  - Labels : #5E6E7C (gris doux)
+  - Placeholders : #8A99A6
 
 ✅ CARDS/SECTIONS :
   - Border-radius : 12px (au lieu de 10px/8px)
-  - Bordures ultra-subtiles : #F3F4F6
+  - Bordures ultra-subtiles : #EEF3F7
   - Ombres quasi-éliminées : shadowOpacity 0.03, elevation 1
   - Padding augmenté : 20px (au lieu de 15px)
 
 ✅ INPUTS :
   - Hauteur réduite : 40px (au lieu de variable)
   - Fond blanc pur
-  - Bordures ultra-légères #F3F4F6
+  - Bordures ultra-légères #EEF3F7
   - Border-radius : 8px
 
 ✅ SERVICE TYPE ITEMS :
@@ -52,7 +52,7 @@ CHANGEMENTS MAJEURS APPLIQUÉS :
   - Hauteur : 40px
   - Border-radius : 8px
   - Pas d'ombre
-  - État disabled plus subtil (#93C5FD)
+  - État disabled plus subtil (#5BA4D9)
 
 ✅ SPACING :
   - Espacements doublés entre sections : 24px
@@ -61,7 +61,7 @@ CHANGEMENTS MAJEURS APPLIQUÉS :
 
 ✅ ICONS :
   - Taille réduite : 18px pour checkbox (au lieu de 18px gardé car déjà bon)
-  - Couleur grise douce : #9CA3AF
+  - Couleur grise douce : #8A99A6
 
 ✅ FIX ANDROID :
   - lineHeight supprimé de input et rateInput (causait texte coupé/invisible sur Android)
@@ -256,7 +256,7 @@ const ServiceTypeItem = ({
               value={service.rate}
               onChangeText={(text) => updateRate(serviceKey, text)}
               placeholder="0.00"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#8A99A6"
               keyboardType="numeric"
             />
             <Text style={styles.rateCurrency}>₪/h</Text>
@@ -529,7 +529,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholder={t.firstNamePh}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#8A99A6"
               />
               {errors.firstName && (
                 <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.firstName}</Text>
@@ -543,7 +543,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 value={lastName}
                 onChangeText={setLastName}
                 placeholder={t.lastNamePh}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#8A99A6"
               />
               {errors.lastName && (
                 <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.lastName}</Text>
@@ -557,7 +557,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="example@email.com"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#8A99A6"
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
@@ -573,7 +573,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 value={phone}
                 onChangeText={setPhone}
                 placeholder="05X-XXX-XXXX"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#8A99A6"
                 keyboardType="phone-pad"
               />
               {errors.phone && (
@@ -661,7 +661,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
               value={bio}
               onChangeText={setBio}
               placeholder={t.bioPh}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#8A99A6"
               multiline
               maxLength={500}
               textAlignVertical="top"
@@ -680,7 +680,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 onChangeText={setPassword}
                 secureTextEntry
                 placeholder={t.passwordPh}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#8A99A6"
               />
               {errors.password && (
                 <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.password}</Text>
@@ -695,7 +695,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
                 onChangeText={setConfirmPassword}
                 secureTextEntry
                 placeholder={t.confirmPasswordPh}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#8A99A6"
               />
               {errors.confirmPassword && (
                 <Text style={[styles.errorText, isRTL && styles.textRTL]}>{errors.confirmPassword}</Text>
@@ -708,7 +708,7 @@ const ProviderRegistrationScreen = ({ navigation }) => {
             <Switch
               value={termsAccepted}
               onValueChange={setTermsAccepted}
-              trackColor={{ false: "#E5E7EB", true: "#4CD964" }}
+              trackColor={{ false: "#E1ECF4", true: "#4CD964" }}
             />
             <Text style={[styles.termsText, isRTL && styles.textRTL]}>
               {t.termsText}
@@ -762,7 +762,7 @@ const styles = StyleSheet.create({
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   keyboardAvoidView: {
     flex: 1,
@@ -784,19 +784,20 @@ const styles = StyleSheet.create({
   langBtn: {
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E1ECF4',
     backgroundColor: '#FFFFFF',
   },
   langBtnActive: {
-    backgroundColor: '#4a90e2',
-    borderColor: '#4a90e2',
+    backgroundColor: '#256FA8',
+    borderColor: '#256FA8',
+    borderRadius: 999,
   },
   langBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#5E6E7C',
     letterSpacing: -0.2,
   },
   langBtnTextActive: {
@@ -815,15 +816,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.3,
     lineHeight: 18 * 1.3,
-    color: '#111827',
+    color: '#1B2A36',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    fontWeight: '400',
+    fontWeight: '600',
     letterSpacing: -0.2,
     lineHeight: 14 * 1.4,
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'center',
   },
   
@@ -832,14 +833,14 @@ const styles = StyleSheet.create({
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   formSection: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 18,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
+    borderColor: '#EEF3F7',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 1,
   },
@@ -848,15 +849,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.3,
     lineHeight: 16 * 1.3,
-    color: '#111827',
+    color: '#1B2A36',
     marginBottom: 16,
   },
   sectionSubtitle: {
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: '600',
     letterSpacing: -0.2,
     lineHeight: 12 * 1.4,
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginBottom: 20,
   },
   
@@ -871,21 +872,21 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 13 * 1.3,
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F4F8FB',
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    borderRadius: 8,
+    borderColor: '#E1ECF4',
+    borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 0,
     height: 40,
     fontSize: 14,
     fontWeight: '400',
     letterSpacing: -0.2,
-    color: '#111827',
+    color: '#1B2A36',
   },
   inputError: {
     borderColor: '#EF4444',
@@ -901,10 +902,14 @@ const styles = StyleSheet.create({
   bioInput: {
     height: 100,
     paddingVertical: 10,
+    backgroundColor: '#F4F8FB',
+    borderColor: '#E1ECF4',
+    borderWidth: 1,
+    borderRadius: 16,
   },
   bioCounter: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     textAlign: 'left',
     marginTop: 4,
   },
@@ -915,8 +920,8 @@ const styles = StyleSheet.create({
   citySelectorContainer: {
     height: 400,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    borderRadius: 8,
+    borderColor: '#EEF3F7',
+    borderRadius: 14,
     padding: 12,
     backgroundColor: '#FFFFFF',
   },
@@ -928,16 +933,16 @@ const styles = StyleSheet.create({
   // SERVICE TYPE ITEMS
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   serviceTypeItem: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#F6FAFD',
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    borderRadius: 10,
+    borderColor: '#EEF3F7',
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
   },
   serviceTypeSelected: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#4a90e2',
+    backgroundColor: '#EAF4FB',
+    borderColor: '#256FA8',
   },
   serviceTypeHeader: {
     flexDirection: 'row',
@@ -949,17 +954,17 @@ const styles = StyleSheet.create({
   serviceTypeCheckbox: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: '#DCE8F1',
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   serviceTypeCheckboxSelected: {
-    borderColor: '#4a90e2',
-    backgroundColor: '#4a90e2',
+    borderColor: '#256FA8',
+    backgroundColor: '#256FA8',
   },
   serviceTypeContent: {
     flex: 1,
@@ -969,7 +974,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.2,
     lineHeight: 15 * 1.3,
-    color: '#111827',
+    color: '#1B2A36',
     marginBottom: 4,
   },
   serviceTypeDescription: {
@@ -977,7 +982,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 12 * 1.4,
-    color: '#6B7280',
+    color: '#5E6E7C',
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -987,14 +992,14 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#EEF3F7',
   },
   rateLabel: {
     fontSize: 13,
     fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 13 * 1.3,
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginBottom: 6,
   },
   rateInputContainer: {
@@ -1005,8 +1010,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   rateInput: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    backgroundColor: '#F4F8FB',
+    borderRadius: 16,
     paddingHorizontal: 10,
     paddingVertical: 0,
     height: 40,
@@ -1015,15 +1020,15 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     width: 100,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    color: '#111827',
+    borderColor: '#E1ECF4',
+    color: '#1B2A36',
   },
   rateCurrency: {
     marginLeft: 8,
     fontSize: 14,
     fontWeight: '500',
     letterSpacing: -0.2,
-    color: '#6B7280',
+    color: '#5E6E7C',
   },
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1042,12 +1047,12 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 13 * 1.4,
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginLeft: 10,
     flex: 1,
   },
   termsLink: {
-    color: '#4a90e2',
+    color: '#256FA8',
     fontWeight: '500',
     textDecorationLine: 'underline',
   },
@@ -1056,16 +1061,17 @@ const styles = StyleSheet.create({
   // SUBMIT BUTTON
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   submitButton: {
-    backgroundColor: '#4a90e2',
-    borderRadius: 8,
+    backgroundColor: '#256FA8',
+    borderRadius: 999,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
   },
   submitButtonDisabled: {
-    backgroundColor: '#93C5FD',
+    backgroundColor: '#5BA4D9',
     opacity: 0.6,
+    borderRadius: 999,
   },
   submitButtonText: {
     color: '#FFFFFF',
@@ -1087,10 +1093,10 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.2,
     lineHeight: 13 * 1.3,
-    color: '#6B7280',
+    color: '#5E6E7C',
   },
   loginLinkHighlight: {
-    color: '#4a90e2',
+    color: '#256FA8',
     fontWeight: '600',
   },
   

@@ -8,8 +8,8 @@ CHANGEMENTS MAJEURS APPLIQUÉS :
 2. Typographie réduite de 15% partout
 3. letterSpacing -0.2 à -0.4 sur tous les textes
 4. lineHeight serré (1.3-1.4)
-5. Fond #F9FAFB au lieu de #f5f5f5
-6. Cards : bordures #F3F4F6, ombres supprimées (elevation: 0)
+5. Fond #F6FAFD au lieu de #F6FAFD
+6. Cards : bordures #EEF3F7, ombres supprimées (elevation: 0)
 7. Badge status à 10% d'opacité exactement
 8. Boutons : hauteur 38px, style outline prioritaire
 9. Icons réduits : 24→18px
@@ -78,7 +78,7 @@ const BookingDetailsScreen = () => {
     [BOOKING_STATUS.CONFIRMED]: '#10B981',
     [BOOKING_STATUS.ACCEPTED]: '#10B981',
     [BOOKING_STATUS.DECLINED]: '#EF4444',
-    [BOOKING_STATUS.IN_PROGRESS]: '#3B82F6',
+    [BOOKING_STATUS.IN_PROGRESS]: '#256FA8',
     [BOOKING_STATUS.COMPLETED]: '#8B5CF6',
     [BOOKING_STATUS.CANCELLED]: '#EF4444',
   };
@@ -177,11 +177,12 @@ const BookingDetailsScreen = () => {
     
   const getServiceColor = (serviceType) => {
     switch (serviceType) {
-      case 'home': return '#4A90E2';
-      case 'office': return '#E67E22';
-      case 'building': return '#27AE60';
-      case 'airbnb': return '#FF5A5F';
-      default: return '#4A90E2';
+      case 'home': return '#256FA8';
+      // Refonte bleu clair : tous les services partagent le bleu
+      case 'office':
+      case 'building':
+      case 'airbnb': return '#256FA8';
+      default: return '#256FA8';
     }
   };
   
@@ -311,7 +312,7 @@ const BookingDetailsScreen = () => {
             <Ionicons
               name={rating >= star ? 'star' : 'star-outline'}
               size={28}
-              color={rating >= star ? '#F59E0B' : '#E5E7EB'}
+              color={rating >= star ? '#F59E0B' : '#E1ECF4'}
               style={styles.ratingStar}
             />
           </TouchableOpacity>
@@ -324,7 +325,7 @@ const BookingDetailsScreen = () => {
     if (!booking || !booking.rating) return null;
     
     return (
-      <Card style={styles.card}>
+      <Card mode="contained" style={styles.card}>
         <Card.Content style={styles.cardContent}>
           <Text style={styles.cardTitle}>הדירוג שלך</Text>
           <View style={styles.ratingRow}>
@@ -333,7 +334,7 @@ const BookingDetailsScreen = () => {
                 key={star}
                 name={booking.rating.value >= star ? 'star' : 'star-outline'}
                 size={16}
-                color={booking.rating.value >= star ? '#F59E0B' : '#E5E7EB'}
+                color={booking.rating.value >= star ? '#F59E0B' : '#E1ECF4'}
                 style={styles.existingRatingStar}
               />
             ))}
@@ -354,7 +355,7 @@ const BookingDetailsScreen = () => {
   if (isLoading || !booking) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#256FA8" />
         <Text style={styles.loadingText}>טוען...</Text>
       </View>
     );
@@ -371,7 +372,7 @@ const BookingDetailsScreen = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-forward" size={20} color="#1F2937" />
+          <Ionicons name="arrow-forward" size={20} color="#1B2A36" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>פרטי הזמנה</Text>
         <View style={{ width: 40 }} />
@@ -406,7 +407,7 @@ const BookingDetailsScreen = () => {
         </View>
 
         {/* CARD PRINCIPALE */}
-        <Card style={styles.card}>
+        <Card mode="contained" style={styles.card}>
           <Card.Content style={styles.cardContent}>
             {/* Date & Heure */}
             <View style={styles.infoRow}>
@@ -450,7 +451,7 @@ const BookingDetailsScreen = () => {
         </Card>
 
         {/* CARD FOURNISSEUR */}
-        <Card style={styles.card}>
+        <Card mode="contained" style={styles.card}>
           <Card.Content style={styles.cardContent}>
             <Text style={styles.cardTitle}>ספק השירות</Text>
             
@@ -537,7 +538,7 @@ const BookingDetailsScreen = () => {
 
         {/* CARD PAIEMENT (si applicable) */}
         {booking.payment && (
-          <Card style={styles.card}>
+          <Card mode="contained" style={styles.card}>
             <Card.Content style={styles.cardContent}>
               <Text style={styles.cardTitle}>סטטוס תשלום</Text>
               
@@ -568,7 +569,7 @@ const BookingDetailsScreen = () => {
                       booking.payment.status === 'held' ? '#F59E0B' :
                       booking.payment.status === 'captured' ? '#10B981' :
                       booking.payment.status === 'refunded' ? '#EF4444' :
-                      '#9CA3AF'
+                      '#8A99A6'
                     }
                   />
                 </View>
@@ -578,7 +579,7 @@ const BookingDetailsScreen = () => {
         )}
 
         {/* CARD ADRESSE */}
-        <Card style={styles.card}>
+        <Card mode="contained" style={styles.card}>
           <Card.Content style={styles.cardContent}>
             <View style={styles.addressHeader}>
               <TouchableOpacity onPress={() => navigation.navigate('AddressSelection')}>
@@ -603,7 +604,7 @@ const BookingDetailsScreen = () => {
 
         {/* CARD NOTES */}
         {booking.notes && (
-          <Card style={styles.card}>
+          <Card mode="contained" style={styles.card}>
             <Card.Content style={styles.cardContent}>
               <Text style={styles.cardTitle}>הוראות מיוחדות</Text>
               
@@ -711,7 +712,7 @@ const BookingDetailsScreen = () => {
                 multiline
                 numberOfLines={3}
                 placeholder="הוסף הערות כאן..."
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#8A99A6"
               />
             </View>
           </Dialog.Content>
@@ -767,18 +768,18 @@ const BookingDetailsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     fontWeight: '400',
     letterSpacing: -0.2,
   },
@@ -793,7 +794,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#EEF3F7',
   },
   backButton: {
     width: 40,
@@ -804,7 +805,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#1B2A36',
     textAlign: 'center',
     letterSpacing: -0.3,
   },
@@ -828,7 +829,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 999,
   },
   statusText: {
     fontSize: 11,
@@ -840,10 +841,10 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 16,
     marginBottom: 16,
-    borderRadius: 12,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E1ECF4',
     elevation: 0,
     shadowOpacity: 0,
   },
@@ -853,7 +854,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#1B2A36',
     textAlign: 'right',
     marginBottom: 16,
     letterSpacing: -0.3,
@@ -872,14 +873,14 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 11,
     fontWeight: '400',
-    color: '#9CA3AF',
+    color: '#8A99A6',
     textAlign: 'right',
     letterSpacing: -0.2,
   },
   infoValue: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#1F2937',
+    color: '#1B2A36',
     textAlign: 'right',
     letterSpacing: -0.2,
     lineHeight: 18,
@@ -887,7 +888,7 @@ const styles = StyleSheet.create({
   infoTime: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'right',
     marginTop: 2,
     letterSpacing: -0.2,
@@ -895,14 +896,14 @@ const styles = StyleSheet.create({
   iconBadge: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   serviceBadge: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: 999,
   },
   serviceBadgeText: {
     fontSize: 10,
@@ -919,7 +920,7 @@ const styles = StyleSheet.create({
   priceValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#1B2A36',
     textAlign: 'right',
     letterSpacing: -0.3,
   },
@@ -927,7 +928,7 @@ const styles = StyleSheet.create({
   // SEPARATOR
   separator: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#EEF3F7',
     marginVertical: 16,
   },
   
@@ -944,7 +945,7 @@ const styles = StyleSheet.create({
   providerName: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#1F2937',
+    color: '#1B2A36',
     textAlign: 'right',
     marginBottom: 4,
     letterSpacing: -0.2,
@@ -963,7 +964,7 @@ const styles = StyleSheet.create({
   providerAvatar: {
     width: 44,
     height: 44,
-    borderRadius: 10,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -975,9 +976,9 @@ const styles = StyleSheet.create({
   
   // PHONE
   phoneContainer: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 14,
   },
   phoneHeader: {
     flexDirection: 'row-reverse',
@@ -987,7 +988,7 @@ const styles = StyleSheet.create({
   phoneLabel: {
     fontSize: 10,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#5E6E7C',
     letterSpacing: -0.2,
   },
   phoneButton: {
@@ -995,7 +996,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 38,
-    borderRadius: 8,
+    borderRadius: 999,
     borderWidth: 1,
     backgroundColor: '#FFFFFF',
   },
@@ -1007,12 +1008,12 @@ const styles = StyleSheet.create({
   phoneHiddenContainer: {
     backgroundColor: '#FFFBEB',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 14,
   },
   phoneHidden: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#D1D5DB',
+    color: '#DCE8F1',
     textAlign: 'right',
     marginBottom: 6,
     letterSpacing: 1,
@@ -1039,7 +1040,7 @@ const styles = StyleSheet.create({
   paymentAmount: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#1F2937',
+    color: '#1B2A36',
     textAlign: 'right',
     letterSpacing: -0.2,
   },
@@ -1055,6 +1056,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     letterSpacing: -0.2,
+    borderRadius: 999,
   },
   addressRow: {
     flexDirection: 'row-reverse',
@@ -1069,7 +1071,7 @@ const styles = StyleSheet.create({
   addressText: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#1F2937',
+    color: '#1B2A36',
     textAlign: 'right',
     lineHeight: 17,
     letterSpacing: -0.2,
@@ -1077,7 +1079,7 @@ const styles = StyleSheet.create({
   addressSource: {
     fontSize: 10,
     fontWeight: '400',
-    color: '#9CA3AF',
+    color: '#8A99A6',
     textAlign: 'right',
     marginTop: 4,
     letterSpacing: -0.2,
@@ -1086,16 +1088,16 @@ const styles = StyleSheet.create({
   // NOTES
   notesBox: {
     flexDirection: 'row-reverse',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: 'flex-start',
   },
   notesText: {
     flex: 1,
     fontSize: 12,
     fontWeight: '400',
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'right',
     lineHeight: 16,
     letterSpacing: -0.2,
@@ -1113,14 +1115,14 @@ const styles = StyleSheet.create({
   ratingDate: {
     fontSize: 11,
     fontWeight: '400',
-    color: '#9CA3AF',
+    color: '#8A99A6',
     marginRight: 8,
     letterSpacing: -0.2,
   },
   ratingComment: {
     fontSize: 12,
     fontWeight: '400',
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'right',
     fontStyle: 'italic',
     lineHeight: 16,
@@ -1137,7 +1139,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 38,
-    borderRadius: 8,
+    borderRadius: 999,
     marginBottom: 12,
   },
   actionButtonText: {
@@ -1151,7 +1153,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 38,
-    borderRadius: 8,
+    borderRadius: 999,
     borderWidth: 1,
     backgroundColor: '#FFFFFF',
     marginBottom: 12,
@@ -1164,7 +1166,7 @@ const styles = StyleSheet.create({
   
   // DIALOG
   dialog: {
-    borderRadius: 12,
+    borderRadius: 18,
     backgroundColor: '#FFFFFF',
   },
   dialogContent: {
@@ -1173,7 +1175,7 @@ const styles = StyleSheet.create({
   dialogTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#1B2A36',
     textAlign: 'right',
     marginBottom: 8,
     letterSpacing: -0.3,
@@ -1181,7 +1183,7 @@ const styles = StyleSheet.create({
   dialogText: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'right',
     lineHeight: 17,
     letterSpacing: -0.2,
@@ -1196,16 +1198,18 @@ const styles = StyleSheet.create({
   dialogButtonCancel: {
     paddingHorizontal: 16,
     paddingVertical: 8,
+    borderRadius: 999,
   },
   dialogButtonCancelText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#5E6E7C',
     letterSpacing: -0.2,
   },
   dialogButtonConfirm: {
     paddingHorizontal: 16,
     paddingVertical: 8,
+    borderRadius: 999,
   },
   dialogButtonConfirmText: {
     fontSize: 13,
@@ -1232,22 +1236,22 @@ const styles = StyleSheet.create({
   commentLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'right',
     marginBottom: 8,
     letterSpacing: -0.2,
   },
   commentInput: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
+    borderColor: '#E1ECF4',
+    borderRadius: 16,
     padding: 12,
     minHeight: 80,
     textAlign: 'right',
     fontSize: 13,
     fontWeight: '400',
-    color: '#1F2937',
-    backgroundColor: '#FFFFFF',
+    color: '#1B2A36',
+    backgroundColor: '#F4F8FB',
     letterSpacing: -0.2,
   },
 });

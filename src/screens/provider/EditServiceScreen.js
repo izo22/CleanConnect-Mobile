@@ -93,7 +93,7 @@ const ServiceTypeItem = ({ serviceKey, service, toggleService, updateRate, error
               value={service.rate}
               onChangeText={(text) => updateRate(serviceKey, text.replace(/[^0-9.]/g, ''))}
               placeholder="0.00"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#8A99A6"
               keyboardType="numeric"
             />
             <Text style={styles.rateCurrency}>₪/h</Text>
@@ -288,7 +288,7 @@ const EditServiceScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   scrollContainer: {
     padding: 20,
@@ -298,39 +298,39 @@ const styles = StyleSheet.create({
   // ── Sections ──
   section: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 18,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#EEF3F7',
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: -0.3,
-    color: '#111827',
+    color: '#1B2A36',
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 12,
-    fontWeight: '400',
-    color: '#6B7280',
+    fontWeight: '600',
+    color: '#5E6E7C',
     marginBottom: 20,
     lineHeight: 17,
   },
 
   // ── Service items ──
   serviceTypeItem: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#F6FAFD',
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    borderRadius: 10,
+    borderColor: '#EEF3F7',
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
   },
   serviceTypeSelected: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#4a90e2',
+    backgroundColor: '#EAF4FB',
+    borderColor: '#256FA8',
   },
   serviceTypeHeader: {
     flexDirection: 'row-reverse',
@@ -339,17 +339,17 @@ const styles = StyleSheet.create({
   serviceTypeCheckbox: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: '#DCE8F1',
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 12,
   },
   serviceTypeCheckboxSelected: {
-    borderColor: '#4a90e2',
-    backgroundColor: '#4a90e2',
+    borderColor: '#256FA8',
+    backgroundColor: '#256FA8',
   },
   serviceTypeContent: {
     flex: 1,
@@ -357,12 +357,12 @@ const styles = StyleSheet.create({
   serviceTypeTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     marginBottom: 4,
   },
   serviceTypeDescription: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#5E6E7C',
   },
 
   // ── Rate ──
@@ -370,11 +370,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#EEF3F7',
   },
   rateLabel: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginBottom: 6,
   },
   rateInputContainer: {
@@ -382,29 +382,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rateInput: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    backgroundColor: '#F4F8FB',
+    borderRadius: 16,
     paddingHorizontal: 10,
     height: 40,
     fontSize: 14,
     width: 100,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    color: '#111827',
+    borderColor: '#E1ECF4',
+    color: '#1B2A36',
   },
   rateCurrency: {
     marginLeft: 8,
     fontSize: 14,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#5E6E7C',
   },
 
   // ── City selector ──
   citySelectorContainer: {
     height: 400,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    borderRadius: 8,
+    borderColor: '#EEF3F7',
+    borderRadius: 14,
     padding: 12,
     backgroundColor: '#FFFFFF',
   },
@@ -422,9 +422,9 @@ const styles = StyleSheet.create({
 
   // ── Boutons ──
   primaryButton: {
-    backgroundColor: '#4a90e2',
+    backgroundColor: '#256FA8',
     paddingVertical: 13,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -436,21 +436,22 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   secondaryButton: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
     paddingVertical: 13,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E1ECF4',
   },
   secondaryButtonText: {
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontSize: 15,
     fontWeight: '500',
   },
   buttonDisabled: {
     opacity: 0.5,
+    borderRadius: 999,
   },
 
   // ── RTL ──

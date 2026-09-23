@@ -88,7 +88,7 @@ const EditPhoneScreen = () => {
             onPress={() => navigation.goBack()}
             disabled={isLoading}
           >
-            <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color="#333" />
+            <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color="#1B2A36" />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, isRTL && styles.textRTL]}>
             {t('editPhone.title')}
@@ -142,7 +142,7 @@ const EditPhoneScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F6FAFD',
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -155,10 +155,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#EEF3F7',
   },
   backButton: {
     padding: 8,
+    borderRadius: 999,
   },
   headerTitle: {
     fontSize: 18,
@@ -166,6 +167,7 @@ const styles = StyleSheet.create({
   },
   placeholderButton: {
     width: 40,
+    borderRadius: 999,
   },
   content: {
     flex: 1,
@@ -173,12 +175,12 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     backgroundColor: 'white',
-    borderRadius: 10,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
@@ -186,19 +188,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 8,
     fontWeight: '500',
-    color: '#333',
+    color: '#1B2A36',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderColor: '#E1ECF4',
+    borderRadius: 16,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#F4F8FB',
   },
   inputRTL: {
     textAlign: 'right',
     writingDirection: 'rtl',
+    backgroundColor: '#F4F8FB',
+    borderColor: '#E1ECF4',
+    borderWidth: 1,
+    borderRadius: 16,
   },
   inputError: {
     borderColor: '#e74c3c',
@@ -209,8 +215,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   saveButton: {
-    backgroundColor: '#3498db',
-    borderRadius: 8,
+    backgroundColor: '#256FA8',
+    borderRadius: 999,
     padding: 15,
     alignItems: 'center',
   },

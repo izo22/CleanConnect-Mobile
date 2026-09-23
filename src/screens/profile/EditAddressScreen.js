@@ -100,7 +100,7 @@ const EditAddressScreen = () => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color="#333" />
+            <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color="#1B2A36" />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, isRTL && styles.textRTL]}>
             {isEditing ? t('editAddress.titleEdit') : t('editAddress.titleAdd')}
@@ -207,8 +207,8 @@ const EditAddressScreen = () => {
               <Switch
                 value={formData.isDefault}
                 onValueChange={(value) => handleChange('isDefault', value)}
-                trackColor={{ false: '#ccc', true: '#a3d4ff' }}
-                thumbColor={formData.isDefault ? '#3498db' : '#f4f3f4'}
+                trackColor={{ false: '#DCE8F1', true: '#5BA4D9' }}
+                thumbColor={formData.isDefault ? '#256FA8' : '#f4f3f4'}
               />
             </View>
 
@@ -233,23 +233,23 @@ const EditAddressScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: '#F6FAFD' },
   keyboardAvoidingView: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
-  backButton: { padding: 8 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#EEF3F7' },
+  backButton: { padding: 8, borderRadius: 999 },
   headerTitle: { fontSize: 18, fontWeight: '600' },
-  placeholderButton: { width: 40 },
+  placeholderButton: { width: 40, borderRadius: 999 },
   scrollContainer: { flexGrow: 1, padding: 16 },
-  formContainer: { backgroundColor: 'white', borderRadius: 10, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
-  inputGroup: { marginBottom: 20 },
-  label: { fontSize: 16, marginBottom: 8, fontWeight: '500', color: '#333' },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, fontSize: 16, backgroundColor: '#f9f9f9' },
-  inputRTL: { textAlign: 'right', writingDirection: 'rtl' },
+  formContainer: { backgroundColor: 'white', borderRadius: 16, padding: 16, shadowColor: '#1B4F7A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+  inputGroup: { marginBottom: 20, backgroundColor: '#F4F8FB', borderColor: '#E1ECF4', borderWidth: 1, borderRadius: 16 },
+  label: { fontSize: 16, marginBottom: 8, fontWeight: '500', color: '#1B2A36' },
+  input: { borderWidth: 1, borderColor: '#E1ECF4', borderRadius: 16, padding: 12, fontSize: 16, backgroundColor: '#F4F8FB' },
+  inputRTL: { textAlign: 'right', writingDirection: 'rtl', backgroundColor: '#F4F8FB', borderColor: '#E1ECF4', borderWidth: 1, borderRadius: 16 },
   inputError: { borderColor: '#e74c3c' },
   errorText: { color: '#e74c3c', fontSize: 12, marginTop: 4 },
   switchContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   switchContainerRTL: { flexDirection: 'row-reverse' },
-  saveButton: { backgroundColor: '#3498db', borderRadius: 8, padding: 15, alignItems: 'center', marginTop: 10 },
+  saveButton: { backgroundColor: '#256FA8', borderRadius: 999, padding: 15, alignItems: 'center', marginTop: 10 },
   saveButtonText: { color: 'white', fontSize: 16, fontWeight: '600' },
   textRTL: { writingDirection: 'rtl', textAlign: 'right' },
 });

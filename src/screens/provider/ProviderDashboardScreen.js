@@ -3,13 +3,13 @@
 CHANGEMENTS MAJEURS:
 - Typographie: tailles réduites (28→24, 24→20, 18→16, 14→12)
 - Poids: 'bold' → '600'
-- Container: fond #F9FAFB
-- Cards: borderRadius 12px, bordures 1px #F3F4F6, shadowOpacity 0.03
+- Container: fond #F6FAFD
+- Cards: borderRadius 12px, bordures 1px #EEF3F7, shadowOpacity 0.03
 - Stats: fontSize 24→20, fontWeight 'bold'→'600'
 - Request cards: elevation 2→1, shadowOpacity 0.1→0.03
 - Status badges: opacité 10%, borderRadius 6px, fontSize 11
 - Buttons: paddingVertical 12, borderRadius 8px
-- Colors: #111827, #6B7280, #9CA3AF
+- Colors: #1B2A36, #5E6E7C, #8A99A6
 - Spacing: doublé entre sections
 */
 import React, { useState, useEffect, useCallback } from 'react';
@@ -72,7 +72,7 @@ const ProviderDashboardScreen = ({ navigation }) => {
       case 'accepted':
         return { bg: '#10B98110', text: '#10B981' };
       case 'in_progress':
-        return { bg: '#3B82F610', text: '#3B82F6' };
+        return { bg: '#3B82F610', text: '#256FA8' };
       case 'completed':
         return { bg: '#10B98110', text: '#10B981' };
       case 'cancelled':
@@ -109,7 +109,7 @@ const ProviderDashboardScreen = ({ navigation }) => {
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#256FA8" />
         <Text style={[styles.loadingText, styles.textRTL]}>טוען...</Text>
       </View>
     );
@@ -212,7 +212,7 @@ const ProviderDashboardScreen = ({ navigation }) => {
               style={styles.editButton}
               onPress={() => navigation.navigate('Profile', { screen: 'ProviderProfile' })}
               >
-              <Icon name="edit" size={18} color="#007AFF" />
+              <Icon name="edit" size={18} color="#256FA8" />
               <Text style={[styles.editButtonText, styles.textRTL]}>ערוך פרופיל</Text>
             </TouchableOpacity>
           </View>
@@ -239,7 +239,7 @@ const ProviderDashboardScreen = ({ navigation }) => {
                     >
                       <View style={styles.modernRequestHeader}>
                         <View style={styles.modernRequestClient}>
-                          <Icon name="person" size={18} color="#9CA3AF" />
+                          <Icon name="person" size={18} color="#8A99A6" />
                           <Text style={[styles.clientName, styles.textRTL]}>
                             {request.client?.firstName} {request.client?.lastName}
                           </Text>
@@ -253,19 +253,19 @@ const ProviderDashboardScreen = ({ navigation }) => {
 
                       <View style={styles.modernRequestBody}>
                         <View style={[styles.requestInfoRow, styles.requestInfoRowRTL]}>
-                          <Icon name="cleaning-services" size={16} color="#6B7280" />
+                          <Icon name="cleaning-services" size={16} color="#5E6E7C" />
                           <Text style={[styles.serviceType, styles.textRTL]}>
                             {request.serviceType}
                           </Text>
                         </View>
                         <View style={[styles.requestInfoRow, styles.requestInfoRowRTL]}>
-                          <Icon name="schedule" size={16} color="#6B7280" />
+                          <Icon name="schedule" size={16} color="#5E6E7C" />
                           <Text style={[styles.requestTime, styles.textRTL]}>
                             {formatDateTime(request.date)}
                           </Text>
                         </View>
                         <View style={[styles.requestInfoRow, styles.requestInfoRowRTL]}>
-                          <Icon name="location-on" size={16} color="#6B7280" />
+                          <Icon name="location-on" size={16} color="#5E6E7C" />
                           <Text style={[styles.requestAddress, styles.textRTL]} numberOfLines={1}>
                             {request.address}
                           </Text>
@@ -282,7 +282,7 @@ const ProviderDashboardScreen = ({ navigation }) => {
               </View>
             ) : (
               <View style={styles.noRequests}>
-                <Icon name="inbox" size={48} color="#E5E7EB" />
+                <Icon name="inbox" size={48} color="#E1ECF4" />
                 <Text style={[styles.noRequestsText, styles.textRTL]}>
                   אין משימות להיום
                 </Text>
@@ -296,7 +296,7 @@ const ProviderDashboardScreen = ({ navigation }) => {
               onPress={() => navigation.navigate('Jobs', { screen: 'RequestsScreen' })}
             >
               <Text style={[styles.viewAllButtonText, styles.textRTL]}>צפה בכל הבקשות</Text>
-              <Icon name="arrow-back" size={18} color="#007AFF" style={{ transform: [{ scaleX: -1 }] }} />
+              <Icon name="arrow-back" size={18} color="#256FA8" style={{ transform: [{ scaleX: -1 }] }} />
             </TouchableOpacity>
           </View>
         </Card>
@@ -308,7 +308,7 @@ const ProviderDashboardScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   scrollContainer: {
     flex: 1,
@@ -319,12 +319,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
   },
   errorText: {
@@ -335,10 +335,10 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   retryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#256FA8',
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 999,
   },
   retryButtonText: {
     color: '#FFFFFF',
@@ -356,16 +356,16 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.4,
     lineHeight: 31,
   },
   card: {
     marginBottom: 16,
-    borderRadius: 12,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E1ECF4',
   },
   cardHeader: {
     paddingHorizontal: 20,
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.3,
     lineHeight: 21,
   },
@@ -391,13 +391,13 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#256FA8',
     letterSpacing: -0.4,
     lineHeight: 26,
   },
   statLabel: {
     fontSize: 11,
-    color: '#6B7280',
+    color: '#5E6E7C',
     textAlign: 'center',
     marginTop: 6,
     fontWeight: '400',
@@ -413,19 +413,19 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontWeight: '600',
     fontSize: 12,
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.2,
   },
   colon: {
     marginHorizontal: 6,
     fontWeight: '600',
     fontSize: 12,
-    color: '#111827',
+    color: '#1B2A36',
   },
   infoValue: {
     flex: 1,
     fontSize: 12,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
   },
   actionPadding: {
@@ -440,11 +440,11 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#007AFF10',
+    borderRadius: 999,
+    backgroundColor: '#EAF4FB',
   },
   editButtonText: {
-    color: '#007AFF',
+    color: '#256FA8',
     fontSize: 14,
     fontWeight: '500',
     letterSpacing: -0.2,
@@ -454,10 +454,10 @@ const styles = StyleSheet.create({
   },
   modernRequestCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E1ECF4',
   },
   modernRequestHeader: {
     flexDirection: 'row',
@@ -473,13 +473,13 @@ const styles = StyleSheet.create({
   clientName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.2,
   },
   statusBadge: {
     paddingVertical: 4,
     paddingHorizontal: 10,
-    borderRadius: 6,
+    borderRadius: 999,
   },
   statusText: {
     fontSize: 11,
@@ -499,24 +499,24 @@ const styles = StyleSheet.create({
   },
   serviceType: {
     fontSize: 13,
-    color: '#111827',
+    color: '#1B2A36',
     fontWeight: '500',
     letterSpacing: -0.2,
   },
   requestTime: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
   },
   requestAddress: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
     flex: 1,
   },
   modernRequestFooter: {
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#EEF3F7',
     paddingTop: 12,
   },
   requestPrice: {
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
   noRequestsText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     fontWeight: '400',
   },
   viewAllButton: {
@@ -542,11 +542,11 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#007AFF10',
+    borderRadius: 999,
+    backgroundColor: '#EAF4FB',
   },
   viewAllButtonText: {
-    color: '#007AFF',
+    color: '#256FA8',
     fontSize: 14,
     fontWeight: '500',
     letterSpacing: -0.2,

@@ -357,7 +357,7 @@ const CalendarScreen = ({ navigation, route }) => {
       <View style={styles.header}>
         <View style={[styles.headerRow, styles.rtlRow]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-forward" size={22} color="#111827" />
+            <Ionicons name="arrow-forward" size={22} color="#1B2A36" />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, styles.textRTL]}>לוח זמנים</Text>
           <View style={{ width: 40 }} />
@@ -368,7 +368,7 @@ const CalendarScreen = ({ navigation, route }) => {
         {/* Calendar Header */}
         <View style={[styles.calendarHeader, styles.rtlRow]}>
           <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
-            <Ionicons name="chevron-forward" size={24} color="#111827" />
+            <Ionicons name="chevron-forward" size={24} color="#1B2A36" />
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.monthButton} onPress={goToCurrentMonth}>
@@ -378,7 +378,7 @@ const CalendarScreen = ({ navigation, route }) => {
           </TouchableOpacity>
           
           <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color="#1B2A36" />
           </TouchableOpacity>
         </View>
 
@@ -462,7 +462,7 @@ const CalendarScreen = ({ navigation, route }) => {
                     ]}
                   >
                     <View style={[styles.availabilityTimeRTL, styles.rtlRow]}>
-                      <Ionicons name="time-outline" size={18} color="#6B7280" style={styles.iconRTL} />
+                      <Ionicons name="time-outline" size={18} color="#5E6E7C" style={styles.iconRTL} />
                       <Text style={[styles.availabilityTimeText, styles.textRTL]}>
                         {av.startTime} - {av.endTime}
                       </Text>
@@ -485,7 +485,7 @@ const CalendarScreen = ({ navigation, route }) => {
               </View>
             ) : (
               <View style={styles.noJobsContainer}>
-                <Ionicons name="calendar-outline" size={40} color="#D1D5DB" />
+                <Ionicons name="calendar-outline" size={40} color="#DCE8F1" />
                 <Text style={[styles.noJobsText, styles.textRTL]}>
                   אין זמינות מוגדרת
                 </Text>
@@ -585,7 +585,7 @@ const CalendarScreen = ({ navigation, route }) => {
             <View style={styles.modalHeaderRTL}>
               <Text style={[styles.modalTitle, styles.textRTL]}>הוסף זמינות</Text>
               <TouchableOpacity onPress={() => setShowAvailabilityModal(false)}>
-                <Ionicons name="close" size={24} color="#111827" />
+                <Ionicons name="close" size={24} color="#1B2A36" />
               </TouchableOpacity>
             </View>
 
@@ -669,18 +669,18 @@ const CalendarScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 13,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
   },
   header: {
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#EEF3F7',
   },
   headerRow: {
     flexDirection: 'row-reverse',
@@ -699,15 +699,15 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 10,
-    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    backgroundColor: '#F6FAFD',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     textAlign: 'center',
     flex: 1,
     letterSpacing: -0.3,
@@ -725,21 +725,22 @@ const styles = StyleSheet.create({
   navButton: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: 16,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#EEF3F7',
   },
   monthButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
+    borderRadius: 999,
   },
   monthText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.3,
   },
   weekdaysRow: {
@@ -755,7 +756,7 @@ const styles = StyleSheet.create({
   weekdayText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#9CA3AF',
+    color: '#8A99A6',
     letterSpacing: -0.2,
   },
   calendarGrid: {
@@ -769,12 +770,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-    borderRadius: 10,
+    borderRadius: 16,
     marginBottom: 8,
   },
   dayText: {
     fontSize: 14,
-    color: '#111827',
+    color: '#1B2A36',
     fontWeight: '400',
     letterSpacing: -0.2,
   },
@@ -782,10 +783,10 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   disabledDayText: {
-    color: '#D1D5DB',
+    color: '#DCE8F1',
   },
   selectedDay: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#256FA8',
   },
   selectedDayText: {
     color: '#FFFFFF',
@@ -811,9 +812,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     padding: 20,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E1ECF4',
   },
   detailsHeader: {
     flexDirection: 'row-reverse',
@@ -824,7 +825,7 @@ const styles = StyleSheet.create({
   detailsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.3,
   },
   addButton: {
@@ -832,7 +833,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 999,
     gap: 6,
   },
   addButtonText: {
@@ -843,7 +844,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#5E6E7C',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
@@ -855,15 +856,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 20,
     padding: 14,
     marginBottom: 10,
     borderRightWidth: 3,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
+    borderColor: '#E1ECF4',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 1,
   },
@@ -876,13 +877,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: -0.2,
-    color: '#111827',
+    color: '#1B2A36',
     marginRight: 8,
   },
   recurringBadge: {
     paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: 6,
+    borderRadius: 999,
     marginLeft: 10,
   },
   recurringText: {
@@ -892,25 +893,26 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     padding: 4,
+    borderRadius: 999,
   },
   jobsList: {
     marginTop: 20,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#EEF3F7',
   },
   jobCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 20,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
+    borderColor: '#E1ECF4',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 1,
   },
@@ -924,11 +926,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: -0.2,
-    color: '#111827',
+    color: '#1B2A36',
   },
   durationContainer: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 6,
+    backgroundColor: '#EEF3F7',
+    borderRadius: 12,
     paddingVertical: 3,
     paddingHorizontal: 8,
     marginTop: 6,
@@ -937,7 +939,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     letterSpacing: -0.1,
-    color: '#6B7280',
+    color: '#5E6E7C',
   },
   jobInfoRTL: {
     flex: 1,
@@ -948,15 +950,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: -0.2,
-    color: '#111827',
+    color: '#1B2A36',
     marginBottom: 2,
     textAlign: 'right',
   },
   serviceName: {
     fontSize: 13,
-    fontWeight: '400',
+    fontWeight: '600',
     letterSpacing: -0.2,
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginBottom: 4,
     textAlign: 'right',
   },
@@ -964,7 +966,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '400',
     letterSpacing: -0.1,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     textAlign: 'right',
   },
   jobActions: {
@@ -975,7 +977,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: 6,
+    borderRadius: 999,
     marginBottom: 10,
   },
   confirmedStatus: {
@@ -988,7 +990,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: -0.1,
-    color: '#111827',
+    color: '#1B2A36',
   },
   price: {
     fontSize: 15,
@@ -1005,7 +1007,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: -0.2,
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginTop: 16,
     textAlign: 'center',
   },
@@ -1013,7 +1015,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '400',
     letterSpacing: -0.2,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 40,
@@ -1022,7 +1024,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginHorizontal: 20,
     padding: 14,
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 1,
   },
   statsText: {
@@ -1047,9 +1049,9 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 6,
   },
@@ -1074,7 +1076,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: -0.3,
-    color: '#111827',
+    color: '#1B2A36',
   },
   modalBody: {
     marginBottom: 24,
@@ -1094,30 +1096,34 @@ const styles = StyleSheet.create({
   },
   timeInput: {
     alignItems: 'center',
+    backgroundColor: '#F4F8FB',
+    borderColor: '#E1ECF4',
+    borderWidth: 1,
+    borderRadius: 16,
   },
   timeLabel: {
     fontSize: 13,
     fontWeight: '400',
     letterSpacing: -0.2,
-    color: '#6B7280',
+    color: '#5E6E7C',
     marginBottom: 6,
   },
   timeField: {
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    borderRadius: 8,
+    borderColor: '#E1ECF4',
+    borderRadius: 16,
     padding: 10,
     fontSize: 14,
     fontWeight: '400',
     letterSpacing: -0.2,
     textAlign: 'center',
     width: 80,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F4F8FB',
   },
   timeSeparator: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     marginHorizontal: 16,
   },
   recurringToggleRTL: {
@@ -1130,8 +1136,8 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
-    borderRadius: 4,
+    borderColor: '#E1ECF4',
+    borderRadius: 10,
     marginLeft: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1149,9 +1155,9 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#EEF3F7',
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 999,
     marginLeft: 10,
     alignItems: 'center',
   },
@@ -1159,7 +1165,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: -0.2,
-    color: '#6B7280',
+    color: '#5E6E7C',
   },
   rtlRow: {
     flexDirection: 'row-reverse',

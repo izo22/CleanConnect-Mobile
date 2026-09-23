@@ -30,17 +30,17 @@ const CustomChip = ({ children, onClose }) => {
 const CustomSearchbar = ({ placeholder, value, onChangeText, style }) => {
   return (
     <View style={[styles.customSearchbar, style]}>
-      <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+      <Ionicons name="search" size={20} color="#8A99A6" style={styles.searchIcon} />
       <TextInput
         style={styles.searchInput}
         placeholder={placeholder}
         value={value}
         onChangeText={onChangeText}
-        placeholderTextColor="#999"
+        placeholderTextColor="#8A99A6"
       />
       {value.length > 0 && (
         <TouchableOpacity onPress={() => onChangeText('')}>
-          <Ionicons name="close-circle" size={20} color="#999" />
+          <Ionicons name="close-circle" size={20} color="#8A99A6" />
         </TouchableOpacity>
       )}
     </View>
@@ -171,13 +171,13 @@ const styles = StyleSheet.create({
   customSearchbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
+    backgroundColor: '#F6FAFD',
+    borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#E1ECF4',
   },
   searchIcon: {
     marginRight: 10,
@@ -185,8 +185,12 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: '#1B2A36',
     textAlign: 'right',
+    backgroundColor: '#F4F8FB',
+    borderColor: '#E1ECF4',
+    borderWidth: 1,
+    borderRadius: 16,
   },
   searchBar: {
     marginBottom: 15,
@@ -213,7 +217,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#E8F5E9',
-    borderRadius: 16,
+    borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 12,
     margin: 4,
@@ -231,7 +235,7 @@ const styles = StyleSheet.create({
   // ✅ Styles pour CustomDivider
   customDivider: {
     height: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#E1ECF4',
     marginTop: 10,
   },
   divider: {
@@ -247,7 +251,7 @@ const styles = StyleSheet.create({
   zoneTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: '#256FA8',
     marginBottom: 5,
     paddingLeft: 10,
   },
@@ -262,21 +266,21 @@ const styles = StyleSheet.create({
   customCheckbox: {
     width: 24,
     height: 24,
-    borderRadius: 4,
+    borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#2196F3',
+    borderColor: '#256FA8',
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
   },
   customCheckboxChecked: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: '#256FA8',
+    borderColor: '#256FA8',
   },
   customCheckboxLabel: {
     fontSize: 16,
-    color: '#333333',
+    color: '#1B2A36',
     flex: 1,
   },
   emptyContainer: {
@@ -285,7 +289,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
+    color: '#8A99A6',
     textAlign: 'center',
   },
   textRTL: {

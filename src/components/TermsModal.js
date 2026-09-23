@@ -133,7 +133,7 @@ const TermsModal = ({ visible, onClose, initialLang = 'he' }) => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="close" size={20} color="#1F2937" />
+            <Ionicons name="close" size={20} color="#1B2A36" />
           </TouchableOpacity>
 
           {/* Toggle langue */}
@@ -187,7 +187,7 @@ const TermsModal = ({ visible, onClose, initialLang = 'he' }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
 
   // Header
@@ -199,13 +199,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#EEF3F7',
   },
   closeButton: {
     width: 36,
     height: 36,
-    borderRadius: 8,
-    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    backgroundColor: '#F6FAFD',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -218,19 +218,20 @@ const styles = StyleSheet.create({
   langBtn: {
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E1ECF4',
     backgroundColor: '#FFFFFF',
   },
   langBtnActive: {
-    backgroundColor: '#4a90e2',
-    borderColor: '#4a90e2',
+    backgroundColor: '#256FA8',
+    borderColor: '#256FA8',
+    borderRadius: 999,
   },
   langBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#5E6E7C',
     letterSpacing: -0.2,
   },
   langBtnTextActive: {
@@ -250,14 +251,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.3,
     marginBottom: 6,
   },
   lastUpdated: {
     fontSize: 12,
     fontWeight: '400',
-    color: '#9CA3AF',
+    color: '#8A99A6',
     letterSpacing: -0.2,
     marginBottom: 32,
   },
@@ -269,7 +270,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.2,
     marginBottom: 8,
     lineHeight: 18,
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
   sectionBody: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#6B7280',
+    color: '#5E6E7C',
     letterSpacing: -0.1,
     lineHeight: 20,
   },
@@ -287,11 +288,11 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#EEF3F7',
   },
   closeBtn: {
-    backgroundColor: '#4a90e2',
-    borderRadius: 8,
+    backgroundColor: '#256FA8',
+    borderRadius: 999,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',

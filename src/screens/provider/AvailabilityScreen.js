@@ -101,7 +101,7 @@ const AvailabilityScreen = ({ navigation }) => {
         <Text style={[styles.applyToAllText, isRTL && styles.textRTL]}>
           {t('availability.applyToAll')}
         </Text>
-        <Switch value={applyToAll} onValueChange={setApplyToAll} trackColor={{ false: "#D1D1D6", true: "#4CD964" }} />
+        <Switch value={applyToAll} onValueChange={setApplyToAll} trackColor={{ false: "#DCE8F1", true: "#4CD964" }} />
       </View>
       
       <ScrollView style={styles.scrollView}>
@@ -158,30 +158,30 @@ const AvailabilityScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F8F8' },
-  header: { padding: 15, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#EEEEEE' },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#333333' },
-  applyToAllContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, backgroundColor: '#FFFFFF', marginBottom: 10, borderBottomWidth: 1, borderBottomColor: '#EEEEEE' },
-  applyToAllText: { fontSize: 16, color: '#333333' },
+  container: { flex: 1, backgroundColor: '#F6FAFD' },
+  header: { padding: 15, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#EEF3F7' },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1B2A36' },
+  applyToAllContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, backgroundColor: '#FFFFFF', marginBottom: 10, borderBottomWidth: 1, borderBottomColor: '#EEF3F7' },
+  applyToAllText: { fontSize: 16, color: '#1B2A36' },
   scrollView: { flex: 1 },
-  dayContainer: { backgroundColor: '#FFFFFF', marginHorizontal: 15, marginBottom: 15, borderRadius: 10, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
-  dayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, backgroundColor: '#F8F8F8', borderBottomWidth: 1, borderBottomColor: '#EEEEEE' },
-  dayTitle: { fontSize: 18, fontWeight: 'bold', color: '#333333' },
+  dayContainer: { backgroundColor: '#FFFFFF', marginHorizontal: 15, marginBottom: 15, borderRadius: 16, overflow: 'hidden', shadowColor: '#1B4F7A', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 },
+  dayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, backgroundColor: '#F6FAFD', borderBottomWidth: 1, borderBottomColor: '#EEF3F7' },
+  dayTitle: { fontSize: 18, fontWeight: 'bold', color: '#1B2A36' },
   dayActions: { flexDirection: 'row' },
-  allDayButton: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#E3F2FD', borderRadius: 15, marginLeft: 10 },
-  allDayButtonText: { color: '#007AFF', fontSize: 14 },
-  noneDayButton: { backgroundColor: '#FFEBEE' },
+  allDayButton: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#EAF4FB', borderRadius: 999, marginLeft: 10 },
+  allDayButtonText: { color: '#256FA8', fontSize: 14 },
+  noneDayButton: { backgroundColor: '#FFEBEE', borderRadius: 999 },
   noneDayButtonText: { color: '#FF3B30', fontSize: 14 },
   timeSlots: { padding: 10 },
-  timeSlot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 15, borderRadius: 8, marginVertical: 5 },
+  timeSlot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 15, borderRadius: 14, marginVertical: 5 },
   availableSlot: { backgroundColor: '#F0FFF0', borderWidth: 1, borderColor: '#CCFFCC' },
   unavailableSlot: { backgroundColor: '#FFF5F5', borderWidth: 1, borderColor: '#FFCCCC' },
   slotInfo: { flex: 1 },
-  slotLabel: { fontSize: 16, fontWeight: '500', color: '#333333' },
-  slotTime: { fontSize: 14, color: '#666666', marginTop: 2 },
+  slotLabel: { fontSize: 16, fontWeight: '500', color: '#1B2A36' },
+  slotTime: { fontSize: 14, color: '#5E6E7C', marginTop: 2 },
   slotStatus: { marginLeft: 10 },
-  footer: { padding: 15, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#EEEEEE' },
-  saveButton: { backgroundColor: '#007AFF', borderRadius: 10, padding: 15, alignItems: 'center' },
+  footer: { padding: 15, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#EEF3F7' },
+  saveButton: { backgroundColor: '#256FA8', borderRadius: 999, padding: 15, alignItems: 'center' },
   saveButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
   textRTL: { writingDirection: 'rtl', textAlign: 'right' },
   rowRTL: { flexDirection: 'row-reverse' },

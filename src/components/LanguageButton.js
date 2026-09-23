@@ -64,6 +64,7 @@ const styles = StyleSheet.create({
   button: {
     padding: 8,
     marginRight: 8,
+    borderRadius: 999,
   },
   flagIcon: {
     fontSize: 24,
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: 'white',
-    borderRadius: 16,
+    borderRadius: 20,
     width: '85%',
     maxWidth: 400,
     overflow: 'hidden',
@@ -87,12 +88,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#E1ECF4',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1B2A36',
   },
   selectorContainer: {
     borderRadius: 0,

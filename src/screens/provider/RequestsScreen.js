@@ -3,15 +3,15 @@
 CHANGEMENTS MAJEURS:
 - Typographie: tailles réduites (24→20, 20→17, 16→14, 14→12)
 - Poids: 'bold' → '600', '500' → '400'
-- Container: fond #F9FAFB
+- Container: fond #F6FAFD
 - Filter tabs: borderRadius 8px, fontSize 12, paddingVertical 6
-- Cards: borderRadius 12px, bordures 1px #F3F4F6, elevation 1
+- Cards: borderRadius 12px, bordures 1px #EEF3F7, elevation 1
 - Status badges: opacité 10%, borderRadius 6px, fontSize 11
 - Action buttons: paddingVertical 12, borderRadius 8px
 - Client name: fontSize 20→17
 - Service name: fontSize 16→14
 - Info text: fontSize 14→12
-- Colors: #111827, #6B7280, #9CA3AF
+- Colors: #1B2A36, #5E6E7C, #8A99A6
 - Spacing: marginBottom entre cards 10→16
 */
 import React, { useState, useContext } from 'react';
@@ -170,7 +170,7 @@ const RequestsScreen = ({ navigation }) => {
       case 'accepted':
         return { label: 'מאושר', bg: '#10B98110', text: '#10B981' };
       case 'in_progress':
-        return { label: 'בביצוע', bg: '#3B82F610', text: '#3B82F6' };
+        return { label: 'בביצוע', bg: '#3B82F610', text: '#256FA8' };
       case 'completed':
         return { label: 'הושלם', bg: '#10B98110', text: '#10B981' };
       case 'cancelled':
@@ -199,7 +199,7 @@ const RequestsScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#256FA8" />
           <Text style={styles.loadingText}>טוען בקשות...</Text>
         </View>
       </SafeAreaView>
@@ -253,7 +253,7 @@ const RequestsScreen = ({ navigation }) => {
       >
         {filteredRequests.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="inbox-outline" size={64} color="#E5E7EB" />
+            <Ionicons name="inbox-outline" size={64} color="#E1ECF4" />
             <Text style={styles.emptyText}>אין בקשות להצגה</Text>
           </View>
         ) : (
@@ -271,7 +271,7 @@ const RequestsScreen = ({ navigation }) => {
                 {/* Header */}
                 <View style={styles.requestHeader}>
                   <View style={styles.clientInfo}>
-                    <Ionicons name="person" size={18} color="#9CA3AF" />
+                    <Ionicons name="person" size={18} color="#8A99A6" />
                     <Text style={styles.clientName}>{request.clientName}</Text>
                   </View>
                   <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg }]}>
@@ -284,15 +284,15 @@ const RequestsScreen = ({ navigation }) => {
                 {/* Body */}
                 <View style={styles.requestBody}>
                   <View style={styles.infoRow}>
-                    <Ionicons name="cleaning-services" size={16} color="#6B7280" />
+                    <Ionicons name="cleaning-services" size={16} color="#5E6E7C" />
                     <Text style={styles.serviceType}>{request.serviceType}</Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <Ionicons name="time-outline" size={16} color="#6B7280" />
+                    <Ionicons name="time-outline" size={16} color="#5E6E7C" />
                     <Text style={styles.dateTime}>{formatDateTime(request.dateTime)}</Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <Ionicons name="location-outline" size={16} color="#6B7280" />
+                    <Ionicons name="location-outline" size={16} color="#5E6E7C" />
                     <Text style={styles.address} numberOfLines={1}>
                       {formatAddress(request.address)}
                     </Text>
@@ -337,7 +337,7 @@ const RequestsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6FAFD',
   },
   loadingContainer: {
     flex: 1,
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
     textAlign: 'right',
   },
@@ -356,12 +356,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#EEF3F7',
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     textAlign: 'right',
     marginBottom: 16,
     letterSpacing: -0.3,
@@ -375,17 +375,18 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 6,
     paddingHorizontal: 8,
-    borderRadius: 8,
-    backgroundColor: '#F9FAFB',
+    borderRadius: 999,
+    backgroundColor: '#F6FAFD',
     alignItems: 'center',
   },
   filterButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#256FA8',
+    borderRadius: 999,
   },
   filterText: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#5E6E7C',
   },
   filterTextActive: {
     color: '#FFFFFF',
@@ -404,17 +405,17 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 16,
     fontSize: 14,
-    color: '#9CA3AF',
+    color: '#8A99A6',
     textAlign: 'center',
     fontWeight: '400',
   },
   requestCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 20,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E1ECF4',
   },
   requestHeader: {
     flexDirection: 'row',
@@ -430,14 +431,14 @@ const styles = StyleSheet.create({
   clientName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1B2A36',
     letterSpacing: -0.3,
     lineHeight: 22,
   },
   statusBadge: {
     paddingVertical: 4,
     paddingHorizontal: 10,
-    borderRadius: 6,
+    borderRadius: 999,
   },
   statusText: {
     fontSize: 11,
@@ -454,7 +455,7 @@ const styles = StyleSheet.create({
   },
   serviceType: {
     fontSize: 14,
-    color: '#111827',
+    color: '#1B2A36',
     fontWeight: '500',
     letterSpacing: -0.2,
     flex: 1,
@@ -462,14 +463,14 @@ const styles = StyleSheet.create({
   },
   dateTime: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
     flex: 1,
     textAlign: 'right',
   },
   address: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#5E6E7C',
     fontWeight: '400',
     flex: 1,
     textAlign: 'right',
@@ -480,7 +481,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#EEF3F7',
   },
   price: {
     fontSize: 16,
@@ -491,12 +492,13 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     gap: 8,
+    borderRadius: 999,
   },
   acceptButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#256FA8',
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 6,
+    borderRadius: 999,
     minWidth: 60,
     alignItems: 'center',
   },
@@ -510,7 +512,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 6,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: '#EF4444',
     minWidth: 60,
