@@ -298,11 +298,11 @@ const styles = StyleSheet.create({
   // ── Sections ──
   section: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#EEF3F7',
+    borderColor: '#E1ECF4',
   },
   sectionTitle: {
     fontSize: 16,
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   serviceTypeCheckbox: {
     width: 20,
     height: 20,
-    borderRadius: 16,
+    borderRadius: 7,
     borderWidth: 2,
     borderColor: '#DCE8F1',
     backgroundColor: '#FFFFFF',
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
   // ── Boutons ──
   primaryButton: {
     backgroundColor: '#256FA8',
-    paddingVertical: 13,
+    paddingVertical: 15,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -436,13 +436,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   secondaryButton: {
-    backgroundColor: '#F6FAFD',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 13,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E1ECF4',
+    borderColor: '#DCE8F1',
   },
   secondaryButtonText: {
     color: '#5E6E7C',

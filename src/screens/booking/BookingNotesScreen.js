@@ -1,18 +1,23 @@
-// src/screens/booking/BookingNotesScreen.js
-// ✅ גרסה מתורגמת לעברית עם העלאת וידאו/תמונה
-// ✅ תוקן: נוסף תמיכה ב-Airbnb עם צבע #FF5A5F
+// src/screens/booking/BookingNotesScreen.js — CleanCasa · bleu clair (logique inchangée)
+// L'en-tête vient du Stack (« הערות להזמנה ») : l'Appbar bleue en double a été retirée.
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert, Image, TouchableOpacity, Platform } from 'react-native';
-import { Text, TextInput, Button, useTheme, Appbar, IconButton, Card } from 'react-native-paper';
+import { View, Text, TextInput, StyleSheet, ScrollView, Alert, Image, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { useBooking } from '../../context/BookingContext';
-import { getServiceColor } from '../../config/constants';  // ✅ Import getServiceColor
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Video } from 'expo-av';
+import { palette as C } from '../../config/theme';
+
+const SUGGESTIONS = [
+  ['קוד גישה', '📍 קוד גישה: 1234'],
+  ['חיות מחמד', '🐕 יש חיות מחמד בבית'],
+  ['פריטים שבירים', '⚠️ פריטים שבירים'],
+  ['מוצרים אקולוגיים', '🌿 להשתמש במוצרים אקולוגיים'],
+  ['כניסה מיוחדת', '🚪 כניסה דרך הכניסה האחורית'],
+];
 
 const BookingNotesScreen = ({ route, navigation }) => {
-  const theme = useTheme();
   const { currentBooking, updateBooking } = useBooking();
   const { notes: initialNotes } = route.params || {};
   
@@ -23,8 +28,7 @@ const BookingNotesScreen = ({ route, navigation }) => {
   const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
   const isRTL = true; // תמיד RTL לעברית
   
-  // ✅ ✅ ✅ COULEUR DYNAMIQUE depuis constants.js
-  const serviceColor = getServiceColor(currentBooking.serviceType);
+  
   
   const requestPermissions = async () => {
     if (Platform.OS !== 'web') {
@@ -155,370 +159,117 @@ const BookingNotesScreen = ({ route, navigation }) => {
     navigation.goBack();
   };
   
-  const renderMediaItem = (mediaItem) => {
-    return (
-      <Card key={mediaItem.id} style={styles.mediaCard}>
-        <View style={styles.mediaContainer}>
-          {mediaItem.type === 'image' ? (
-            <Image 
-              source={{ uri: mediaItem.uri }} 
-              style={styles.mediaThumbnail}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.videoThumbnailContainer}>
-              <Video
-                source={{ uri: mediaItem.uri }}
-                style={styles.mediaThumbnail}
-                resizeMode="cover"
-                shouldPlay={false}
-                isLooping={false}
-              />
-              <View style={styles.videoOverlay}>
-                <Icon name="play-circle" size={40} color="white" />
-              </View>
-            </View>
-          )}
-          
-          <View style={[styles.mediaInfo, styles.rtlRow]}>
-            <Icon 
-              name={mediaItem.type === 'video' ? 'video' : 'image'} 
-              size={20} 
-              color={serviceColor}
-              style={styles.iconRTL}
-            />
-            <View style={styles.mediaDetails}>
-              <Text style={[styles.mediaFileName, styles.textRTL]} numberOfLines={1}>
-                {mediaItem.fileName}
-              </Text>
-              <Text style={[styles.mediaSize, styles.textRTL]}>
-                {formatFileSize(mediaItem.size)}
-                {mediaItem.duration && ` • ${Math.round(mediaItem.duration)}s`}
-              </Text>
-            </View>
-          </View>
-          
-          <IconButton
-            icon="close-circle"
-            size={24}
-            color="#F44336"
-            onPress={() => handleRemoveMedia(mediaItem.id)}
-            style={styles.removeButtonRTL}
-          />
+  const addSuggestion = (text) => setNotes(notes ? `${notes}\n${text}` : text);
+
+  const renderMediaItem = (m) => (
+    <View key={m.id} style={styles.mediaCard}>
+      {m.type === 'image' ? (
+        <Image source={{ uri: m.uri }} style={styles.thumb} resizeMode="cover" />
+      ) : (
+        <View style={styles.thumb}>
+          <Video source={{ uri: m.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" shouldPlay={false} isLooping={false} />
+          <View style={styles.videoOverlay}><Icon name="play-circle" size={40} color="#FFFFFF" /></View>
         </View>
-      </Card>
-    );
-  };
-  
+      )}
+      <View style={styles.mediaInfo}>
+        <View style={styles.mediaIcon}><Icon name={m.type === 'video' ? 'video-outline' : 'image-outline'} size={18} color={C.primary} /></View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.mediaName} numberOfLines={1}>{m.fileName}</Text>
+          <Text style={styles.mediaSize}>{formatFileSize(m.size)}{m.duration ? ` · ${Math.round(m.duration)}s` : ''}</Text>
+        </View>
+        <TouchableOpacity style={styles.removeBtn} onPress={() => handleRemoveMedia(m.id)} hitSlop={8}>
+          <Icon name="trash-can-outline" size={18} color={C.error} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <Appbar.Header style={{ backgroundColor: serviceColor }}>
-        <Appbar.BackAction onPress={() => navigation.goBack()} color="white" />
-        <Appbar.Content 
-          title="הערות והוראות" 
-          color="white"
-          titleStyle={styles.textRTL}
-        />
-        <Appbar.Action icon="check" onPress={handleSaveNotes} color="white" />
-      </Appbar.Header>
-      
-      <ScrollView style={styles.content}>
-        <Text style={[styles.label, styles.textRTL]}>
-          הוסף הערות מיוחדות או הוראות לספק השירות
-        </Text>
-        
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Text style={styles.sectionTitle}>הערות למנקה</Text>
+        <Text style={styles.help}>הוסף הערות מיוחדות או הוראות לספק השירות</Text>
         <TextInput
           value={notes}
           onChangeText={setNotes}
-          style={[styles.textInput, styles.textInputRTL]}
+          style={styles.textArea}
           multiline
-          numberOfLines={10}
-          mode="outlined"
-          theme={{ colors: { primary: serviceColor } }}
           placeholder="לדוגמה: קוד גישה, מיקום מפתח, אזורים שצריכים תשומת לב מיוחדת..."
+          placeholderTextColor={C.subtle}
+          textAlignVertical="top"
         />
-        
-        <View style={styles.examplesContainer}>
-          <Text style={[styles.examplesTitle, styles.textRTL]}>
-            הצעות להערות:
-          </Text>
-          <View style={[styles.exampleChips, styles.rtlRow]}>
-            <Button 
-              mode="outlined" 
-              style={styles.exampleChip}
-              labelStyle={[styles.exampleChipLabel, styles.textRTL]}
-              onPress={() => setNotes(notes ? `${notes}\n📍 קוד גישה: 1234` : '📍 קוד גישה: 1234')}
-              color={serviceColor}
-            >
-              קוד גישה
-            </Button>
-            
-            <Button 
-              mode="outlined" 
-              style={styles.exampleChip}
-              labelStyle={[styles.exampleChipLabel, styles.textRTL]}
-              onPress={() => setNotes(notes ? `${notes}\n🐕 יש חיות מחמד בבית` : '🐕 יש חיות מחמד בבית')}
-              color={serviceColor}
-            >
-              חיות מחמד
-            </Button>
-            
-            <Button 
-              mode="outlined" 
-              style={styles.exampleChip}
-              labelStyle={[styles.exampleChipLabel, styles.textRTL]}
-              onPress={() => setNotes(notes ? `${notes}\n⚠️ פריטים שבירים` : '⚠️ פריטים שבירים')}
-              color={serviceColor}
-            >
-              פריטים שבירים
-            </Button>
-            
-            <Button 
-              mode="outlined" 
-              style={styles.exampleChip}
-              labelStyle={[styles.exampleChipLabel, styles.textRTL]}
-              onPress={() => setNotes(notes ? `${notes}\n🌿 להשתמש במוצרים אקולוגיים` : '🌿 להשתמש במוצרים אקולוגיים')}
-              color={serviceColor}
-            >
-              מוצרים אקולוגיים
-            </Button>
-            
-            <Button 
-              mode="outlined" 
-              style={styles.exampleChip}
-              labelStyle={[styles.exampleChipLabel, styles.textRTL]}
-              onPress={() => setNotes(notes ? `${notes}\n🚪 כניסה דרך הכניסה האחורית` : '🚪 כניסה דרך הכניסה האחורית')}
-              color={serviceColor}
-            >
-              כניסה מיוחדת
-            </Button>
+
+        <Text style={styles.label}>הצעות להערות</Text>
+        <View style={styles.chips}>
+          {SUGGESTIONS.map(([label, text]) => (
+            <TouchableOpacity key={label} style={styles.chip} onPress={() => addSuggestion(text)} activeOpacity={0.8}>
+              <Icon name="plus" size={14} color={C.primaryDark} />
+              <Text style={styles.chipText}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.mediaHeader}>
+          <Text style={styles.sectionTitle}>תמונות וסרטונים</Text>
+          <Text style={styles.count}>{media.length}/3</Text>
+        </View>
+        <Text style={styles.help}>העלה עד 3 תמונות או סרטונים כדי להראות לספק השירות מה צריך לנקות או אזורים בעייתיים.</Text>
+
+        {media.map(renderMediaItem)}
+
+        {media.length < 3 && (
+          <TouchableOpacity style={styles.addMedia} onPress={handlePickMedia} disabled={isUploading} activeOpacity={0.8}>
+            {isUploading ? <ActivityIndicator color={C.primary} /> : <Icon name="camera-plus-outline" size={26} color={C.primary} />}
+            <Text style={styles.addMediaText}>{isUploading ? 'טוען...' : 'הוסף תמונה או סרטון'}</Text>
+            <Text style={styles.addMediaSub}>עד 50MB לקובץ</Text>
+          </TouchableOpacity>
+        )}
+
+        {media.length > 0 && (
+          <View style={styles.infoBox}>
+            <Icon name="information-outline" size={16} color={C.primaryDark} />
+            <Text style={styles.infoText}>התמונות והסרטונים יעזרו לספק השירות להבין טוב יותר את הצרכים שלך ולהתכונן בהתאם.</Text>
           </View>
-        </View>
-        
-        <View style={styles.mediaSection}>
-          <View style={[styles.mediaSectionHeader, styles.rtlRow]}>
-            <Text style={[styles.mediaSectionTitle, styles.textRTL]}>
-              תמונות וסרטונים
-            </Text>
-            <Text style={[styles.mediaCount, styles.textRTL]}>
-              {media.length}/3
-            </Text>
-          </View>
-          
-          <Text style={[styles.mediaDescription, styles.textRTL]}>
-            העלה עד 3 תמונות או סרטונים כדי להראות לספק השירות מה צריך לנקות או אזורים בעייתיים.
-          </Text>
-          
-          {media.map(mediaItem => renderMediaItem(mediaItem))}
-          
-          {media.length < 3 && (
-            <Button
-              mode="outlined"
-              icon="camera-plus"
-              onPress={handlePickMedia}
-              style={[styles.addMediaButton, { borderColor: serviceColor }]}
-              color={serviceColor}
-              loading={isUploading}
-              disabled={isUploading}
-              labelStyle={styles.textRTL}
-            >
-              {isUploading ? 'טוען...' : 'הוסף תמונה או סרטון'}
-            </Button>
-          )}
-          
-          {media.length > 0 && (
-            <View style={[styles.mediaInfoBox, styles.rtlRow]}>
-              <Icon 
-                name="information" 
-                size={16} 
-                color="#5E6E7C"
-                style={styles.iconRTL}
-              />
-              <Text style={[styles.mediaInfoText, styles.textRTL]}>
-                התמונות והסרטונים יעזרו לספק השירות להבין טוב יותר את הצרכים שלך ולהתכונן בהתאם.
-              </Text>
-            </View>
-          )}
-        </View>
-        
-        <View style={styles.buttonContainer}>
-          <Button
-            mode="contained"
-            buttonColor={serviceColor} style={styles.button}
-            onPress={handleSaveNotes}
-            labelStyle={styles.textRTL}
-          >
-            שמור
-          </Button>
-        </View>
+        )}
       </ScrollView>
+
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.saveBtn} onPress={handleSaveNotes} activeOpacity={0.85}>
+          <Text style={styles.saveText}>שמור</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F6FAFD',
-  },
-  content: {
-    padding: 15,
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 15,
-    color: '#3A4A57',
-  },
-  textInput: {
-    backgroundColor: 'white',
-    marginBottom: 20,
-  },
-  textInputRTL: {
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
-  examplesContainer: {
-    marginBottom: 20,
-  },
-  examplesTitle: {
-    fontSize: 16,
-    marginBottom: 10,
-    color: '#5E6E7C',
-  },
-  exampleChips: {
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-  },
-  exampleChip: {
-    margin: 4,
-    borderRadius: 999,
-  },
-  exampleChipLabel: {
-    fontSize: 12,
-  },
-  mediaSection: {
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  mediaSectionHeader: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  mediaSectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1B2A36',
-  },
-  mediaCount: {
-    fontSize: 14,
-    color: '#5E6E7C',
-    fontWeight: '500',
-  },
-  mediaDescription: {
-    fontSize: 13,
-    color: '#5E6E7C',
-    marginBottom: 15,
-    lineHeight: 18,
-  },
-  mediaCard: {
-    marginBottom: 12,
-    borderRadius: 20,
-    elevation: 2,
-  },
-  mediaContainer: {
-    flexDirection: 'column',
-    padding: 10,
-  },
-  mediaThumbnail: {
-    width: '100%',
-    height: 180,
-    borderRadius: 14,
-    backgroundColor: '#EEF3F7',
-  },
-  videoThumbnailContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 180,
-  },
-  videoOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 14,
-  },
-  mediaInfo: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    marginTop: 10,
-    paddingHorizontal: 5,
-  },
-  iconRTL: {
-    marginLeft: 8,
-    marginRight: 0,
-  },
-  mediaDetails: {
-    flex: 1,
-  },
-  mediaFileName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1B2A36',
-    marginBottom: 2,
-  },
-  mediaSize: {
-    fontSize: 12,
-    color: '#5E6E7C',
-  },
-  removeButtonRTL: {
-    position: 'absolute',
-    top: 5,
-    left: 5,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 999,
-  },
-  addMediaButton: {
-    marginTop: 10,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-  },
-  mediaInfoBox: {
-    flexDirection: 'row-reverse',
-    alignItems: 'flex-start',
-    backgroundColor: '#EAF4FB',
-    padding: 12,
-    borderRadius: 14,
-    marginTop: 15,
-  },
-  mediaInfoText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#5E6E7C',
-    marginRight: 8,
-    lineHeight: 18,
-  },
-  buttonContainer: {
-    marginTop: 10,
-    marginBottom: 30,
-  },
-  button: {
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  rtlRow: {
-    flexDirection: 'row-reverse',
-  },
-  textRTL: {
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
+  container: { flex: 1, backgroundColor: C.bg },
+  content: { padding: 18, paddingBottom: 24, gap: 10 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: C.ink, textAlign: 'right' },
+  help: { fontSize: 13, color: C.muted, textAlign: 'right', lineHeight: 19 },
+  label: { fontSize: 13, fontWeight: '600', color: C.text2, textAlign: 'right', marginTop: 6 },
+  textArea: { minHeight: 140, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 16, padding: 14, fontSize: 15, color: C.ink, textAlign: 'right', writingDirection: 'rtl' },
+  chips: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
+  chip: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, backgroundColor: C.tint, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 12 },
+  chipText: { fontSize: 13, color: C.primaryDark, fontWeight: '500' },
+  mediaHeader: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  count: { fontSize: 13, fontWeight: '600', color: C.muted },
+  mediaCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 20, padding: 10, gap: 10 },
+  thumb: { width: '100%', height: 180, borderRadius: 14, backgroundColor: C.divider, overflow: 'hidden' },
+  videoOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(14, 40, 62, 0.35)' },
+  mediaInfo: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+  mediaIcon: { width: 34, height: 34, borderRadius: 11, backgroundColor: C.tint, alignItems: 'center', justifyContent: 'center' },
+  mediaName: { fontSize: 14, fontWeight: '500', color: C.ink, textAlign: 'right' },
+  mediaSize: { fontSize: 12, color: C.muted, textAlign: 'right' },
+  removeBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#FDECEA', alignItems: 'center', justifyContent: 'center' },
+  addMedia: { alignItems: 'center', gap: 4, paddingVertical: 22, borderRadius: 20, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.accent, backgroundColor: C.surface },
+  addMediaText: { fontSize: 15, fontWeight: '600', color: C.primaryDark },
+  addMediaSub: { fontSize: 12, color: C.muted },
+  infoBox: { flexDirection: 'row-reverse', alignItems: 'flex-start', gap: 8, backgroundColor: C.tint, borderRadius: 14, padding: 12 },
+  infoText: { flex: 1, fontSize: 12, color: C.text2, textAlign: 'right', lineHeight: 18 },
+  footer: { padding: 18, paddingTop: 10, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: '#E8EFF5' },
+  saveBtn: { backgroundColor: C.primary, borderRadius: 999, paddingVertical: 15, alignItems: 'center' },
+  saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 });
 
 export default BookingNotesScreen;

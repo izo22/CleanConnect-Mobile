@@ -553,11 +553,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#EEF3F7',
+    borderBottomColor: '#E8EFF5',
   },
   backButton: {
     padding: 8,
     borderRadius: 999,
+    backgroundColor: '#F4F8FB',
   },
   headerTitle: {
     fontSize: 18,
@@ -569,7 +570,7 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     backgroundColor: 'white',
-    borderRadius: 16,
+    borderRadius: 20,
     margin: 16,
     padding: 16,
     shadowColor: '#1B4F7A',
@@ -577,19 +578,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E1ECF4',
   },
   inputGroup: {
     marginBottom: 20,
-    backgroundColor: '#F4F8FB',
+    backgroundColor: 'transparent',
     borderColor: '#E1ECF4',
     borderWidth: 1,
     borderRadius: 16,
   },
   label: {
-    fontSize: 16,
+    fontSize: 13,
     marginBottom: 8,
     fontWeight: '500',
-    color: '#1B2A36',
+    color: '#3A4A57',
   },
   input: {
     borderWidth: 1,
@@ -621,6 +624,7 @@ const styles = StyleSheet.create({
     padding: 15,
     alignItems: 'center',
     marginTop: 10,
+    paddingVertical: 15,
   },
   saveButtonText: {
     color: 'white',
@@ -667,7 +671,7 @@ const styles = StyleSheet.create({
   serviceTypeCheckbox: {
     width: 24,
     height: 24,
-    borderRadius: 18,
+    borderRadius: 7,
     borderWidth: 2,
     borderColor: '#256FA8',
     backgroundColor: '#fff',

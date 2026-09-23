@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 8,
     textAlign: 'right',
     color: '#1B2A36',
@@ -337,14 +337,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#EEF3F7',
+    borderColor: '#E1ECF4',
     padding: 16,
     marginBottom: 16,
   },
   video: {
     width: '100%',
     height: 300,
-    borderRadius: 14,
+    borderRadius: 18,
     backgroundColor: '#1B2A36',
     marginBottom: 12
   },
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#EEF3F7',
+    borderColor: '#E1ECF4',
     padding: 24,
     alignItems: 'center',
     marginBottom: 16,
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   galleryButton: {
-    backgroundColor: '#5BA4D9',
+    backgroundColor: '#1B5A8A',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 999,
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   replaceButton: {
-    backgroundColor: '#FF9500',
+    backgroundColor: '#1B5A8A',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 999,

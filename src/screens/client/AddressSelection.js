@@ -156,8 +156,8 @@ const AddressSelectionScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Appbar.Header style={{ backgroundColor: serviceColor }}>
-        <Appbar.BackAction onPress={() => navigation.goBack()} color="white" />
+      <Appbar.Header style={{ backgroundColor: '#FFFFFF', elevation: 0, borderBottomWidth: 1, borderBottomColor: '#E8EFF5' }}>
+        <Appbar.BackAction onPress={() => navigation.goBack()} color="#1B2A36" />
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>
             {showAddAddress ? "הוסף כתובת" : "בחירת כתובת"}
@@ -167,7 +167,7 @@ const AddressSelectionScreen = ({ navigation }) => {
       
       <ScrollView style={styles.content}>
         {!showAddAddress ? (
-          <Card style={styles.card}>
+          <Card mode="contained" style={styles.card}>
             <Card.Content>
               <Text style={[styles.sectionTitle, styles.rtlText]}>הכתובות שלי</Text>
               
@@ -224,7 +224,7 @@ const AddressSelectionScreen = ({ navigation }) => {
             </Card.Content>
           </Card>
         ) : (
-          <Card style={styles.card}>
+          <Card mode="contained" style={styles.card}>
             <Card.Content>
               <Text style={[styles.sectionTitle, styles.rtlText]}>הוסף כתובת</Text>
               
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   headerTitle: {
-    color: 'white',
+    color: '#1B2A36',
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'right',
@@ -338,7 +338,10 @@ const styles = StyleSheet.create({
   card: { 
     margin: 15, 
     borderRadius: 20, 
-    elevation: 4 
+    backgroundColor: '#FFFFFF',
+    elevation: 0,
+    borderWidth: 1,
+    borderColor: '#E1ECF4',
   },
   sectionTitle: {
     fontSize: 18,
@@ -397,11 +400,12 @@ const styles = StyleSheet.create({
   },
   textInput: {
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 12,
     fontSize: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#F4F8FB',
     textAlign: 'right',
+    borderColor: '#E1ECF4',
   },
   textInputMultiline: {
     minHeight: 80,

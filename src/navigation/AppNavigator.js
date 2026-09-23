@@ -113,7 +113,7 @@ const ClientMainStack = () => (
     <ClientStack.Screen name="ServiceDetails"      component={ServiceDetailsScreen}      options={getHeaderOptions('פרטי שירות')} />
     <ClientStack.Screen name="ProviderSearch"      component={ProviderSearchScreen}      options={{ headerShown: false }} />
     <ClientStack.Screen name="ProviderProfileView" component={ProviderProfileViewScreen} options={{ headerShown: false }} />
-    <ClientStack.Screen name="AddressSelection"    component={AddressSelectionScreen}    options={getHeaderOptions('בחירת כתובת')} />
+    <ClientStack.Screen name="AddressSelection"    component={AddressSelectionScreen}    options={{ headerShown: false }} />
     <ClientStack.Screen name="ScheduleScreen"      component={ScheduleScreen}            options={{ headerShown: false }} />
     <ClientStack.Screen name="BookingSummary"      component={BookingSummaryScreen}      options={{ headerShown: false }} />
     <ClientStack.Screen name="BookingNotes"        component={BookingNotesScreen}        options={getHeaderOptions('הערות להזמנה')} />

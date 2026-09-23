@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#1B2A36',
     letterSpacing: -0.4,
     lineHeight: 31,
@@ -405,8 +405,8 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#256FA8',
+    fontWeight: '700',
+    color: '#1B4F7A',
     letterSpacing: -0.4,
     lineHeight: 26,
   },
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAF4FB',
   },
   editButtonText: {
-    color: '#256FA8',
+    color: '#1B5A8A',
     fontSize: 14,
     fontWeight: '500',
     letterSpacing: -0.2,
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   areaBadgeText: {
-    color: '#256FA8',
+    color: '#1B5A8A',
     fontSize: 12,
     fontWeight: '500',
   },
@@ -536,7 +536,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 999,
-    backgroundColor: '#EF444410',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F2C9C4',
   },
   logoutButtonText: {
     color: '#EF4444',

@@ -274,7 +274,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
       {/* ── Custom Header (remplace le header bleu du navigator) ─────────── */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerBack} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={22} color="#1B2A36" />
+          <Ionicons name="chevron-forward" size={22} color="#1B2A36" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>פרטי משימה</Text>
         <View style={{ width: 36 }} />
@@ -422,7 +422,7 @@ const InfoRow = ({ icon, text, isLink, onPress }) => (
   >
     <Text style={[styles.infoText, styles.rtl, isLink && styles.linkText]}>{text}</Text>
     <View style={styles.infoIconWrap}>
-      <Ionicons name={icon} size={16} color="#8A99A6" />
+      <Ionicons name={icon} size={16} color="#256FA8" />
     </View>
   </TouchableOpacity>
 );
@@ -468,8 +468,8 @@ const styles = StyleSheet.create({
   headerBack: {
     width: 36,
     height: 36,
-    borderRadius: 14,
-    backgroundColor: '#F6FAFD',
+    borderRadius: 999,
+    backgroundColor: '#F4F8FB',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -525,8 +525,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#EEF3F7',
+    borderColor: '#E1ECF4',
     borderRadius: 20,
+    borderWidth: 1,
   },
   divider: {
     height: 1,
@@ -548,7 +549,7 @@ const styles = StyleSheet.create({
   },
   serviceName: {
     fontSize: 19,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#1B2A36',
     letterSpacing: -0.4,
     lineHeight: 24,
@@ -567,7 +568,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#16A34A',
+    color: '#1B4F7A',
     letterSpacing: -0.5,
     marginLeft: 16,
   },
@@ -593,7 +594,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 20,
-    backgroundColor: '#F6FAFD',
+    backgroundColor: '#EAF4FB',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -621,6 +622,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#EAF4FB',
   },
   quickActionLabel: {
     fontSize: 12,
@@ -671,7 +673,7 @@ const styles = StyleSheet.create({
 
   // Buttons
   btnPrimary: {
-    backgroundColor: '#1B2A36',
+    backgroundColor: '#256FA8',
     paddingVertical: 12,
     borderRadius: 999,
     alignItems: 'center',
@@ -705,7 +707,7 @@ const styles = StyleSheet.create({
   },
   btnComplete: {
     paddingVertical: 14,
-    backgroundColor: '#16A34A',
+    backgroundColor: '#256FA8',
     borderRadius: 999,
     alignItems: 'center',
   },

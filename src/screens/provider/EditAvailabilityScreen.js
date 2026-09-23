@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#1B2A36',
     letterSpacing: -0.3,
     lineHeight: 22,
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeText: {
-    color: '#256FA8',
+    color: '#1B5A8A',
     fontWeight: '500',
     fontSize: 13,
     letterSpacing: -0.2,
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cancelButton: {
-    backgroundColor: '#F6FAFD',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 999,
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E1ECF4',
+    borderColor: '#DCE8F1',
   },
   cancelButtonText: {
     color: '#5E6E7C',

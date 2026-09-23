@@ -482,10 +482,10 @@ const styles = StyleSheet.create({
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   formContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#EEF3F7',
+    borderColor: '#E1ECF4',
     shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -497,12 +497,12 @@ const styles = StyleSheet.create({
   // TYPOGRAPHIE
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 26,
+    fontWeight: '700',
     letterSpacing: -0.3,
     lineHeight: 18 * 1.3,
     marginBottom: 24,
-    textAlign: 'center',
+    textAlign: 'right',
     color: '#1B2A36',
   },
   label: {
@@ -543,12 +543,12 @@ const styles = StyleSheet.create({
   cityButton: {
     height: 40,
     borderWidth: 1,
-    borderColor: '#EEF3F7',
-    borderRadius: 999,
+    borderColor: '#E1ECF4',
+    borderRadius: 16,
     paddingHorizontal: 12,
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F4F8FB',
   },
   cityButtonText: {
     flex: 1,
@@ -639,6 +639,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
+    minHeight: 52,
   },
   buttonDisabled: {
     backgroundColor: '#5BA4D9',
@@ -647,7 +648,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     letterSpacing: -0.2,
     lineHeight: 14 * 1.3,

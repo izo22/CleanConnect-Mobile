@@ -812,8 +812,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 26,
+    fontWeight: '700',
     letterSpacing: -0.3,
     lineHeight: 18 * 1.3,
     color: '#1B2A36',
@@ -833,11 +833,11 @@ const styles = StyleSheet.create({
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   formSection: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#EEF3F7',
+    borderColor: '#E1ECF4',
     shadowColor: '#1B4F7A',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -954,7 +954,7 @@ const styles = StyleSheet.create({
   serviceTypeCheckbox: {
     width: 20,
     height: 20,
-    borderRadius: 16,
+    borderRadius: 7,
     borderWidth: 2,
     borderColor: '#DCE8F1',
     backgroundColor: '#FFFFFF',
@@ -1067,6 +1067,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
+    paddingVertical: 15,
   },
   submitButtonDisabled: {
     backgroundColor: '#5BA4D9',
@@ -1075,7 +1076,7 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     letterSpacing: -0.2,
     lineHeight: 14 * 1.3,
