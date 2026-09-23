@@ -128,7 +128,7 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.actionCardSubtitle}>צפה בהזמנות</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.actionCard}
           onPress={() => navigation.navigate('Profile')}
         >
@@ -137,6 +137,17 @@ const HomeScreen = ({ navigation }) => {
           </View>
           <Text style={styles.actionCardTitle}>הפרופיל שלי</Text>
           <Text style={styles.actionCardSubtitle}>ערוך פרטים</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={() => navigation.navigate('FireHoseGame')}
+        >
+          <View style={styles.actionIconContainer}>
+            <Ionicons name="flame-outline" size={20} color="#2E86C1" />
+          </View>
+          <Text style={styles.actionCardTitle}>כיבוי אש</Text>
+          <Text style={styles.actionCardSubtitle}>משחק מהיר</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

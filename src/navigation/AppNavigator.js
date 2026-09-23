@@ -42,6 +42,8 @@ import PaymentScreen             from '../screens/booking/PaymentScreen';
 import BookingConfirmationScreen from '../screens/booking/BookingConfirmationScreen';
 import AddressSelectionScreen    from '../screens/client/AddressSelection';
 
+import FireHoseGameScreen from '../screens/game/FireHoseGameScreen';
+
 import ProfileStackNavigator from './ProfileStackNavigator';
 
 // ── Écrans temporaires ────────────────────────────────────────────────────────
@@ -104,6 +106,7 @@ const ClientMainStack = () => (
     <ClientStack.Screen name="PaymentScreen"       component={PaymentScreen}             options={{ headerShown: false }} />
     <ClientStack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} options={getHeaderOptions('אישור הזמנה')} />
     <ClientStack.Screen name="BookingDetails"      component={BookingDetailsScreen}      options={{ headerShown: false }} />
+    <ClientStack.Screen name="FireHoseGame"        component={FireHoseGameScreen}        options={{ headerShown: false }} />
   </ClientStack.Navigator>
 );
 
