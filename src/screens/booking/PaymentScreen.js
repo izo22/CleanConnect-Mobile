@@ -1,5 +1,6 @@
 // src/screens/booking/PaymentScreen.js
 // ✅ Tranzila real pre-auth (card) + Bit WebView + PREMIÈRE COMMANDE GRATUITE
+// ✅ REFONTE BLEU CLAIR (maquette 05) : styles uniquement, logique de paiement inchangée
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -10,9 +11,11 @@ import { Text, ActivityIndicator } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { useBooking } from '../../context/BookingContext';
-import { API_URL, SERVICE_TYPE_LABELS, calculatePlatformFees, PLATFORM_FEES, getServiceColor, getServiceBackgroundColor } from '../../config/constants';
+import { API_URL, SERVICE_TYPE_LABELS, calculatePlatformFees, PLATFORM_FEES } from '../../config/constants';
 
 import PriceBreakdown from '../../components/PriceBreakdown';
+import { COLORS } from '../../config/theme';
+import { TOP_SPACE } from '../../components/BlueUI';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -34,8 +37,8 @@ const CardValidation = {
 const PaymentScreen = ({ navigation }) => {
   const { currentBooking, createBooking } = useBooking();
 
-  const serviceColor    = getServiceColor(currentBooking.serviceType);
-  const serviceBgColor  = getServiceBackgroundColor(currentBooking.serviceType);
+  const serviceColor    = COLORS.primary;
+  const serviceBgColor  = COLORS.canvas;
 
   // ✅ NOUVEAU : statut première commande gratuite (récupéré depuis le profil)
   const [isFreeOrder, setIsFreeOrder] = useState(false);
@@ -374,7 +377,7 @@ const PaymentScreen = ({ navigation }) => {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Ionicons name="arrow-forward" size={20} color="#1F2937" />
+              <Ionicons name="chevron-forward" size={24} color={COLORS.text} />
             </TouchableOpacity>
             <Text style={[styles.headerTitle, styles.textRTL]}>
               {isFreeOrder ? 'הזמנה ראשונה חינם 🎁' : 'תשלום עמלה'}
@@ -387,11 +390,11 @@ const PaymentScreen = ({ navigation }) => {
           </Text>
 
           <View style={[styles.amountBadge, {
-            backgroundColor: isFreeOrder ? '#ECFDF5' : `${serviceColor}10`
+            backgroundColor: COLORS.tint
           }]}>
             <Text style={[
               styles.amountText,
-              { color: isFreeOrder ? '#10B981' : serviceColor },
+              { color: COLORS.navy },
               styles.textRTL
             ]}>
               {isFreeOrder ? 'חינם!' : formatPrice(platformFees.platformFee)}
@@ -477,7 +480,7 @@ const PaymentScreen = ({ navigation }) => {
               <TouchableOpacity
                 style={[
                   styles.radioOption,
-                  paymentMethod === 'card' && { borderColor: serviceColor, borderWidth: 1.5 }
+                  paymentMethod === 'card' && { borderColor: COLORS.accent }
                 ]}
                 onPress={() => setPaymentMethod('card')}
               >
@@ -488,7 +491,7 @@ const PaymentScreen = ({ navigation }) => {
                 </View>
                 <View style={styles.radioContent}>
                   <View style={[styles.rtlRow, { alignItems: 'center' }]}>
-                    <Ionicons name="card-outline" size={16} color="#6B7280" style={styles.iconRTL} />
+                    <Ionicons name="card-outline" size={18} color={COLORS.navy} style={styles.iconRTL} />
                     <Text style={[styles.radioLabel, styles.textRTL]}>כרטיס אשראי</Text>
                   </View>
                   <Text style={[styles.radioDescription, styles.textRTL]}>תשלום מאובטח ומוצפן</Text>
@@ -498,8 +501,8 @@ const PaymentScreen = ({ navigation }) => {
               <TouchableOpacity
                 style={[
                   styles.radioOption,
-                  { marginTop: 10 },
-                  paymentMethod === 'bit' && { borderColor: serviceColor, borderWidth: 1.5 }
+                  { marginTop: 8 },
+                  paymentMethod === 'bit' && { borderColor: COLORS.accent }
                 ]}
                 onPress={() => setPaymentMethod('bit')}
               >
@@ -544,9 +547,9 @@ const PaymentScreen = ({ navigation }) => {
                       maxLength={19}
                       style={[styles.textInput, styles.textInputRTL]}
                       placeholder="1234 5678 9012 3456"
-                      placeholderTextColor="#D1D5DB"
+                      placeholderTextColor={COLORS.textHint}
                     />
-                    <Ionicons name={getCardIcon()} size={18} color="#9CA3AF" />
+                    <Ionicons name={getCardIcon()} size={18} color={COLORS.textHint} />
                   </View>
                   {cardErrors.cardNumber && (
                     <Text style={[styles.errorText, styles.textRTL]}>{cardErrors.cardNumber}</Text>
@@ -563,7 +566,7 @@ const PaymentScreen = ({ navigation }) => {
                         keyboardType="numeric"
                         maxLength={5}
                         placeholder="12/25"
-                        placeholderTextColor="#D1D5DB"
+                        placeholderTextColor={COLORS.textHint}
                         style={[styles.textInput, styles.textInputRTL]}
                       />
                     </View>
@@ -582,7 +585,7 @@ const PaymentScreen = ({ navigation }) => {
                         maxLength={cardType.type === 'amex' ? 4 : 3}
                         secureTextEntry
                         placeholder="123"
-                        placeholderTextColor="#D1D5DB"
+                        placeholderTextColor={COLORS.textHint}
                         style={[styles.textInput, styles.textInputRTL]}
                       />
                     </View>
@@ -600,7 +603,7 @@ const PaymentScreen = ({ navigation }) => {
                       onChangeText={setNameOnCard}
                       style={[styles.textInput, styles.textInputRTL]}
                       placeholder="ישראל ישראלי"
-                      placeholderTextColor="#D1D5DB"
+                      placeholderTextColor={COLORS.textHint}
                     />
                   </View>
                   {cardErrors.nameOnCard && (
@@ -617,7 +620,7 @@ const PaymentScreen = ({ navigation }) => {
 
           {__DEV__ && (
             <TouchableOpacity
-              style={[styles.primaryButton, { backgroundColor: '#6B7280', marginBottom: 10 }]}
+              style={[styles.primaryButton, { backgroundColor: COLORS.textMuted, marginBottom: 10 }]}
               onPress={() => createBooking({ paymentMethod: 'test', paymentIntentId: 'test_123' }).then(res => {
                 if (res.success) navigation.reset({
                   index: 0,
@@ -642,7 +645,7 @@ const PaymentScreen = ({ navigation }) => {
             <TouchableOpacity
               style={[
                 styles.primaryButton,
-                { backgroundColor: isFreeOrder ? '#10B981' : serviceColor }
+                { backgroundColor: COLORS.primary }
               ]}
               onPress={handleConfirmReservation}
               activeOpacity={0.8}
@@ -670,7 +673,7 @@ const PaymentScreen = ({ navigation }) => {
 
           {!isFreeOrder && (
             <View style={[styles.securityBadge, styles.rtlRow]}>
-              <Ionicons name="lock-closed" size={12} color="#10B981" style={styles.iconRTL} />
+              <Ionicons name="lock-closed-outline" size={13} color={COLORS.textMuted} style={styles.iconRTL} />
               <Text style={[styles.securityText, styles.textRTL]}>תשלום מאובטח ומוצפן</Text>
             </View>
           )}
@@ -695,7 +698,7 @@ const PaymentScreen = ({ navigation }) => {
                 setIsProcessing(false);
               }}
             >
-              <Ionicons name="close" size={22} color="#1F2937" />
+              <Ionicons name="close" size={22} color={COLORS.text} />
             </TouchableOpacity>
             <Text style={styles.webViewTitle}>תשלום עם Bit</Text>
             <View style={{ width: 36 }} />
@@ -719,17 +722,21 @@ const PaymentScreen = ({ navigation }) => {
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+const CARD = {
+  marginHorizontal: 18, marginBottom: 10,
+  padding: 14, backgroundColor: COLORS.surface,
+  borderRadius: 20, borderWidth: 1, borderColor: COLORS.border,
+};
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
   // Header
   header: {
-    backgroundColor: '#FFFFFF',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    backgroundColor: COLORS.canvas,
+    paddingTop: TOP_SPACE,
+    paddingHorizontal: 18,
+    paddingBottom: 12,
   },
   headerTop: {
     flexDirection: 'row-reverse',
@@ -738,163 +745,149 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   backButton: {
-    width: 36, height: 36, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
+    width: 36, height: 36,
+    alignItems: 'flex-end', justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 17, fontWeight: '600', color: '#1F2937',
-    textAlign: 'center', flex: 1, letterSpacing: -0.3,
+    fontSize: 18, fontWeight: '600', color: COLORS.text,
+    textAlign: 'center', flex: 1,
   },
   headerSubtitle: {
-    fontSize: 13, color: '#9CA3AF',
-    textAlign: 'center', marginBottom: 12,
+    fontSize: 13, color: COLORS.textMuted,
+    textAlign: 'center', marginBottom: 10,
   },
   amountBadge: {
-    alignSelf: 'center', paddingHorizontal: 16,
-    paddingVertical: 6, borderRadius: 6,
+    alignSelf: 'center', paddingHorizontal: 18,
+    paddingVertical: 7, borderRadius: 999,
   },
-  amountText: { fontSize: 16, fontWeight: '600', letterSpacing: -0.3 },
+  amountText: { fontSize: 18, fontWeight: '700' },
 
   // ✅ Banner première commande gratuite
   freeOrderBanner: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 4,
-    padding: 16,
-    backgroundColor: '#ECFDF5',
-    borderRadius: 12,
+    marginHorizontal: 18,
+    marginTop: 6,
+    marginBottom: 10,
+    padding: 14,
+    backgroundColor: COLORS.tint,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: COLORS.accent,
   },
   freeOrderEmoji: { fontSize: 28, marginLeft: 12 },
   freeOrderTextContainer: { flex: 1 },
   freeOrderTitle: {
-    fontSize: 15, fontWeight: '700', color: '#065F46', marginBottom: 4,
+    fontSize: 15, fontWeight: '700', color: COLORS.navy, marginBottom: 4,
   },
-  freeOrderSubtitle: { fontSize: 13, color: '#047857' },
+  freeOrderSubtitle: { fontSize: 13, color: COLORS.textBody },
 
   // Explanation
-  explanationCard: {
-    marginHorizontal: 16, marginTop: 20, marginBottom: 16,
-    padding: 20, backgroundColor: '#FFFFFF',
-    borderRadius: 12, borderWidth: 1, borderColor: '#F3F4F6',
-  },
-  explanationTitle: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
-  step: { marginBottom: 12, alignItems: 'flex-start' },
+  explanationCard: { ...CARD, marginTop: 6 },
+  explanationTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
+  step: { marginBottom: 10, alignItems: 'flex-start' },
   stepBadge: {
-    width: 24, height: 24, borderRadius: 6,
+    width: 24, height: 24, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center', marginLeft: 12,
   },
-  stepNumber: { fontSize: 11, fontWeight: '600' },
-  stepText: { flex: 1, fontSize: 13, color: '#1F2937', lineHeight: 18 },
-  benefitsBox: { padding: 12, borderRadius: 8, marginTop: 4 },
-  benefitItem: { fontSize: 12, color: '#1F2937', marginBottom: 6 },
+  stepNumber: { fontSize: 12, fontWeight: '600' },
+  stepText: { flex: 1, fontSize: 14, color: COLORS.textBody, lineHeight: 20 },
+  benefitsBox: { padding: 12, borderRadius: 14, marginTop: 4 },
+  benefitItem: { fontSize: 13, color: COLORS.navy, marginBottom: 6 },
 
   // Price
-  priceContainer: { marginHorizontal: 16, marginBottom: 16 },
+  priceContainer: { marginHorizontal: 18, marginBottom: 10 },
 
   // Payment method
-  paymentCard: {
-    marginHorizontal: 16, marginBottom: 16,
-    padding: 20, backgroundColor: '#FFFFFF',
-    borderRadius: 12, borderWidth: 1, borderColor: '#F3F4F6',
-  },
+  paymentCard: { ...CARD, backgroundColor: 'transparent', borderWidth: 0, padding: 0 },
   sectionLabel: {
-    fontSize: 11, fontWeight: '500', color: '#6B7280',
-    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12,
+    fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 8,
   },
   radioOption: {
     flexDirection: 'row-reverse', alignItems: 'center',
-    padding: 12, backgroundColor: '#F9FAFB',
-    borderRadius: 8, borderWidth: 1, borderColor: 'transparent',
+    padding: 12, backgroundColor: COLORS.surface,
+    borderRadius: 16, borderWidth: 1, borderColor: COLORS.border,
   },
   radioCircle: {
     width: 20, height: 20, borderRadius: 10,
-    borderWidth: 2, borderColor: '#D1D5DB',
+    borderWidth: 2, borderColor: COLORS.radioOff,
     alignItems: 'center', justifyContent: 'center', marginLeft: 12,
   },
   radioCircleSelected: { width: 10, height: 10, borderRadius: 5 },
   radioContent: { flex: 1 },
-  radioLabel: { fontSize: 14, fontWeight: '500', color: '#1F2937' },
-  radioDescription: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  radioLabel: { fontSize: 14, fontWeight: '500', color: COLORS.text },
+  radioDescription: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
 
   // Bit badge
   bitBadge: {
     backgroundColor: '#1A1A2E', paddingHorizontal: 8, paddingVertical: 2,
-    borderRadius: 4, marginLeft: 8,
+    borderRadius: 6, marginLeft: 8,
   },
-  bitBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
+  bitBadgeText: { color: COLORS.white, fontSize: 11, fontWeight: '700' },
   bitBadgeWhite: {
     backgroundColor: 'rgba(255,255,255,0.25)', paddingHorizontal: 6,
-    paddingVertical: 1, borderRadius: 4, marginLeft: 8,
+    paddingVertical: 1, borderRadius: 6, marginLeft: 8,
   },
-  bitBadgeTextWhite: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
+  bitBadgeTextWhite: { color: COLORS.white, fontSize: 11, fontWeight: '700' },
 
   // Card details
-  cardDetailsCard: {
-    marginHorizontal: 16, marginBottom: 16,
-    padding: 20, backgroundColor: '#FFFFFF',
-    borderRadius: 12, borderWidth: 1, borderColor: '#F3F4F6',
-  },
+  cardDetailsCard: { ...CARD },
   cardHeader: {
     flexDirection: 'row-reverse', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: 16,
+    alignItems: 'center', marginBottom: 12,
   },
-  cardTypeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  cardTypeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
   cardTypeText: { fontSize: 11, fontWeight: '500' },
-  inputContainer: { marginBottom: 16 },
-  inputLabel: { fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 8 },
+  inputContainer: { marginBottom: 12 },
+  inputLabel: { fontSize: 12, fontWeight: '500', color: COLORS.textMuted, marginBottom: 6 },
   inputWrapper: {
     flexDirection: 'row-reverse', alignItems: 'center',
-    borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8,
-    backgroundColor: '#FFFFFF', paddingHorizontal: 12, height: 40,
+    borderWidth: 1, borderColor: COLORS.border, borderRadius: 14,
+    backgroundColor: COLORS.input, paddingHorizontal: 12, height: 46,
   },
-  inputError: { borderColor: '#EF4444' },
-  textInput: { flex: 1, fontSize: 14, color: '#1F2937' },
+  inputError: { borderColor: COLORS.error },
+  textInput: { flex: 1, fontSize: 14, color: COLORS.text },
   textInputRTL: { textAlign: 'right', writingDirection: 'rtl' },
   rowInputs: {
     flexDirection: 'row-reverse', justifyContent: 'space-between', gap: 12,
   },
   halfInputContainer: { flex: 1 },
-  errorText: { fontSize: 11, color: '#EF4444', marginTop: 6 },
+  errorText: { fontSize: 11, color: COLORS.error, marginTop: 6 },
 
   // Button
-  buttonContainer: { paddingHorizontal: 16, paddingBottom: 32 },
+  buttonContainer: { paddingHorizontal: 18, paddingTop: 6, paddingBottom: 28 },
   primaryButton: {
-    height: 44, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+    minHeight: 54, borderRadius: 999,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 8,
   },
-  primaryButtonText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
+  primaryButtonText: { fontSize: 17, fontWeight: '600', color: COLORS.white },
   processingContainer: {
     flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center',
-    padding: 16, backgroundColor: '#F9FAFB', borderRadius: 8, marginBottom: 12,
+    padding: 16, backgroundColor: COLORS.tint, borderRadius: 999, marginBottom: 8,
   },
-  processingText: { fontSize: 13, color: '#1F2937', marginRight: 12 },
+  processingText: { fontSize: 14, color: COLORS.navy, marginRight: 12 },
   securityBadge: {
-    flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', paddingVertical: 8,
+    flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', paddingVertical: 4,
   },
-  securityText: { fontSize: 12, color: '#6B7280' },
+  securityText: { fontSize: 12, color: COLORS.textMuted },
 
   // WebView modal
-  webViewContainer: { flex: 1, backgroundColor: '#FFFFFF' },
+  webViewContainer: { flex: 1, backgroundColor: COLORS.surface },
   webViewHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 1, borderBottomColor: COLORS.borderSoft,
   },
   webViewClose: {
-    width: 36, height: 36, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB',
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.tint,
   },
-  webViewTitle: { fontSize: 16, fontWeight: '600', color: '#1F2937' },
+  webViewTitle: { fontSize: 16, fontWeight: '600', color: COLORS.text },
   webViewLoading: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF',
+    alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface,
   },
-  webViewLoadingText: { marginTop: 12, fontSize: 14, color: '#6B7280' },
+  webViewLoadingText: { marginTop: 12, fontSize: 14, color: COLORS.textMuted },
 
   // RTL utils
   rtlRow:    { flexDirection: 'row-reverse' },

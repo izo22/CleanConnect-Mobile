@@ -1,282 +1,234 @@
 // src/screens/client/HomeScreen.js
-// ✅ VERSION PREMIUM MINIMALISTE
-// Style ultra-épuré : Stripe, Linear, Revolut
-// Maximum d'espace blanc, typographie légère, accents subtils
+// ✅ REFONTE BLEU CLAIR (maquette 01 · Accueil)
+// Marque + ville · recherche · bannière · catégories · meilleurs prestataires
 
-import React from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SERVICE_TYPES, SERVICE_COLORS } from '../../config/constants';
+import { SERVICE_TYPES } from '../../config/constants';
+import { COLORS } from '../../config/theme';
 import { useAuth } from '../../context/AuthContext';
 import { useBooking } from '../../context/BookingContext';
+import providerService from '../../services/providerService';
+import { PhotoOrPlaceholder, SectionTitle, Chip, TOP_SPACE } from '../../components/BlueUI';
 
-const ServiceCard = ({ title, description, color, icon, onPress }) => {
-  return (
-    <TouchableOpacity 
-      style={styles.card}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.cardIconContainer, { backgroundColor: `${color}10` }]}>
-        <Ionicons name={icon} size={24} color={color} />
-      </View>
-      
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        <Text style={styles.cardDescription}>{description}</Text>
-      </View>
-      
-      <TouchableOpacity 
-        style={[styles.cardButton, { borderColor: color }]}
-        onPress={onPress}
-      >
-        <Text style={[styles.cardButtonText, { color }]}>הזמן עכשיו</Text>
-        <Ionicons name="arrow-back" size={14} color={color} style={{ marginRight: 4 }} />
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
-};
+const CATEGORIES = [
+  { type: SERVICE_TYPES.HOME,     label: 'בית',    icon: 'home-outline' },
+  { type: SERVICE_TYPES.OFFICE,   label: 'משרד',   icon: 'briefcase-outline' },
+  { type: SERVICE_TYPES.BUILDING, label: 'בניין',  icon: 'business-outline' },
+  { type: SERVICE_TYPES.AIRBNB,   label: 'Airbnb', icon: 'key-outline' },
+];
 
 const HomeScreen = ({ navigation }) => {
   const { userInfo } = useAuth();
-  const { updateBooking } = useBooking();
-  
-  const serviceOptions = [
-    {
-      type: SERVICE_TYPES.HOME,
-      title: 'ניקיון בית',
-      color: SERVICE_COLORS.HOME,
-      description: 'ניקיון מקצועי לבית שלך, מותאם לצרכים הספציפיים שלך',
-      icon: 'home'
-    },
-    {
-      type: SERVICE_TYPES.OFFICE,
-      title: 'ניקיון משרדים',
-      color: SERVICE_COLORS.OFFICE,
-      description: 'שירותים מלאים למשרדים וחללים מקצועיים',
-      icon: 'briefcase'
-    },
-    {
-      type: SERVICE_TYPES.BUILDING,
-      title: 'ניקיון בניינים',
-      color: SERVICE_COLORS.BUILDING,
-      description: 'תחזוקה של חלקים משותפים ובניינים מגורים',
-      icon: 'business'
-    },
-    {
-      type: SERVICE_TYPES.AIRBNB,
-      title: 'ניקיון אירבנב',
-      color: SERVICE_COLORS.AIRBNB,
-      description: 'שירות ניקיון מקצועי לדירות אירבנב. ניקיון מהיר ויעיל בין אורחים',
-      icon: 'key'
-    }
-  ];
+  const { updateBooking, selectProvider } = useBooking();
+  const [selectedType, setSelectedType] = useState(SERVICE_TYPES.HOME);
+  const [topProviders, setTopProviders] = useState([]);
+  const carouselRef = useRef(null);
 
-  const navigateToService = (serviceType) => {
-    updateBooking({ 
-      serviceType: serviceType,
+  const city = userInfo?.city;
+
+  // Meilleurs prestataires de la catégorie sélectionnée (section masquée si aucun résultat)
+  useEffect(() => {
+    let cancelled = false;
+    providerService.getAllProviders(city ?? null, selectedType)
+      .then((list) => { if (!cancelled) setTopProviders(Array.isArray(list) ? list.slice(0, 6) : []); })
+      .catch(() => { if (!cancelled) setTopProviders([]); });
+    return () => { cancelled = true; };
+  }, [city, selectedType]);
+
+  const startBooking = useCallback((serviceType) => {
+    updateBooking({
+      serviceType,
       duration: 2,
       frequency: 'one_time'
     });
-    
-    navigation.navigate('ProviderSearch', { 
+  }, [updateBooking]);
+
+  const navigateToService = (serviceType) => {
+    setSelectedType(serviceType);
+    startBooking(serviceType);
+    navigation.navigate('ProviderSearch', {
       serviceType,
       duration: '2',
       frequency: 'once'
     });
   };
 
+  const openProvider = (provider) => {
+    startBooking(selectedType);
+    selectProvider(provider);
+    navigation.navigate('ProviderProfileView', { provider, serviceType: selectedType });
+  };
+
   return (
-    <ScrollView style={styles.container}>
-      {/* HEADER MINIMALISTE BLANC */}
-      <View style={styles.header}>
-        <Text style={styles.greeting}>
-          שלום, {userInfo?.firstName || 'לקוח'}
-        </Text>
-        
-        <Text style={styles.subtitle}>
-          איזה סוג שירות אתה מחפש?
-        </Text>
-        
-        <View style={styles.blueLine} />
-      </View>
-
-      {/* CARDS DE SERVICES ULTRA-MINIMALISTES */}
-      <View style={styles.servicesContainer}>
-        {serviceOptions.map((service) => (
-          <ServiceCard
-            key={service.type}
-            title={service.title}
-            description={service.description}
-            color={service.color}
-            icon={service.icon}
-            onPress={() => navigateToService(service.type)}
-          />
-        ))}
-      </View>
-
-      {/* QUICK ACTIONS MINIMALISTES */}
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity 
-          style={styles.actionCard}
-          onPress={() => navigation.navigate('Dashboard')}
-        >
-          <View style={styles.actionIconContainer}>
-            <Ionicons name="calendar-outline" size={20} color="#2E86C1" />
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* MARQUE + VILLE */}
+        <View style={styles.topRow}>
+          <View style={styles.brand}>
+            <Ionicons name="home-outline" size={30} color={COLORS.primary} />
+            <View>
+              <Text style={styles.brandName}>CleanConnect</Text>
+              <Text style={styles.brandTagline}>אנשים אמינים. בתים נוצצים.</Text>
+            </View>
           </View>
-          <Text style={styles.actionCardTitle}>ההזמנות שלי</Text>
-          <Text style={styles.actionCardSubtitle}>צפה בהזמנות</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.actionCard}
-          onPress={() => navigation.navigate('Profile')}
-        >
-          <View style={styles.actionIconContainer}>
-            <Ionicons name="person-outline" size={20} color="#2E86C1" />
+          {city ? (
+            <TouchableOpacity style={styles.cityPill} onPress={() => navigation.navigate('Profile')} activeOpacity={0.8}>
+              <Ionicons name="location-outline" size={16} color={COLORS.primary} />
+              <Text style={styles.cityText}>{city}</Text>
+              <Ionicons name="chevron-down" size={14} color={COLORS.navy} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {/* RECHERCHE */}
+        <View style={styles.searchRow}>
+          <TouchableOpacity style={styles.searchBar} onPress={() => navigateToService(selectedType)} activeOpacity={0.8}>
+            <Ionicons name="search" size={18} color={COLORS.textHint} />
+            <Text style={styles.searchPlaceholder}>מה תרצו לנקות?</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.filterButton} onPress={() => navigateToService(selectedType)}>
+            <Ionicons name="options-outline" size={22} color={COLORS.navy} />
+          </TouchableOpacity>
+        </View>
+
+        {/* BANNIÈRE */}
+        <View style={styles.hero}>
+          <Ionicons name="sparkles" size={150} color="rgba(255,255,255,0.22)" style={styles.heroArt} />
+          <View style={styles.heroShade} />
+          <View style={styles.heroContent}>
+            <Text style={styles.heroTitle}>{'בית נקי יותר,\nימים שמחים יותר'}</Text>
+            <Text style={styles.heroSubtitle}>{city ? `מנקים אמינים ב${city}` : 'מנקים אמינים באזור שלך'}</Text>
+            <TouchableOpacity style={styles.heroButton} onPress={() => navigateToService(selectedType)} activeOpacity={0.85}>
+              <Text style={styles.heroButtonText}>הזמינו מנקה</Text>
+              <Ionicons name="arrow-back" size={14} color={COLORS.navy} />
+            </TouchableOpacity>
           </View>
-          <Text style={styles.actionCardTitle}>הפרופיל שלי</Text>
-          <Text style={styles.actionCardSubtitle}>ערוך פרטים</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        </View>
+
+        {/* CATÉGORIES */}
+        <View style={styles.categories}>
+          {CATEGORIES.map((c) => {
+            const active = c.type === selectedType;
+            return (
+              <TouchableOpacity
+                key={c.type}
+                style={[styles.category, active && styles.categoryActive]}
+                onPress={() => navigateToService(c.type)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={c.icon} size={22} color={active ? COLORS.primaryDark : COLORS.textMuted} />
+                <Text style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{c.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* MEILLEURS PRESTATAIRES */}
+        {topProviders.length > 0 && (
+          <>
+            <SectionTitle title="המנקים המובילים" size={19} linkLabel="הצג הכל" onLinkPress={() => navigateToService(selectedType)} />
+            <ScrollView
+              ref={carouselRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.carousel}
+              contentContainerStyle={styles.carouselContent}
+              // RTL : la première carte est à droite → on démarre en fin de défilement
+              onContentSizeChange={() => carouselRef.current?.scrollToEnd({ animated: false })}
+            >
+              {topProviders.map((p) => (
+                <TouchableOpacity key={p._id || p.id} style={styles.providerCard} onPress={() => openProvider(p)} activeOpacity={0.85}>
+                  <View style={styles.providerPhoto}>
+                    <PhotoOrPlaceholder uri={p.profilePicture} />
+                  </View>
+                  <View style={styles.providerBody}>
+                    <Text style={styles.providerName} numberOfLines={1}>{p.firstName} {p.lastName}</Text>
+                    {p.rating ? (
+                      <View style={styles.ratingRow}>
+                        <Ionicons name="star" size={13} color={COLORS.star} />
+                        <Text style={styles.ratingText}>
+                          {p.rating}{p.reviewsCount ? ` (${p.reviewsCount})` : ''}
+                        </Text>
+                      </View>
+                    ) : null}
+                    {Array.isArray(p.languages) && p.languages.length > 0 ? (
+                      <View style={styles.langs}>
+                        {p.languages.slice(0, 3).map((l) => <Chip key={l} label={l} small />)}
+                      </View>
+                    ) : p.serviceAreas?.length ? (
+                      <Text style={styles.areaText} numberOfLines={1}>{p.serviceAreas.slice(0, 2).join(', ')}</Text>
+                    ) : null}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
+        )}
+      </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
+  container: { flex: 1, backgroundColor: COLORS.surface },
+  content: { paddingHorizontal: 18, paddingTop: TOP_SPACE, paddingBottom: 28, gap: 16 },
+
+  topRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  brand: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
+  brandName: { fontSize: 21, fontWeight: '700', color: COLORS.navy, textAlign: 'right' },
+  brandTagline: { fontSize: 10, color: COLORS.textMuted, textAlign: 'right' },
+  cityPill: {
+    flexDirection: 'row-reverse', alignItems: 'center', gap: 6,
+    backgroundColor: COLORS.tint, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 12,
   },
-  
-  // HEADER MINIMALISTE BLANC
-  header: {
-    backgroundColor: '#FFFFFF',
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
+  cityText: { fontSize: 14, fontWeight: '500', color: COLORS.navy },
+
+  searchRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+  searchBar: {
+    flex: 1, flexDirection: 'row-reverse', alignItems: 'center', gap: 10,
+    backgroundColor: COLORS.input, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: 999, paddingVertical: 12, paddingHorizontal: 16,
   },
-  greeting: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#1F2937',
-    textAlign: 'right',
-    letterSpacing: -0.3,
-    marginBottom: 16,
+  searchPlaceholder: { fontSize: 14, color: COLORS.textHint, textAlign: 'right' },
+  filterButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+
+  hero: { height: 210, borderRadius: 22, overflow: 'hidden', backgroundColor: COLORS.accent },
+  heroArt: { position: 'absolute', top: 10, left: 14 },
+  heroShade: {
+    position: 'absolute', left: 0, right: 0, bottom: 0, height: '65%',
+    backgroundColor: 'rgba(14,40,62,0.35)',
   },
-  subtitle: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#9CA3AF',
-    textAlign: 'center',
-    letterSpacing: -0.2,
-    marginBottom: 16,
+  heroContent: { position: 'absolute', right: 18, left: 18, bottom: 18, alignItems: 'flex-end', gap: 6 },
+  heroTitle: { fontSize: 23, fontWeight: '700', color: COLORS.white, lineHeight: 27, textAlign: 'right' },
+  heroSubtitle: { fontSize: 13, color: COLORS.white, textAlign: 'right' },
+  heroButton: {
+    marginTop: 6, flexDirection: 'row-reverse', alignItems: 'center', gap: 6,
+    backgroundColor: COLORS.white, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14,
   },
-  blueLine: {
-    height: 3,
-    width: '100%',
-    backgroundColor: '#2E86C1',
-    borderRadius: 2,
+  heroButtonText: { fontSize: 13, fontWeight: '600', color: COLORS.navy },
+
+  categories: { flexDirection: 'row-reverse', gap: 8 },
+  category: {
+    flex: 1, alignItems: 'center', gap: 6, paddingVertical: 12, paddingHorizontal: 4,
+    borderRadius: 18, backgroundColor: COLORS.input,
   },
-  
-  // CARDS DE SERVICES ULTRA-MINIMALISTES
-  servicesContainer: {
-    padding: 16,
-    paddingTop: 24,
+  categoryActive: { backgroundColor: COLORS.tintStrong },
+  categoryLabel: { fontSize: 12, fontWeight: '500', color: COLORS.textMuted },
+  categoryLabelActive: { color: COLORS.primaryDark },
+
+  carousel: { marginHorizontal: -18 },
+  carouselContent: { flexDirection: 'row-reverse', gap: 12, paddingHorizontal: 18 },
+  providerCard: {
+    width: 150, borderWidth: 1, borderColor: COLORS.border, borderRadius: 18,
+    overflow: 'hidden', backgroundColor: COLORS.surface,
   },
-  card: {
-    backgroundColor: '#FFFFFF',
-    marginBottom: 16,
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  cardIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    alignSelf: 'flex-end',
-  },
-  cardContent: {
-    marginBottom: 16,
-  },
-  cardTitle: {
-    fontWeight: '600',
-    fontSize: 16,
-    color: '#1F2937',
-    marginBottom: 6,
-    textAlign: 'right',
-    letterSpacing: -0.3,
-  },
-  cardDescription: {
-    color: '#6B7280',
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: 'right',
-    fontWeight: '400',
-    letterSpacing: -0.2,
-  },
-  cardButton: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 38,
-    borderRadius: 8,
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  cardButtonText: {
-    fontWeight: '500',
-    fontSize: 13,
-    textAlign: 'center',
-    letterSpacing: -0.2,
-  },
-  
-  // QUICK ACTIONS ULTRA-MINIMALISTES
-  actionsContainer: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-    gap: 12,
-  },
-  actionCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  actionIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: '#2E86C110',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  actionCardTitle: {
-    color: '#1F2937',
-    fontWeight: '600',
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 4,
-    letterSpacing: -0.2,
-  },
-  actionCardSubtitle: {
-    color: '#9CA3AF',
-    fontSize: 11,
-    textAlign: 'center',
-    fontWeight: '400',
-    letterSpacing: -0.2,
-  },
+  providerPhoto: { height: 120 },
+  providerBody: { padding: 10, gap: 6 },
+  providerName: { fontSize: 14, fontWeight: '600', color: COLORS.text, textAlign: 'right' },
+  ratingRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4 },
+  ratingText: { fontSize: 12, color: COLORS.textMuted },
+  langs: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 4 },
+  areaText: { fontSize: 11, color: COLORS.textMuted, textAlign: 'right' },
 });
 
 export default HomeScreen;

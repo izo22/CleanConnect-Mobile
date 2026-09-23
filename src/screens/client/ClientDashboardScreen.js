@@ -1,30 +1,20 @@
-// src/screens/client/ClientDashboardScreen.js - REFONTE UI MINIMALISTE PREMIUM
-/*
-CHANGEMENTS MAJEURS APPLIQUÉS:
-✓ Header: fond blanc #FFFFFF avec bordure #F3F4F6 au lieu de bleu, titre centré simple
-✓ Container: fond #F9FAFB au lieu de #F5F5F5
-✓ Tabs: style outline minimaliste, borderRadius 8px, hauteur réduite
-✓ Cards: borderRadius 12px, bordures 1px #F3F4F6, elevation/shadow supprimées
-✓ Badges: couleurs à 10% d'opacité, borderRadius 6px, tailles réduites
-✓ Typographie: fontSize réduits de 10-15% (dateTitle 16px, statusChip 11px)
-✓ Poids: '400' par défaut, '600' pour titres/labels importants
-✓ Buttons: hauteur 40px, borderRadius 8px, ombres supprimées
-✓ Colors: #111827 (textes actifs), #6B7280 (secondaires), #9CA3AF (hints)
-✓ letterSpacing: -0.2 à -0.3 pour compression visuelle
-✓ lineHeight: serré (1.3-1.4)
-✓ Phone containers: backgrounds ultra-subtils
-✓ FAB: style minimaliste sans ombre lourde
-*/
+// src/screens/client/ClientDashboardScreen.js
+// ✅ REFONTE BLEU CLAIR (maquette 06 · Mes réservations)
+// Titre « ההזמנות שלי » · sélecteur en pilule (3 onglets conservés) · cartes bordées
+// La logique (filtres, fin de service manuelle, téléphone du prestataire) est inchangée.
 
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Linking, Alert } from 'react-native';
-import { Text, Card, Title, Divider, ActivityIndicator, useTheme, FAB } from 'react-native-paper';
+import { Text, ActivityIndicator, FAB } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '../../config/theme';
+import { SERVICE_TYPE_LABELS } from '../../config/constants';
+import { TOP_SPACE } from '../../components/BlueUI';
 import { useBooking } from '../../context/BookingContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BOOKING_STATUS = {
@@ -38,19 +28,31 @@ const BOOKING_STATUS = {
   DECLINED: 'declined',
 };
 
-const BOOKING_STATUS_COLORS = {
-  [BOOKING_STATUS.PENDING_PAYMENT]: '#FF9800',
-  [BOOKING_STATUS.PENDING]: '#FF9800',
-  [BOOKING_STATUS.ACCEPTED]: '#4CAF50',
-  [BOOKING_STATUS.CONFIRMED]: '#4CAF50',
-  [BOOKING_STATUS.IN_PROGRESS]: '#2196F3',
-  [BOOKING_STATUS.COMPLETED]: '#9C27B0',
-  [BOOKING_STATUS.CANCELLED]: '#F44336',
-  [BOOKING_STATUS.DECLINED]: '#F44336',
+// Pastilles de statut (maquette 06)
+const STATUS_TAGS = {
+  confirmed: { bg: COLORS.statusConfirmedBg, fg: COLORS.statusConfirmedFg },
+  pending:   { bg: COLORS.statusPendingBg,   fg: COLORS.statusPendingFg },
+  done:      { bg: COLORS.statusDoneBg,      fg: COLORS.statusDoneFg },
+  cancelled: { bg: COLORS.statusCancelledBg, fg: COLORS.statusCancelledFg },
+};
+
+const getStatusTag = (status) => {
+  switch (status) {
+    case BOOKING_STATUS.ACCEPTED:
+    case BOOKING_STATUS.CONFIRMED:
+    case BOOKING_STATUS.IN_PROGRESS:
+      return STATUS_TAGS.confirmed;
+    case BOOKING_STATUS.COMPLETED:
+      return STATUS_TAGS.done;
+    case BOOKING_STATUS.CANCELLED:
+    case BOOKING_STATUS.DECLINED:
+      return STATUS_TAGS.cancelled;
+    default:
+      return STATUS_TAGS.pending;
+  }
 };
 
 const ClientDashboardScreen = () => {
-  const theme = useTheme();
   const navigation = useNavigation();
   const { userBookings, fetchUserBookings, isLoadingBookings, bookingError } = useBooking();
   
@@ -114,7 +116,7 @@ const ClientDashboardScreen = () => {
   const formatBookingDate = (dateString) => {
     try {
       const date = new Date(dateString);
-      return format(date, 'PPPP', { locale: he });      
+      return format(date, 'EEEE, d בMMMM', { locale: he });      
     } catch (error) {
       return 'תאריך לא זמין';
     }
@@ -129,37 +131,35 @@ const ClientDashboardScreen = () => {
     }
   };
   
-  const getServiceColor = (serviceType) => {
-    switch (serviceType) {
-      case 'home':
-      case 'בית':
-        return '#4A90E2';
-      case 'office':
-      case 'משרד':
-        return '#E67E22';
-      case 'building':
-      case 'בניין':
-        return '#27AE60';
-      case 'airbnb':
-        return '#FF5A5F';
-      default:
-        return theme.colors.primary;
+  const normalizeServiceType = (serviceType) => {
+    const map = { 'בית': 'home', 'משרד': 'office', 'בניין': 'building', 'אירבנב': 'airbnb' };
+    return map[serviceType] || serviceType;
+  };
+
+  const getServiceIcon = (serviceType) => {
+    const icons = {
+      home: 'home-outline',
+      office: 'briefcase-outline',
+      building: 'business-outline',
+      airbnb: 'key-outline',
+    };
+    return icons[normalizeServiceType(serviceType)] || 'sparkles-outline';
+  };
+
+  const getServiceTypeLabel = (serviceType) => {
+    return SERVICE_TYPE_LABELS[normalizeServiceType(serviceType)] || 'שירות';
+  };
+
+  const formatBookingEndTime = (booking) => {
+    if (!booking?.dateTime || !booking?.duration) return '';
+    try {
+      const end = new Date(new Date(booking.dateTime).getTime() + booking.duration * 60 * 60 * 1000);
+      return format(end, 'HH:mm');
+    } catch (error) {
+      return '';
     }
   };
-  
-  const getServiceTypeLabel = (serviceType) => {
-    const labels = {
-      'home': 'בית',
-      'בית': 'בית',
-      'office': 'משרד',
-      'משרד': 'משרד',
-      'building': 'בניין',
-      'בניין': 'בניין',
-      'airbnb': 'אירבנב',
-    };
-    return labels[serviceType] || 'שירות';
-  };
-  
+
   const handleViewBooking = (bookingId) => {
     navigation.navigate('BookingDetails', { bookingId });
   };
@@ -226,45 +226,39 @@ const ClientDashboardScreen = () => {
       return null;
     }
 
-    const providerName = booking.selectedProvider?.name || booking.provider?.name || 'ספק לא שויך';
     const providerPhone = booking.selectedProvider?.phone || booking.provider?.phone;
 
     if (booking.providerPhoneVisible && providerPhone) {
       return (
-        <View style={styles.phoneContainerCompact}>
-          <Icon name="check-circle" size={14} color="#4CAF50" style={styles.phoneIcon} />
-          <TouchableOpacity 
-            style={styles.phoneButtonCompact}
-            onPress={() => Linking.openURL(`tel:${providerPhone}`)}
-            activeOpacity={0.7}
-          >
-            <Icon name="phone" size={12} color="#007AFF" style={{ marginLeft: 4 }} />
-            <Text style={styles.phoneNumberCompact}>{providerPhone}</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.phoneRow}
+          onPress={() => Linking.openURL(`tel:${providerPhone}`)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="call-outline" size={15} color={COLORS.primary} />
+          <Text style={styles.phoneNumber}>{providerPhone}</Text>
+        </TouchableOpacity>
       );
     }
 
     return (
-      <View style={styles.phoneContainerCompact}>
-        <Icon name="lock" size={14} color="#FF9800" style={styles.phoneIcon} />
-        <View style={styles.phoneDetailsCompact}>
-          <Text style={styles.phoneHiddenCompact}>●●● ●●● ●●●●</Text>
-          <Text style={styles.phoneHiddenNoteCompact}>
-            {booking.status === BOOKING_STATUS.PENDING_PAYMENT || booking.status === BOOKING_STATUS.PENDING 
-              ? '⏳ ממתין לאישור'
-              : booking.status === BOOKING_STATUS.DECLINED
-              ? '❌ נדחה'
-              : '🔒 לא זמין'}
-          </Text>
-        </View>
+      <View style={styles.phoneRow}>
+        <Ionicons name="lock-closed-outline" size={15} color={COLORS.textMuted} />
+        <Text style={styles.phoneHidden}>●●● ●●● ●●●●</Text>
+        <Text style={styles.phoneHiddenNote}>
+          {booking.status === BOOKING_STATUS.PENDING_PAYMENT || booking.status === BOOKING_STATUS.PENDING
+            ? 'יוצג לאחר אישור'
+            : booking.status === BOOKING_STATUS.DECLINED
+            ? 'נדחה'
+            : 'לא זמין'}
+        </Text>
       </View>
     );
   };
-  
+
   const renderBookings = () => {
     const filteredBookings = getFilteredBookings();
-    
+
     if (filteredBookings.length === 0) {
       let emptyMessage = "";
       if (activeTab === 'pending') {
@@ -274,170 +268,145 @@ const ClientDashboardScreen = () => {
       } else if (activeTab === 'completed') {
         emptyMessage = "אין לך עדיין הזמנות שהושלמו.";
       }
-      
+
       return (
-        <Card style={styles.emptyCard}>
-          <Card.Content style={styles.emptyCardContent}>
-            <View style={styles.emptyIconContainer}>
-              <Icon name="calendar-blank" size={48} color="#D1D5DB" />
-            </View>
-            <Text style={styles.emptyText}>{emptyMessage}</Text>
-            {activeTab === 'pending' && (
-              <TouchableOpacity
-                style={styles.newBookingButton}
-                onPress={handleNewBooking}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.newBookingButtonText}>הזמן שירות</Text>
-              </TouchableOpacity>
-            )}
-          </Card.Content>
-        </Card>
+        <View style={styles.emptyCard}>
+          <View style={styles.emptyIconContainer}>
+            <Ionicons name="calendar-outline" size={36} color={COLORS.primary} />
+          </View>
+          <Text style={styles.emptyText}>{emptyMessage}</Text>
+          {activeTab === 'pending' && (
+            <TouchableOpacity
+              style={styles.newBookingButton}
+              onPress={handleNewBooking}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.newBookingButtonText}>הזמן שירות</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       );
     }
-    
-    return filteredBookings.map(booking => (
-      <Card 
-        key={booking._id} 
-        style={styles.bookingCard}
-        onPress={() => handleViewBooking(booking._id)}
-      >
-        <Card.Content>
+
+    return filteredBookings.map(booking => {
+      const tag = getStatusTag(booking.status);
+      const providerName = booking.selectedProvider?.name || booking.provider?.name;
+      const endTime = formatBookingEndTime(booking);
+
+      return (
+        <TouchableOpacity
+          key={booking._id}
+          style={styles.bookingCard}
+          onPress={() => handleViewBooking(booking._id)}
+          activeOpacity={0.85}
+        >
           <View style={styles.bookingHeader}>
-            <View style={[styles.statusChip, { backgroundColor: `${BOOKING_STATUS_COLORS[booking.status]}15` }]}>
-              <Text style={[styles.statusChipText, { color: BOOKING_STATUS_COLORS[booking.status] }]}>
+            <View style={styles.serviceRow}>
+              <View style={styles.serviceIcon}>
+                <Ionicons name={getServiceIcon(booking.serviceType)} size={18} color={COLORS.primary} />
+              </View>
+              <Text style={styles.serviceName}>{getServiceTypeLabel(booking.serviceType)}</Text>
+            </View>
+            <View style={[styles.statusChip, { backgroundColor: tag.bg }]}>
+              <Text style={[styles.statusChipText, { color: tag.fg }]}>
                 {getBookingStatusLabel(booking.status)}
               </Text>
             </View>
-            
-            <View style={[styles.serviceTypeChip, { backgroundColor: `${getServiceColor(booking.serviceType)}10` }]}>
-              <Text style={[styles.serviceTypeChipText, { color: getServiceColor(booking.serviceType) }]}>
-                {getServiceTypeLabel(booking.serviceType)}
-              </Text>
-            </View>
           </View>
-          
-          <Title style={styles.dateTitle}>
-            {formatBookingDate(booking.dateTime)}
-          </Title>
-          
+
           <View style={styles.bookingDetails}>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>שעה:</Text>
-              <Text style={styles.detailValue}>{formatBookingTime(booking.dateTime)}</Text>
+              <Ionicons name="calendar-outline" size={15} color={COLORS.textMuted} />
+              <Text style={styles.detailValue}>
+                {formatBookingDate(booking.dateTime)} · {formatBookingTime(booking.dateTime)}{endTime ? `–${endTime}` : ''}
+              </Text>
             </View>
-            
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>משך:</Text>
-              <Text style={styles.detailValue}>{booking.duration}h</Text>
-            </View>
-            
-            {booking.notes && (
+            {providerName ? (
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>ספק:</Text>
-                <Text style={styles.detailValue}>
-                  {booking.selectedProvider?.name || booking.provider?.name || 'לא שויך'}
-                </Text>
+                <Ionicons name="person-outline" size={15} color={COLORS.textMuted} />
+                <Text style={styles.detailValue}>{providerName}</Text>
               </View>
-            )}
+            ) : null}
+            {renderProviderPhone(booking)}
           </View>
-          
-          {renderProviderPhone(booking)}
-          
-          <View style={styles.divider} />
-          
+
           <View style={styles.bookingFooter}>
             <Text style={styles.priceText}>
               ₪{booking.price ? booking.price.toFixed(2) : '0.00'}
             </Text>
-            
+
             <View style={styles.actionButtons}>
               {canManuallyComplete(booking) && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.completeButton}
                   onPress={() => handleCompleteService(booking)}
-                  activeOpacity={0.7}
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.completeButtonText}>הושלם✓</Text>
+                  <Text style={styles.completeButtonText}>הושלם ✓</Text>
                 </TouchableOpacity>
               )}
-              
-              <TouchableOpacity 
-                style={[styles.viewButton, { borderColor: getServiceColor(booking.serviceType) }]}
+
+              <TouchableOpacity
+                style={styles.viewButton}
                 onPress={() => handleViewBooking(booking._id)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.viewButtonText, { color: getServiceColor(booking.serviceType) }]}>
-                  פרטים
-                </Text>
+                <Text style={styles.viewButtonText}>פרטים</Text>
+                <Ionicons name="chevron-back" size={14} color={COLORS.primary} />
               </TouchableOpacity>
             </View>
           </View>
-        </Card.Content>
-      </Card>
-    ));
+        </TouchableOpacity>
+      );
+    });
   };
-  
+
   if (isLoadingBookings && userBookings.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
         <Text style={styles.loadingText}>טוען הזמנות...</Text>
       </View>
     );
   }
-  
+
+  const TABS = [
+    { key: 'pending', label: 'ממתין' },
+    { key: 'confirmed', label: 'מאושר' },
+    { key: 'completed', label: 'הושלם' },
+  ];
+
   return (
     <View style={styles.container}>
-      {/* HEADER MINIMALISTE BLANC - SIMPLIFIÉ */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>הזמנות</Text>
-      </View>
-      
-      {/* TABS MINIMALISTES */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tabButton, activeTab === 'pending' && styles.activeTabButton]}
-          onPress={() => setActiveTab('pending')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.tabLabel, activeTab === 'pending' && styles.activeTabLabel]}>
-            ממתין
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.tabButton, activeTab === 'confirmed' && styles.activeTabButton]}
-          onPress={() => setActiveTab('confirmed')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.tabLabel, activeTab === 'confirmed' && styles.activeTabLabel]}>
-            מאושר
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.tabButton, activeTab === 'completed' && styles.activeTabButton]}
-          onPress={() => setActiveTab('completed')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.tabLabel, activeTab === 'completed' && styles.activeTabLabel]}>
-            הושלם
-          </Text>
-        </TouchableOpacity>
-      </View>
-      
-      {bookingError && (
-        <Card style={styles.errorCard}>
-          <Card.Content>
-            <Text style={styles.errorText}>{bookingError}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadBookings} activeOpacity={0.7}>
-              <Text style={styles.retryButtonText}>נסה שוב</Text>
+        <Text style={styles.headerTitle}>ההזמנות שלי</Text>
+
+        {/* SÉLECTEUR D'ONGLETS EN PILULE */}
+        <View style={styles.tabContainer}>
+          {TABS.map(tab => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tabButton, activeTab === tab.key && styles.activeTabButton]}
+              onPress={() => setActiveTab(tab.key)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.tabLabel, activeTab === tab.key && styles.activeTabLabel]}>
+                {tab.label}
+              </Text>
             </TouchableOpacity>
-          </Card.Content>
-        </Card>
+          ))}
+        </View>
+      </View>
+
+      {bookingError && (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorText}>{bookingError}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadBookings} activeOpacity={0.8}>
+            <Text style={styles.retryButtonText}>נסה שוב</Text>
+          </TouchableOpacity>
+        </View>
       )}
-      
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
@@ -445,18 +414,19 @@ const ClientDashboardScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={loadBookings}
-            colors={['#007AFF']}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
           />
         }
       >
         {renderBookings()}
       </ScrollView>
-      
+
       <FAB
         style={styles.fab}
         icon="plus"
         onPress={handleNewBooking}
-        color="#FFFFFF"
+        color={COLORS.white}
       />
     </View>
   );
@@ -465,133 +435,109 @@ const ClientDashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.canvas,
   },
-  
-  // HEADER MINIMALISTE BLANC - SIMPLIFIÉ
+
   header: {
-    backgroundColor: '#FFFFFF',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    paddingTop: TOP_SPACE + 8,
+    paddingHorizontal: 18,
+    gap: 14,
   },
   headerTitle: {
-    fontSize: 19,
-    fontWeight: '600',
-    color: '#1F2937',
-    textAlign: 'center',
-    letterSpacing: -0.3,
+    fontSize: 26,
+    fontWeight: '700',
+    color: COLORS.text,
+    textAlign: 'right',
   },
-  
-  // TABS MINIMALISTES
+
+  // SÉLECTEUR EN PILULE
   tabContainer: {
     flexDirection: 'row-reverse',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    backgroundColor: COLORS.segment,
+    borderRadius: 999,
+    padding: 4,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    paddingVertical: 9,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 36,
   },
   activeTabButton: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: COLORS.surface,
   },
   tabLabel: {
-    fontSize: 13,
-    color: '#6B7280',
+    fontSize: 14,
+    color: COLORS.textMuted,
     fontWeight: '500',
-    letterSpacing: -0.2,
   },
   activeTabLabel: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: COLORS.navy,
   },
-  
+
   scrollView: {
     flex: 1,
   },
   scrollViewContent: {
-    padding: 16,
-    paddingBottom: 80,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 96,
+    gap: 12,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.canvas,
   },
   loadingText: {
     marginTop: 10,
-    color: '#6B7280',
-    fontWeight: '400',
+    color: COLORS.textMuted,
     fontSize: 14,
   },
-  
-  // ERROR CARD
+
+  // ERREUR
   errorCard: {
-    marginHorizontal: 16,
+    marginHorizontal: 18,
     marginTop: 12,
-    padding: 8,
-    backgroundColor: '#FEE2E2',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
+    padding: 14,
+    backgroundColor: COLORS.statusCancelledBg,
+    borderRadius: 20,
+    gap: 10,
   },
   errorText: {
-    color: '#DC2626',
-    marginBottom: 12,
+    color: COLORS.statusCancelledFg,
     textAlign: 'center',
-    fontWeight: '400',
     fontSize: 13,
   },
   retryButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: COLORS.primary,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: 'center',
-    height: 36,
-    justifyContent: 'center',
   },
   retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
+    color: COLORS.white,
+    fontSize: 14,
     fontWeight: '600',
-    letterSpacing: -0.2,
   },
-  
-  // EMPTY CARD
+
+  // VIDE
   emptyCard: {
-    marginVertical: 40,
-    padding: 32,
+    marginTop: 32,
+    padding: 28,
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF',
-  },
-  emptyCardContent: {
-    alignItems: 'center',
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
   },
   emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F9FAFB',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.tint,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -600,207 +546,146 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '400',
-    letterSpacing: -0.1,
+    color: COLORS.textMuted,
   },
   newBookingButton: {
-    backgroundColor: '#2196F3',
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    height: 40,
-    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 999,
   },
   newBookingButtonText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 15,
     fontWeight: '600',
-    letterSpacing: -0.2,
   },
-  
-  // BOOKING CARDS
+
+  // CARTES
   bookingCard: {
-    marginVertical: 6,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: COLORS.border,
+    borderRadius: 20,
+    padding: 14,
+    gap: 12,
   },
   bookingHeader: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'center',
   },
-  
-  // CHIPS
+  serviceRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 1,
+  },
+  serviceIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: COLORS.tint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  serviceName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    textAlign: 'right',
+  },
   statusChip: {
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingVertical: 4,
+    borderRadius: 999,
   },
   statusChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: -0.1,
+    fontSize: 12,
+    fontWeight: '500',
   },
-  serviceTypeChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  serviceTypeChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: -0.1,
-  },
-  
-  dateTitle: {
-    fontSize: 16,
-    marginBottom: 10,
-    textTransform: 'capitalize',
-    fontWeight: '600',
-    color: '#111827',
-    textAlign: 'right',
-    letterSpacing: -0.3,
-    lineHeight: 20,
-  },
+
   bookingDetails: {
-    marginBottom: 10,
+    gap: 6,
   },
   detailRow: {
     flexDirection: 'row-reverse',
-    marginBottom: 4,
-  },
-  detailLabel: {
-    width: 60,
-    fontWeight: '500',
-    color: '#6B7280',
-    fontSize: 13,
-    textAlign: 'right',
-    letterSpacing: -0.1,
+    alignItems: 'center',
+    gap: 6,
   },
   detailValue: {
     flex: 1,
-    color: '#111827',
-    fontWeight: '400',
+    color: COLORS.textBody,
     fontSize: 13,
     textAlign: 'right',
-    letterSpacing: -0.1,
   },
-  divider: {
-    height: 1,
-    marginVertical: 12,
-    backgroundColor: '#F3F4F6',
+
+  phoneRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 6,
   },
+  phoneNumber: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  phoneHidden: {
+    fontSize: 12,
+    color: COLORS.textHint,
+  },
+  phoneHiddenNote: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+  },
+
   bookingFooter: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.divider,
+    paddingTop: 10,
   },
   priceText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    letterSpacing: -0.3,
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.navy,
   },
-  
-  // ACTION BUTTONS
   actionButtons: {
     flexDirection: 'row-reverse',
-    gap: 8,
-  },
-  
-  completeButton: {
-    flexDirection: 'row-reverse',
     alignItems: 'center',
+    gap: 12,
+  },
+  completeButton: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#FF9500',
-    height: 32,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: COLORS.primary,
   },
   completeButtonText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 13,
     fontWeight: '600',
-    letterSpacing: -0.2,
   },
-  
   viewButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
-    height: 32,
+    flexDirection: 'row-reverse',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 2,
   },
   viewButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: -0.2,
-  },
-  
-  // PHONE STYLES
-  phoneContainerCompact: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    padding: 8,
-    borderRadius: 8,
-    marginVertical: 6,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  phoneIcon: {
-    marginLeft: 8,
-  },
-  phoneButtonCompact: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    backgroundColor: '#DBEAFE',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-  phoneNumberCompact: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#007AFF',
-    marginRight: 4,
-    letterSpacing: -0.1,
-  },
-  phoneDetailsCompact: {
-    flex: 1,
-  },
-  phoneHiddenCompact: {
-    fontSize: 12,
     fontWeight: '500',
-    color: '#9CA3AF',
+    color: COLORS.primary,
   },
-  phoneHiddenNoteCompact: {
-    fontSize: 10,
-    color: '#FF9800',
-    marginTop: 2,
-    fontStyle: 'italic',
-    fontWeight: '400',
-  },
-  
+
   // FAB
   fab: {
     position: 'absolute',
-    margin: 16,
-    right: 0,
+    margin: 18,
+    left: 0,
     bottom: 0,
-    backgroundColor: '#2196F3',
-    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    borderRadius: 28,
   },
 });
 

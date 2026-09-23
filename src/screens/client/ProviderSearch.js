@@ -4,6 +4,8 @@
 // ✅ MODIFIÉ: Affichage de la bio du prestataire dans la card
 // ✅ MODIFIÉ: providerBio passé dans la navigation vers ScheduleScreen
 // ✅ FIX: Suppression du bloc rating (système de notes non implémenté)
+// ✅ REFONTE BLEU CLAIR (maquette 02) : note / langues affichées seulement si le backend les fournit
+// ✅ Le tap sur une carte ouvre ProviderProfileView (maquette 03) avant ScheduleScreen
 
 import React, { useState, useEffect, useContext } from 'react';
 import {
@@ -14,14 +16,14 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Image,
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BookingContext } from '../../context/BookingContext';
 import { AuthContext } from '../../context/AuthContext';
 import providerService from '../../services/providerService';
-import { getServiceColor, getServiceBackgroundColor } from '../../config/constants';
+import { COLORS } from '../../config/theme';
+import { PhotoOrPlaceholder, Chip, ScreenHeader, TOP_SPACE } from '../../components/BlueUI';
 
 const ProviderSearch = ({ navigation }) => {
   const { currentBooking, selectProvider } = useContext(BookingContext);
@@ -34,8 +36,6 @@ const ProviderSearch = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const serviceType = currentBooking?.serviceType || 'home';
-  const serviceColor = getServiceColor(serviceType);
-  const serviceBgColor = getServiceBackgroundColor(serviceType);
 
   const normalizeServiceType = (type) => {
     if (!type) return null;
@@ -96,11 +96,10 @@ const ProviderSearch = ({ navigation }) => {
   const handleSelectProvider = (provider) => {
     if (selectProvider && typeof selectProvider === 'function') {
       selectProvider(provider);
-      navigation.navigate('ScheduleScreen', {
-        providerId:   provider._id,
-        providerName: `${provider.firstName} ${provider.lastName}`,
-        hourlyRate:   provider.hourlyRate,
-        providerBio:  provider.bio,
+      navigation.navigate('ProviderProfileView', {
+        provider,
+        serviceType,
+        serviceRate: getServiceSpecificRate(provider, serviceType),
       });
     } else {
       Alert.alert('שגיאת תצורה', 'פונקציית בחירת הספק אינה זמינה. אנא בדוק את BookingContext.', [{ text: 'אישור' }]);
@@ -134,62 +133,60 @@ const ProviderSearch = ({ navigation }) => {
 
   const renderProviderCard = ({ item }) => {
     const serviceRate = getServiceSpecificRate(item, serviceType);
+    const langs = Array.isArray(item.languages) && item.languages.length > 0 ? item.languages : null;
 
     return (
       <TouchableOpacity
         style={styles.providerCard}
         onPress={() => handleSelectProvider(item)}
-        activeOpacity={0.7}
+        activeOpacity={0.8}
       >
-        <View style={styles.cardContent}>
-          <View style={styles.providerHeader}>
-            {item.profilePicture ? (
-              <Image source={{ uri: item.profilePicture }} style={styles.profilePicture} />
-            ) : (
-              <View style={[
-                styles.profilePicturePlaceholder,
-                { backgroundColor: `${serviceColor}10`, borderColor: `${serviceColor}30` }
-              ]}>
-                <Ionicons name="person" size={24} color={serviceColor} />
-              </View>
-            )}
+        <View style={styles.photo}>
+          <PhotoOrPlaceholder uri={item.profilePicture} />
+        </View>
 
-            <View style={styles.providerInfo}>
-              <Text style={styles.providerName}>
+        <View style={styles.providerInfo}>
+          <View style={styles.nameRow}>
+            <View style={styles.nameWrap}>
+              <Text style={styles.providerName} numberOfLines={1}>
                 {item.firstName} {item.lastName}
               </Text>
-
-              {item.serviceAreas && item.serviceAreas.length > 0 && (
-                <View style={styles.locationRow}>
-                  <Ionicons name="location" size={12} color="#9CA3AF" />
-                  <Text style={styles.citiesText}>
-                    {item.serviceAreas.slice(0, 2).join(', ')}
-                  </Text>
-                </View>
-              )}
-
-              {item.bio ? (
-                <Text style={styles.bioText} numberOfLines={2}>{item.bio}</Text>
-              ) : null}
+              {item.isVerified ? <Ionicons name="checkmark-circle" size={16} color={COLORS.primary} /> : null}
             </View>
-
-            <View style={styles.priceContainer}>
-              <Text style={[styles.price, { color: serviceColor }]}>₪{serviceRate}</Text>
-              <Text style={styles.priceLabel}>לשעה</Text>
-            </View>
+            <Text style={styles.price}>
+              ₪{serviceRate}<Text style={styles.priceLabel}>/שעה</Text>
+            </Text>
           </View>
 
-          <View style={styles.serviceTypesContainer}>
-            {item.serviceTypes && item.serviceTypes.map((type, index) => {
-              const badgeColor = getServiceColor(type);
-              return (
-                <View key={index} style={[styles.modernBadge, { backgroundColor: `${badgeColor}10` }]}>
-                  <Text style={[styles.modernBadgeText, { color: badgeColor }]}>
-                    {translateServiceType(type)}
-                  </Text>
-                </View>
-              );
-            })}
+          {item.rating ? (
+            <View style={styles.metaRow}>
+              <Ionicons name="star" size={13} color={COLORS.star} />
+              <Text style={styles.metaText}>
+                {item.rating}{item.reviewsCount ? ` (${item.reviewsCount})` : ''}
+                {item.completedJobs ? ` · ${item.completedJobs} עבודות` : ''}
+              </Text>
+            </View>
+          ) : null}
+
+          {item.serviceAreas && item.serviceAreas.length > 0 && (
+            <View style={styles.metaRow}>
+              <Ionicons name="location-outline" size={13} color={COLORS.textMuted} />
+              <Text style={styles.metaText} numberOfLines={1}>
+                {item.serviceAreas.slice(0, 2).join(', ')}
+              </Text>
+            </View>
+          )}
+
+          {item.bio ? (
+            <Text style={styles.bioText} numberOfLines={2}>{item.bio}</Text>
+          ) : null}
+
+          <View style={styles.chipsRow}>
+            {langs
+              ? langs.map((l) => <Chip key={l} label={l} small />)
+              : (item.serviceTypes || []).map((type, index) => (
+                  <Chip key={index} label={translateServiceType(type)} small />
+                ))}
           </View>
         </View>
       </TouchableOpacity>
@@ -198,8 +195,8 @@ const ProviderSearch = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={[styles.centerContainer, { backgroundColor: serviceBgColor }]}>
-        <ActivityIndicator size="large" color={serviceColor} />
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
         <Text style={styles.loadingText}>מחפש ספקים...</Text>
       </View>
     );
@@ -207,11 +204,11 @@ const ProviderSearch = ({ navigation }) => {
 
   if (error) {
     return (
-      <View style={[styles.centerContainer, { backgroundColor: serviceBgColor }]}>
-        <Ionicons name="alert-circle" size={48} color="#EF4444" />
+      <View style={styles.centerContainer}>
+        <Ionicons name="alert-circle-outline" size={48} color={COLORS.error} />
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={[styles.modernButton, { backgroundColor: serviceColor }]} onPress={loadProviders}>
-          <Text style={styles.modernButtonText}>נסה שוב</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={loadProviders}>
+          <Text style={styles.retryButtonText}>נסה שוב</Text>
         </TouchableOpacity>
       </View>
     );
@@ -223,33 +220,28 @@ const ProviderSearch = ({ navigation }) => {
     currentBooking?.address?.fullAddress?.split(',')[1]?.trim();
 
   return (
-    <View style={[styles.container, { backgroundColor: serviceBgColor }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-forward" size={24} color="#111827" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>ספקים זמינים</Text>
-          <Text style={styles.headerSubtitle}>
-            {getServiceLabel(serviceType)}{clientCity ? ` ב${clientCity}` : ''}
-          </Text>
-        </View>
-      </View>
-
-      <View style={[styles.searchContainer, { borderColor: `${serviceColor}30` }]}>
-        <Ionicons name="search" size={18} color="#9CA3AF" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="חיפוש..."
-          placeholderTextColor="#D1D5DB"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
+    <View style={styles.container}>
+      <View style={styles.headerArea}>
+        <ScreenHeader
+          title={`${getServiceLabel(serviceType)}${clientCity ? ` · ${clientCity}` : ''}`}
+          onBack={() => navigation.goBack()}
+          style={styles.headerRow}
         />
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={18} color={COLORS.textHint} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="חיפוש לפי שם..."
+            placeholderTextColor={COLORS.textHint}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
       </View>
 
       {filteredProviders.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="search" size={48} color={`${serviceColor}40`} />
+          <Ionicons name="search" size={48} color={COLORS.accent} />
           <Text style={styles.emptyText}>
             {clientCity ? `אין ספקים זמינים ב${clientCity}` : 'לא נמצאו ספקים'}
           </Text>
@@ -264,6 +256,9 @@ const ProviderSearch = ({ navigation }) => {
           keyExtractor={(item) => item._id || item.id}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <Text style={styles.countText}>{filteredProviders.length} מנקים זמינים</Text>
+          }
         />
       )}
     </View>
@@ -271,67 +266,60 @@ const ProviderSearch = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  loadingText: { marginTop: 12, fontSize: 13, color: '#6B7280', fontWeight: '400' },
-  errorText: { marginTop: 12, fontSize: 13, color: '#EF4444', textAlign: 'center', fontWeight: '400' },
-  modernButton: { marginTop: 16, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8 },
-  modernButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '500', letterSpacing: -0.2 },
-  header: {
-    backgroundColor: '#FFFFFF',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+  container: { flex: 1, backgroundColor: COLORS.canvas },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: COLORS.canvas },
+  loadingText: { marginTop: 12, fontSize: 13, color: COLORS.textMuted },
+  errorText: { marginTop: 12, fontSize: 13, color: COLORS.error, textAlign: 'center' },
+  retryButton: { marginTop: 16, paddingHorizontal: 24, paddingVertical: 11, borderRadius: 999, backgroundColor: COLORS.primary },
+  retryButtonText: { color: COLORS.white, fontSize: 14, fontWeight: '600' },
+
+  headerArea: {
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: COLORS.borderSoft,
+  },
+  headerRow: { paddingTop: TOP_SPACE },
+  searchContainer: {
+    backgroundColor: COLORS.input,
+    marginHorizontal: 18,
+    marginBottom: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     flexDirection: 'row-reverse',
     alignItems: 'center',
+    gap: 10,
   },
-  backButton: { padding: 4 },
-  headerContent: { flex: 1, alignItems: 'center', marginRight: -28 },
-  headerTitle: { fontSize: 16, fontWeight: '600', color: '#111827', textAlign: 'center', marginBottom: 2, letterSpacing: -0.3 },
-  headerSubtitle: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', fontWeight: '400' },
-  searchContainer: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  searchIcon: { marginLeft: 8 },
-  searchInput: { flex: 1, fontSize: 14, color: '#111827', fontWeight: '400', textAlign: 'right' },
-  listContainer: { padding: 16, paddingTop: 0, paddingBottom: 40 },
+  searchInput: { flex: 1, fontSize: 14, color: COLORS.text, textAlign: 'right', padding: 0 },
+
+  listContainer: { padding: 18, paddingTop: 14, paddingBottom: 40, gap: 12 },
+  countText: { fontSize: 13, color: COLORS.textMuted, textAlign: 'right' },
   providerCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 12,
+    flexDirection: 'row-reverse',
+    gap: 12,
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    padding: 12,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    overflow: 'hidden',
+    borderColor: COLORS.border,
   },
-  cardContent: { padding: 16 },
-  providerHeader: { flexDirection: 'row-reverse', alignItems: 'center', marginBottom: 12 },
-  profilePicture: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: '#F3F4F6' },
-  profilePicturePlaceholder: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
-  providerInfo: { flex: 1, marginRight: 12 },
-  providerName: { fontSize: 15, fontWeight: '600', color: '#111827', marginBottom: 4, textAlign: 'right', letterSpacing: -0.2 },
-  locationRow: { flexDirection: 'row-reverse', alignItems: 'center', marginBottom: 3 },
-  citiesText: { fontSize: 11, marginRight: 3, textAlign: 'right', color: '#9CA3AF', fontWeight: '400' },
-  bioText: { fontSize: 11, color: '#6B7280', fontWeight: '400', textAlign: 'right', marginTop: 4, lineHeight: 16 },
-  priceContainer: { alignItems: 'flex-end' },
-  price: { fontSize: 17, fontWeight: '600', marginBottom: 1, letterSpacing: -0.3 },
-  priceLabel: { fontSize: 10, color: '#D1D5DB', fontWeight: '400' },
-  serviceTypesContainer: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 6 },
-  modernBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  modernBadgeText: { fontSize: 10, fontWeight: '500', letterSpacing: -0.1 },
+  photo: { width: 84, height: 96, borderRadius: 14, overflow: 'hidden' },
+  providerInfo: { flex: 1, gap: 5 },
+  nameRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  nameWrap: { flexDirection: 'row-reverse', alignItems: 'center', gap: 5, flexShrink: 1 },
+  providerName: { fontSize: 16, fontWeight: '600', color: COLORS.text, textAlign: 'right', flexShrink: 1 },
+  price: { fontSize: 15, fontWeight: '700', color: COLORS.navy },
+  priceLabel: { fontSize: 11, fontWeight: '400', color: COLORS.textMuted },
+  metaRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4 },
+  metaText: { fontSize: 12, color: COLORS.textMuted, textAlign: 'right', flexShrink: 1 },
+  bioText: { fontSize: 12, color: COLORS.textMuted, textAlign: 'right', lineHeight: 17 },
+  chipsRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 4, marginTop: 2 },
+
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-  emptyText: { fontSize: 14, fontWeight: '500', color: '#6B7280', textAlign: 'center', marginTop: 12, marginBottom: 4 },
-  emptySubtext: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', fontWeight: '400' },
+  emptyText: { fontSize: 14, fontWeight: '500', color: COLORS.text, textAlign: 'center', marginTop: 12, marginBottom: 4 },
+  emptySubtext: { fontSize: 12, color: COLORS.textMuted, textAlign: 'center' },
 });
 
 export default ProviderSearch;

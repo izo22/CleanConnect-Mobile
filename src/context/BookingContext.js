@@ -90,6 +90,8 @@ export const BookingProvider = ({ children }) => {
         hourlyRate: provider.hourlyRate,
         rating: provider.rating,
         phone: provider.phone,
+        profilePicture: provider.profilePicture,
+        bio: provider.bio,
         serviceDetails: provider.serviceDetails,
         services: provider.services,
         price: provider.price,

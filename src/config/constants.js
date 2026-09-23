@@ -158,19 +158,21 @@ export const SERVICE_TYPE_LABELS = {
 };
 
 // ✅ צבעים של סוגי שירותים - COULEURS PRINCIPALES
+// Refonte « bleu clair » : tous les types de service partagent la même teinte
+// pour une app unifiée (voir config/theme.js → COLORS).
 export const SERVICE_COLORS = {
-  HOME: '#4A90E2',      // 🏠 בית - כחול (BLEU)
-  OFFICE: '#E67E22',    // 🏢 משרד - כתום (ORANGE)
-  BUILDING: '#27AE60',  // 🏗️ בניין - ירוק (VERT)
-  AIRBNB: '#FF5A5F',    // 🏨 אירבנב - ורוד (ROSE)
+  HOME: '#256FA8',      // 🏠 בית
+  OFFICE: '#256FA8',    // 🏢 משרד
+  BUILDING: '#256FA8',  // 🏗️ בניין
+  AIRBNB: '#256FA8',    // 🏨 אירבנב
 };
 
 // ✅ Fonds légers pour chaque type de service
 export const SERVICE_BACKGROUND_COLORS = {
-  HOME: '#E3F2FD',      // 🏠 Bleu 50 léger
-  OFFICE: '#FFF3E0',    // 🏢 Orange 50 léger
-  BUILDING: '#E8F5E9',  // 🏗️ Vert 50 léger
-  AIRBNB: '#FCE4EC',    // 🏨 Rose 50 léger
+  HOME: '#F6FAFD',
+  OFFICE: '#F6FAFD',
+  BUILDING: '#F6FAFD',
+  AIRBNB: '#F6FAFD',
 };
 
 // פונקציה לקבלת צבע לפי סוג שירות - Helper function
@@ -192,7 +194,7 @@ export const getServiceColor = (serviceType) => {
     case 'אירבנב':
       return SERVICE_COLORS.AIRBNB;
     default:
-      return '#2196F3'; // צבע ברירת מחדל (bleu par défaut)
+      return '#256FA8'; // צבע ברירת מחדל (bleu par défaut)
   }
 };
 
@@ -215,7 +217,7 @@ export const getServiceBackgroundColor = (serviceType) => {
     case 'אירבנב':
       return SERVICE_BACKGROUND_COLORS.AIRBNB;
     default:
-      return '#F5F5F5'; // Gris clair par défaut
+      return '#F6FAFD'; // Fond bleuté par défaut
   }
 };
 

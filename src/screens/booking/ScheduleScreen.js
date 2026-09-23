@@ -1,14 +1,16 @@
 // src/screens/booking/ScheduleScreen.js
 // ✅ VERSION CORRIGÉE : Charge les disponibilités du prestataire depuis le backend
+// ✅ REFONTE BLEU CLAIR (maquette 04) : bannière · 1. date · 2. heure · 3. détails du service
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, Text } from 'react-native';
-import { useTheme, ActivityIndicator } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Text } from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useBooking } from '../../context/BookingContext';
-import { SERVICE_TYPE_LABELS, getServiceColor, getServiceBackgroundColor, API_URL } from '../../config/constants';
+import { SERVICE_TYPE_LABELS, API_URL } from '../../config/constants';
+import { COLORS } from '../../config/theme';
+import { ScreenHeader, PrimaryButton, TOP_SPACE } from '../../components/BlueUI';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const HEBREW_MONTHS = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -59,14 +61,9 @@ const isToday = (date) => {
 };
 
 const ScheduleScreen = ({ route, navigation }) => {
-  const theme = useTheme();
   const { currentBooking, updateBooking } = useBooking();
-  // ✅ MODIFIÉ : ajout de providerBio
-  const { providerId, providerName, providerBio } = route?.params || {};
-  const isRTL = true;
-  
-  const serviceColor = getServiceColor(currentBooking?.serviceType || 'home');
-  const serviceBgColor = getServiceBackgroundColor(currentBooking?.serviceType || 'home');
+  // La bio est désormais affichée sur ProviderProfileView (maquette 03)
+  const { providerId, providerName, initialDate } = route?.params || {};
   
   const [isNavigating, setIsNavigating] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -305,6 +302,17 @@ const ScheduleScreen = ({ route, navigation }) => {
     loadBookings();
   }, [loadAvailabilities, loadBookings]);
 
+  // Jour choisi depuis ProviderProfileView (format YYYY-MM-DD) → présélection
+  useEffect(() => {
+    if (!initialDate || isLoadingData || !availabilities.length) return;
+    const [y, m, d] = initialDate.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    if (!isNaN(date.getTime()) && hasAvailability(date)) {
+      setCurrentDate(date);
+      setSelectedDate(date);
+    }
+  }, [initialDate, isLoadingData, availabilities, hasAvailability]);
+
   const changeMonth = (direction) => {
     const newDate = new Date(currentDate);
     newDate.setMonth(newDate.getMonth() + direction);
@@ -391,579 +399,278 @@ const ScheduleScreen = ({ route, navigation }) => {
     }
   };
 
+  const serviceLabel = SERVICE_TYPE_LABELS[currentBooking?.serviceType] || SERVICE_TYPE_LABELS.home;
+  const selectedSlot = availableSlots.find(s => s.time === selectedTime);
+  const todayMidnight = new Date().setHours(0, 0, 0, 0);
+
+  if (isLoadingData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="small" color={COLORS.primary} />
+        <Text style={[styles.loadingText, styles.textRTL]}>
+          טוען זמינות...
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: serviceBgColor }]}>
-      {isLoadingData ? (
-        <View style={[styles.loadingContainer, { backgroundColor: serviceBgColor }]}>
-          <ActivityIndicator size="small" color={serviceColor} />
-          <Text style={[styles.loadingText, styles.textRTL]}>
-            טוען זמינות...
-          </Text>
+    <View style={styles.container}>
+      <ScreenHeader title="הזמנת ניקיון" onBack={() => navigation.goBack()} style={styles.header} />
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* BANNIÈRE */}
+        <View style={styles.hero}>
+          <Ionicons name="sparkles" size={110} color="rgba(255,255,255,0.22)" style={styles.heroArt} />
+          <View style={styles.heroShade} />
+          <View style={styles.heroContent}>
+            <Text style={styles.heroTitle}>{'מרחב רענן\nלימים בהירים'}</Text>
+            {providerName ? (
+              <View style={styles.heroMeta}>
+                <Ionicons name="person-outline" size={13} color={COLORS.white} />
+                <Text style={styles.heroMetaText}>{providerName}</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
-      ) : (
-        <>
-          {/* HEADER MINIMALISTE BLANC */}
-          <View style={styles.header}>
-            <View style={styles.headerTop}>
-              <TouchableOpacity 
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}
-              >
-                <Ionicons name="arrow-forward" size={20} color="#1F2937" />
-              </TouchableOpacity>
-              <Text style={[styles.headerTitle, styles.textRTL]}>בחר משבצת זמן</Text>
-              <View style={{ width: 40 }} />
-            </View>
+
+        {/* 1. DATE */}
+        <Text style={[styles.sectionTitle, styles.textRTL]}>1. בחירת תאריך</Text>
+        <View style={styles.monthRow}>
+          <TouchableOpacity onPress={() => setCurrentDate(new Date())}>
+            <Text style={[styles.monthText, styles.textRTL]}>
+              {getMonthName(currentDate.getMonth())} {currentDate.getFullYear()}
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.monthNav}>
+            <TouchableOpacity onPress={() => changeMonth(-1)} hitSlop={8}>
+              <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => changeMonth(1)} hitSlop={8}>
+              <Ionicons name="chevron-back" size={18} color={COLORS.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View>
+          <View style={styles.weekdaysRow}>
+            {HEBREW_WEEKDAYS.map((day, index) => (
+              <View key={index} style={styles.gridCell}>
+                <Text style={styles.weekdayText}>{day}</Text>
+              </View>
+            ))}
           </View>
 
-          {/* ✅ AJOUT : BIO COMPLÈTE DU PRESTATAIRE */}
-          {providerBio ? (
-            <View style={styles.bioCard}>
-              <Text style={[styles.bioText, styles.textRTL]}>{providerBio}</Text>
-            </View>
-          ) : null}
+          <View style={styles.calendarGrid}>
+            {calendarDays.map((day, index) => {
+              const isSelected = selectedDate && day.date &&
+                day.date.toDateString() === selectedDate.toDateString();
+              const isAvailable = day.isCurrentMonth && day.date && hasAvailability(day.date);
+              const isPast = day.date && day.date < todayMidnight;
+              const isDisabled = !day.isCurrentMonth || isPast || !isAvailable;
 
-          <ScrollView style={{ backgroundColor: serviceBgColor }}>
-            {/* CALENDAR CARD */}
-            <View style={styles.calendarCard}>
-              <Text style={[styles.sectionLabel, styles.textRTL]}>
-                בחר תאריך
-              </Text>
-              
-              <View style={[styles.calendarHeader, styles.rtlRow]}>
-                <TouchableOpacity 
-                  onPress={() => changeMonth(1)}
-                  style={styles.navButton}
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.gridCell}
+                  onPress={() => handleDateSelect(day)}
+                  disabled={isDisabled}
+                  activeOpacity={0.8}
                 >
-                  <Ionicons name="chevron-forward" size={20} color="#1F2937" />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.currentMonthButton}
-                  onPress={() => setCurrentDate(new Date())}
-                >
-                  <Text style={[styles.currentMonthText, styles.textRTL]}>
-                    {getMonthName(currentDate.getMonth())} {currentDate.getFullYear()}
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  onPress={() => changeMonth(-1)}
-                  style={styles.navButton}
-                >
-                  <Ionicons name="chevron-back" size={20} color="#1F2937" />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.weekdaysContainer}>
-                {HEBREW_WEEKDAYS.map((day, index) => (
-                  <View key={index} style={styles.weekdayItem}>
-                    <Text style={[styles.weekdayText, styles.textRTL]}>{day}</Text>
+                  <View style={[
+                    styles.dayCircle,
+                    isSelected && styles.dayCircleSelected,
+                    isDisabled && styles.dayDisabled,
+                  ]}>
+                    <Text style={[
+                      styles.dayText,
+                      day.isToday && styles.dayTextToday,
+                      isSelected && styles.dayTextSelected,
+                    ]}>
+                      {day.day}
+                    </Text>
                   </View>
-                ))}
-              </View>
+                  {isAvailable && !isSelected && !isPast ? <View style={styles.availabilityDot} /> : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
 
-              <View style={styles.calendarGrid}>
-                {calendarDays.map((day, index) => {
-                  const isSelected = selectedDate && day.date && 
-                    day.date.toDateString() === selectedDate.toDateString();
-                  const isAvailable = day.isCurrentMonth && day.date && hasAvailability(day.date);
-                  const isPast = day.date && day.date < new Date().setHours(0, 0, 0, 0);
-                  
+        {/* 2. HEURE */}
+        <Text style={[styles.sectionTitle, styles.textRTL]}>2. בחירת שעה</Text>
+        {!selectedDate ? (
+          <Text style={[styles.hintText, styles.textRTL]}>בחרו תאריך כדי לראות שעות פנויות</Text>
+        ) : (
+          <>
+            <Text style={[styles.hintText, styles.textRTL]}>{formatSelectedDate(selectedDate)}</Text>
+            {availableSlots.length === 0 ? (
+              <View style={styles.noTimesContainer}>
+                <Ionicons name="time-outline" size={32} color={COLORS.accent} />
+                <Text key={`no-slots-${localDuration}`} style={styles.noTimesText}>
+                  אין משבצות פנויות למשך {localDuration} שעות
+                </Text>
+                <Text style={styles.noTimesSubtext}>נסה לקצר את משך השירות</Text>
+              </View>
+            ) : (
+              <View style={styles.timesGrid}>
+                {availableSlots.map((slot, index) => {
+                  const active = selectedTime === slot.time;
                   return (
                     <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.dayContainer,
-                        day.isToday && { backgroundColor: `${serviceColor}08` },
-                        isSelected && { backgroundColor: serviceColor },
-                        (!day.isCurrentMonth || isPast || !isAvailable) && styles.disabledDay
-                      ]}
-                      onPress={() => handleDateSelect(day)}
-                      disabled={!day.isCurrentMonth || isPast || !isAvailable}
+                      key={`${providerId}_${selectedDate?.toISOString()}_${slot.time}_${index}`}
+                      style={[styles.timeItem, active && styles.timeItemActive]}
+                      onPress={() => setSelectedTime(slot.time)}
+                      activeOpacity={0.8}
                     >
-                      <Text style={[
-                        styles.dayText,
-                        day.isToday && { color: serviceColor, fontWeight: '600' },
-                        isSelected && styles.selectedDayText,
-                        (!day.isCurrentMonth || isPast || !isAvailable) && styles.disabledDayText,
-                        styles.textRTL
-                      ]}>
-                        {day.day}
-                      </Text>
-                      {isAvailable && !isSelected && !day.isToday && (
-                        <View style={[styles.availabilityDot, { backgroundColor: serviceColor }]} />
-                      )}
+                      <Text style={[styles.timeText, active && styles.timeTextActive]}>{slot.time}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
-            </View>
-
-            {/* DURATION CARD */}
-            <View style={styles.durationCard}>
-              <Text style={[styles.sectionLabel, styles.textRTL]}>
-                משך שירות
-              </Text>
-              
-              <View style={[styles.durationSelector, styles.rtlRow]}>
-                <TouchableOpacity
-                  style={[
-                    styles.durationButton,
-                    { borderColor: localDuration <= 1 || isUpdating ? '#E5E7EB' : serviceColor }
-                  ]}
-                  onPress={() => handleDurationChange(localDuration - 1)}
-                  disabled={localDuration <= 1 || isUpdating}
-                >
-                  <Icon 
-                    name="minus" 
-                    size={18} 
-                    color={localDuration <= 1 || isUpdating ? '#D1D5DB' : serviceColor}
-                  />
-                </TouchableOpacity>
-                
-                <View style={[styles.durationDisplay, { backgroundColor: `${serviceColor}10` }]}>
-                  <Text 
-                    key={`duration-${localDuration}`} 
-                    style={[styles.durationText, { color: serviceColor }, styles.textRTL]}
-                  >
-                    {localDuration === 1 ? 'שעה אחת' : `${localDuration} שעות`}
-                  </Text>
-                </View>
-                
-                <TouchableOpacity
-                  style={[
-                    styles.durationButton,
-                    { borderColor: localDuration >= 50 || isUpdating ? '#E5E7EB' : serviceColor }
-                  ]}
-                  onPress={() => handleDurationChange(localDuration + 1)}
-                  disabled={localDuration >= 50 || isUpdating}
-                >
-                  <Icon 
-                    name="plus" 
-                    size={18} 
-                    color={localDuration >= 50 || isUpdating ? '#D1D5DB' : serviceColor}
-                  />
-                </TouchableOpacity>
-              </View>
-              
-              {selectedDate && selectedTime && (
-                <View style={[styles.durationNote, styles.rtlRow]}>
-                  <Ionicons 
-                    name="information-circle-outline" 
-                    size={14} 
-                    color="#9CA3AF"
-                    style={styles.iconRTL}
-                  />
-                  <Text style={[styles.durationNoteText, styles.textRTL]}>
-                    שינוי המשך יאפס את בחירת המשבצת
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* TIME SLOTS */}
-            {selectedDate && (
-              <View style={styles.timesCard}>
-                <Text style={[styles.sectionLabel, styles.textRTL]}>
-                  משבצות זמינות
-                </Text>
-                <Text style={[styles.selectedDateText, styles.textRTL]}>
-                  {formatSelectedDate(selectedDate)}
-                </Text>
-                
-                <View style={[styles.timesGrid, styles.rtlRow]}>
-                  {availableSlots.length === 0 ? (
-                    <View style={styles.noTimesContainer}>
-                      <Icon name="clock-outline" size={40} color="#D1D5DB" />
-                      <Text key={`no-slots-${localDuration}`} style={[styles.noTimesText, styles.textRTL]}>
-                        אין משבצות פנויות למשך {localDuration} שעות
-                      </Text>
-                      <Text style={[styles.noTimesSubtext, styles.textRTL]}>
-                        נסה לקצר את משך השירות
-                      </Text>
-                    </View>
-                  ) : (
-                    availableSlots.map((slot, index) => (
-                      <TouchableOpacity
-                        key={`${providerId}_${selectedDate?.toISOString()}_${slot.time}_${index}`}
-                        style={[
-                          styles.timeItem,
-                          selectedTime === slot.time && { 
-                            backgroundColor: serviceColor,
-                            borderColor: serviceColor
-                          }
-                        ]}
-                        onPress={() => setSelectedTime(slot.time)}
-                      >
-                        <Text 
-                          style={[
-                            styles.timeText,
-                            selectedTime === slot.time && styles.selectedTimeText,
-                            styles.textRTL
-                          ]}
-                        >
-                          {slot.time}
-                        </Text>
-                        <Text 
-                          style={[
-                            styles.timeEndText,
-                            selectedTime === slot.time && styles.selectedTimeEndText,
-                            styles.textRTL
-                          ]}
-                        >
-                          - {slot.endTime}
-                        </Text>
-                      </TouchableOpacity>
-                    ))
-                  )}
-                </View>
-              </View>
             )}
+            {selectedSlot ? (
+              <Text style={[styles.hintText, styles.textRTL]}>
+                {selectedSlot.time}–{selectedSlot.endTime}
+              </Text>
+            ) : null}
+          </>
+        )}
 
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  { backgroundColor: serviceColor },
-                  (!selectedDate || !selectedTime || isNavigating) && styles.buttonDisabled
-                ]}
-                onPress={handleContinue}
-                disabled={!selectedDate || !selectedTime || isNavigating}
-                activeOpacity={0.8}
-              >
-                {isNavigating ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <Text style={[styles.primaryButtonText, styles.textRTL]}>המשך</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </>
-      )}
-    </SafeAreaView>
+        {/* 3. DÉTAILS DU SERVICE */}
+        <Text style={[styles.sectionTitle, styles.textRTL]}>3. פרטי השירות</Text>
+        <View style={styles.detailRow}>
+          <View style={styles.detailIcon}>
+            <Ionicons name="home-outline" size={20} color={COLORS.primary} />
+          </View>
+          <View style={styles.detailBody}>
+            <Text style={[styles.detailTitle, styles.textRTL]}>{serviceLabel}</Text>
+            <Text key={`duration-${localDuration}`} style={[styles.detailSubtitle, styles.textRTL]}>
+              {localDuration === 1 ? 'שעה אחת' : `${localDuration} שעות`}
+            </Text>
+          </View>
+          <View style={styles.stepper}>
+            <TouchableOpacity
+              style={[styles.stepButton, (localDuration >= 50 || isUpdating) && styles.stepButtonDisabled]}
+              onPress={() => handleDurationChange(localDuration + 1)}
+              disabled={localDuration >= 50 || isUpdating}
+            >
+              <Ionicons name="add" size={18} color={COLORS.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.stepButton, (localDuration <= 1 || isUpdating) && styles.stepButtonDisabled]}
+              onPress={() => handleDurationChange(localDuration - 1)}
+              disabled={localDuration <= 1 || isUpdating}
+            >
+              <Ionicons name="remove" size={18} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+        {selectedDate && selectedTime ? (
+          <View style={styles.noteRow}>
+            <Ionicons name="information-circle-outline" size={14} color={COLORS.textHint} />
+            <Text style={[styles.noteText, styles.textRTL]}>שינוי המשך יאפס את בחירת המשבצת</Text>
+          </View>
+        ) : null}
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <PrimaryButton
+          title="המשך לסיכום"
+          onPress={handleContinue}
+          disabled={!selectedDate || !selectedTime}
+          loading={isNavigating}
+        />
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1,
-  },
-  loadingContainer: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center',
-  },
-  loadingText: { 
-    marginTop: 12, 
-    fontSize: 13, 
-    color: '#9CA3AF',
-    fontWeight: '400',
-    letterSpacing: -0.2,
-  },
-  
-  header: { 
-    backgroundColor: '#FFFFFF',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  headerTop: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
-  },
-  headerTitle: { 
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#1F2937',
-    textAlign: 'center',
-    flex: 1,
-    letterSpacing: -0.3,
-  },
+  container: { flex: 1, backgroundColor: COLORS.surface },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.surface },
+  loadingText: { marginTop: 12, fontSize: 13, color: COLORS.textMuted },
 
-  // ✅ AJOUT : styles bio
-  bioCard: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 0,
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+  header: { paddingTop: TOP_SPACE },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 18, paddingBottom: 16, gap: 12 },
+
+  hero: { height: 130, borderRadius: 20, overflow: 'hidden', backgroundColor: COLORS.accent },
+  heroArt: { position: 'absolute', top: 10, left: 16 },
+  heroShade: { position: 'absolute', top: 0, bottom: 0, right: 0, width: '75%', backgroundColor: 'rgba(14,40,62,0.35)' },
+  heroContent: { position: 'absolute', top: 18, right: 18, alignItems: 'flex-end', gap: 6 },
+  heroTitle: { fontSize: 20, fontWeight: '700', color: COLORS.white, lineHeight: 23, textAlign: 'right' },
+  heroMeta: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4 },
+  heroMetaText: { fontSize: 12, color: COLORS.white },
+
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
+  hintText: { fontSize: 12, color: COLORS.textMuted },
+
+  monthRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  monthText: { fontSize: 14, color: COLORS.text },
+  monthNav: { flexDirection: 'row-reverse', gap: 14 },
+
+  // RTL : dimanche (א׳) à droite
+  weekdaysRow: { flexDirection: 'row-reverse', marginBottom: 6 },
+  calendarGrid: { flexDirection: 'row-reverse', flexWrap: 'wrap' },
+  gridCell: { width: '14.28%', alignItems: 'center', paddingVertical: 2 },
+  weekdayText: { fontSize: 11, color: COLORS.textHint },
+  dayCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  dayCircleSelected: { backgroundColor: COLORS.primary },
+  dayDisabled: { opacity: 0.3 },
+  dayText: { fontSize: 14, fontWeight: '500', color: COLORS.text },
+  dayTextToday: { color: COLORS.primary, fontWeight: '700' },
+  dayTextSelected: { color: COLORS.white },
+  availabilityDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.accent, marginTop: 1 },
+
+  timesGrid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 6 },
+  timeItem: {
+    width: '18.6%',
+    paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  bioText: {
-    fontSize: 13,
-    color: '#4B5563',
-    lineHeight: 20,
-    fontWeight: '400',
-  },
-  
-  calendarCard: { 
-    marginHorizontal: 16,
-    marginTop: 24,
-    marginBottom: 16, 
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  sectionLabel: { 
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 16,
-  },
-  
-  calendarHeader: { 
-    flexDirection: 'row-reverse', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: 16,
-  },
-  navButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
-  },
-  currentMonthButton: { 
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  currentMonthText: { 
-    fontSize: 15, 
-    fontWeight: '600',
-    color: '#1F2937',
-    letterSpacing: -0.3,
-  },
-  
-  weekdaysContainer: { 
-    flexDirection: 'row', 
-    paddingBottom: 12,
-    marginBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  weekdayItem: { 
-    flex: 1, 
+    borderColor: COLORS.chipBorder,
+    backgroundColor: COLORS.surface,
     alignItems: 'center',
   },
-  weekdayText: { 
-    fontSize: 12, 
-    fontWeight: '500',
-    color: '#9CA3AF',
-    letterSpacing: -0.2,
-  },
-  
-  calendarGrid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap',
-  },
-  dayContainer: { 
-    width: '14.28%', 
-    aspectRatio: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    position: 'relative', 
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  dayText: { 
-    fontSize: 14, 
-    color: '#1F2937',
-    fontWeight: '400',
-    letterSpacing: -0.2,
-  },
-  disabledDay: { 
-    opacity: 0.25,
-  },
-  disabledDayText: { 
-    color: '#D1D5DB',
-  },
-  selectedDayText: { 
-    color: 'white', 
-    fontWeight: '600',
-  },
-  availabilityDot: { 
-    position: 'absolute', 
-    bottom: 4,
-    width: 4, 
-    height: 4, 
-    borderRadius: 2, 
-  },
-  
-  durationCard: { 
-    marginHorizontal: 16,
-    marginBottom: 16, 
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  durationSelector: { 
-    flexDirection: 'row-reverse', 
-    justifyContent: 'center', 
-    alignItems: 'center',
-  },
-  durationButton: { 
-    width: 40,
-    height: 40, 
-    borderRadius: 8,
-    borderWidth: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  durationDisplay: { 
-    paddingHorizontal: 20,
-    paddingVertical: 10, 
-    marginHorizontal: 16, 
-    borderRadius: 8,
-  },
-  durationText: { 
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-    letterSpacing: -0.2,
-  },
-  durationNote: { 
-    flexDirection: 'row-reverse', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    marginTop: 12,
-    paddingTop: 12, 
-    borderTopWidth: 1, 
-    borderTopColor: '#F3F4F6',
-  },
-  durationNoteText: { 
-    fontSize: 11, 
-    color: '#9CA3AF',
-    fontWeight: '400',
-    letterSpacing: -0.2,
-  },
-  
-  timesCard: { 
-    marginHorizontal: 16,
-    marginBottom: 16, 
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  selectedDateText: { 
-    fontSize: 12, 
-    color: '#9CA3AF',
-    marginBottom: 16,
-    textAlign: 'center',
-    fontWeight: '400',
-    letterSpacing: -0.2,
-  },
-  timesGrid: { 
-    flexDirection: 'row-reverse', 
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  timeItem: { 
-    width: '31%', 
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    alignItems: 'center', 
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  timeText: { 
-    fontSize: 14, 
-    fontWeight: '600',
-    color: '#1F2937',
-    letterSpacing: -0.2,
-  },
-  timeEndText: { 
-    fontSize: 11, 
-    color: '#9CA3AF',
-    marginTop: 2,
-    fontWeight: '400',
-    letterSpacing: -0.2,
-  },
-  selectedTimeText: { 
-    color: 'white',
-  },
-  selectedTimeEndText: {
-    color: 'rgba(255,255,255,0.8)',
-  },
-  noTimesContainer: { 
-    padding: 32, 
-    alignItems: 'center', 
-    width: '100%',
-  },
-  noTimesText: { 
-    fontSize: 14, 
-    color: '#6B7280',
-    textAlign: 'center', 
-    marginTop: 12, 
-    marginBottom: 4,
-    fontWeight: '500',
-    letterSpacing: -0.2,
-  },
-  noTimesSubtext: { 
-    fontSize: 12, 
-    color: '#9CA3AF',
-    textAlign: 'center',
-    fontWeight: '400',
-    letterSpacing: -0.2,
-  },
-  
-  buttonContainer: { 
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-  },
-  primaryButton: { 
-    height: 40,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    letterSpacing: -0.2,
-  },
-  buttonDisabled: {
-    opacity: 0.4,
-  },
-  
-  rtlRow: {
+  timeItemActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  timeText: { fontSize: 13, color: COLORS.text },
+  timeTextActive: { color: COLORS.white, fontWeight: '600' },
+  noTimesContainer: { paddingVertical: 20, alignItems: 'center' },
+  noTimesText: { fontSize: 14, color: COLORS.text, textAlign: 'center', marginTop: 10, marginBottom: 4, fontWeight: '500' },
+  noTimesSubtext: { fontSize: 12, color: COLORS.textMuted, textAlign: 'center' },
+
+  detailRow: {
     flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
+  detailIcon: {
+    width: 38, height: 38, borderRadius: 12,
+    backgroundColor: COLORS.tint, alignItems: 'center', justifyContent: 'center',
+  },
+  detailBody: { flex: 1 },
+  detailTitle: { fontSize: 14, fontWeight: '600', color: COLORS.text },
+  detailSubtitle: { fontSize: 11, color: COLORS.textMuted, marginTop: 1 },
+  stepper: { flexDirection: 'row-reverse', gap: 6 },
+  stepButton: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: COLORS.tint, alignItems: 'center', justifyContent: 'center',
+  },
+  stepButtonDisabled: { opacity: 0.35 },
+  noteRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  noteText: { fontSize: 11, color: COLORS.textHint },
+
+  footer: { paddingHorizontal: 18, paddingTop: 12, paddingBottom: 28, backgroundColor: COLORS.surface },
+
   textRTL: {
     textAlign: 'right',
     writingDirection: 'rtl',
-  },
-  iconRTL: {
-    marginLeft: 6,
-    marginRight: 0,
   },
 });
 

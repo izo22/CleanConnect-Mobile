@@ -1,254 +1,193 @@
 // src/components/PriceBreakdown.js
 // ✅ גרסה מתורגמת לעברית עם תמיכה ב-RTL
+// ✅ REFONTE BLEU CLAIR (maquette 05) : carte blanche bordée, total en bleu nuit
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, Card, Divider } from 'react-native-paper';
+import { View, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { calculatePlatformFees, PLATFORM_FEES } from '../config/constants';
+import { COLORS } from '../config/theme';
 
-const PriceBreakdown = ({ 
-  servicePrice, 
+const PriceBreakdown = ({
+  servicePrice,
   serviceType = 'home', // ✅ AJOUT du serviceType avec valeur par défaut
-  serviceColor = '#2196F3', 
+  serviceColor = COLORS.navy,
   showDetails = true,
-  isPromo = false 
+  isPromo = false
 }) => {
   // ✅ Passer le serviceType à calculatePlatformFees
   const fees = calculatePlatformFees(servicePrice, isPromo, serviceType);
-  const isRTL = true; // תמיד RTL לעברית
-  
+
   const formatPrice = (price) => `${price.toFixed(2)} ${PLATFORM_FEES.CURRENCY}`;
-  
+
   return (
-    <Card style={styles.card}>
-      <Card.Content>
-        <View style={[styles.header, styles.rtlRow]}>
-          <Ionicons name="cash-outline" size={24} color={serviceColor} style={styles.iconRTL} />
-          <Text style={[styles.headerTitle, styles.textRTL]}>פירוט עמלות</Text>
-        </View>
-        
-        {showDetails && (
-          <>
-            {/* מחיר השירות */}
-            <View style={[styles.row, styles.rtlRow]}>
-              <Text style={[styles.label, styles.textRTL]}>מחיר השירות</Text>
-              <Text style={[styles.value, styles.textRTL]}>{formatPrice(fees.servicePrice)}</Text>
-            </View>
-            
-            <View style={[styles.noteContainer, styles.rtlRow]}>
-              <Ionicons name="information-circle-outline" size={16} color="#666" style={styles.iconRTL} />
-              <Text style={[styles.noteText, styles.textRTL]}>
-                לשלם ישירות לספק השירות (מזומן/העברה)
-              </Text>
-            </View>
-            
-            <Divider style={styles.divider} />
-          </>
-        )}
-        
-        {/* עמלות פלטפורמה */}
-        <View style={styles.platformFeesSection}>
-          <Text style={[styles.sectionTitle, styles.textRTL]}>עמלת הזמנה CleanConnect</Text>
-          
-          <View style={[styles.breakdownRow, styles.rtlRow]}>
-            <Text style={[styles.breakdownLabel, styles.textRTL]}>• עמלת התחברות</Text>
-            <Text style={[styles.breakdownValue, styles.textRTL]}>{formatPrice(fees.baseFee)}</Text>
+    <View style={styles.card}>
+      {showDetails && (
+        <>
+          {/* מחיר השירות */}
+          <View style={styles.row}>
+            <Text style={[styles.label, styles.textRTL]}>מחיר השירות</Text>
+            <Text style={styles.value}>{formatPrice(fees.servicePrice)}</Text>
           </View>
-          
-          <View style={[styles.breakdownRow, styles.rtlRow]}>
-            <Text style={[styles.breakdownLabel, styles.textRTL]}>
-              {/* ✅ Affichage dynamique du pourcentage */}
-              • עמלת פלטפורמה ({fees.percentage}%)
-            </Text>
-            <Text style={[styles.breakdownValue, styles.textRTL]}>{formatPrice(fees.commission)}</Text>
-          </View>
-          
-          <Divider style={styles.subtleDivider} />
-          
-          <View style={[styles.totalRow, styles.rtlRow]}>
-            <Text style={[styles.totalLabel, styles.textRTL]}>סה״כ עמלות פלטפורמה</Text>
-            <Text style={[styles.totalValue, styles.textRTL, { color: serviceColor }]}>
-              {formatPrice(fees.platformFee)}
+
+          <View style={styles.noteContainer}>
+            <Ionicons name="information-circle-outline" size={14} color={COLORS.textMuted} />
+            <Text style={[styles.noteText, styles.textRTL]}>
+              לשלם ישירות לספק השירות (מזומן/העברה)
             </Text>
           </View>
-          
-          {isPromo && (
-            <View style={[styles.promoContainer, styles.rtlRow]}>
-              <Ionicons name="gift" size={16} color="#4CAF50" style={styles.iconRTL} />
-              <Text style={[styles.promoText, styles.textRTL]}>מחיר מבצע השקה!</Text>
-            </View>
-          )}
+
+          <View style={styles.divider} />
+        </>
+      )}
+
+      {/* עמלות פלטפורמה */}
+      <Text style={[styles.sectionTitle, styles.textRTL]}>עמלת הזמנה CleanConnect</Text>
+
+      <View style={styles.row}>
+        <Text style={[styles.label, styles.textRTL]}>עמלת התחברות</Text>
+        <Text style={styles.value}>{formatPrice(fees.baseFee)}</Text>
+      </View>
+
+      <View style={styles.row}>
+        <View style={styles.labelWithIcon}>
+          {/* ✅ Affichage dynamique du pourcentage */}
+          <Text style={[styles.label, styles.textRTL]}>עמלת פלטפורמה ({fees.percentage}%)</Text>
+          <Ionicons name="information-circle-outline" size={13} color={COLORS.textBody} />
         </View>
-        
-        <View style={styles.benefitsContainer}>
-          <Text style={[styles.benefitsTitle, styles.textRTL]}>מה כוללות העמלות:</Text>
-          <View style={[styles.benefitRow, styles.rtlRow]}>
-            <Ionicons name="checkmark-circle" size={16} color="#4CAF50" style={styles.iconRTL} />
-            <Text style={[styles.benefitText, styles.textRTL]}>פתיחת קשר עם ספק השירות</Text>
-          </View>
-          <View style={[styles.benefitRow, styles.rtlRow]}>
-            <Ionicons name="checkmark-circle" size={16} color="#4CAF50" style={styles.iconRTL} />
-            <Text style={[styles.benefitText, styles.textRTL]}>אישור הזמנה</Text>
-          </View>
-          <View style={[styles.benefitRow, styles.rtlRow]}>
-            <Ionicons name="checkmark-circle" size={16} color="#4CAF50" style={styles.iconRTL} />
-            <Text style={[styles.benefitText, styles.textRTL]}>תמיכת לקוחות</Text>
-          </View>
-          <View style={[styles.benefitRow, styles.rtlRow]}>
-            <Ionicons name="checkmark-circle" size={16} color="#4CAF50" style={styles.iconRTL} />
-            <Text style={[styles.benefitText, styles.textRTL]}>טיפול בתלונות</Text>
-          </View>
+        <Text style={styles.value}>{formatPrice(fees.commission)}</Text>
+      </View>
+
+      <View style={styles.divider} />
+
+      <View style={styles.row}>
+        <Text style={[styles.totalLabel, styles.textRTL]}>סה״כ עמלות פלטפורמה</Text>
+        <Text style={[styles.totalValue, { color: serviceColor }]}>
+          {formatPrice(fees.platformFee)}
+        </Text>
+      </View>
+
+      {isPromo && (
+        <View style={styles.promoContainer}>
+          <Ionicons name="gift-outline" size={16} color={COLORS.primary} />
+          <Text style={[styles.promoText, styles.textRTL]}>מחיר מבצע השקה!</Text>
         </View>
-      </Card.Content>
-    </Card>
+      )}
+
+      <View style={styles.benefitsContainer}>
+        <Text style={[styles.benefitsTitle, styles.textRTL]}>מה כוללות העמלות:</Text>
+        {['פתיחת קשר עם ספק השירות', 'אישור הזמנה', 'תמיכת לקוחות', 'טיפול בתלונות'].map((b) => (
+          <View key={b} style={styles.benefitRow}>
+            <Ionicons name="checkmark-circle" size={15} color={COLORS.primary} />
+            <Text style={[styles.benefitText, styles.textRTL]}>{b}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
-    elevation: 4,
-    marginVertical: 10,
-  },
-  header: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginRight: 10,
-    color: '#333',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 20,
+    padding: 14,
+    gap: 8,
   },
   row: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  labelWithIcon: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 1,
   },
   label: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
+    fontSize: 14,
+    color: COLORS.textBody,
+    flexShrink: 1,
   },
   value: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: 'bold',
+    fontSize: 14,
+    color: COLORS.textBody,
   },
   noteContainer: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    backgroundColor: '#FFF9E6',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 8,
+    gap: 6,
+    backgroundColor: COLORS.tint,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
   },
   noteText: {
-    fontSize: 13,
-    color: '#856404',
-    marginRight: 8,
+    fontSize: 12,
+    color: COLORS.navy,
     flex: 1,
   },
   divider: {
     height: 1,
-    marginVertical: 15,
-  },
-  subtleDivider: {
-    height: 1,
-    marginVertical: 10,
-    backgroundColor: '#E0E0E0',
-  },
-  platformFeesSection: {
-    backgroundColor: '#F8F9FA',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 15,
+    backgroundColor: COLORS.divider,
+    marginVertical: 4,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  breakdownRow: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-    paddingRight: 10,
-  },
-  breakdownLabel: {
     fontSize: 14,
-    color: '#555',
-    flex: 1,
-  },
-  breakdownValue: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
-  },
-  totalRow: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingTop: 15,
+    fontWeight: '600',
+    color: COLORS.text,
   },
   totalLabel: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    flexShrink: 1,
   },
   totalValue: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   promoContainer: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E8F5E9',
+    gap: 6,
+    backgroundColor: COLORS.tint,
     padding: 8,
-    borderRadius: 8,
-    marginTop: 10,
+    borderRadius: 12,
   },
   promoText: {
     fontSize: 13,
-    color: '#2E7D32',
-    fontWeight: 'bold',
-    marginRight: 6,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
   benefitsContainer: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.canvas,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 14,
+    gap: 6,
+    marginTop: 4,
   },
   benefitsTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1565C0',
-    marginBottom: 8,
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.navy,
   },
   benefitRow: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    marginBottom: 6,
+    gap: 6,
   },
   benefitText: {
     fontSize: 13,
-    color: '#1976D2',
-    marginRight: 8,
+    color: COLORS.textBody,
   },
   // ✅ Styles RTL
-  rtlRow: {
-    flexDirection: 'row-reverse',
-  },
   textRTL: {
     textAlign: 'right',
     writingDirection: 'rtl',
-  },
-  iconRTL: {
-    marginLeft: 8,
-    marginRight: 0,
   },
 });
 

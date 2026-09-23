@@ -32,6 +32,7 @@ import EditPersonalInfoScreen  from '../screens/profile/EditPersonalInfoScreen';
 import HomeScreen            from '../screens/client/HomeScreen';
 import ServiceDetailsScreen  from '../screens/client/ServiceDetails';
 import ProviderSearchScreen  from '../screens/client/ProviderSearch';
+import ProviderProfileViewScreen from '../screens/client/ProviderProfileView';
 import ClientDashboardScreen from '../screens/client/ClientDashboardScreen';
 import BookingDetailsScreen  from '../screens/client/BookingDetailsScreen';
 
@@ -43,6 +44,7 @@ import BookingConfirmationScreen from '../screens/booking/BookingConfirmationScr
 import AddressSelectionScreen    from '../screens/client/AddressSelection';
 
 import ProfileStackNavigator from './ProfileStackNavigator';
+import { COLORS } from '../config/theme';
 
 // ── Écrans temporaires ────────────────────────────────────────────────────────
 const ForgotPasswordScreen = () => (
@@ -57,29 +59,42 @@ const ReviewsScreen = () => (
   </View>
 );
 
-// ── Design system ─────────────────────────────────────────────────────────────
+// ── Design system (bleu clair) ─────────────────────────────────────────────────────────────
 const HEADER_STYLE = {
   backgroundColor: '#FFFFFF',
   elevation: 0,
   shadowOpacity: 0,
   borderBottomWidth: 1,
-  borderBottomColor: '#F3F4F6',
+  borderBottomColor: COLORS.borderSoft,
 };
 
 const HEADER_TITLE_STYLE = {
-  fontSize: 16,
+  fontSize: 18,
   fontWeight: '600',
-  color: '#111827',
+  color: COLORS.text,
   letterSpacing: -0.3,
 };
 
 const STACK_SCREEN_OPTIONS = {
   headerShown: true,
   headerStyle: HEADER_STYLE,
-  headerTintColor: '#111827',
+  headerTintColor: COLORS.text,
   headerTitleStyle: HEADER_TITLE_STYLE,
   headerTitleAlign: 'center',
   headerBackTitleVisible: false,
+};
+
+const TAB_BAR_OPTIONS = {
+  tabBarActiveTintColor: COLORS.primary,
+  tabBarInactiveTintColor: COLORS.tabInactive,
+  tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+  tabBarStyle: {
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderSoft,
+    elevation: 0,
+    shadowOpacity: 0,
+  },
 };
 
 const getHeaderOptions = (title) => ({ ...STACK_SCREEN_OPTIONS, title });
@@ -97,6 +112,7 @@ const ClientMainStack = () => (
     <ClientStack.Screen name="Home"                component={HomeScreen}                options={{ headerShown: false }} />
     <ClientStack.Screen name="ServiceDetails"      component={ServiceDetailsScreen}      options={getHeaderOptions('פרטי שירות')} />
     <ClientStack.Screen name="ProviderSearch"      component={ProviderSearchScreen}      options={{ headerShown: false }} />
+    <ClientStack.Screen name="ProviderProfileView" component={ProviderProfileViewScreen} options={{ headerShown: false }} />
     <ClientStack.Screen name="AddressSelection"    component={AddressSelectionScreen}    options={getHeaderOptions('בחירת כתובת')} />
     <ClientStack.Screen name="ScheduleScreen"      component={ScheduleScreen}            options={{ headerShown: false }} />
     <ClientStack.Screen name="BookingSummary"      component={BookingSummaryScreen}      options={{ headerShown: false }} />
@@ -119,15 +135,7 @@ const ClientTabs = () => (
         };
         return <Ionicons name={icons[route.name]} size={size} color={color} />;
       },
-      tabBarActiveTintColor: '#111827',
-      tabBarInactiveTintColor: '#9CA3AF',
-      tabBarStyle: {
-        backgroundColor: '#FFFFFF',
-        borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
-        elevation: 0,
-        shadowOpacity: 0,
-      },
+      ...TAB_BAR_OPTIONS,
       headerShown: false,
     })}
   >
@@ -176,15 +184,7 @@ const ProviderTabs = () => (
         };
         return <Ionicons name={icons[route.name]} size={size} color={color} />;
       },
-      tabBarActiveTintColor: '#111827',
-      tabBarInactiveTintColor: '#9CA3AF',
-      tabBarStyle: {
-        backgroundColor: '#FFFFFF',
-        borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
-        elevation: 0,
-        shadowOpacity: 0,
-      },
+      ...TAB_BAR_OPTIONS,
       headerShown: false,
     })}
   >
@@ -229,7 +229,7 @@ const AppNavigator = () => {
         alignItems: 'center',
         backgroundColor: '#FFFFFF',
       }}>
-        <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '400' }}>
+        <Text style={{ color: COLORS.textMuted, fontSize: 15, fontWeight: '400' }}>
           טוען...
         </Text>
       </View>
