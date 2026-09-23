@@ -1,254 +1,123 @@
-// src/screens/profile/UserProfileScreen.js
-// ✅ תורגם לעברית ישירות ללא i18n
-// ✅ תוקן: הצגת עיר אמיתית מהפרופיל
-// ✅ נוסף: גישה לוידאו של הנכס
-// ✅ תוקן: עריכת כתובת ועיר דרך EditPersonalInfo
-// ✅ תוקן: fix écran noir lors de la déconnexion — navigation.reset() appelé avant setAuthState
-
+// src/screens/profile/UserProfileScreen.js — CleanCasa · bleu clair (maquette 10)
+// Logique inchangée (navigation, logout, suppression de compte).
 import React, { useState, useContext, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Switch,
-  Alert,
-} from 'react-native';
-import { AuthContext } from '../../context/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { AuthContext } from '../../context/AuthContext';
+import { palette as C } from '../../config/theme';
 
-// Composant pour les options du profil
-const ProfileOption = ({ icon, title, onPress, value, rightComponent, isRTL }) => {
-  return (
-    <TouchableOpacity style={styles.optionContainer} onPress={onPress}>
-      <View style={[styles.optionLeft, isRTL && styles.optionLeftRTL]}>
-        <Ionicons name={icon} size={24} color="#256FA8" />
-        <Text style={[styles.optionTitle, isRTL && styles.textRTL]}>{title}</Text>
-      </View>
-      <View style={[styles.optionRight, isRTL && styles.optionRightRTL]}>
-        {value && <Text style={[styles.optionValue, isRTL && styles.textRTL]}>{value}</Text>}
-        {rightComponent}
-        <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color="#8A99A6" />
-      </View>
-    </TouchableOpacity>
-  );
-};
-
-// Composant pour les sections du profil
-const ProfileSection = ({ title, children, isRTL }) => {
-  return (
-    <View style={styles.sectionContainer}>
-      <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>{title}</Text>
-      {children}
+const ProfileOption = ({ icon, title, onPress, value, rightComponent, last }) => (
+  <TouchableOpacity style={[styles.option, last && styles.optionLast]} onPress={onPress} activeOpacity={0.7}>
+    <View style={styles.optionIcon}>
+      <Ionicons name={icon} size={18} color={C.primary} />
     </View>
-  );
-};
+    <Text style={styles.optionTitle}>{title}</Text>
+    {value ? <Text style={styles.optionValue} numberOfLines={1}>{value}</Text> : null}
+    {rightComponent || <Ionicons name="chevron-back" size={18} color={C.subtle} />}
+  </TouchableOpacity>
+);
+
+const ProfileSection = ({ title, children }) => (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={styles.sectionCard}>{children}</View>
+  </View>
+);
 
 const UserProfileScreen = () => {
   const authContext = useContext(AuthContext);
   const navigation = useNavigation();
-  const isRTL = true;
-
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-
   const [profileData, setProfileData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    city: '',
-    address: '',
-    language: 'עברית',
+    firstName: '', lastName: '', email: '', phone: '', city: '', address: '', language: 'עברית',
   });
 
   useEffect(() => {
     if (authContext?.userInfo) {
+      const u = authContext.userInfo;
       setProfileData({
-        firstName: authContext.userInfo.firstName || authContext.userInfo.name || 'משתמש',
-        lastName: authContext.userInfo.lastName || '',
-        email: authContext.userInfo.email || 'email@example.com',
-        phone: authContext.userInfo.phone || 'לא צוין',
-        city: authContext.userInfo.city || 'לא צוין',
-        address: authContext.userInfo.address || 'לא צוינה',
-        language: authContext.userInfo.language || 'עברית',
-      });
-
-      console.log('📋 נתוני פרופיל:', {
-        city: authContext.userInfo.city,
-        address: authContext.userInfo.address
+        firstName: u.firstName || u.name || 'משתמש',
+        lastName: u.lastName || '',
+        email: u.email || 'email@example.com',
+        phone: u.phone || 'לא צוין',
+        city: u.city || 'לא צוין',
+        address: u.address || 'לא צוינה',
+        language: u.language || 'עברית',
       });
     }
   }, [authContext?.userInfo]);
 
-  const handleLanguageChange = () => {
-    navigation.navigate('LanguageSettings');
-  };
-
-  const handleEditPersonalInfo = () => {
-    navigation.navigate('EditPersonalInfo', { profileData });
-  };
-
-  const handleEditAddress = () => {
-    navigation.navigate('EditPersonalInfo', { profileData });
-  };
-
-  const handlePropertyVideo = () => {
-    navigation.navigate('PropertyVideo');
-  };
-
-  // ✅ FIX ÉCRAN NOIR APK :
-  // navigation.reset() est appelé en PREMIER → React Navigation détruit la stack
-  // de façon impérative avant que le setAuthState() dans logout() ne déclenche
-  // un rerender. Plus d'état incohérent entre les deux layers (JS + natif Android).
-  // ✅ NOUVEAU — le fix est dans AuthContext.logout(), rien à faire ici
-  const handleLogout = () => {
-    authContext.logout();
-  };
-
+  const handleEditPersonalInfo = () => navigation.navigate('EditPersonalInfo', { profileData });
+  const handleLogout = () => authContext.logout();
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'מחיקת חשבון',
-      'האם אתה בטוח שברצונך למחוק את החשבון? פעולה זו אינה הפיכה.',
-      [
-        {
-          text: 'ביטול',
-          style: 'cancel',
-        },
-        {
-          text: 'מחק',
-          onPress: () => {
-            setTimeout(() => {
-              authContext.logout();
-            }, 300);
-          },
-          style: 'destructive',
-        },
-      ]
-    );
+    Alert.alert('מחיקת חשבון', 'האם אתה בטוח שברצונך למחוק את החשבון? פעולה זו אינה הפיכה.', [
+      { text: 'ביטול', style: 'cancel' },
+      { text: 'מחק', style: 'destructive', onPress: () => setTimeout(() => authContext.logout(), 300) },
+    ]);
   };
+
+  const initials = `${profileData.firstName.charAt(0)}${profileData.lastName.charAt(0)}`;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        {/* En-tête du profil */}
-        <View style={styles.profileHeader}>
-          <View style={styles.initialsContainer}>
-            <Text style={styles.initialsText}>
-              {profileData.firstName.charAt(0)}
-              {profileData.lastName.charAt(0)}
-            </Text>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={styles.screenTitle}>פרופיל</Text>
+
+        <TouchableOpacity style={styles.headerCard} onPress={handleEditPersonalInfo} activeOpacity={0.8}>
+          <View style={styles.avatar}><Text style={styles.avatarText}>{initials}</Text></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.userName}>{profileData.firstName} {profileData.lastName}</Text>
+            <Text style={styles.userEmail}>{profileData.email}</Text>
           </View>
-          <Text style={[styles.userName, styles.textRTL]}>
-            {profileData.firstName} {profileData.lastName}
-          </Text>
-          <Text style={[styles.userEmail, styles.textRTL]}>{profileData.email}</Text>
-        </View>
+          <Ionicons name="create-outline" size={20} color={C.primary} />
+        </TouchableOpacity>
 
-        {/* Informations personnelles */}
-        <ProfileSection title="פרטים אישיים" isRTL={isRTL}>
-          <ProfileOption
-            icon="person-outline"
-            title="ערוך פרטים"
-            onPress={handleEditPersonalInfo}
-            isRTL={isRTL}
-          />
-          <ProfileOption
-            icon="call-outline"
-            title="טלפון"
-            value={profileData.phone}
-            onPress={handleEditPersonalInfo}
-            isRTL={isRTL}
-          />
+        <ProfileSection title="פרטים אישיים">
+          <ProfileOption icon="person-outline" title="ערוך פרטים" onPress={handleEditPersonalInfo} />
+          <ProfileOption icon="call-outline" title="טלפון" value={profileData.phone} onPress={handleEditPersonalInfo} last />
         </ProfileSection>
 
-        {/* Adresse, ville et vidéo */}
-        <ProfileSection title="הנכס שלי" isRTL={isRTL}>
-          <ProfileOption
-            icon="location-outline"
-            title="עיר"
-            value={profileData.city}
-            onPress={handleEditAddress}
-            isRTL={isRTL}
-          />
-          <ProfileOption
-            icon="home-outline"
-            title="כתובת"
-            value={profileData.address}
-            onPress={handleEditAddress}
-            isRTL={isRTL}
-          />
-          <ProfileOption
-            icon="videocam-outline"
-            title="וידאו של הנכס"
-            value="📹"
-            onPress={handlePropertyVideo}
-            isRTL={isRTL}
-          />
+        <ProfileSection title="הנכס שלי">
+          <ProfileOption icon="location-outline" title="עיר" value={profileData.city} onPress={handleEditPersonalInfo} />
+          <ProfileOption icon="home-outline" title="כתובת" value={profileData.address} onPress={handleEditPersonalInfo} />
+          <ProfileOption icon="videocam-outline" title="וידאו של הנכס" onPress={() => navigation.navigate('PropertyVideo')} last />
         </ProfileSection>
 
-        {/* Préférences */}
-        <ProfileSection title="העדפות" isRTL={isRTL}>
-          <ProfileOption
-            icon="language-outline"
-            title="שפה"
-            value={profileData.language}
-            onPress={handleLanguageChange}
-            isRTL={isRTL}
-          />
+        <ProfileSection title="העדפות">
+          <ProfileOption icon="language-outline" title="שפה" value={profileData.language} onPress={() => navigation.navigate('LanguageSettings')} />
           <ProfileOption
             icon="notifications-outline"
             title="התראות"
+            onPress={() => setNotificationsEnabled(!notificationsEnabled)}
+            last
             rightComponent={
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
-                trackColor={{ false: '#DCE8F1', true: '#5BA4D9' }}
-                thumbColor={notificationsEnabled ? '#256FA8' : '#f4f3f4'}
-                ios_backgroundColor="#DCE8F1"
+                trackColor={{ false: C.borderStrong, true: C.accent }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor={C.borderStrong}
               />
             }
-            onPress={() => setNotificationsEnabled(!notificationsEnabled)}
-            isRTL={isRTL}
           />
         </ProfileSection>
 
-        {/* Compte */}
-        <ProfileSection title="חשבון" isRTL={isRTL}>
-          <TouchableOpacity
-            style={[styles.optionContainer, { backgroundColor: '#ffebee' }]}
-            onPress={handleLogout}
-          >
-            <View style={[styles.optionLeft, styles.optionLeftRTL]}>
-              <Ionicons name="log-out-outline" size={24} color="#e74c3c" />
-              <Text style={[styles.optionTitle, styles.textRTL, { color: '#e74c3c', fontWeight: 'bold' }]}>
-                התנתק
-              </Text>
-            </View>
-            <Ionicons name="chevron-back" size={20} color="#e74c3c" />
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.logout} onPress={handleLogout} activeOpacity={0.8}>
+          <Ionicons name="log-out-outline" size={18} color={C.error} />
+          <Text style={styles.logoutText}>התנתקות</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount}>
-            <Text style={[styles.deleteAccountText, styles.textRTL]}>
-              מחק חשבון
-            </Text>
-          </TouchableOpacity>
-        </ProfileSection>
+        <TouchableOpacity style={styles.delete} onPress={handleDeleteAccount}>
+          <Text style={styles.deleteText}>מחק חשבון</Text>
+        </TouchableOpacity>
 
-        {/* Informations de débogage */}
         {__DEV__ && (
-          <ProfileSection title="מידע דיבאג (למפתחים)" isRTL={isRTL}>
-            <View style={styles.debugContainer}>
-              <Text style={[styles.debugText, styles.textRTL]}>
-                עיר: {authContext?.userInfo?.city || 'לא מוגדר'}
-              </Text>
-              <Text style={[styles.debugText, styles.textRTL]}>
-                כתובת: {authContext?.userInfo?.address || 'לא מוגדר'}
-              </Text>
-            </View>
-          </ProfileSection>
+          <View style={styles.debug}>
+            <Text style={styles.debugText}>עיר: {authContext?.userInfo?.city || 'לא מוגדר'}</Text>
+            <Text style={styles.debugText}>כתובת: {authContext?.userInfo?.address || 'לא מוגדר'}</Text>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -256,117 +125,28 @@ const UserProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F6FAFD',
-  },
-  profileHeader: {
-    alignItems: 'center',
-    paddingVertical: 30,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF3F7',
-  },
-  initialsContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#256FA8',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  initialsText: {
-    color: 'white',
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 16,
-    color: '#5E6E7C',
-  },
-  sectionContainer: {
-    marginTop: 20,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginHorizontal: 15,
-    shadowColor: '#1B4F7A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    color: '#1B2A36',
-    backgroundColor: '#F6FAFD',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF3F7',
-  },
-  optionContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF3F7',
-  },
-  optionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  optionLeftRTL: {
-    flexDirection: 'row-reverse',
-  },
-  optionTitle: {
-    fontSize: 16,
-    marginLeft: 12,
-    color: '#1B2A36',
-  },
-  optionRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  optionRightRTL: {
-    flexDirection: 'row-reverse',
-  },
-  optionValue: {
-    fontSize: 16,
-    color: '#8A99A6',
-    marginRight: 10,
-  },
-  deleteAccountButton: {
-    paddingVertical: 15,
-    alignItems: 'center',
-    borderRadius: 999,
-  },
-  deleteAccountText: {
-    color: '#e74c3c',
-    fontSize: 16,
-  },
-  debugContainer: {
-    padding: 15,
-    backgroundColor: '#EEF3F7',
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#5E6E7C',
-    marginBottom: 5,
-  },
-  textRTL: {
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  container: { flex: 1, backgroundColor: C.bg },
+  content: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 32, gap: 16 },
+  screenTitle: { fontSize: 26, fontWeight: '700', color: C.ink, textAlign: 'right' },
+  headerCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 20, padding: 14 },
+  avatar: { width: 62, height: 62, borderRadius: 31, backgroundColor: C.tintStrong, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 22, fontWeight: '700', color: C.primaryDark },
+  userName: { fontSize: 18, fontWeight: '600', color: C.ink, textAlign: 'right' },
+  userEmail: { fontSize: 13, color: C.muted, textAlign: 'right', marginTop: 2 },
+  section: { gap: 8 },
+  sectionTitle: { fontSize: 13, fontWeight: '600', color: C.muted, textAlign: 'right' },
+  sectionCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 20, paddingHorizontal: 14 },
+  option: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: C.divider },
+  optionLast: { borderBottomWidth: 0 },
+  optionIcon: { width: 34, height: 34, borderRadius: 11, backgroundColor: C.tint, alignItems: 'center', justifyContent: 'center' },
+  optionTitle: { flex: 1, fontSize: 15, color: C.ink, textAlign: 'right' },
+  optionValue: { maxWidth: 140, fontSize: 13, color: C.muted, textAlign: 'left' },
+  logout: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.errorBorder, borderRadius: 999, paddingVertical: 13, marginTop: 4 },
+  logoutText: { fontSize: 15, fontWeight: '600', color: C.error },
+  delete: { alignItems: 'center', paddingVertical: 6 },
+  deleteText: { fontSize: 13, color: C.muted, textDecorationLine: 'underline' },
+  debug: { padding: 12, backgroundColor: C.divider, borderRadius: 14 },
+  debugText: { fontSize: 12, color: C.muted, textAlign: 'right', marginBottom: 4 },
 });
 
 export default UserProfileScreen;

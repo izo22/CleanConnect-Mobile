@@ -225,7 +225,7 @@ const JobDetailsScreen = ({ navigation, route }) => {
     const configs = {
       pending:     { label: HE.status.pending,    color: '#F59E0B', bg: '#F59E0B1A' },
       accepted:    { label: HE.status.accepted,   color: '#16A34A', bg: '#16A34A1A' },
-      in_progress: { label: HE.status.inProgress, color: '#256FA8', bg: '#3B82F61A' },
+      in_progress: { label: HE.status.inProgress, color: '#256FA8', bg: '#EAF4FB' },
       completed:   { label: HE.status.completed,  color: '#16A34A', bg: '#16A34A1A' },
       cancelled:   { label: HE.status.cancelled,  color: '#DC2626', bg: '#DC26261A' },
     };

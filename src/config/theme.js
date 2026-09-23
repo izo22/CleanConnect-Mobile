@@ -49,6 +49,33 @@ export const COLORS = {
   statusCancelledBg: '#FDECEC', statusCancelledFg: '#A33A3A',
 };
 
+// Alias utilisé par les écrans 07–13 exportés de Claude Design (même palette)
+export const palette = {
+  primary: COLORS.primary,
+  primaryDark: COLORS.primaryDark,
+  brand: COLORS.navy,
+  accent: COLORS.accent,
+  tint: COLORS.tint,
+  tintStrong: COLORS.tintStrong,
+  ink: COLORS.text,
+  text: COLORS.text,
+  text2: COLORS.textBody,
+  muted: COLORS.textMuted,
+  subtle: COLORS.tabInactive,
+  bg: COLORS.canvas,
+  surface: COLORS.surface,
+  input: COLORS.input,
+  border: COLORS.border,
+  borderStrong: COLORS.chipBorder,
+  divider: COLORS.divider,
+  star: COLORS.star,
+  success: '#2E9E6A',
+  warning: '#8A5A00',
+  warningBg: '#FFF3DC',
+  error: '#B3261E',
+  errorBorder: '#F2C9C4',
+};
+
 export const theme = {
   ...DefaultTheme,
   colors: {

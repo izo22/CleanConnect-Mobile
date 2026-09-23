@@ -27,6 +27,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SERVICE_TYPE_LABELS } from '../../config/constants';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../../context/AuthContext';
 import { providerService } from '../../services/api';
@@ -170,7 +171,7 @@ const RequestsScreen = ({ navigation }) => {
       case 'accepted':
         return { label: 'מאושר', bg: '#10B98110', text: '#10B981' };
       case 'in_progress':
-        return { label: 'בביצוע', bg: '#3B82F610', text: '#256FA8' };
+        return { label: 'בביצוע', bg: '#EAF4FB', text: '#256FA8' };
       case 'completed':
         return { label: 'הושלם', bg: '#10B98110', text: '#10B981' };
       case 'cancelled':
@@ -284,8 +285,8 @@ const RequestsScreen = ({ navigation }) => {
                 {/* Body */}
                 <View style={styles.requestBody}>
                   <View style={styles.infoRow}>
-                    <Ionicons name="cleaning-services" size={16} color="#5E6E7C" />
-                    <Text style={styles.serviceType}>{request.serviceType}</Text>
+                    <Ionicons name="sparkles-outline" size={16} color="#5E6E7C" />
+                    <Text style={styles.serviceType}>{SERVICE_TYPE_LABELS[request.serviceType] || request.serviceType}</Text>
                   </View>
                   <View style={styles.infoRow}>
                     <Ionicons name="time-outline" size={16} color="#5E6E7C" />
@@ -359,8 +360,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#EEF3F7',
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#1B2A36',
     textAlign: 'right',
     marginBottom: 16,
@@ -369,27 +370,30 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 0,
+    backgroundColor: '#E4EFF7',
+    borderRadius: 999,
+    padding: 4,
   },
   filterButton: {
     flex: 1,
-    paddingVertical: 6,
+    paddingVertical: 9,
     paddingHorizontal: 8,
     borderRadius: 999,
-    backgroundColor: '#F6FAFD',
+    backgroundColor: 'transparent',
     alignItems: 'center',
   },
   filterButtonActive: {
-    backgroundColor: '#256FA8',
+    backgroundColor: '#FFFFFF',
     borderRadius: 999,
   },
   filterText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '500',
     color: '#5E6E7C',
   },
   filterTextActive: {
-    color: '#FFFFFF',
+    color: '#1B4F7A',
     fontWeight: '600',
   },
   scrollView: {
@@ -429,7 +433,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   clientName: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1B2A36',
     letterSpacing: -0.3,
@@ -485,8 +489,8 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#10B981',
+    fontWeight: '700',
+    color: '#1B4F7A',
     letterSpacing: -0.3,
   },
   actionButtons: {
@@ -497,7 +501,7 @@ const styles = StyleSheet.create({
   acceptButton: {
     backgroundColor: '#256FA8',
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     borderRadius: 999,
     minWidth: 60,
     alignItems: 'center',
@@ -514,12 +518,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#EF4444',
+    borderColor: '#DCE8F1',
     minWidth: 60,
     alignItems: 'center',
   },
   declineButtonText: {
-    color: '#EF4444',
+    color: '#3A4A57',
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: -0.2,

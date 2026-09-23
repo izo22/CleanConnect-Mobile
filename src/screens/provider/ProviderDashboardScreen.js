@@ -1,35 +1,32 @@
-// ProviderDashboardScreen.js - REFONTE UI MINIMALISTE PREMIUM
-/*
-CHANGEMENTS MAJEURS:
-- Typographie: tailles réduites (28→24, 24→20, 18→16, 14→12)
-- Poids: 'bold' → '600'
-- Container: fond #F6FAFD
-- Cards: borderRadius 12px, bordures 1px #EEF3F7, shadowOpacity 0.03
-- Stats: fontSize 24→20, fontWeight 'bold'→'600'
-- Request cards: elevation 2→1, shadowOpacity 0.1→0.03
-- Status badges: opacité 10%, borderRadius 6px, fontSize 11
-- Buttons: paddingVertical 12, borderRadius 8px
-- Colors: #1B2A36, #5E6E7C, #8A99A6
-- Spacing: doublé entre sections
-*/
+// ProviderDashboardScreen.js — CleanCasa · bleu clair (maquette 11)
+// Logique inchangée : chargement du profil, stats, missions du jour.
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  ScrollView,
-  ActivityIndicator,
-  RefreshControl,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
-import { Card } from 'react-native-paper';
+import { StyleSheet, View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { providerService } from '../../services/api';
 import { useFocusEffect } from '@react-navigation/native';
+import { providerService } from '../../services/api';
+import { SERVICE_TYPE_LABELS } from '../../config/constants';
+import { palette as C } from '../../config/theme';
+
+const STATUS = {
+  pending: { bg: C.warningBg, text: C.warning, label: 'ממתין' },
+  pending_payment: { bg: C.warningBg, text: C.warning, label: 'ממתין לתשלום' },
+  payment_pending: { bg: C.warningBg, text: C.warning, label: 'ממתין לתשלום' },
+  accepted: { bg: '#E1F0FA', text: C.primaryDark, label: 'מאושר' },
+  confirmed: { bg: '#E1F0FA', text: C.primaryDark, label: 'מאושר' },
+  in_progress: { bg: '#E1F0FA', text: C.primaryDark, label: 'בביצוע' },
+  completed: { bg: '#EEF1F4', text: '#4A5763', label: 'הושלם' },
+  cancelled: { bg: '#FDECEA', text: C.error, label: 'בוטל' },
+};
+const getStatus = (s) => STATUS[s?.toLowerCase()] || { bg: C.warningBg, text: C.warning, label: s };
+
+const formatDateTime = (dateString) => {
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return dateString;
+  return `${d.getDate()}/${d.getMonth() + 1} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
 
 const ProviderDashboardScreen = ({ navigation }) => {
-  const isRTL = true;
   const [provider, setProvider] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,511 +47,182 @@ const ProviderDashboardScreen = ({ navigation }) => {
     }
   };
 
-  useEffect(() => {
-    fetchProviderData();
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchProviderData();
-    }, [])
-  );
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchProviderData();
-  };
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-        return { bg: '#F59E0B10', text: '#F59E0B' };
-      case 'accepted':
-        return { bg: '#10B98110', text: '#10B981' };
-      case 'in_progress':
-        return { bg: '#3B82F610', text: '#256FA8' };
-      case 'completed':
-        return { bg: '#10B98110', text: '#10B981' };
-      case 'cancelled':
-        return { bg: '#EF444410', text: '#EF4444' };
-      default:
-        return { bg: '#F59E0B10', text: '#F59E0B' };
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'pending': return 'ממתין';
-      case 'pending_payment':       // ← ajouter
-      case 'payment_pending': return 'ממתין לתשלום';  // ← ajouter
-      case 'accepted':
-      case 'confirmed': return 'מאושר';
-      case 'completed': return 'הושלם';
-      default: return status;
-    }
-  };
-
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
-    
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    
-    return `${day}/${month} בשעה ${hours}:${minutes}`;
-  };
+  useEffect(() => { fetchProviderData(); }, []);
+  useFocusEffect(useCallback(() => { fetchProviderData(); }, []));
+  const onRefresh = () => { setRefreshing(true); fetchProviderData(); };
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#256FA8" />
-        <Text style={[styles.loadingText, styles.textRTL]}>טוען...</Text>
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={C.primary} />
+        <Text style={styles.muted}>טוען...</Text>
       </View>
     );
   }
 
   if (error && !provider) {
     return (
-      <View style={styles.centerContainer}>
-        <Icon name="error-outline" size={48} color="#EF4444" />
-        <Text style={[styles.errorText, styles.textRTL]}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchProviderData}>
-          <Text style={styles.retryButtonText}>נסה שוב</Text>
+      <View style={styles.center}>
+        <Icon name="error-outline" size={44} color={C.error} />
+        <Text style={[styles.muted, { color: C.error }]}>{error}</Text>
+        <TouchableOpacity style={styles.primaryBtn} onPress={fetchProviderData}>
+          <Text style={styles.primaryBtnText}>נסה שוב</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const pendingRequests = provider?.requests?.filter(req => 
-    req.status === 'pending' || req.status === 'pending_payment'
-  ) || [];  const completedJobs = provider?.requests?.filter(req => req.status === 'completed') || [];
-  const todayRequests = provider?.requests?.filter(req => {
-    const requestDate = new Date(req.date);
-    const today = new Date();
-    return requestDate.toDateString() === today.toDateString();
-  }) || [];
+  const requests = provider?.requests || [];
+  const pendingRequests = requests.filter((r) => r.status === 'pending' || r.status === 'pending_payment');
+  const completedJobs = requests.filter((r) => r.status === 'completed');
+  const todayRequests = requests.filter((r) => new Date(r.date).toDateString() === new Date().toDateString());
+
+  const stats = [
+    { icon: 'hourglass-empty', value: pendingRequests.length, label: 'ממתינות' },
+    { icon: 'task-alt', value: completedJobs.length, label: 'הושלמו' },
+    { icon: 'star-outline', value: provider?.rating ? provider.rating.toFixed(1) : '0.0', label: 'דירוג' },
+  ];
+
+  const openJob = (id) => navigation.navigate('Jobs', { screen: 'JobDetails', params: { jobId: id } });
 
   return (
-    <View style={styles.container}>
-      <ScrollView 
-        style={styles.scrollContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {/* Header */}
-        <View style={[styles.header, styles.headerRTL]}>
-          <Text style={[styles.name, styles.textRTL]}>
-            שלום {provider?.firstName || ''}
-          </Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />}
+    >
+      <View style={styles.greetingRow}>
+        <View>
+          <Text style={styles.greetingSmall}>שלום,</Text>
+          <Text style={styles.greeting}>{provider?.firstName || ''}</Text>
         </View>
+        <TouchableOpacity style={styles.bell} onPress={() => navigation.navigate('Jobs', { screen: 'RequestsScreen' })}>
+          <Icon name="notifications-none" size={22} color={C.brand} />
+          {pendingRequests.length > 0 && <View style={styles.bellDot} />}
+        </TouchableOpacity>
+      </View>
 
-        {/* Stats Card */}
-        <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, styles.textRTL]}>הסטטיסטיקה שלי</Text>
+      <View style={styles.statsRow}>
+        {stats.map((s) => (
+          <View key={s.label} style={styles.statCard}>
+            <Icon name={s.icon} size={18} color={C.primary} />
+            <Text style={styles.statValue}>{s.value}</Text>
+            <Text style={styles.statLabel}>{s.label}</Text>
           </View>
-          <Card.Content>
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{pendingRequests.length}</Text>
-                <Text style={[styles.statLabel, styles.textRTL]}>ממתינות</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{completedJobs.length}</Text>
-                <Text style={[styles.statLabel, styles.textRTL]}>הושלמו</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {provider?.rating ? provider.rating.toFixed(1) : '0.0'}
-                </Text>
-                <Text style={[styles.statLabel, styles.textRTL]}>דירוג</Text>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
+        ))}
+      </View>
 
-        {/* Info Card */}
-        <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, styles.textRTL]}>המידע שלי</Text>
-          </View>
-          <Card.Content>
-            <View style={[styles.infoRow, styles.infoRowRTL]}>
-              <Text style={[styles.infoLabel, styles.textRTL]}>אימייל</Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={[styles.infoValue, styles.textRTL]}>{provider?.email}</Text>
-            </View>
-            <View style={[styles.infoRow, styles.infoRowRTL]}>
-              <Text style={[styles.infoLabel, styles.textRTL]}>טלפון</Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={[styles.infoValue, styles.textRTL]}>{provider?.phone}</Text>
-            </View>
-            <View style={[styles.infoRow, styles.infoRowRTL]}>
-              <Text style={[styles.infoLabel, styles.textRTL]}>שירותים</Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={[styles.infoValue, styles.textRTL]}>
-                {provider?.serviceDetails?.map(s => s.type).join(', ')}
-              </Text>
-            </View>
-            <View style={[styles.infoRow, styles.infoRowRTL]}>
-              <Text style={[styles.infoLabel, styles.textRTL]}>אזורים</Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={[styles.infoValue, styles.textRTL]}>
-                {provider?.serviceAreas?.join(', ')}
-              </Text>
-            </View>
-          </Card.Content>
-          <View style={styles.actionPadding}>
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => navigation.navigate('Profile', { screen: 'ProviderProfile' })}
-              >
-              <Icon name="edit" size={18} color="#256FA8" />
-              <Text style={[styles.editButtonText, styles.textRTL]}>ערוך פרופיל</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>משימות להיום</Text>
+        <TouchableOpacity style={styles.seeAll} onPress={() => navigation.navigate('Jobs', { screen: 'RequestsScreen' })}>
+          <Text style={styles.link}>כל הבקשות</Text>
+          <Icon name="chevron-left" size={16} color={C.primary} />
+        </TouchableOpacity>
+      </View>
+
+      {todayRequests.length > 0 ? (
+        todayRequests.map((request) => {
+          const st = getStatus(request.status);
+          return (
+            <TouchableOpacity key={request._id} style={styles.jobCard} onPress={() => openJob(request._id)} activeOpacity={0.85}>
+              <View style={styles.jobHeader}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {(request.client?.firstName || '').charAt(0)}{(request.client?.lastName || '').charAt(0)}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.clientName}>{request.client?.firstName} {request.client?.lastName}</Text>
+                  <Text style={styles.jobSub}>{SERVICE_TYPE_LABELS[request.serviceType] || request.serviceType} · {formatDateTime(request.date)}</Text>
+                </View>
+                <View style={[styles.badge, { backgroundColor: st.bg }]}>
+                  <Text style={[styles.badgeText, { color: st.text }]}>{st.label}</Text>
+                </View>
+              </View>
+              <View style={styles.jobRow}>
+                <Icon name="location-on" size={15} color={C.muted} />
+                <Text style={styles.jobAddress} numberOfLines={1}>{request.address}</Text>
+              </View>
+              <View style={styles.jobFooter}>
+                <Text style={styles.price}>₪{request.price || request.totalPrice || 0}</Text>
+                <View style={styles.seeAll}>
+                  <Text style={styles.link}>פרטי משימה</Text>
+                  <Icon name="chevron-left" size={16} color={C.primary} />
+                </View>
+              </View>
             </TouchableOpacity>
-          </View>
-        </Card>
+          );
+        })
+      ) : (
+        <View style={styles.empty}>
+          <Icon name="event-available" size={36} color={C.accent} />
+          <Text style={styles.muted}>אין משימות להיום</Text>
+        </View>
+      )}
 
-        {/* Today's Requests */}
-        <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, styles.textRTL]}>משימות להיום</Text>
+      <Text style={styles.sectionTitle}>המידע שלי</Text>
+      <View style={styles.infoCard}>
+        {[
+          ['email', 'אימייל', provider?.email],
+          ['phone', 'טלפון', provider?.phone],
+          ['cleaning-services', 'שירותים', provider?.serviceDetails?.map((s) => s.type).join(', ')],
+          ['place', 'אזורים', provider?.serviceAreas?.join(', ')],
+        ].map(([icon, label, value], i, arr) => (
+          <View key={label} style={[styles.infoRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}>
+            <View style={styles.infoIcon}><Icon name={icon} size={17} color={C.primary} /></View>
+            <Text style={styles.infoLabel}>{label}</Text>
+            <Text style={styles.infoValue} numberOfLines={1}>{value || '—'}</Text>
           </View>
-          <Card.Content>
-            {todayRequests.length > 0 ? (
-              <View style={styles.requestsGrid}>
-                {todayRequests.map((request) => {
-                  const statusColor = getStatusColor(request.status);
-                  return (
-                    <TouchableOpacity
-                      key={request._id}
-                      style={styles.modernRequestCard}
-                      onPress={() => navigation.navigate('Jobs', { 
-                        screen: 'JobDetails', 
-                        params: { jobId: request._id } 
-                      })}
-                    >
-                      <View style={styles.modernRequestHeader}>
-                        <View style={styles.modernRequestClient}>
-                          <Icon name="person" size={18} color="#8A99A6" />
-                          <Text style={[styles.clientName, styles.textRTL]}>
-                            {request.client?.firstName} {request.client?.lastName}
-                          </Text>
-                        </View>
-                        <View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
-                          <Text style={[styles.statusText, { color: statusColor.text }, styles.textRTL]}>
-                            {getStatusLabel(request.status)}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.modernRequestBody}>
-                        <View style={[styles.requestInfoRow, styles.requestInfoRowRTL]}>
-                          <Icon name="cleaning-services" size={16} color="#5E6E7C" />
-                          <Text style={[styles.serviceType, styles.textRTL]}>
-                            {request.serviceType}
-                          </Text>
-                        </View>
-                        <View style={[styles.requestInfoRow, styles.requestInfoRowRTL]}>
-                          <Icon name="schedule" size={16} color="#5E6E7C" />
-                          <Text style={[styles.requestTime, styles.textRTL]}>
-                            {formatDateTime(request.date)}
-                          </Text>
-                        </View>
-                        <View style={[styles.requestInfoRow, styles.requestInfoRowRTL]}>
-                          <Icon name="location-on" size={16} color="#5E6E7C" />
-                          <Text style={[styles.requestAddress, styles.textRTL]} numberOfLines={1}>
-                            {request.address}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.modernRequestFooter}>
-                        <Text style={[styles.requestPrice, styles.textRTL]}>
-                        ₪{request.price || request.totalPrice || 0}                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ) : (
-              <View style={styles.noRequests}>
-                <Icon name="inbox" size={48} color="#E1ECF4" />
-                <Text style={[styles.noRequestsText, styles.textRTL]}>
-                  אין משימות להיום
-                </Text>
-              </View>
-            )}
-          </Card.Content>
-          
-          <View style={styles.actionPadding}>
-            <TouchableOpacity
-              style={styles.viewAllButton}
-              onPress={() => navigation.navigate('Jobs', { screen: 'RequestsScreen' })}
-            >
-              <Text style={[styles.viewAllButtonText, styles.textRTL]}>צפה בכל הבקשות</Text>
-              <Icon name="arrow-back" size={18} color="#256FA8" style={{ transform: [{ scaleX: -1 }] }} />
-            </TouchableOpacity>
-          </View>
-        </Card>
-      </ScrollView>
-    </View>
+        ))}
+      </View>
+      <TouchableOpacity style={styles.outlineBtn} onPress={() => navigation.navigate('Profile', { screen: 'ProviderProfile' })}>
+        <Icon name="edit" size={17} color={C.primaryDark} />
+        <Text style={styles.outlineBtnText}>ערוך פרופיל</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F6FAFD',
-  },
-  scrollContainer: {
-    flex: 1,
-    padding: 20,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#F6FAFD',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 14,
-    color: '#5E6E7C',
-    fontWeight: '400',
-  },
-  errorText: {
-    marginVertical: 16,
-    color: '#EF4444',
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '400',
-  },
-  retryButton: {
-    backgroundColor: '#256FA8',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 999,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: -0.2,
-  },
-  header: {
-    marginBottom: 24,
-    paddingVertical: 8,
-  },
-  headerRTL: {
-    alignItems: 'flex-end',
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#1B2A36',
-    letterSpacing: -0.4,
-    lineHeight: 31,
-  },
-  card: {
-    marginBottom: 16,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E1ECF4',
-  },
-  cardHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1B2A36',
-    letterSpacing: -0.3,
-    lineHeight: 21,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#256FA8',
-    letterSpacing: -0.4,
-    lineHeight: 26,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#5E6E7C',
-    textAlign: 'center',
-    marginTop: 6,
-    fontWeight: '400',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  infoRowRTL: {
-    flexDirection: 'row-reverse',
-  },
-  infoLabel: {
-    fontWeight: '600',
-    fontSize: 12,
-    color: '#1B2A36',
-    letterSpacing: -0.2,
-  },
-  colon: {
-    marginHorizontal: 6,
-    fontWeight: '600',
-    fontSize: 12,
-    color: '#1B2A36',
-  },
-  infoValue: {
-    flex: 1,
-    fontSize: 12,
-    color: '#5E6E7C',
-    fontWeight: '400',
-  },
-  actionPadding: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 12,
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    backgroundColor: '#EAF4FB',
-  },
-  editButtonText: {
-    color: '#256FA8',
-    fontSize: 14,
-    fontWeight: '500',
-    letterSpacing: -0.2,
-  },
-  requestsGrid: {
-    gap: 12,
-  },
-  modernRequestCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E1ECF4',
-  },
-  modernRequestHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  modernRequestClient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  clientName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1B2A36',
-    letterSpacing: -0.2,
-  },
-  statusBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  modernRequestBody: {
-    gap: 8,
-    marginBottom: 12,
-  },
-  requestInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  requestInfoRowRTL: {
-    flexDirection: 'row-reverse',
-  },
-  serviceType: {
-    fontSize: 13,
-    color: '#1B2A36',
-    fontWeight: '500',
-    letterSpacing: -0.2,
-  },
-  requestTime: {
-    fontSize: 12,
-    color: '#5E6E7C',
-    fontWeight: '400',
-  },
-  requestAddress: {
-    fontSize: 12,
-    color: '#5E6E7C',
-    fontWeight: '400',
-    flex: 1,
-  },
-  modernRequestFooter: {
-    borderTopWidth: 1,
-    borderTopColor: '#EEF3F7',
-    paddingTop: 12,
-  },
-  requestPrice: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#10B981',
-    letterSpacing: -0.3,
-  },
-  noRequests: {
-    alignItems: 'center',
-    paddingVertical: 32,
-  },
-  noRequestsText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#8A99A6',
-    fontWeight: '400',
-  },
-  viewAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    backgroundColor: '#EAF4FB',
-  },
-  viewAllButtonText: {
-    color: '#256FA8',
-    fontSize: 14,
-    fontWeight: '500',
-    letterSpacing: -0.2,
-  },
-  textRTL: {
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
+  container: { flex: 1, backgroundColor: C.bg },
+  content: { padding: 18, paddingBottom: 32, gap: 14 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 20, backgroundColor: C.bg },
+  muted: { fontSize: 14, color: C.muted, textAlign: 'center' },
+  greetingRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  greetingSmall: { fontSize: 14, color: C.muted, textAlign: 'right' },
+  greeting: { fontSize: 24, fontWeight: '700', color: C.ink, textAlign: 'right' },
+  bell: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+  bellDot: { position: 'absolute', top: 10, left: 11, width: 8, height: 8, borderRadius: 4, backgroundColor: '#E5484D' },
+  statsRow: { flexDirection: 'row-reverse', gap: 8 },
+  statCard: { flex: 1, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 18, padding: 12, alignItems: 'flex-end', gap: 4 },
+  statValue: { fontSize: 20, fontWeight: '700', color: C.brand },
+  statLabel: { fontSize: 11, color: C.muted },
+  sectionHeader: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: C.ink, textAlign: 'right' },
+  seeAll: { flexDirection: 'row-reverse', alignItems: 'center', gap: 2 },
+  link: { fontSize: 13, fontWeight: '500', color: C.primary },
+  jobCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 20, padding: 14, gap: 10 },
+  jobHeader: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.tintStrong, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 14, fontWeight: '700', color: C.primaryDark },
+  clientName: { fontSize: 15, fontWeight: '600', color: C.ink, textAlign: 'right' },
+  jobSub: { fontSize: 12, color: C.muted, textAlign: 'right', marginTop: 2 },
+  badge: { borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10 },
+  badgeText: { fontSize: 11, fontWeight: '600' },
+  jobRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  jobAddress: { flex: 1, fontSize: 13, color: C.text2, textAlign: 'right' },
+  jobFooter: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: C.divider, paddingTop: 10 },
+  price: { fontSize: 16, fontWeight: '700', color: C.brand },
+  empty: { alignItems: 'center', gap: 8, paddingVertical: 24, backgroundColor: C.tint, borderRadius: 20 },
+  infoCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 20, paddingHorizontal: 14 },
+  infoRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.divider },
+  infoIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: C.tint, alignItems: 'center', justifyContent: 'center' },
+  infoLabel: { fontSize: 14, fontWeight: '500', color: C.ink },
+  infoValue: { flex: 1, fontSize: 13, color: C.muted, textAlign: 'left' },
+  primaryBtn: { backgroundColor: C.primary, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 28 },
+  primaryBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  outlineBtn: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: C.primary, borderRadius: 999, paddingVertical: 12, backgroundColor: C.surface },
+  outlineBtnText: { fontSize: 15, fontWeight: '600', color: C.primaryDark },
 });
 
 export default ProviderDashboardScreen;

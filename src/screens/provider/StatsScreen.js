@@ -411,7 +411,7 @@ const StatsScreen = () => {
                       <View 
                         style={[
                           styles.percentageBar, 
-                          { width: `${location.percentage}%`, backgroundColor: '#8B5CF6' },
+                          { width: `${location.percentage}%`, backgroundColor: '#256FA8' },
                           isRTL && styles.percentageBarRTL
                         ]} 
                       />

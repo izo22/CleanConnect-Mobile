@@ -28,8 +28,8 @@ const AddressSelectionScreen = ({ navigation }) => {
   const getServiceColor = () => {
     switch (currentBooking.serviceType) {
       case 'home': return theme.colors.homeService || '#256FA8';
-      case 'office': return theme.colors.officeService || '#34C759';
-      case 'building': return theme.colors.buildingService || '#FF9500';
+      case 'office': return theme.colors.officeService || '#256FA8';
+      case 'building': return theme.colors.buildingService || '#256FA8';
       default: return theme.colors.primary;
     }
   };

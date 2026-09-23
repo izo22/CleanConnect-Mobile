@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   areaBadge: {
-    backgroundColor: '#3B82F610',
+    backgroundColor: '#EAF4FB',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,

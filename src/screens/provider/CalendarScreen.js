@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 16,
+    borderRadius: 999,
     backgroundColor: '#F6FAFD',
     alignItems: 'center',
     justifyContent: 'center',
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
   navButton: {
     width: 40,
     height: 40,
-    borderRadius: 16,
+    borderRadius: 999,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -770,7 +770,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-    borderRadius: 16,
+    borderRadius: 999,
     marginBottom: 8,
   },
   dayText: {
@@ -929,7 +929,7 @@ const styles = StyleSheet.create({
     color: '#1B2A36',
   },
   durationContainer: {
-    backgroundColor: '#EEF3F7',
+    backgroundColor: '#EAF4FB',
     borderRadius: 12,
     paddingVertical: 3,
     paddingHorizontal: 8,
@@ -939,7 +939,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     letterSpacing: -0.1,
-    color: '#5E6E7C',
+    color: '#1B5A8A',
   },
   jobInfoRTL: {
     flex: 1,
@@ -981,10 +981,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   confirmedStatus: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: '#E1F0FA',
   },
   pendingStatus: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#FFF3DC',
   },
   statusText: {
     fontSize: 11,
@@ -1057,13 +1057,13 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(14, 40, 62, 0.45)',
     justifyContent: 'flex-end',
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 20,
   },
   modalHeaderRTL: {
@@ -1136,8 +1136,8 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: '#E1ECF4',
-    borderRadius: 10,
+    borderColor: '#256FA8',
+    borderRadius: 7,
     marginLeft: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1155,11 +1155,13 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: '#EEF3F7',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 12,
     borderRadius: 999,
     marginLeft: 10,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DCE8F1',
   },
   cancelButtonText: {
     fontSize: 14,

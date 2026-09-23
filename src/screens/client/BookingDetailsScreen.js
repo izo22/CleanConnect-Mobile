@@ -79,7 +79,7 @@ const BookingDetailsScreen = () => {
     [BOOKING_STATUS.ACCEPTED]: '#10B981',
     [BOOKING_STATUS.DECLINED]: '#EF4444',
     [BOOKING_STATUS.IN_PROGRESS]: '#256FA8',
-    [BOOKING_STATUS.COMPLETED]: '#8B5CF6',
+    [BOOKING_STATUS.COMPLETED]: '#256FA8',
     [BOOKING_STATUS.CANCELLED]: '#EF4444',
   };
   
@@ -178,9 +178,8 @@ const BookingDetailsScreen = () => {
   const getServiceColor = (serviceType) => {
     switch (serviceType) {
       case 'home': return '#256FA8';
-      // Refonte bleu clair : tous les services partagent le bleu
-      case 'office':
-      case 'building':
+      case 'office': return '#256FA8';
+      case 'building': return '#256FA8';
       case 'airbnb': return '#256FA8';
       default: return '#256FA8';
     }
@@ -622,7 +621,7 @@ const BookingDetailsScreen = () => {
         <View style={styles.actionsContainer}>
           {canManuallyComplete() && (
             <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: '#8B5CF6' }]}
+              style={[styles.actionButton, { backgroundColor: '#256FA8' }]}
               onPress={() => setIsCompletionDialogVisible(true)}
             >
               <Ionicons name="checkmark-circle-outline" size={16} color="white" style={{ marginLeft: 6 }} />
@@ -632,7 +631,7 @@ const BookingDetailsScreen = () => {
           
           {canBeRated() && (
             <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: '#8B5CF6' }]}
+              style={[styles.actionButton, { backgroundColor: '#256FA8' }]}
               onPress={() => setIsRatingDialogVisible(true)}
             >
               <Ionicons name="star-outline" size={16} color="white" style={{ marginLeft: 6 }} />
@@ -766,494 +765,80 @@ const BookingDetailsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F6FAFD',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F6FAFD',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 13,
-    color: '#8A99A6',
-    fontWeight: '400',
-    letterSpacing: -0.2,
-  },
-  
-  // HEADER
-  header: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF3F7',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1B2A36',
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  
-  // SCROLL
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 32,
-  },
-  
-  // STATUS BADGE
-  statusContainer: {
-    alignItems: 'center',
-    paddingTop: 24,
-    paddingBottom: 16,
-  },
-  statusBadge: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '500',
-    letterSpacing: -0.2,
-  },
-  
-  // CARDS
-  card: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E1ECF4',
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  cardContent: {
-    padding: 24,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1B2A36',
-    textAlign: 'right',
-    marginBottom: 16,
-    letterSpacing: -0.3,
-  },
-  
-  // INFO ROWS
-  infoRow: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  infoContent: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  infoLabel: {
-    fontSize: 11,
-    fontWeight: '400',
-    color: '#8A99A6',
-    textAlign: 'right',
-    letterSpacing: -0.2,
-  },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#1B2A36',
-    textAlign: 'right',
-    letterSpacing: -0.2,
-    lineHeight: 18,
-  },
-  infoTime: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#5E6E7C',
-    textAlign: 'right',
-    marginTop: 2,
-    letterSpacing: -0.2,
-  },
-  iconBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  serviceBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-  },
-  serviceBadgeText: {
-    fontSize: 10,
-    fontWeight: '500',
-    letterSpacing: -0.2,
-  },
-  
-  // ROW SPACE BETWEEN
-  rowSpaceBetween: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  priceValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1B2A36',
-    textAlign: 'right',
-    letterSpacing: -0.3,
-  },
-  
-  // SEPARATOR
-  separator: {
-    height: 1,
-    backgroundColor: '#EEF3F7',
-    marginVertical: 16,
-  },
-  
-  // PROVIDER
-  providerRow: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  providerInfo: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  providerName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1B2A36',
-    textAlign: 'right',
-    marginBottom: 4,
-    letterSpacing: -0.2,
-  },
-  ratingRowInline: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-  },
-  ratingTextInline: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#F59E0B',
-    marginLeft: 2,
-    letterSpacing: -0.2,
-  },
-  providerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  providerInitial: {
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: -0.3,
-  },
-  
-  // PHONE
-  phoneContainer: {
-    backgroundColor: '#F6FAFD',
-    padding: 12,
-    borderRadius: 14,
-  },
-  phoneHeader: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  phoneLabel: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#5E6E7C',
-    letterSpacing: -0.2,
-  },
-  phoneButton: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 38,
-    borderRadius: 999,
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  phoneButtonText: {
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: -0.2,
-  },
-  phoneHiddenContainer: {
-    backgroundColor: '#FFFBEB',
-    padding: 12,
-    borderRadius: 14,
-  },
-  phoneHidden: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#DCE8F1',
-    textAlign: 'right',
-    marginBottom: 6,
-    letterSpacing: 1,
-  },
-  phoneHiddenNote: {
-    fontSize: 11,
-    fontWeight: '400',
-    color: '#F59E0B',
-    textAlign: 'right',
-    lineHeight: 15,
-    letterSpacing: -0.2,
-  },
-  
-  // PAYMENT
-  paymentRow: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  paymentInfo: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  paymentAmount: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1B2A36',
-    textAlign: 'right',
-    letterSpacing: -0.2,
-  },
-  
-  // ADDRESS
-  addressHeader: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modifyButton: {
-    fontSize: 12,
-    fontWeight: '500',
-    letterSpacing: -0.2,
-    borderRadius: 999,
-  },
-  addressRow: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  addressContent: {
-    flex: 1,
-    alignItems: 'flex-end',
-    marginLeft: 12,
-  },
-  addressText: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#1B2A36',
-    textAlign: 'right',
-    lineHeight: 17,
-    letterSpacing: -0.2,
-  },
-  addressSource: {
-    fontSize: 10,
-    fontWeight: '400',
-    color: '#8A99A6',
-    textAlign: 'right',
-    marginTop: 4,
-    letterSpacing: -0.2,
-  },
-  
-  // NOTES
-  notesBox: {
-    flexDirection: 'row-reverse',
-    backgroundColor: '#F6FAFD',
-    padding: 12,
-    borderRadius: 14,
-    alignItems: 'flex-start',
-  },
-  notesText: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#5E6E7C',
-    textAlign: 'right',
-    lineHeight: 16,
-    letterSpacing: -0.2,
-  },
-  
-  // RATING EXISTING
-  ratingRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  existingRatingStar: {
-    marginLeft: 2,
-  },
-  ratingDate: {
-    fontSize: 11,
-    fontWeight: '400',
-    color: '#8A99A6',
-    marginRight: 8,
-    letterSpacing: -0.2,
-  },
-  ratingComment: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#5E6E7C',
-    textAlign: 'right',
-    fontStyle: 'italic',
-    lineHeight: 16,
-    letterSpacing: -0.2,
-  },
-  
-  // ACTIONS
-  actionsContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  actionButton: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 38,
-    borderRadius: 999,
-    marginBottom: 12,
-  },
-  actionButtonText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#FFFFFF',
-    letterSpacing: -0.2,
-  },
-  actionButtonOutline: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 38,
-    borderRadius: 999,
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
-    marginBottom: 12,
-  },
-  actionButtonOutlineText: {
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: -0.2,
-  },
-  
-  // DIALOG
-  dialog: {
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-  },
-  dialogContent: {
-    padding: 24,
-  },
-  dialogTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1B2A36',
-    textAlign: 'right',
-    marginBottom: 8,
-    letterSpacing: -0.3,
-  },
-  dialogText: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#5E6E7C',
-    textAlign: 'right',
-    lineHeight: 17,
-    letterSpacing: -0.2,
-  },
-  dialogActions: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'flex-start',
-    padding: 16,
-    paddingTop: 0,
-    gap: 12,
-  },
-  dialogButtonCancel: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  dialogButtonCancelText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#5E6E7C',
-    letterSpacing: -0.2,
-  },
-  dialogButtonConfirm: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  dialogButtonConfirmText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#8B5CF6',
-    letterSpacing: -0.2,
-  },
-  
-  // RATING STARS
-  ratingStarsContainer: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'center',
-    marginVertical: 20,
-    gap: 8,
-  },
-  ratingStar: {
-    marginHorizontal: 4,
-  },
-  
-  // COMMENT INPUT
-  commentContainer: {
-    marginTop: 16,
-  },
-  commentLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#5E6E7C',
-    textAlign: 'right',
-    marginBottom: 8,
-    letterSpacing: -0.2,
-  },
-  commentInput: {
-    borderWidth: 1,
-    borderColor: '#E1ECF4',
-    borderRadius: 16,
-    padding: 12,
-    minHeight: 80,
-    textAlign: 'right',
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#1B2A36',
-    backgroundColor: '#F4F8FB',
-    letterSpacing: -0.2,
-  },
+  container: { flex: 1, backgroundColor: '#F6FAFD' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#F6FAFD' },
+  loadingText: { fontSize: 14, color: '#5E6E7C' },
+  header: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', paddingTop: 56, paddingBottom: 12, paddingHorizontal: 18, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E8EFF5' },
+  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F4F8FB', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: '#1B2A36' },
+  scrollView: { flex: 1 },
+  scrollContent: { padding: 18, paddingBottom: 40, gap: 12 },
+  statusContainer: { alignItems: 'flex-end' },
+  statusBadge: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
+  statusText: { fontSize: 13, fontWeight: '600' },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E1ECF4', elevation: 0, shadowOpacity: 0 },
+  cardContent: { padding: 16 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: '#1B2A36', textAlign: 'right', marginBottom: 12 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 12 },
+  infoContent: { flex: 1, alignItems: 'flex-end' },
+  infoLabel: { fontSize: 14, color: '#5E6E7C', textAlign: 'right' },
+  infoValue: { fontSize: 15, fontWeight: '600', color: '#1B2A36', textAlign: 'right' },
+  infoTime: { fontSize: 13, color: '#5E6E7C', textAlign: 'right', marginTop: 2 },
+  iconBadge: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EAF4FB' },
+  serviceBadge: { borderRadius: 999, paddingVertical: 4, paddingHorizontal: 12, backgroundColor: '#EAF4FB' },
+  serviceBadgeText: { fontSize: 12, fontWeight: '600' },
+  rowSpaceBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  priceValue: { fontSize: 18, fontWeight: '700', color: '#1B4F7A' },
+  separator: { height: 1, backgroundColor: '#EEF3F7', marginVertical: 12 },
+  providerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 12 },
+  providerInfo: { flex: 1, alignItems: 'flex-end' },
+  providerName: { fontSize: 16, fontWeight: '600', color: '#1B2A36', textAlign: 'right' },
+  ratingRowInline: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  ratingTextInline: { fontSize: 12, color: '#5E6E7C' },
+  providerAvatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: '#DDEEFA' },
+  providerInitial: { fontSize: 20, fontWeight: '700' },
+  phoneContainer: { alignItems: 'flex-end', gap: 8 },
+  phoneHeader: { flexDirection: 'row-reverse', alignItems: 'center' },
+  phoneLabel: { fontSize: 13, color: '#3A4A57', textAlign: 'right' },
+  phoneButton: { flexDirection: 'row-reverse', alignItems: 'center', borderWidth: 1.5, borderRadius: 999, paddingVertical: 9, paddingHorizontal: 16 },
+  phoneButtonText: { fontSize: 14, fontWeight: '600' },
+  phoneHiddenContainer: { alignItems: 'flex-end', gap: 6, backgroundColor: '#F4F8FB', borderRadius: 14, padding: 12 },
+  phoneHidden: { fontSize: 15, color: '#8A99A6', letterSpacing: 2 },
+  phoneHiddenNote: { fontSize: 12, color: '#5E6E7C', textAlign: 'right', lineHeight: 18 },
+  paymentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 12 },
+  paymentInfo: { flex: 1, alignItems: 'flex-end' },
+  paymentAmount: { fontSize: 18, fontWeight: '700', color: '#1B4F7A', textAlign: 'right' },
+  addressHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  modifyButton: { fontSize: 13, fontWeight: '600', marginBottom: 12 },
+  addressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 12 },
+  addressContent: { flex: 1, alignItems: 'flex-end' },
+  addressText: { fontSize: 15, color: '#1B2A36', textAlign: 'right' },
+  addressSource: { fontSize: 12, color: '#8A99A6', textAlign: 'right', marginTop: 2 },
+  notesBox: { flexDirection: 'row-reverse', alignItems: 'flex-start', backgroundColor: '#F4F8FB', borderRadius: 14, padding: 12 },
+  notesText: { flex: 1, fontSize: 14, color: '#3A4A57', textAlign: 'right', lineHeight: 21 },
+  ratingRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 2 },
+  existingRatingStar: { marginHorizontal: 1 },
+  ratingDate: { fontSize: 12, color: '#8A99A6', marginRight: 8 },
+  ratingComment: { fontSize: 14, color: '#3A4A57', textAlign: 'right', marginTop: 8, lineHeight: 21 },
+  actionsContainer: { gap: 10, marginTop: 4 },
+  actionButton: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', borderRadius: 999, paddingVertical: 15, backgroundColor: '#256FA8' },
+  actionButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  actionButtonOutline: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', borderRadius: 999, paddingVertical: 14, borderWidth: 1.5, backgroundColor: '#FFFFFF' },
+  actionButtonOutlineText: { fontSize: 15, fontWeight: '600' },
+  dialog: { backgroundColor: '#FFFFFF', borderRadius: 24 },
+  dialogContent: { paddingTop: 24, paddingBottom: 16, paddingHorizontal: 20 },
+  dialogTitle: { fontSize: 19, fontWeight: '700', color: '#1B2A36', textAlign: 'right', marginBottom: 8 },
+  dialogText: { fontSize: 14, color: '#5E6E7C', textAlign: 'right', lineHeight: 21, marginBottom: 16 },
+  dialogActions: { flexDirection: 'row', gap: 10 },
+  dialogButtonCancel: { flex: 1, borderWidth: 1, borderColor: '#DCE8F1', borderRadius: 999, paddingVertical: 12, alignItems: 'center' },
+  dialogButtonCancelText: { fontSize: 15, fontWeight: '500', color: '#3A4A57' },
+  dialogButtonConfirm: { flex: 1, backgroundColor: '#EAF4FB', borderRadius: 999, paddingVertical: 12, alignItems: 'center' },
+  dialogButtonConfirmText: { fontSize: 15, fontWeight: '600', color: '#1B5A8A' },
+  ratingStarsContainer: { flexDirection: 'row-reverse', justifyContent: 'center', gap: 6, marginBottom: 16 },
+  ratingStar: { padding: 4 },
+  commentContainer: { marginBottom: 16 },
+  commentLabel: { fontSize: 13, fontWeight: '500', color: '#3A4A57', textAlign: 'right', marginBottom: 6 },
+  commentInput: { backgroundColor: '#F4F8FB', borderWidth: 1, borderColor: '#E1ECF4', borderRadius: 16, padding: 12, minHeight: 80, fontSize: 14, color: '#1B2A36', textAlign: 'right', textAlignVertical: 'top' },
 });
 
 export default BookingDetailsScreen;
