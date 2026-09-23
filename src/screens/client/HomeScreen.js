@@ -194,10 +194,8 @@ const styles = StyleSheet.create({
 
   hero: { height: 210, borderRadius: 22, overflow: 'hidden', backgroundColor: COLORS.accent },
   heroArt: { position: 'absolute', top: 10, left: 14 },
-  heroShade: {
-    position: 'absolute', left: 0, right: 0, bottom: 0, height: '65%',
-    backgroundColor: 'rgba(14,40,62,0.35)',
-  },
+  // Voile uniforme (pas de LinearGradient : crash APK release)
+  heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(14,40,62,0.28)' },
   heroContent: { position: 'absolute', right: 18, left: 18, bottom: 18, alignItems: 'flex-end', gap: 6 },
   heroTitle: { fontSize: 23, fontWeight: '700', color: COLORS.white, lineHeight: 27, textAlign: 'right' },
   heroSubtitle: { fontSize: 13, color: COLORS.white, textAlign: 'right' },

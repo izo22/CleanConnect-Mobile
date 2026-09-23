@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
 
   hero: { height: 130, borderRadius: 20, overflow: 'hidden', backgroundColor: COLORS.accent },
   heroArt: { position: 'absolute', top: 10, left: 16 },
-  heroShade: { position: 'absolute', top: 0, bottom: 0, right: 0, width: '75%', backgroundColor: 'rgba(14,40,62,0.35)' },
+  heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(14,40,62,0.28)' },
   heroContent: { position: 'absolute', top: 18, right: 18, alignItems: 'flex-end', gap: 6 },
   heroTitle: { fontSize: 20, fontWeight: '700', color: COLORS.white, lineHeight: 23, textAlign: 'right' },
   heroMeta: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4 },
