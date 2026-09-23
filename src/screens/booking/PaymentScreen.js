@@ -10,10 +10,11 @@ import { Text, ActivityIndicator } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { useBooking } from '../../context/BookingContext';
-import { API_URL, SERVICE_TYPE_LABELS, calculatePlatformFees, PLATFORM_FEES, getServiceColor, getServiceBackgroundColor } from '../../config/constants';
+import { API_URL, SERVICE_TYPE_LABELS, calculatePlatformFees, PLATFORM_FEES, getServiceColor } from '../../config/constants';
 
 import PriceBreakdown from '../../components/PriceBreakdown';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { theme } from '../../config/theme';
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 const CardValidation = {
@@ -35,7 +36,6 @@ const PaymentScreen = ({ navigation }) => {
   const { currentBooking, createBooking } = useBooking();
 
   const serviceColor    = getServiceColor(currentBooking.serviceType);
-  const serviceBgColor  = getServiceBackgroundColor(currentBooking.serviceType);
 
   // ✅ NOUVEAU : statut première commande gratuite (récupéré depuis le profil)
   const [isFreeOrder, setIsFreeOrder] = useState(false);
@@ -368,7 +368,7 @@ const PaymentScreen = ({ navigation }) => {
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <>
-      <ScrollView style={[styles.container, { backgroundColor: serviceBgColor }]}>
+      <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
 
         {/* HEADER */}
         <View style={styles.header}>
@@ -720,16 +720,14 @@ const PaymentScreen = ({ navigation }) => {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: theme.colors.background },
 
   // Header
   header: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   headerTop: {
     flexDirection: 'row-reverse',
@@ -738,16 +736,16 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   backButton: {
-    width: 36, height: 36, borderRadius: 8,
+    width: 36, height: 36, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.colors.surface,
   },
   headerTitle: {
-    fontSize: 17, fontWeight: '600', color: '#1F2937',
+    fontSize: 17, fontWeight: '600', color: theme.colors.text,
     textAlign: 'center', flex: 1, letterSpacing: -0.3,
   },
   headerSubtitle: {
-    fontSize: 13, color: '#9CA3AF',
+    fontSize: 13, color: theme.colors.textSecondary,
     textAlign: 'center', marginBottom: 12,
   },
   amountBadge: {
@@ -779,19 +777,19 @@ const styles = StyleSheet.create({
   // Explanation
   explanationCard: {
     marginHorizontal: 16, marginTop: 20, marginBottom: 16,
-    padding: 20, backgroundColor: '#FFFFFF',
-    borderRadius: 12, borderWidth: 1, borderColor: '#F3F4F6',
+    padding: 20, backgroundColor: theme.colors.surface,
+    borderRadius: theme.roundness.large, ...theme.shadow,
   },
-  explanationTitle: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
+  explanationTitle: { fontSize: 14, fontWeight: '600', color: theme.colors.text },
   step: { marginBottom: 12, alignItems: 'flex-start' },
   stepBadge: {
-    width: 24, height: 24, borderRadius: 6,
+    width: 24, height: 24, borderRadius: 8,
     alignItems: 'center', justifyContent: 'center', marginLeft: 12,
   },
   stepNumber: { fontSize: 11, fontWeight: '600' },
-  stepText: { flex: 1, fontSize: 13, color: '#1F2937', lineHeight: 18 },
-  benefitsBox: { padding: 12, borderRadius: 8, marginTop: 4 },
-  benefitItem: { fontSize: 12, color: '#1F2937', marginBottom: 6 },
+  stepText: { flex: 1, fontSize: 13, color: theme.colors.text, lineHeight: 18 },
+  benefitsBox: { padding: 12, borderRadius: theme.roundness.medium, marginTop: 4 },
+  benefitItem: { fontSize: 12, color: theme.colors.text, marginBottom: 6 },
 
   // Price
   priceContainer: { marginHorizontal: 16, marginBottom: 16 },
@@ -799,17 +797,17 @@ const styles = StyleSheet.create({
   // Payment method
   paymentCard: {
     marginHorizontal: 16, marginBottom: 16,
-    padding: 20, backgroundColor: '#FFFFFF',
-    borderRadius: 12, borderWidth: 1, borderColor: '#F3F4F6',
+    padding: 20, backgroundColor: theme.colors.surface,
+    borderRadius: theme.roundness.large, ...theme.shadow,
   },
   sectionLabel: {
-    fontSize: 11, fontWeight: '500', color: '#6B7280',
+    fontSize: 11, fontWeight: '500', color: theme.colors.textSecondary,
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12,
   },
   radioOption: {
     flexDirection: 'row-reverse', alignItems: 'center',
-    padding: 12, backgroundColor: '#F9FAFB',
-    borderRadius: 8, borderWidth: 1, borderColor: 'transparent',
+    padding: 12, backgroundColor: theme.colors.background,
+    borderRadius: theme.roundness.medium, borderWidth: 1, borderColor: 'transparent',
   },
   radioCircle: {
     width: 20, height: 20, borderRadius: 10,
@@ -818,8 +816,8 @@ const styles = StyleSheet.create({
   },
   radioCircleSelected: { width: 10, height: 10, borderRadius: 5 },
   radioContent: { flex: 1 },
-  radioLabel: { fontSize: 14, fontWeight: '500', color: '#1F2937' },
-  radioDescription: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  radioLabel: { fontSize: 14, fontWeight: '500', color: theme.colors.text },
+  radioDescription: { fontSize: 12, color: theme.colors.textLight, marginTop: 2 },
 
   // Bit badge
   bitBadge: {
@@ -836,24 +834,24 @@ const styles = StyleSheet.create({
   // Card details
   cardDetailsCard: {
     marginHorizontal: 16, marginBottom: 16,
-    padding: 20, backgroundColor: '#FFFFFF',
-    borderRadius: 12, borderWidth: 1, borderColor: '#F3F4F6',
+    padding: 20, backgroundColor: theme.colors.surface,
+    borderRadius: theme.roundness.large, ...theme.shadow,
   },
   cardHeader: {
     flexDirection: 'row-reverse', justifyContent: 'space-between',
     alignItems: 'center', marginBottom: 16,
   },
-  cardTypeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  cardTypeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   cardTypeText: { fontSize: 11, fontWeight: '500' },
   inputContainer: { marginBottom: 16 },
-  inputLabel: { fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 8 },
+  inputLabel: { fontSize: 12, fontWeight: '500', color: theme.colors.textSecondary, marginBottom: 8 },
   inputWrapper: {
     flexDirection: 'row-reverse', alignItems: 'center',
-    borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8,
-    backgroundColor: '#FFFFFF', paddingHorizontal: 12, height: 40,
+    borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.roundness.medium,
+    backgroundColor: theme.colors.surface, paddingHorizontal: 12, height: 44,
   },
   inputError: { borderColor: '#EF4444' },
-  textInput: { flex: 1, fontSize: 14, color: '#1F2937' },
+  textInput: { flex: 1, fontSize: 14, color: theme.colors.text },
   textInputRTL: { textAlign: 'right', writingDirection: 'rtl' },
   rowInputs: {
     flexDirection: 'row-reverse', justifyContent: 'space-between', gap: 12,
@@ -864,19 +862,19 @@ const styles = StyleSheet.create({
   // Button
   buttonContainer: { paddingHorizontal: 16, paddingBottom: 32 },
   primaryButton: {
-    height: 44, borderRadius: 8,
+    height: 48, borderRadius: theme.roundness.medium,
     alignItems: 'center', justifyContent: 'center', marginBottom: 12,
   },
   primaryButtonText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
   processingContainer: {
     flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center',
-    padding: 16, backgroundColor: '#F9FAFB', borderRadius: 8, marginBottom: 12,
+    padding: 16, backgroundColor: theme.colors.background, borderRadius: theme.roundness.medium, marginBottom: 12,
   },
-  processingText: { fontSize: 13, color: '#1F2937', marginRight: 12 },
+  processingText: { fontSize: 13, color: theme.colors.text, marginRight: 12 },
   securityBadge: {
     flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', paddingVertical: 8,
   },
-  securityText: { fontSize: 12, color: '#6B7280' },
+  securityText: { fontSize: 12, color: theme.colors.textSecondary },
 
   // WebView modal
   webViewContainer: { flex: 1, backgroundColor: '#FFFFFF' },

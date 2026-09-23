@@ -63,13 +63,13 @@ const HEADER_STYLE = {
   elevation: 0,
   shadowOpacity: 0,
   borderBottomWidth: 1,
-  borderBottomColor: '#F3F4F6',
+  borderBottomColor: '#E1EDF7',
 };
 
 const HEADER_TITLE_STYLE = {
   fontSize: 16,
   fontWeight: '600',
-  color: '#111827',
+  color: '#13293D',
   letterSpacing: -0.3,
 };
 
@@ -119,12 +119,12 @@ const ClientTabs = () => (
         };
         return <Ionicons name={icons[route.name]} size={size} color={color} />;
       },
-      tabBarActiveTintColor: '#111827',
-      tabBarInactiveTintColor: '#9CA3AF',
+      tabBarActiveTintColor: '#2E86C1',
+      tabBarInactiveTintColor: '#93A5B3',
       tabBarStyle: {
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
+        borderTopColor: '#E1EDF7',
         elevation: 0,
         shadowOpacity: 0,
       },
@@ -176,12 +176,12 @@ const ProviderTabs = () => (
         };
         return <Ionicons name={icons[route.name]} size={size} color={color} />;
       },
-      tabBarActiveTintColor: '#111827',
-      tabBarInactiveTintColor: '#9CA3AF',
+      tabBarActiveTintColor: '#2E86C1',
+      tabBarInactiveTintColor: '#93A5B3',
       tabBarStyle: {
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
+        borderTopColor: '#E1EDF7',
         elevation: 0,
         shadowOpacity: 0,
       },

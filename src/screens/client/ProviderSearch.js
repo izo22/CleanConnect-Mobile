@@ -21,7 +21,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { BookingContext } from '../../context/BookingContext';
 import { AuthContext } from '../../context/AuthContext';
 import providerService from '../../services/providerService';
-import { getServiceColor, getServiceBackgroundColor } from '../../config/constants';
+import { getServiceColor } from '../../config/constants';
+import { theme } from '../../config/theme';
 
 const ProviderSearch = ({ navigation }) => {
   const { currentBooking, selectProvider } = useContext(BookingContext);
@@ -35,7 +36,6 @@ const ProviderSearch = ({ navigation }) => {
 
   const serviceType = currentBooking?.serviceType || 'home';
   const serviceColor = getServiceColor(serviceType);
-  const serviceBgColor = getServiceBackgroundColor(serviceType);
 
   const normalizeServiceType = (type) => {
     if (!type) return null;
@@ -198,7 +198,7 @@ const ProviderSearch = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={[styles.centerContainer, { backgroundColor: serviceBgColor }]}>
+      <View style={[styles.centerContainer, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={serviceColor} />
         <Text style={styles.loadingText}>מחפש ספקים...</Text>
       </View>
@@ -207,7 +207,7 @@ const ProviderSearch = ({ navigation }) => {
 
   if (error) {
     return (
-      <View style={[styles.centerContainer, { backgroundColor: serviceBgColor }]}>
+      <View style={[styles.centerContainer, { backgroundColor: theme.colors.background }]}>
         <Ionicons name="alert-circle" size={48} color="#EF4444" />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={[styles.modernButton, { backgroundColor: serviceColor }]} onPress={loadProviders}>
@@ -223,10 +223,10 @@ const ProviderSearch = ({ navigation }) => {
     currentBooking?.address?.fullAddress?.split(',')[1]?.trim();
 
   return (
-    <View style={[styles.container, { backgroundColor: serviceBgColor }]}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-forward" size={24} color="#111827" />
+          <Ionicons name="arrow-forward" size={22} color={theme.colors.text} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>ספקים זמינים</Text>
@@ -236,12 +236,12 @@ const ProviderSearch = ({ navigation }) => {
         </View>
       </View>
 
-      <View style={[styles.searchContainer, { borderColor: `${serviceColor}30` }]}>
-        <Ionicons name="search" size={18} color="#9CA3AF" style={styles.searchIcon} />
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={18} color={theme.colors.textLight} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="חיפוש..."
-          placeholderTextColor="#D1D5DB"
+          placeholderTextColor={theme.colors.textLight}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -249,7 +249,7 @@ const ProviderSearch = ({ navigation }) => {
 
       {filteredProviders.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="search" size={48} color={`${serviceColor}40`} />
+          <Ionicons name="search" size={48} color={`${theme.colors.primary}40`} />
           <Text style={styles.emptyText}>
             {clientCity ? `אין ספקים זמינים ב${clientCity}` : 'לא נמצאו ספקים'}
           </Text>
@@ -271,67 +271,71 @@ const ProviderSearch = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: theme.colors.background },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  loadingText: { marginTop: 12, fontSize: 13, color: '#6B7280', fontWeight: '400' },
+  loadingText: { marginTop: 12, fontSize: 13, color: theme.colors.textSecondary, fontWeight: '400' },
   errorText: { marginTop: 12, fontSize: 13, color: '#EF4444', textAlign: 'center', fontWeight: '400' },
-  modernButton: { marginTop: 16, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8 },
+  modernButton: { marginTop: 16, paddingHorizontal: 24, paddingVertical: 10, borderRadius: theme.roundness.medium },
   modernButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '500', letterSpacing: -0.2 },
   header: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
     flexDirection: 'row-reverse',
     alignItems: 'center',
   },
-  backButton: { padding: 4 },
-  headerContent: { flex: 1, alignItems: 'center', marginRight: -28 },
-  headerTitle: { fontSize: 16, fontWeight: '600', color: '#111827', textAlign: 'center', marginBottom: 2, letterSpacing: -0.3 },
-  headerSubtitle: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', fontWeight: '400' },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.surface,
+  },
+  headerContent: { flex: 1, alignItems: 'center', marginRight: -36 },
+  headerTitle: { fontSize: 16, fontWeight: '600', color: theme.colors.text, textAlign: 'center', marginBottom: 2, letterSpacing: -0.3 },
+  headerSubtitle: { fontSize: 12, color: theme.colors.textSecondary, textAlign: 'center', fontWeight: '400' },
   searchContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     marginHorizontal: 16,
-    marginTop: 12,
+    marginTop: 4,
     marginBottom: 16,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 12,
+    borderRadius: theme.roundness.medium,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    ...theme.shadow,
   },
   searchIcon: { marginLeft: 8 },
-  searchInput: { flex: 1, fontSize: 14, color: '#111827', fontWeight: '400', textAlign: 'right' },
+  searchInput: { flex: 1, fontSize: 14, color: theme.colors.text, fontWeight: '400', textAlign: 'right' },
   listContainer: { padding: 16, paddingTop: 0, paddingBottom: 40 },
   providerCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.roundness.large,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
     overflow: 'hidden',
+    ...theme.shadow,
   },
   cardContent: { padding: 16 },
   providerHeader: { flexDirection: 'row-reverse', alignItems: 'center', marginBottom: 12 },
-  profilePicture: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: '#F3F4F6' },
-  profilePicturePlaceholder: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  profilePicture: { width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: theme.colors.border },
+  profilePicturePlaceholder: { width: 52, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
   providerInfo: { flex: 1, marginRight: 12 },
-  providerName: { fontSize: 15, fontWeight: '600', color: '#111827', marginBottom: 4, textAlign: 'right', letterSpacing: -0.2 },
+  providerName: { fontSize: 15, fontWeight: '600', color: theme.colors.text, marginBottom: 4, textAlign: 'right', letterSpacing: -0.2 },
   locationRow: { flexDirection: 'row-reverse', alignItems: 'center', marginBottom: 3 },
-  citiesText: { fontSize: 11, marginRight: 3, textAlign: 'right', color: '#9CA3AF', fontWeight: '400' },
-  bioText: { fontSize: 11, color: '#6B7280', fontWeight: '400', textAlign: 'right', marginTop: 4, lineHeight: 16 },
+  citiesText: { fontSize: 11, marginRight: 3, textAlign: 'right', color: theme.colors.textLight, fontWeight: '400' },
+  bioText: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: '400', textAlign: 'right', marginTop: 4, lineHeight: 16 },
   priceContainer: { alignItems: 'flex-end' },
   price: { fontSize: 17, fontWeight: '600', marginBottom: 1, letterSpacing: -0.3 },
-  priceLabel: { fontSize: 10, color: '#D1D5DB', fontWeight: '400' },
+  priceLabel: { fontSize: 10, color: theme.colors.textLight, fontWeight: '400' },
   serviceTypesContainer: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 6 },
-  modernBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  modernBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   modernBadgeText: { fontSize: 10, fontWeight: '500', letterSpacing: -0.1 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-  emptyText: { fontSize: 14, fontWeight: '500', color: '#6B7280', textAlign: 'center', marginTop: 12, marginBottom: 4 },
-  emptySubtext: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', fontWeight: '400' },
+  emptyText: { fontSize: 14, fontWeight: '500', color: theme.colors.textSecondary, textAlign: 'center', marginTop: 12, marginBottom: 4 },
+  emptySubtext: { fontSize: 12, color: theme.colors.textLight, textAlign: 'center', fontWeight: '400' },
 });
 
 export default ProviderSearch;

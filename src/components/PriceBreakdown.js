@@ -5,6 +5,7 @@ import { View, StyleSheet } from 'react-native';
 import { Text, Card, Divider } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { calculatePlatformFees, PLATFORM_FEES } from '../config/constants';
+import { theme } from '../config/theme';
 
 const PriceBreakdown = ({ 
   servicePrice, 
@@ -106,9 +107,10 @@ const PriceBreakdown = ({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
-    elevation: 4,
+    borderRadius: theme.roundness.large,
+    elevation: 3,
     marginVertical: 10,
+    backgroundColor: theme.colors.surface,
   },
   header: {
     flexDirection: 'row-reverse',
@@ -160,9 +162,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0E0',
   },
   platformFeesSection: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: theme.colors.background,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: theme.roundness.medium,
     marginBottom: 15,
   },
   sectionTitle: {

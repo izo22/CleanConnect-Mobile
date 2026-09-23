@@ -1,5 +1,5 @@
 // config/theme.js
-// ✅ Thème avec couleur Airbnb
+// ✅ Design system "Light Blue" — palette bleu clair unifiée pour toute l'app
 
 import { DefaultTheme } from 'react-native-paper';
 
@@ -7,36 +7,40 @@ export const theme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: '#007AFF',
-    accent: '#FF9500',
-    
+    primary: '#2E86C1',
+    primaryDark: '#1B5E8C',
+    primaryLight: '#5DADE2',
+    accent: '#5DADE2',
+
     // Couleurs par type de service
-    homeService: '#007AFF',      // Bleu pour maison
+    homeService: '#2E86C1',      // Bleu pour maison
     officeService: '#34C759',    // Vert pour bureau
     buildingService: '#FF9500',  // Orange pour immeuble
-    airbnbService: '#FF5A5F',    // ✅ Rose/Rouge Airbnb
-    
+    airbnbService: '#FF5A5F',    // Rose/Rouge Airbnb
+
     // Couleurs d'état
     success: '#34C759',
     warning: '#FF9500',
     error: '#FF3B30',
     info: '#5AC8FA',
-    
+
     // Couleurs de texte
-    text: '#000000',
-    textSecondary: '#666666',
-    textLight: '#999999',
-    
-    // Couleurs de fond
-    background: '#F5F5F5',
+    text: '#13293D',
+    textSecondary: '#5B7083',
+    textLight: '#93A5B3',
+
+    // Couleurs de fond — teinte bleu clair
+    background: '#F3F8FC',
+    backgroundGradientStart: '#EAF4FC',
+    backgroundGradientEnd: '#F7FBFE',
     surface: '#FFFFFF',
     card: '#FFFFFF',
-    
+
     // Couleurs de bordure
-    border: '#E0E0E0',
-    divider: '#E0E0E0',
+    border: '#E1EDF7',
+    divider: '#E1EDF7',
   },
-  
+
   // Typographie
   fonts: {
     regular: {
@@ -52,7 +56,7 @@ export const theme = {
       fontWeight: 'bold',
     },
   },
-  
+
   // Espacements
   spacing: {
     xs: 4,
@@ -62,13 +66,22 @@ export const theme = {
     xl: 32,
     xxl: 48,
   },
-  
+
   // Rayons de bordure
   roundness: {
-    small: 4,
-    medium: 8,
-    large: 12,
-    xlarge: 16,
+    small: 8,
+    medium: 12,
+    large: 16,
+    xlarge: 22,
+  },
+
+  // Ombres douces (cards style "premium")
+  shadow: {
+    shadowColor: '#1B5E8C',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
 };
 

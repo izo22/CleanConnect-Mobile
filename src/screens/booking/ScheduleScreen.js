@@ -3,12 +3,13 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, Text } from 'react-native';
-import { useTheme, ActivityIndicator } from 'react-native-paper';
+import { ActivityIndicator } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useBooking } from '../../context/BookingContext';
-import { SERVICE_TYPE_LABELS, getServiceColor, getServiceBackgroundColor, API_URL } from '../../config/constants';
+import { SERVICE_TYPE_LABELS, getServiceColor, API_URL } from '../../config/constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { theme } from '../../config/theme';
 
 const HEBREW_MONTHS = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -59,15 +60,13 @@ const isToday = (date) => {
 };
 
 const ScheduleScreen = ({ route, navigation }) => {
-  const theme = useTheme();
   const { currentBooking, updateBooking } = useBooking();
   // ✅ MODIFIÉ : ajout de providerBio
   const { providerId, providerName, providerBio } = route?.params || {};
   const isRTL = true;
   
   const serviceColor = getServiceColor(currentBooking?.serviceType || 'home');
-  const serviceBgColor = getServiceBackgroundColor(currentBooking?.serviceType || 'home');
-  
+
   const [isNavigating, setIsNavigating] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -392,9 +391,9 @@ const ScheduleScreen = ({ route, navigation }) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: serviceBgColor }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {isLoadingData ? (
-        <View style={[styles.loadingContainer, { backgroundColor: serviceBgColor }]}>
+        <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
           <ActivityIndicator size="small" color={serviceColor} />
           <Text style={[styles.loadingText, styles.textRTL]}>
             טוען זמינות...
@@ -423,7 +422,7 @@ const ScheduleScreen = ({ route, navigation }) => {
             </View>
           ) : null}
 
-          <ScrollView style={{ backgroundColor: serviceBgColor }}>
+          <ScrollView style={{ backgroundColor: theme.colors.background }}>
             {/* CALENDAR CARD */}
             <View style={styles.calendarCard}>
               <Text style={[styles.sectionLabel, styles.textRTL]}>
@@ -647,29 +646,27 @@ const ScheduleScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { 
+  container: {
     flex: 1,
   },
-  loadingContainer: { 
-    flex: 1, 
-    justifyContent: 'center', 
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: { 
-    marginTop: 12, 
-    fontSize: 13, 
-    color: '#9CA3AF',
+  loadingText: {
+    marginTop: 12,
+    fontSize: 13,
+    color: theme.colors.textSecondary,
     fontWeight: '400',
     letterSpacing: -0.2,
   },
-  
-  header: { 
-    backgroundColor: '#FFFFFF',
+
+  header: {
+    backgroundColor: theme.colors.background,
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   headerTop: {
     flexDirection: 'row-reverse',
@@ -679,15 +676,15 @@ const styles = StyleSheet.create({
   backButton: {
     width: 36,
     height: 36,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.colors.surface,
   },
-  headerTitle: { 
+  headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#1F2937',
+    color: theme.colors.text,
     textAlign: 'center',
     flex: 1,
     letterSpacing: -0.3,
@@ -699,248 +696,244 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 0,
     padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.roundness.large,
+    ...theme.shadow,
   },
   bioText: {
     fontSize: 13,
-    color: '#4B5563',
+    color: theme.colors.textSecondary,
     lineHeight: 20,
     fontWeight: '400',
   },
-  
-  calendarCard: { 
+
+  calendarCard: {
     marginHorizontal: 16,
     marginTop: 24,
-    marginBottom: 16, 
+    marginBottom: 16,
     padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.roundness.large,
+    ...theme.shadow,
   },
-  sectionLabel: { 
+  sectionLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#6B7280',
+    color: theme.colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 16,
   },
-  
-  calendarHeader: { 
-    flexDirection: 'row-reverse', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
+
+  calendarHeader: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   navButton: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.colors.background,
   },
-  currentMonthButton: { 
+  currentMonthButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  currentMonthText: { 
-    fontSize: 15, 
+  currentMonthText: {
+    fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: theme.colors.text,
     letterSpacing: -0.3,
   },
-  
-  weekdaysContainer: { 
-    flexDirection: 'row', 
+
+  weekdaysContainer: {
+    flexDirection: 'row',
     paddingBottom: 12,
     marginBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: theme.colors.border,
   },
-  weekdayItem: { 
-    flex: 1, 
+  weekdayItem: {
+    flex: 1,
     alignItems: 'center',
   },
-  weekdayText: { 
-    fontSize: 12, 
+  weekdayText: {
+    fontSize: 12,
     fontWeight: '500',
-    color: '#9CA3AF',
+    color: theme.colors.textLight,
     letterSpacing: -0.2,
   },
-  
-  calendarGrid: { 
-    flexDirection: 'row', 
+
+  calendarGrid: {
+    flexDirection: 'row',
     flexWrap: 'wrap',
   },
-  dayContainer: { 
-    width: '14.28%', 
-    aspectRatio: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    position: 'relative', 
-    borderRadius: 8,
+  dayContainer: {
+    width: '14.28%',
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    borderRadius: 10,
     marginBottom: 4,
   },
-  dayText: { 
-    fontSize: 14, 
-    color: '#1F2937',
+  dayText: {
+    fontSize: 14,
+    color: theme.colors.text,
     fontWeight: '400',
     letterSpacing: -0.2,
   },
-  disabledDay: { 
+  disabledDay: {
     opacity: 0.25,
   },
-  disabledDayText: { 
-    color: '#D1D5DB',
+  disabledDayText: {
+    color: theme.colors.textLight,
   },
-  selectedDayText: { 
-    color: 'white', 
+  selectedDayText: {
+    color: 'white',
     fontWeight: '600',
   },
-  availabilityDot: { 
-    position: 'absolute', 
+  availabilityDot: {
+    position: 'absolute',
     bottom: 4,
-    width: 4, 
-    height: 4, 
-    borderRadius: 2, 
+    width: 4,
+    height: 4,
+    borderRadius: 2,
   },
-  
-  durationCard: { 
+
+  durationCard: {
     marginHorizontal: 16,
-    marginBottom: 16, 
+    marginBottom: 16,
     padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.roundness.large,
+    ...theme.shadow,
   },
-  durationSelector: { 
-    flexDirection: 'row-reverse', 
-    justifyContent: 'center', 
+  durationSelector: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  durationButton: { 
+  durationButton: {
     width: 40,
-    height: 40, 
-    borderRadius: 8,
-    borderWidth: 1, 
-    justifyContent: 'center', 
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
   },
-  durationDisplay: { 
+  durationDisplay: {
     paddingHorizontal: 20,
-    paddingVertical: 10, 
-    marginHorizontal: 16, 
-    borderRadius: 8,
+    paddingVertical: 10,
+    marginHorizontal: 16,
+    borderRadius: 10,
   },
-  durationText: { 
+  durationText: {
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
     letterSpacing: -0.2,
   },
-  durationNote: { 
-    flexDirection: 'row-reverse', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
+  durationNote: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 12,
-    paddingTop: 12, 
-    borderTopWidth: 1, 
-    borderTopColor: '#F3F4F6',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
   },
-  durationNoteText: { 
-    fontSize: 11, 
-    color: '#9CA3AF',
+  durationNoteText: {
+    fontSize: 11,
+    color: theme.colors.textLight,
     fontWeight: '400',
     letterSpacing: -0.2,
   },
-  
-  timesCard: { 
+
+  timesCard: {
     marginHorizontal: 16,
-    marginBottom: 16, 
+    marginBottom: 16,
     padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.roundness.large,
+    ...theme.shadow,
   },
-  selectedDateText: { 
-    fontSize: 12, 
-    color: '#9CA3AF',
+  selectedDateText: {
+    fontSize: 12,
+    color: theme.colors.textLight,
     marginBottom: 16,
     textAlign: 'center',
     fontWeight: '400',
     letterSpacing: -0.2,
   },
-  timesGrid: { 
-    flexDirection: 'row-reverse', 
+  timesGrid: {
+    flexDirection: 'row-reverse',
     flexWrap: 'wrap',
     gap: 8,
   },
-  timeItem: { 
-    width: '31%', 
+  timeItem: {
+    width: '31%',
     paddingVertical: 10,
     paddingHorizontal: 8,
-    borderRadius: 8,
-    alignItems: 'center', 
-    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.colors.border,
   },
-  timeText: { 
-    fontSize: 14, 
+  timeText: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: theme.colors.text,
     letterSpacing: -0.2,
   },
-  timeEndText: { 
-    fontSize: 11, 
-    color: '#9CA3AF',
+  timeEndText: {
+    fontSize: 11,
+    color: theme.colors.textLight,
     marginTop: 2,
     fontWeight: '400',
     letterSpacing: -0.2,
   },
-  selectedTimeText: { 
+  selectedTimeText: {
     color: 'white',
   },
   selectedTimeEndText: {
     color: 'rgba(255,255,255,0.8)',
   },
-  noTimesContainer: { 
-    padding: 32, 
-    alignItems: 'center', 
+  noTimesContainer: {
+    padding: 32,
+    alignItems: 'center',
     width: '100%',
   },
-  noTimesText: { 
-    fontSize: 14, 
-    color: '#6B7280',
-    textAlign: 'center', 
-    marginTop: 12, 
+  noTimesText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 12,
     marginBottom: 4,
     fontWeight: '500',
     letterSpacing: -0.2,
   },
-  noTimesSubtext: { 
-    fontSize: 12, 
-    color: '#9CA3AF',
+  noTimesSubtext: {
+    fontSize: 12,
+    color: theme.colors.textLight,
     textAlign: 'center',
     fontWeight: '400',
     letterSpacing: -0.2,
   },
-  
-  buttonContainer: { 
+
+  buttonContainer: {
     paddingHorizontal: 16,
     paddingBottom: 32,
   },
-  primaryButton: { 
-    height: 40,
-    borderRadius: 8,
+  primaryButton: {
+    height: 48,
+    borderRadius: theme.roundness.medium,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -953,7 +946,7 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.4,
   },
-  
+
   rtlRow: {
     flexDirection: 'row-reverse',
   },

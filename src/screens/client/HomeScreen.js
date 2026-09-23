@@ -1,37 +1,38 @@
 // src/screens/client/HomeScreen.js
-// ✅ VERSION PREMIUM MINIMALISTE
-// Style ultra-épuré : Stripe, Linear, Revolut
-// Maximum d'espace blanc, typographie légère, accents subtils
+// ✅ VERSION "LIGHT BLUE" — hero bleu clair, cards arrondies avec ombre douce
+// Toutes les données restent dynamiques (utilisateur connecté, types de service)
 
 import React from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SERVICE_TYPES, SERVICE_COLORS } from '../../config/constants';
 import { useAuth } from '../../context/AuthContext';
 import { useBooking } from '../../context/BookingContext';
+import { theme } from '../../config/theme';
 
 const ServiceCard = ({ title, description, color, icon, onPress }) => {
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.card}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={[styles.cardIconContainer, { backgroundColor: `${color}10` }]}>
+      <View style={[styles.cardIconContainer, { backgroundColor: `${color}14` }]}>
         <Ionicons name={icon} size={24} color={color} />
       </View>
-      
+
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardDescription}>{description}</Text>
       </View>
-      
-      <TouchableOpacity 
-        style={[styles.cardButton, { borderColor: color }]}
+
+      <TouchableOpacity
+        style={[styles.cardButton, { backgroundColor: color }]}
         onPress={onPress}
       >
-        <Text style={[styles.cardButtonText, { color }]}>הזמן עכשיו</Text>
-        <Ionicons name="arrow-back" size={14} color={color} style={{ marginRight: 4 }} />
+        <Text style={styles.cardButtonText}>הזמן עכשיו</Text>
+        <Ionicons name="arrow-back" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -40,7 +41,7 @@ const ServiceCard = ({ title, description, color, icon, onPress }) => {
 const HomeScreen = ({ navigation }) => {
   const { userInfo } = useAuth();
   const { updateBooking } = useBooking();
-  
+
   const serviceOptions = [
     {
       type: SERVICE_TYPES.HOME,
@@ -73,13 +74,13 @@ const HomeScreen = ({ navigation }) => {
   ];
 
   const navigateToService = (serviceType) => {
-    updateBooking({ 
+    updateBooking({
       serviceType: serviceType,
       duration: 2,
       frequency: 'one_time'
     });
-    
-    navigation.navigate('ProviderSearch', { 
+
+    navigation.navigate('ProviderSearch', {
       serviceType,
       duration: '2',
       frequency: 'once'
@@ -87,21 +88,24 @@ const HomeScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* HEADER MINIMALISTE BLANC */}
-      <View style={styles.header}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* HERO BLEU CLAIR */}
+      <LinearGradient
+        colors={[theme.colors.primaryDark, theme.colors.primary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <Text style={styles.greeting}>
-          שלום, {userInfo?.firstName || 'לקוח'}
+          שלום, {userInfo?.firstName || 'לקוח'} 👋
         </Text>
-        
+
         <Text style={styles.subtitle}>
           איזה סוג שירות אתה מחפש?
         </Text>
-        
-        <View style={styles.blueLine} />
-      </View>
+      </LinearGradient>
 
-      {/* CARDS DE SERVICES ULTRA-MINIMALISTES */}
+      {/* CARDS DE SERVICES */}
       <View style={styles.servicesContainer}>
         {serviceOptions.map((service) => (
           <ServiceCard
@@ -115,25 +119,25 @@ const HomeScreen = ({ navigation }) => {
         ))}
       </View>
 
-      {/* QUICK ACTIONS MINIMALISTES */}
+      {/* QUICK ACTIONS */}
       <View style={styles.actionsContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.actionCard}
           onPress={() => navigation.navigate('Dashboard')}
         >
           <View style={styles.actionIconContainer}>
-            <Ionicons name="calendar-outline" size={20} color="#2E86C1" />
+            <Ionicons name="calendar-outline" size={20} color={theme.colors.primary} />
           </View>
           <Text style={styles.actionCardTitle}>ההזמנות שלי</Text>
           <Text style={styles.actionCardSubtitle}>צפה בהזמנות</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.actionCard}
           onPress={() => navigation.navigate('Profile')}
         >
           <View style={styles.actionIconContainer}>
-            <Ionicons name="person-outline" size={20} color="#2E86C1" />
+            <Ionicons name="person-outline" size={20} color={theme.colors.primary} />
           </View>
           <Text style={styles.actionCardTitle}>הפרופיל שלי</Text>
           <Text style={styles.actionCardSubtitle}>ערוך פרטים</Text>
@@ -146,56 +150,50 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
-  
-  // HEADER MINIMALISTE BLANC
+
+  // HERO BLEU CLAIR
   header: {
-    backgroundColor: '#FFFFFF',
-    paddingTop: 60,
-    paddingBottom: 24,
+    paddingTop: 64,
+    paddingBottom: 40,
     paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
   greeting: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
     textAlign: 'right',
     letterSpacing: -0.3,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#9CA3AF',
-    textAlign: 'center',
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'right',
     letterSpacing: -0.2,
-    marginBottom: 16,
   },
-  blueLine: {
-    height: 3,
-    width: '100%',
-    backgroundColor: '#2E86C1',
-    borderRadius: 2,
-  },
-  
-  // CARDS DE SERVICES ULTRA-MINIMALISTES
+
+  // CARDS DE SERVICES
   servicesContainer: {
     padding: 16,
-    paddingTop: 24,
+    paddingTop: 20,
+    marginTop: -20,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     marginBottom: 16,
-    borderRadius: 12,
+    borderRadius: theme.roundness.large,
     padding: 20,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    ...theme.shadow,
   },
   cardIconContainer: {
     width: 48,
     height: 48,
-    borderRadius: 10,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -207,13 +205,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontWeight: '600',
     fontSize: 16,
-    color: '#1F2937',
+    color: theme.colors.text,
     marginBottom: 6,
     textAlign: 'right',
     letterSpacing: -0.3,
   },
   cardDescription: {
-    color: '#6B7280',
+    color: theme.colors.textSecondary,
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'right',
@@ -224,19 +222,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 38,
-    borderRadius: 8,
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
+    height: 40,
+    borderRadius: theme.roundness.medium,
   },
   cardButtonText: {
-    fontWeight: '500',
+    fontWeight: '600',
     fontSize: 13,
+    color: '#FFFFFF',
     textAlign: 'center',
     letterSpacing: -0.2,
   },
-  
-  // QUICK ACTIONS ULTRA-MINIMALISTES
+
+  // QUICK ACTIONS
   actionsContainer: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
@@ -246,24 +243,23 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     padding: 20,
-    borderRadius: 12,
+    borderRadius: theme.roundness.large,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    ...theme.shadow,
   },
   actionIconContainer: {
     width: 44,
     height: 44,
-    borderRadius: 10,
-    backgroundColor: '#2E86C110',
+    borderRadius: 14,
+    backgroundColor: `${theme.colors.primary}14`,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   actionCardTitle: {
-    color: '#1F2937',
+    color: theme.colors.text,
     fontWeight: '600',
     fontSize: 14,
     textAlign: 'center',
@@ -271,7 +267,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   actionCardSubtitle: {
-    color: '#9CA3AF',
+    color: theme.colors.textLight,
     fontSize: 11,
     textAlign: 'center',
     fontWeight: '400',

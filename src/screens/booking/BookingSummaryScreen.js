@@ -3,26 +3,25 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Image, TouchableOpacity } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useBooking } from '../../context/BookingContext';
 import { useAuth } from '../../context/AuthContext';
-import { SERVICE_TYPE_LABELS, CLEANING_FREQUENCY_LABELS, calculatePlatformFees, getServiceColor, getServiceBackgroundColor } from '../../config/constants';
+import { SERVICE_TYPE_LABELS, CLEANING_FREQUENCY_LABELS, calculatePlatformFees, getServiceColor } from '../../config/constants';
 import PriceBreakdown from '../../components/PriceBreakdown';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Video } from 'expo-av';
+import { theme } from '../../config/theme';
 
 const BookingSummaryScreen = ({ navigation }) => {
-  const theme = useTheme();
   const { currentBooking, calculatePrice, updateBooking, createBooking } = useBooking();
   const { userInfo } = useAuth();
   const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   const isRTL = true;
-  
+
   const serviceColor = getServiceColor(currentBooking.serviceType);
-  const serviceBgColor = getServiceBackgroundColor(currentBooking.serviceType); // ✅ FOND DYNAMIQUE
-  
+
   useEffect(() => {
     const initializeAddress = async () => {
       if (!currentBooking.address && userInfo && userInfo.address && userInfo.city) {
@@ -196,7 +195,7 @@ const BookingSummaryScreen = ({ navigation }) => {
   };
   
   return (
-    <ScrollView style={[styles.container, { backgroundColor: serviceBgColor }]}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* HEADER MINIMALISTE BLANC */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
@@ -420,15 +419,13 @@ const styles = StyleSheet.create({
     flex: 1,
     // backgroundColor sera appliquée dynamiquement
   },
-  
-  // HEADER MINIMALISTE BLANC
+
+  // HEADER
   header: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   headerTop: {
     flexDirection: 'row-reverse',
@@ -439,15 +436,15 @@ const styles = StyleSheet.create({
   backButton: {
     width: 36,
     height: 36,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.colors.surface,
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#1F2937',
+    color: theme.colors.text,
     textAlign: 'center',
     flex: 1,
     letterSpacing: -0.3,
@@ -455,21 +452,20 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#9CA3AF',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     letterSpacing: -0.2,
   },
-  
-  // CARD ULTRA-MINIMALISTE
+
+  // CARD
   summaryCard: {
     marginHorizontal: 16,
     marginTop: 24,
     marginBottom: 16,
     padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.roundness.large,
+    ...theme.shadow,
   },
   
   serviceBadge: {
@@ -494,12 +490,12 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#6B7280',
+    color: theme.colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
   },
-  
+
   infoRow: {
     flexDirection: 'row-reverse',
     alignItems: 'flex-start',
@@ -507,7 +503,7 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#1F2937',
+    color: theme.colors.text,
     lineHeight: 20,
     flex: 1,
     letterSpacing: -0.2,
@@ -515,32 +511,32 @@ const styles = StyleSheet.create({
   infoSubtext: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#9CA3AF',
+    color: theme.colors.textLight,
     marginTop: 4,
     letterSpacing: -0.2,
   },
   missingText: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#D1D5DB',
+    color: theme.colors.textLight,
     fontStyle: 'italic',
     letterSpacing: -0.2,
   },
-  
+
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.colors.border,
     marginVertical: 20,
   },
-  
-  // BOUTONS MINIMALISTES
+
+  // BOUTONS
   outlinedButton: {
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: theme.roundness.medium,
     borderWidth: 1,
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     marginTop: 8,
   },
   outlinedButtonText: {
@@ -577,11 +573,11 @@ const styles = StyleSheet.create({
     width: '31%',
     marginHorizontal: '1%',
     marginBottom: 8,
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: 'hidden',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: theme.colors.border,
   },
   mediaPreviewThumbnail: {
     width: '100%',
@@ -643,18 +639,18 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: theme.colors.textSecondary,
     fontWeight: '400',
   },
-  
+
   // BOUTON PRINCIPAL
   buttonContainer: {
     paddingHorizontal: 16,
     paddingBottom: 32,
   },
   primaryButton: {
-    height: 40,
-    borderRadius: 8,
+    height: 48,
+    borderRadius: theme.roundness.medium,
     alignItems: 'center',
     justifyContent: 'center',
   },
