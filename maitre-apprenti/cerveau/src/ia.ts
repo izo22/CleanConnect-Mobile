@@ -1,0 +1,256 @@
+// Appels à Claude : construire une leçon à partir des images du maître, puis juger l'apprenti.
+
+import Anthropic from "@anthropic-ai/sdk";
+import type { Etape, Parole, TypeVerdict, Verdict } from "./types.ts";
+
+const MODELE = process.env.MODELE_IA ?? "claude-opus-5-5";
+
+let client: Anthropic | null = null;
+function claude(): Anthropic {
+  // Créé à la demande : le serveur démarre même sans clé, pour tester l'interface.
+  client ??= new Anthropic();
+  return client;
+}
+
+export interface ImageIA {
+  data: Buffer;
+  /** Instant dans la vidéo du maître, en secondes (pour la construction de leçon). */
+  t?: number;
+}
+
+type TypeMedia = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+
+export function typeMedia(data: Buffer): TypeMedia | null {
+  if (data[0] === 0xff && data[1] === 0xd8) return "image/jpeg";
+  if (data.subarray(0, 4).toString("hex") === "89504e47") return "image/png";
+  if (data.subarray(0, 4).toString() === "RIFF" && data.subarray(8, 12).toString() === "WEBP") {
+    return "image/webp";
+  }
+  if (data.subarray(0, 3).toString() === "GIF") return "image/gif";
+  return null;
+}
+
+function blocImage(image: ImageIA): Anthropic.Beta.BetaImageBlockParam {
+  const media = typeMedia(image.data);
+  if (!media) throw new Error("Format d'image non reconnu (JPEG, PNG, WebP ou GIF attendu)");
+  return {
+    type: "image",
+    source: { type: "base64", media_type: media, data: image.data.toString("base64") },
+  };
+}
+
+function texteReponse(reponse: Anthropic.Beta.BetaMessage): string {
+  if (reponse.stop_reason === "refusal") {
+    throw new Error(`L'IA a refusé la demande (${reponse.stop_details?.category ?? "sans catégorie"})`);
+  }
+  const bloc = reponse.content.find((b) => b.type === "text");
+  if (!bloc || bloc.type !== "text") throw new Error("Réponse de l'IA sans texte");
+  return bloc.text;
+}
+
+// ---------------------------------------------------------------------------
+// 1. Construire la leçon à partir de la démonstration du maître
+// ---------------------------------------------------------------------------
+
+export interface EtapeBrute {
+  titre: string;
+  consigne: string;
+  debut_s: number;
+  fin_s: number;
+  points_de_controle: string[];
+  erreurs_frequentes: string[];
+  criteres_de_reussite: string[];
+  images_reference: number[];
+}
+
+const SCHEMA_LECON = {
+  type: "object",
+  properties: {
+    etapes: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          titre: { type: "string" },
+          consigne: { type: "string" },
+          debut_s: { type: "number" },
+          fin_s: { type: "number" },
+          points_de_controle: { type: "array", items: { type: "string" } },
+          erreurs_frequentes: { type: "array", items: { type: "string" } },
+          criteres_de_reussite: { type: "array", items: { type: "string" } },
+          images_reference: { type: "array", items: { type: "integer" } },
+        },
+        required: [
+          "titre", "consigne", "debut_s", "fin_s", "points_de_controle",
+          "erreurs_frequentes", "criteres_de_reussite", "images_reference",
+        ],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["etapes"],
+  additionalProperties: false,
+} as const;
+
+const SYSTEME_LECON = `Tu prépares une leçon pratique à partir de la démonstration filmée d'un maître artisan.
+Un apprenti refera ensuite les mêmes gestes avec des lunettes connectées, et une IA comparera son travail à celui du maître, étape par étape, à partir de photos prises toutes les quelques secondes.
+
+Découpe la démonstration en étapes concrètes, dans l'ordre (en général entre 4 et 12). Pour chaque étape :
+- titre : 2 à 6 mots.
+- consigne : ce que l'apprenti doit faire, en une ou deux phrases à l'impératif, en tutoyant. Elle sera lue à voix haute.
+- debut_s et fin_s : les instants de début et de fin dans la vidéo, en secondes, d'après les instants indiqués sous chaque image.
+- points_de_controle : ce qui doit être vérifiable sur une photo pendant l'étape (bon outil, bonne quantité lue sur la balance, bon ordre, forme, nombre, position des mains...).
+- erreurs_frequentes : les erreurs visibles typiques d'un débutant sur cette étape.
+- criteres_de_reussite : à quoi on voit sur une photo que l'étape est terminée et réussie.
+- images_reference : les numéros (#) des 1 à 3 images qui montrent le mieux le geste ou le résultat attendu.
+
+Ne décris que ce qui se voit sur les images ou ce que le maître dit. N'invente pas de quantités, de températures ou de durées qui n'apparaissent pas. Rédige en français.`;
+
+export async function construireLecon(options: {
+  titre: string;
+  metier: string;
+  images: ImageIA[];
+  duree: number | null;
+  paroles?: Parole[];
+  reperes?: number[];
+  commentaire?: string;
+}): Promise<EtapeBrute[]> {
+  const contenu: Anthropic.Beta.BetaContentBlockParam[] = [];
+  let intro = `Leçon : « ${options.titre} » (métier : ${options.metier}).\n`;
+  if (options.duree !== null) intro += `Durée de la démonstration : ${Math.round(options.duree)} s.\n`;
+  intro += `Voici ${options.images.length} images de la démonstration, dans l'ordre.`;
+  contenu.push({ type: "text", text: intro });
+
+  options.images.forEach((image, i) => {
+    contenu.push({ type: "text", text: `#${i} — t = ${image.t ?? 0} s` });
+    contenu.push(blocImage(image));
+  });
+
+  if (options.paroles?.length) {
+    const lignes = options.paroles.map((p) => `[${p.t} s] ${p.texte}`).join("\n");
+    contenu.push({ type: "text", text: `Ce que le maître a dit pendant la démonstration :\n${lignes}` });
+  }
+  if (options.reperes?.length) {
+    contenu.push({
+      type: "text",
+      text: `Le maître a signalé un changement d'étape à ces instants (en secondes) : ${options.reperes.join(", ")}. Utilise-les comme limites d'étapes.`,
+    });
+  }
+  if (options.commentaire?.trim()) {
+    contenu.push({ type: "text", text: `Explications du maître :\n${options.commentaire.trim()}` });
+  }
+  contenu.push({ type: "text", text: "Découpe maintenant cette démonstration en étapes." });
+
+  // Requête longue (beaucoup d'images, réflexion) : on passe par le streaming pour éviter les délais d'attente.
+  const flux = claude().beta.messages.stream({
+    model: MODELE,
+    max_tokens: 32000,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    output_config: { effort: "high", format: { type: "json_schema", schema: SCHEMA_LECON } },
+    system: SYSTEME_LECON,
+    messages: [{ role: "user", content: contenu }],
+  });
+  const reponse = await flux.finalMessage();
+  const resultat = JSON.parse(texteReponse(reponse)) as { etapes: EtapeBrute[] };
+  if (!resultat.etapes.length) throw new Error("L'IA n'a trouvé aucune étape dans la démonstration");
+  return resultat.etapes;
+}
+
+// ---------------------------------------------------------------------------
+// 2. Juger ce que fait l'apprenti pendant une étape
+// ---------------------------------------------------------------------------
+
+const SCHEMA_VERDICT = {
+  type: "object",
+  properties: {
+    verdict: { type: "string", enum: ["en_cours", "correction", "etape_reussie", "pas_visible"] },
+    message: { type: "string" },
+    points_valides: { type: "array", items: { type: "string" } },
+  },
+  required: ["verdict", "message", "points_valides"],
+  additionalProperties: false,
+} as const;
+
+const SYSTEME_TUTEUR = `Tu es le tuteur d'un apprenti artisan. Il porte des lunettes connectées qui te montrent son plan de travail, vu de ses yeux, toutes les quelques secondes. Tu compares ce qu'il fait avec la démonstration du maître pour l'étape en cours, et tu lui parles à l'oreille.
+
+Réponds avec un verdict :
+- "correction" : une erreur est clairement visible. Le message dit quoi faire, pas ce qui ne va pas : une seule correction, la plus importante, à l'impératif, en tutoyant, en 15 mots maximum. Exemple : « Allonge encore ta baguette, elle doit faire deux mains de plus. »
+- "etape_reussie" : les critères de réussite de l'étape sont clairement visibles sur la dernière image. Le message est un bravo très court.
+- "en_cours" : l'apprenti travaille, rien de faux n'est visible, ou tu as un doute. Message vide.
+- "pas_visible" : on ne voit pas ses mains ni son plan de travail. Le message lui dit comment se placer, en 12 mots maximum.
+
+Règles :
+- Ne juge que ce qui se voit. Tu ne sens pas la pâte ni la pression des mains : ne les devine pas.
+- En cas de doute, choisis "en_cours". Une correction fausse fait plus de mal qu'un silence.
+- Si l'apprenti est en train d'appliquer une correction déjà donnée, ne la répète pas.
+- Les dernières images sont les plus récentes : c'est la dernière qui compte pour le verdict.
+- Dans points_valides, liste les points de contrôle que tu vois respectés sur la dernière image.`;
+
+function descriptionEtape(titreLecon: string, etape: Etape, total: number): string {
+  const liste = (titre: string, elements: string[]) =>
+    elements.length ? `${titre} :\n${elements.map((e) => `- ${e}`).join("\n")}\n` : "";
+  return (
+    `Leçon : « ${titreLecon} ». Étape ${etape.numero}/${total} : ${etape.titre}.\n` +
+    `Consigne : ${etape.consigne}\n` +
+    liste("Points de contrôle", etape.pointsDeControle) +
+    liste("Erreurs fréquentes", etape.erreursFrequentes) +
+    liste("Critères de réussite", etape.criteresDeReussite) +
+    "Images du maître pour cette étape :"
+  );
+}
+
+export async function evaluerGeste(options: {
+  titreLecon: string;
+  etape: Etape;
+  totalEtapes: number;
+  imagesMaitre: ImageIA[];
+  imagesApprenti: ImageIA[];
+  derniersConseils: string[];
+}): Promise<Verdict> {
+  const referenceMaitre: Anthropic.Beta.BetaContentBlockParam[] = [
+    { type: "text", text: descriptionEtape(options.titreLecon, options.etape, options.totalEtapes) },
+    ...options.imagesMaitre.map(blocImage),
+  ];
+  // Tout ce qui précède ce point est identique pendant toute l'étape : on le met en cache.
+  const dernier = referenceMaitre[referenceMaitre.length - 1];
+  if (dernier.type === "image" || dernier.type === "text") {
+    dernier.cache_control = { type: "ephemeral" };
+  }
+
+  const conseils = options.derniersConseils.length
+    ? `Tes derniers conseils à l'apprenti (du plus ancien au plus récent) :\n${options.derniersConseils.map((c) => `- ${c}`).join("\n")}`
+    : "Tu ne lui as encore rien dit pendant cette étape.";
+
+  const reponse = await claude().beta.messages.create(
+    {
+      model: MODELE,
+      max_tokens: 4000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      // Effort bas : la réponse doit arriver en quelques secondes, pendant que l'apprenti travaille.
+      output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA_VERDICT } },
+      system: SYSTEME_TUTEUR,
+      messages: [
+        {
+          role: "user",
+          content: [
+            ...referenceMaitre,
+            { type: "text", text: conseils },
+            { type: "text", text: "Images de l'apprenti, de la plus ancienne à la plus récente :" },
+            ...options.imagesApprenti.map(blocImage),
+            { type: "text", text: "Ton verdict sur la dernière image ?" },
+          ],
+        },
+      ],
+    },
+    { timeout: 60_000 },
+  );
+
+  const brut = JSON.parse(texteReponse(reponse)) as {
+    verdict: TypeVerdict;
+    message: string;
+    points_valides: string[];
+  };
+  return { verdict: brut.verdict, message: brut.message.trim(), pointsValides: brut.points_valides };
+}

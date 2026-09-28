@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/@mentra/miniapp-cli/schema/miniapp.schema.json",
+  "packageName": "com.maitreapprenti.lunettes",
+  "version": "0.1.0",
+  "name": "Maître & Apprenti",
+  "description": "Refais les gestes du maître : l'IA regarde ton travail et te corrige à l'oreille.",
+  "icon": "icon.png",
+  "type": "standard",
+  "entry": {
+    "background": "background/index.js",
+    "ui": "ui/index.html"
+  },
+  "permissions": [
+    {"type": "CAMERA", "description": "Photographier ton plan de travail pour que l'IA compare avec le maître"},
+    {"type": "MICROPHONE", "description": "Comprendre les commandes vocales (« suivant », « répète »...) et la voix du maître"}
+  ],
+  "hardwareRequirements": [
+    {"type": "CAMERA", "level": "REQUIRED", "description": "Voir les gestes de l'apprenti ou du maître"},
+    {"type": "SPEAKER", "level": "OPTIONAL", "description": "Dire les corrections à l'oreille"},
+    {"type": "MICROPHONE", "level": "OPTIONAL", "description": "Commandes vocales"},
+    {"type": "DISPLAY", "level": "OPTIONAL", "description": "Afficher l'étape et la correction"},
+    {"type": "BUTTON", "level": "OPTIONAL", "description": "Pause et étape suivante"}
+  ]
+}

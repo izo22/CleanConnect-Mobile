@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maître &amp; Apprenti</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <h1>Maître &amp; Apprenti</h1>
+  <p class="sous-titre">Le maître filme ses gestes une fois. L'apprenti les refait avec les lunettes, et l'IA le corrige en direct.</p>
+
+  <section class="carte">
+    <h2>Nouvelle leçon à partir d'une vidéo</h2>
+    <form id="formulaire">
+      <label for="titre">Titre</label>
+      <input id="titre" type="text" placeholder="Baguette de tradition" required>
+
+      <label for="metier">Métier</label>
+      <input id="metier" type="text" placeholder="Boulangerie">
+
+      <label for="video">Vidéo de la démonstration <small>(filmée avec les lunettes ou un téléphone)</small></label>
+      <input id="video" type="file" accept="video/*" required>
+
+      <label for="commentaire">Explications du maître <small>(facultatif : quantités, astuces, pièges à éviter)</small></label>
+      <textarea id="commentaire" placeholder="500 g de farine T65, 350 g d'eau à 20 °C, pétrissage 8 min en première vitesse..."></textarea>
+
+      <div class="rangee" style="margin-top: 16px">
+        <button class="principal" type="submit">Créer la leçon</button>
+        <span id="etat-envoi" class="vide"></span>
+      </div>
+      <div class="progression cache" id="progression"><div></div></div>
+    </form>
+  </section>
+
+  <p class="vide">Le maître peut aussi enregistrer sa démonstration directement avec les lunettes (mode « maître » de l'appli lunettes).</p>
+
+  <h2>Leçons</h2>
+  <div id="lecons"><p class="vide">Chargement…</p></div>
+</main>
+<script type="module" src="accueil.js"></script>
+</body>
+</html>

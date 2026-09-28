@@ -1,0 +1,131 @@
+:root {
+  --fond: #faf6f0;
+  --surface: #ffffff;
+  --texte: #2b2118;
+  --doux: #7a6a5a;
+  --bord: #e8dccd;
+  --accent: #b5651d;
+  --accent-texte: #ffffff;
+  --ok: #2f7d4a;
+  --ok-fond: #e5f3e9;
+  --alerte: #a8471c;
+  --alerte-fond: #fcebe2;
+  --info-fond: #f1ece5;
+  --rayon: 14px;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #1b1714;
+    --surface: #26201b;
+    --texte: #f3ebe2;
+    --doux: #b4a595;
+    --bord: #3a3029;
+    --accent: #e0914a;
+    --accent-texte: #1b1714;
+    --ok: #7fd39a;
+    --ok-fond: #1f3326;
+    --alerte: #f3a47a;
+    --alerte-fond: #3d261b;
+    --info-fond: #2f2822;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+main { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
+
+h1 { font-size: 1.8rem; margin: 0 0 4px; }
+h2 { font-size: 1.2rem; margin: 0 0 12px; }
+p.sous-titre { color: var(--doux); margin: 0 0 24px; }
+
+.carte {
+  background: var(--surface);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+label { display: block; font-weight: 600; margin: 12px 0 4px; }
+label small { font-weight: 400; color: var(--doux); }
+
+input[type="text"], textarea, input[type="file"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--bord);
+  border-radius: 10px;
+  background: var(--fond);
+  color: var(--texte);
+  font: inherit;
+}
+textarea { min-height: 80px; resize: vertical; }
+
+button, .bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--bord);
+  background: var(--surface);
+  color: var(--texte);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+button.principal, .bouton.principal { background: var(--accent); border-color: var(--accent); color: var(--accent-texte); }
+button:disabled { opacity: 0.5; cursor: default; }
+
+.rangee { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pousse { margin-left: auto; }
+
+.badge { font-size: 0.8rem; padding: 2px 10px; border-radius: 999px; background: var(--info-fond); color: var(--doux); }
+.badge.prete { background: var(--ok-fond); color: var(--ok); }
+.badge.erreur { background: var(--alerte-fond); color: var(--alerte); }
+
+.progression { height: 8px; background: var(--info-fond); border-radius: 999px; overflow: hidden; margin-top: 12px; }
+.progression > div { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+
+.etapes { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.etapes li { border-top: 1px solid var(--bord); padding-top: 12px; }
+.etapes video { width: 100%; max-width: 360px; border-radius: 10px; background: #000; }
+.etapes .details { color: var(--doux); font-size: 0.9rem; }
+
+.erreur-texte { color: var(--alerte); }
+.vide { color: var(--doux); }
+
+/* --- Page apprenti (tablette) --- */
+
+.apprenti { display: grid; gap: 16px; grid-template-columns: 1.3fr 1fr; align-items: start; }
+@media (max-width: 760px) { .apprenti { grid-template-columns: 1fr; } }
+
+.demo video, .demo img { width: 100%; border-radius: var(--rayon); background: #000; display: block; }
+.demo .legende { color: var(--doux); font-size: 0.9rem; margin-top: 6px; }
+
+.consigne { font-size: 1.35rem; font-weight: 600; }
+.retour {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--rayon);
+  background: var(--info-fond);
+  font-size: 1.2rem;
+  white-space: pre-line;
+  min-height: 64px;
+}
+.retour.correction, .retour.pas_visible { background: var(--alerte-fond); color: var(--alerte); }
+.retour.etape_reussie { background: var(--ok-fond); color: var(--ok); }
+
+.camera video { width: 100%; border-radius: var(--rayon); background: #000; }
+label.case { display: flex; gap: 8px; align-items: center; font-weight: 400; margin-top: 16px; }
+
+.cache { display: none !important; }

@@ -1,0 +1,284 @@
+package com.maitreapprenti.lunettes
+
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+
+/**
+ * Logique des lunettes, sans dépendance au SDK Meta (pour pouvoir la tester sur ordinateur) :
+ * - mode apprenti : photo toutes les quelques secondes → le cerveau juge → correction à l'oreille ;
+ * - mode maître : photos + voix du maître envoyées au cerveau, qui en fait une leçon.
+ */
+
+enum class Mode {
+  APPRENTI,
+  MAITRE,
+}
+
+data class Reglages(
+    val urlCerveau: String = "",
+    val cle: String = "",
+    val mode: Mode = Mode.APPRENTI,
+    val leconId: String = "",
+    val titreDemo: String = "",
+    val metierDemo: String = "",
+)
+
+data class Etat(
+    val actif: Boolean = false,
+    val etape: String = "",
+    val message: String = "Prêt",
+    val erreur: String? = null,
+)
+
+/** Ce qu'on montre sur l'écran des lunettes (s'il y en a un). */
+data class Ecran(val titre: String, val texte: String, val clipUrl: String? = null)
+
+/** Ce que le contrôleur attend des lunettes (branché sur le SDK Meta dans LunettesMeta). */
+interface Lunettes {
+  /** Prend une photo et la renvoie en JPEG. */
+  suspend fun prendrePhoto(): ByteArray
+
+  fun dire(texte: String)
+
+  fun afficher(ecran: Ecran)
+
+  /** Joue le petit clip du maître sur l'écran des lunettes. Renvoie false si impossible. */
+  fun montrerGeste(url: String): Boolean
+}
+
+class Controleur(
+    private val scope: CoroutineScope,
+    private val lunettes: Lunettes,
+    private var reglages: Reglages,
+    private val notifier: (Etat) -> Unit,
+    private val fabriqueApi: (Reglages) -> ApiCerveau = { CerveauHttp(it.urlCerveau, it.cle) },
+    private val intervalleMs: Long = 4_000,
+) {
+  var etat = Etat()
+    private set
+
+  private var api: ApiCerveau = fabriqueApi(reglages)
+  private var boucle: Job? = null
+  private var sessionId: String? = null
+  private var sessionLeconId = ""
+  private var captureId: String? = null
+  private var imagesEnvoyees = 0
+  private var derniereErreurDite = ""
+  private var dernierRetour: Retour? = null
+
+  val actif: Boolean
+    get() = etat.actif
+
+  fun changerReglages(nouveaux: Reglages) {
+    if (etat.actif) arreter()
+    reglages = nouveaux
+    api = fabriqueApi(nouveaux)
+    maj(etat.copy(message = "Réglages enregistrés", erreur = null))
+  }
+
+  private fun maj(nouvel: Etat) {
+    etat = nouvel
+    notifier(nouvel)
+  }
+
+  private fun signalerErreur(erreur: Throwable) {
+    val message = erreur.message ?: erreur.toString()
+    maj(etat.copy(erreur = message))
+    lunettes.afficher(Ecran("Problème", message))
+    // On ne répète pas la même erreur à l'oreille toutes les 4 secondes.
+    if (message != derniereErreurDite) {
+      derniereErreurDite = message
+      lunettes.dire("Je n'arrive pas à joindre le cerveau.")
+    }
+  }
+
+  // --- Démarrage / arrêt -----------------------------------------------------------
+
+  suspend fun demarrer() {
+    if (etat.actif) return
+    if (reglages.urlCerveau.isBlank()) {
+      maj(etat.copy(erreur = "Indique l'adresse du cerveau dans les réglages"))
+      return
+    }
+    imagesEnvoyees = 0
+    derniereErreurDite = ""
+    maj(Etat(actif = true, message = "Démarrage…"))
+    try {
+      if (reglages.mode == Mode.APPRENTI) demarrerApprenti() else demarrerMaitre()
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      signalerErreur(e)
+      arreter()
+      return
+    }
+    boucle =
+        scope.launch {
+          while (isActive) {
+            val debut = System.currentTimeMillis()
+            try {
+              if (reglages.mode == Mode.APPRENTI) tourApprenti() else tourMaitre()
+              if (etat.erreur != null) maj(etat.copy(erreur = null))
+            } catch (e: CancellationException) {
+              throw e
+            } catch (e: Exception) {
+              signalerErreur(e)
+            }
+            delay(maxOf(500, intervalleMs - (System.currentTimeMillis() - debut)))
+          }
+        }
+  }
+
+  fun arreter() {
+    boucle?.cancel()
+    boucle = null
+    maj(etat.copy(actif = false, message = "En pause"))
+  }
+
+  // --- Mode apprenti ---------------------------------------------------------------
+
+  private suspend fun demarrerApprenti() {
+    if (reglages.leconId.isBlank()) throw IllegalStateException("Choisis une leçon dans les réglages")
+    // Après une pause, on reprend là où l'apprenti en était (si la session existe encore).
+    val precedente = sessionId
+    if (precedente != null && sessionLeconId == reglages.leconId) {
+      val retour = runCatching { api.etatSession(precedente) }.getOrNull()
+      if (retour != null && !retour.termine) {
+        appliquer(retour.copy(dire = "On reprend. ${retour.titre}."))
+        return
+      }
+    }
+    val retour = api.creerSession(reglages.leconId)
+    sessionId = retour.sessionId
+    sessionLeconId = reglages.leconId
+    appliquer(retour)
+  }
+
+  private suspend fun tourApprenti() {
+    val id = sessionId ?: return
+    val retour = api.envoyerImage(id, lunettes.prendrePhoto())
+    appliquer(retour)
+    if (retour.termine) arreter()
+  }
+
+  private fun appliquer(retour: Retour) {
+    if (retour.ignore) return
+    dernierRetour = retour
+    val etape = if (retour.termine) "Leçon terminée" else "Étape ${retour.index + 1}/${retour.total} : ${retour.titre}"
+    val clip = retour.clipLunettesUrl?.let { api.urlComplete(it) }
+    lunettes.afficher(Ecran(etape, retour.afficher, clip))
+    retour.dire?.let { lunettes.dire(it) }
+    maj(etat.copy(etape = etape, message = retour.afficher))
+  }
+
+  suspend fun commande(commande: String) {
+    val id = sessionId ?: return
+    if (reglages.mode != Mode.APPRENTI) return
+    try {
+      appliquer(api.commande(id, commande))
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      signalerErreur(e)
+    }
+  }
+
+  /** Rejoue sur l'écran des lunettes le geste du maître pour l'étape en cours. */
+  fun montrerGeste() {
+    val clip = dernierRetour?.clipLunettesUrl
+    if (clip == null || !lunettes.montrerGeste(api.urlComplete(clip))) {
+      lunettes.dire("Je n'ai pas de vidéo du maître à te montrer pour cette étape.")
+    }
+  }
+
+  // --- Mode maître -----------------------------------------------------------------
+
+  private suspend fun demarrerMaitre() {
+    captureId = api.creerCapture(reglages.titreDemo, reglages.metierDemo)
+    val consigne =
+        "Je t'écoute. Explique tes gestes à voix haute. Dis « étape suivante » à chaque nouvelle étape, et « terminé » à la fin."
+    lunettes.afficher(Ecran("Démonstration", consigne))
+    lunettes.dire(consigne)
+    maj(etat.copy(etape = "Démonstration en cours", message = consigne))
+  }
+
+  private suspend fun tourMaitre() {
+    val id = captureId ?: return
+    api.envoyerImageCapture(id, lunettes.prendrePhoto())
+    imagesEnvoyees++
+    maj(etat.copy(etape = "Démonstration : $imagesEnvoyees images envoyées"))
+  }
+
+  suspend fun marquerEtape() {
+    val id = captureId ?: return
+    if (!etat.actif) return
+    try {
+      api.marquerEtape(id)
+      lunettes.dire("Étape suivante, c'est noté.")
+      maj(etat.copy(message = "Nouvelle étape marquée"))
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      signalerErreur(e)
+    }
+  }
+
+  suspend fun terminerDemonstration() {
+    val id = captureId ?: return
+    captureId = null
+    arreter()
+    try {
+      api.terminerCapture(id)
+      val fin = "Merci ! La leçon est en préparation, elle sera prête dans quelques minutes."
+      lunettes.afficher(Ecran("Démonstration terminée", fin))
+      lunettes.dire(fin)
+      maj(etat.copy(etape = "Démonstration terminée", message = fin))
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      signalerErreur(e)
+    }
+  }
+
+  // --- Voix ------------------------------------------------------------------------
+
+  /** Phrase entendue par les lunettes (transcription finale). */
+  suspend fun entendu(phrase: String) {
+    if (reglages.mode == Mode.MAITRE) {
+      when (commandeMaitre(phrase)) {
+        CommandeVocale.ETAPE_MAITRE -> marquerEtape()
+        CommandeVocale.TERMINER_MAITRE -> terminerDemonstration()
+        else -> {
+          val id = captureId
+          if (id != null && etat.actif && phrase.isNotBlank()) {
+            try {
+              api.parole(id, phrase.trim())
+            } catch (e: CancellationException) {
+              throw e
+            } catch (e: Exception) {
+              signalerErreur(e)
+            }
+          }
+        }
+      }
+      return
+    }
+    if (!etat.actif) return
+    when (commandeApprenti(phrase)) {
+      CommandeVocale.SUIVANT -> commande("suivant")
+      CommandeVocale.PRECEDENT -> commande("precedent")
+      CommandeVocale.REPETER -> commande("repeter")
+      CommandeVocale.RECOMMENCER -> commande("recommencer")
+      CommandeVocale.VOIR_GESTE -> montrerGeste()
+      CommandeVocale.PAUSE -> {
+        arreter()
+        lunettes.dire("Pause. Reprends depuis le téléphone.")
+      }
+      else -> Unit
+    }
+  }
+}

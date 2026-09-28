@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apprenti</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <div class="rangee">
+    <a class="bouton" href="/">← Leçons</a>
+    <h1 id="titre" style="margin: 0 8px">Chargement…</h1>
+    <span id="etape-num" class="badge pousse"></span>
+  </div>
+  <div class="progression"><div id="barre"></div></div>
+
+  <!-- Choix du mode tant qu'aucune session n'est ouverte -->
+  <section id="choix" class="carte cache" style="margin-top: 16px">
+    <h2>Comment veux-tu t'entraîner ?</h2>
+    <p class="vide" id="attente-lunettes">Lance la leçon sur tes lunettes : cette page les suivra automatiquement.</p>
+    <div class="rangee">
+      <button class="principal" id="demarrer-camera">Utiliser la caméra de cet appareil</button>
+    </div>
+    <p class="vide">Le mode caméra sert à tester sans lunettes : pose la tablette au-dessus du plan de travail.</p>
+  </section>
+
+  <section id="lecon" class="apprenti cache" style="margin-top: 16px">
+    <div class="carte demo">
+      <video id="clip" autoplay loop muted playsinline controls class="cache"></video>
+      <img id="image-ref" alt="Geste du maître" class="cache">
+      <p class="legende" id="legende">Le geste du maître pour cette étape</p>
+      <div class="rangee">
+        <button id="son">🔈 Son du maître</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="carte">
+        <div class="consigne" id="consigne"></div>
+        <div class="retour" id="retour"></div>
+        <div class="rangee" style="margin-top: 16px">
+          <button id="precedent">← Précédent</button>
+          <button id="repeter">Répéter</button>
+          <button id="suivant">Suivant →</button>
+          <button id="recommencer" class="pousse">Recommencer</button>
+        </div>
+        <label class="case">
+          <input type="checkbox" id="voix">
+          <span>Lire les conseils à voix haute sur cet appareil</span>
+        </label>
+      </div>
+      <div class="carte camera cache" id="bloc-camera">
+        <video id="camera" autoplay muted playsinline></video>
+        <p class="vide" id="etat-camera">Une image est envoyée à l'IA toutes les 3 secondes.</p>
+      </div>
+    </div>
+  </section>
+</main>
+<script type="module" src="apprenti.js"></script>
+</body>
+</html>

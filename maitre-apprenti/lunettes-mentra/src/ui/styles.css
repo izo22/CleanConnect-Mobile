@@ -1,0 +1,78 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fond: #faf6f0;
+  --surface: #ffffff;
+  --texte: #2b2118;
+  --doux: #7a6a5a;
+  --bord: #e8dccd;
+  --accent: #b5651d;
+  --accent-texte: #ffffff;
+  --alerte: #a8471c;
+}
+
+html.dark {
+  --fond: #1b1714;
+  --surface: #26201b;
+  --texte: #f3ebe2;
+  --doux: #b4a595;
+  --bord: #3a3029;
+  --accent: #e0914a;
+  --accent-texte: #1b1714;
+  --alerte: #f3a47a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+}
+
+.app { padding: 16px; max-width: 520px; margin: 0 auto; }
+
+h1 { font-size: 1.4rem; margin: 8px 0 16px; }
+
+.carte {
+  background: var(--surface);
+  border: 1px solid var(--bord);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+label { display: grid; gap: 4px; font-weight: 600; }
+label small { font-weight: 400; color: var(--doux); }
+
+input, select {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--bord);
+  background: var(--fond);
+  color: var(--texte);
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--bord);
+  background: var(--surface);
+  color: var(--texte);
+}
+button.principal, button.actif { background: var(--accent); border-color: var(--accent); color: var(--accent-texte); }
+button:disabled { opacity: 0.5; }
+
+.choix { display: flex; gap: 8px; flex-wrap: wrap; }
+.choix button { flex: 1; }
+
+.ligne { display: flex; justify-content: space-between; align-items: center; }
+.etape { font-weight: 600; margin: 0; }
+p { margin: 0; }
+.erreur { color: var(--alerte); }
+.aide { color: var(--doux); font-size: 0.9rem; padding: 0 4px; }

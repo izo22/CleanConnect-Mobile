@@ -1,0 +1,22 @@
+{
+  "name": "maitre-apprenti-cerveau",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Serveur qui transforme la vidéo d'un maître en leçon et corrige l'apprenti en direct.",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "start": "node src/server.ts",
+    "dev": "node --watch src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"test/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
+    "ffmpeg-static": "^5.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.0"
+  }
+}
