@@ -7,9 +7,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { creerSession, sessionsDeLecon, trouverSession } from "./coach.ts";
 import { CaptureMaitre, creerLeconDepuisVideo, demarrerCapture } from "./lecons.ts";
-import { cheminMedia, listerLecons, lireLecon, supprimerLecon } from "./store.ts";
-import type { Commande, Lecon } from "./types.ts";
-import { sequenceDepuisMorceau, type MorceauVideo } from "./video.ts";
+import { annoter, calculerMetriques, cheminImageSeance, lireSeance, seancesDeLecon } from "./journal.ts";
+import { cheminMedia, listerLecons, lireLecon, nouvelId, sauverLecon, supprimerLecon } from "./store.ts";
+import type { Avis, Commande, Lecon, Regle } from "./types.ts";
+import { cadenceValide, sequenceDepuisMorceau, type MorceauVideo } from "./video.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
 /** Si défini, chaque appel à l'API doit fournir cette clé (en-tête x-cle ou paramètre ?cle=). */
@@ -137,6 +138,25 @@ function resumeLecon(lecon: Lecon) {
   };
 }
 
+/** Modifie une leçon prête et transmet le changement aux séances en cours (règles, cadence). */
+async function modifierLecon(id: string, modifier: (lecon: Lecon) => void): Promise<Lecon> {
+  const lecon = await lireLecon(id);
+  if (!lecon) throw new ErreurHttp(404, "Leçon introuvable");
+  modifier(lecon);
+  await sauverLecon(lecon);
+  for (const enCours of sessionsDeLecon(id)) enCours.majLecon(lecon);
+  return lecon;
+}
+
+function nouvelleRegle(texte: unknown, etapeId: unknown, lecon: Lecon, source: string | null): Regle {
+  const propre = typeof texte === "string" ? texte.trim().slice(0, 500) : "";
+  if (!propre) throw new ErreurHttp(400, "La règle est vide");
+  if (etapeId !== null && !lecon.etapes.some((e) => e.id === etapeId)) throw new ErreurHttp(400, "Étape inconnue");
+  return { id: nouvelId(), etapeId: etapeId as string | null, texte: propre, creeLe: new Date().toISOString(), source };
+}
+
+const AVIS: Avis[] = ["juste", "fausse", "inutile", "ok", "manquee"];
+
 function session(id: string) {
   const trouvee = trouverSession(id);
   if (!trouvee) throw new ErreurHttp(404, "Session introuvable ou expirée");
@@ -201,6 +221,88 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
       await supprimerLecon(id);
       return envoyerJson(res, 200, { ok: true });
 
+    // --- Réglages et règles du maître ---------------------------------------
+    case "POST /lecons/:id/reglages": {
+      const { imagesParSeconde } = await lireJson(req);
+      const lecon = await modifierLecon(id, (l) => (l.imagesParSeconde = cadenceValide(imagesParSeconde)));
+      return envoyerJson(res, 200, { imagesParSeconde: lecon.imagesParSeconde });
+    }
+
+    case "POST /lecons/:id/regles": {
+      const { texte, etapeId } = await lireJson(req);
+      let regle: Regle | null = null;
+      await modifierLecon(id, (l) => {
+        regle = nouvelleRegle(texte, etapeId ?? null, l, null);
+        l.regles = [...(l.regles ?? []), regle];
+      });
+      return envoyerJson(res, 201, regle);
+    }
+
+    case "DELETE /lecons/:id/regles/:id": {
+      const regleId = segments[4];
+      const lecon = await modifierLecon(id, (l) => (l.regles = (l.regles ?? []).filter((r) => r.id !== regleId)));
+      return envoyerJson(res, 200, lecon.regles);
+    }
+
+    // --- Évaluation du pilote : journal, avis du maître, métriques ------------
+    case "GET /lecons/:id/seances": {
+      const seances = await seancesDeLecon(id);
+      return envoyerJson(
+        res,
+        200,
+        seances.map(({ seance, interventions }) => ({
+          ...seance,
+          analyses: interventions.length,
+          correctionsDites: interventions.filter((i) => i.verdict === "correction" && i.dit).length,
+          jugees: interventions.filter((i) => i.annotation).length,
+        })),
+      );
+    }
+
+    case "GET /lecons/:id/metriques": {
+      const lecon = await lireLecon(id);
+      if (!lecon) throw new ErreurHttp(404, "Leçon introuvable");
+      return envoyerJson(res, 200, calculerMetriques(lecon, await seancesDeLecon(id)));
+    }
+
+    case "GET /seances/:id": {
+      const seance = await lireSeance(id);
+      if (!seance) throw new ErreurHttp(404, "Séance introuvable");
+      return envoyerJson(res, 200, seance);
+    }
+
+    case "GET /seances/:id/images/:id": {
+      const chemin = cheminImageSeance(id, segments[4] ?? "");
+      if (!chemin) throw new ErreurHttp(404, "Image introuvable");
+      return envoyerFichier(req, res, chemin);
+    }
+
+    case "POST /seances/:id/interventions/:id/annotation": {
+      const corps = await lireJson(req);
+      if (!AVIS.includes(corps.avis as Avis)) throw new ErreurHttp(400, `Avis inconnu (attendu : ${AVIS.join(", ")})`);
+      const commentaire = typeof corps.commentaire === "string" ? corps.commentaire.trim().slice(0, 500) : "";
+      const lue = await lireSeance(id);
+      const intervention = lue?.interventions.find((i) => i.id === segments[4]);
+      if (!lue || !intervention) throw new ErreurHttp(404, "Intervention introuvable");
+
+      // Le maître corrige l'IA : son explication devient une règle de la leçon.
+      let regle: Regle | null = null;
+      if (corps.regle === true) {
+        await modifierLecon(lue.seance.leconId, (l) => {
+          const etapeId = corps.portee === "lecon" ? null : intervention.etapeId;
+          regle = nouvelleRegle(commentaire, etapeId, l, `${id}/${intervention.id}`);
+          l.regles = [...(l.regles ?? []), regle];
+        });
+      }
+      const annotee = await annoter(id, intervention.id, {
+        avis: corps.avis as Avis,
+        commentaire,
+        regleId: (regle as Regle | null)?.id ?? null,
+        le: new Date().toISOString(),
+      });
+      return envoyerJson(res, 200, { intervention: annotee, regle });
+    }
+
     // --- Démonstration du maître en direct avec les lunettes -----------------
     case "POST /captures": {
       const corps = await lireJson(req);
@@ -237,11 +339,11 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
     // --- Sessions d'apprentissage -------------------------------------------
     case "POST /sessions": {
-      const { leconId } = await lireJson(req);
+      const { leconId, apprenti } = await lireJson(req);
       const lecon = await lireLecon(String(leconId ?? ""));
       if (!lecon) throw new ErreurHttp(404, "Leçon introuvable");
       if (lecon.statut !== "prete") throw new ErreurHttp(409, "Cette leçon n'est pas encore prête");
-      return envoyerJson(res, 201, creerSession(lecon).etat);
+      return envoyerJson(res, 201, creerSession(lecon, typeof apprenti === "string" ? apprenti : "").etat);
     }
 
     case "GET /sessions": {
@@ -258,7 +360,7 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
       const enCours = session(id);
       let sequence: Buffer[];
       try {
-        sequence = await sequenceDepuisMorceau(await lireMorceau(req, url));
+        sequence = await sequenceDepuisMorceau(await lireMorceau(req, url), enCours.imagesParSeconde);
       } catch (erreur) {
         if (erreur instanceof ErreurHttp) throw erreur;
         throw new ErreurHttp(422, erreur instanceof Error ? erreur.message : String(erreur));

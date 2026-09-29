@@ -4,7 +4,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
-import { DecoupeurJpeg, FFMPEG, FILTRE_ANALYSE } from "./video.ts";
+import { DecoupeurJpeg, FFMPEG, filtreAnalyse } from "./video.ts";
 
 /** Ports réservés au direct, par exemple "1935-1944" (un port par direct en cours). */
 function plagePorts(): number[] {
@@ -14,8 +14,10 @@ function plagePorts(): number[] {
 const portsOccupes = new Set<number>();
 
 export interface OptionsDirect {
-  /** Appelé à chaque image extraite du direct (2 par seconde). */
+  /** Appelé à chaque image extraite du direct. */
   surImage: (image: Buffer) => void;
+  /** Cadence d'extraction des images (défaut : 2 par seconde). */
+  imagesParSeconde?: number;
   /** Si défini, la vidéo reçue est aussi enregistrée dans ce dossier (un fichier par connexion). */
   dossierEnregistrement?: string;
 }
@@ -52,7 +54,7 @@ export class ReceptionDirect {
     const args = [
       "-hide_banner", "-loglevel", "error",
       "-listen", "1", "-i", `rtmp://0.0.0.0:${this.port}/live/${this.cle}`,
-      "-map", "0:v:0", "-vf", FILTRE_ANALYSE, "-q:v", "5", "-f", "image2pipe", "-c:v", "mjpeg", "pipe:1",
+      "-map", "0:v:0", "-vf", filtreAnalyse(this.options.imagesParSeconde), "-q:v", "5", "-f", "image2pipe", "-c:v", "mjpeg", "pipe:1",
     ];
     if (this.options.dossierEnregistrement) {
       // Matroska résiste à une coupure brutale (au contraire du MP4).

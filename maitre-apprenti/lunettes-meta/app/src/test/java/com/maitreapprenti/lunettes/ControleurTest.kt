@@ -36,8 +36,8 @@ class ControleurTest {
 
     override suspend fun lecons() = emptyList<ResumeLecon>()
 
-    override suspend fun creerSession(leconId: String): Retour {
-      appels += "creerSession $leconId"
+    override suspend fun creerSession(leconId: String, apprenti: String): Retour {
+      appels += "creerSession $leconId${if (apprenti.isNotEmpty()) " $apprenti" else ""}"
       return Retour("s1", false, 0, 3, "Pesée", "Pèse.", null, null, "Pèse.", "Étape 1", false)
     }
 
@@ -140,6 +140,15 @@ class ControleurTest {
     assertEquals("https://cerveau.test/media/lecons/L1/clips/etape-1-lunettes.mp4", lunettes.ecrans.last().clipUrl)
     assertTrue(c.actif)
     c.arreter()
+  }
+
+  @Test
+  fun `apprenti - le prenom est transmis au cerveau`() = runTest {
+    val cerveau = FauxCerveau().apply { reponseVideo = { retour(0) } }
+    val c = controleur(cerveau, FaussesLunettes(), reglages.copy(apprenti = "Léa"))
+    c.demarrer()
+    c.arreter()
+    assertEquals("creerSession L1 Léa", cerveau.appels.first())
   }
 
   @Test

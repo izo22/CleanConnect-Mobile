@@ -127,7 +127,9 @@ async function demarrerCamera() {
     alert("Ce navigateur ne sait pas enregistrer de vidéo.");
     return;
   }
-  const session = await api("/sessions", { method: "POST", body: JSON.stringify({ leconId }) });
+  const apprenti = $("prenom").value.trim();
+  try { localStorage.setItem("prenom", apprenti); } catch {}
+  const session = await api("/sessions", { method: "POST", body: JSON.stringify({ leconId, apprenti }) });
   $("voix").checked = true;
   suivreSession(session.sessionId);
   afficher(session);
@@ -180,6 +182,7 @@ $("son").onclick = () => {
     $("titre").textContent = erreur.message;
     return;
   }
+  try { $("prenom").value = localStorage.getItem("prenom") ?? ""; } catch {}
   $("choix").classList.remove("cache");
   attendreLunettes();
 })();

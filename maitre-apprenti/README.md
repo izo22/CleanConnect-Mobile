@@ -79,6 +79,29 @@ Dans les deux cas, l'IA découpe la démonstration en étapes en quelques minute
 
 Le tuteur ne répète pas la même correction avant 15 secondes. Il passe à l'étape suivante quand il voit les critères de réussite. En cas de doute, il se tait : une fausse correction fait plus de mal qu'un silence.
 
+L'apprenti donne son prénom (tablette, page de réglages Mentra, appli Meta) pour que le maître suive ses séances.
+
+## 3 bis. Évaluer le pilote : le maître juge et corrige l'IA
+
+Page d'accueil → « Évaluer les séances » (ou `http://<cerveau>/evaluation.html?lecon=<id>`).
+
+- **Journal :** chaque analyse de l'IA est gardée, silences compris. Pour chacune, on garde les 8 images vues, le verdict, le message, s'il a été dit, l'étape, le délai de réponse et le coût.
+- **Avis du maître :**
+  - sur une correction : juste, fausse ou inutile ;
+  - sur une validation d'étape : juste ou validée à tort ;
+  - sur un silence : rien à dire ou erreur ratée.
+- **Le maître corrige l'IA :** pour une correction fausse ou une erreur ratée, il explique pourquoi. Son explication peut devenir une **règle** (pour l'étape ou toute la leçon), que l'IA applique dès l'analyse suivante, y compris dans les séances en cours. Les règles se gèrent aussi à la main sur la même page.
+- **Mesures du pilote :**
+  - corrections justes, fausses et inutiles ;
+  - erreurs ratées ;
+  - séances terminées ;
+  - temps médian pour réussir chaque étape seul ;
+  - coût IA par séance ;
+  - délai de réponse de l'IA.
+- **Cadence d'analyse :** de 2 à 5 images par seconde, leçon par leçon. À 2 images par seconde, l'IA voit les 4 dernières secondes ; à 4, les 2 dernières, pour les gestes rapides. Le coût par analyse ne change pas.
+
+Les séances sont rangées dans `donnees/seances/`. Les images des apprentis ne sont accessibles qu'avec la clé d'accès.
+
 ## 4. Installer l'appli Mentra
 
 Mentra propose deux façons de faire une appli. On utilise l'appli **« cloud »** (SDK `@mentra/sdk`), parce que c'est celle qui permet aujourd'hui d'envoyer la vidéo des lunettes en direct. Les « mini-apps » locales ne le permettent pas encore.
@@ -120,9 +143,9 @@ Sur les **Ray-Ban Display**, l'écran montre l'étape et la correction, avec les
 ## Tests
 
 ```bash
-cd cerveau && npm test && npm run typecheck    # 27 tests
-cd lunettes-mentra && bun test && bun run typecheck   # 8 tests, dont l'intégration avec le cerveau
-cd lunettes-meta && ./gradlew test             # 15 tests (contrôleur + découpage vidéo HEVC)
+cd cerveau && npm test && npm run typecheck    # 31 tests
+cd lunettes-mentra && bun test && bun run typecheck   # 9 tests, dont l'intégration avec le cerveau
+cd lunettes-meta && ./gradlew test             # 16 tests (contrôleur + découpage vidéo HEVC)
 ```
 
 ## Ce qui a été vérifié, et ce qui ne l'a pas été
@@ -147,6 +170,6 @@ Pas encore vérifié :
 
 ## Coûts et vie privée
 
-- **Chaque séquence analysée = un appel à Claude avec 16 images** (8 du maître, mises en cache pendant l'étape, et 8 de l'apprenti), soit environ une analyse toutes les 2 à 5 secondes par apprenti. Les images sont réduites à 640 pixels de large pour limiter le coût. Mesure la consommation réelle pendant les premiers essais.
+- **Chaque séquence analysée = un appel à Claude avec 16 images** (8 du maître, mises en cache pendant l'étape, et 8 de l'apprenti), soit environ une analyse toutes les 2 à 5 secondes par apprenti. Les images sont réduites à 640 pixels de large pour limiter le coût. Le coût réel de chaque analyse est calculé et affiché sur la page d'évaluation.
 - La vidéo part vers le serveur, puis les images extraites partent vers l'API Claude. Préviens les personnes filmées et évite de filmer des clients ou des documents.
 - Les clips et images des leçons (`/media/...`) ne sont pas protégés par `CLE_ACCES`. Leurs adresses sont difficiles à deviner, mais ne sont pas secrètes. Les adresses de direct RTMP contiennent une clé aléatoire propre à chaque direct.

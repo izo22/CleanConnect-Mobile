@@ -38,6 +38,7 @@ async function carteLecon(lecon) {
           afficherLecons();
         },
       }, ouvertes.has(lecon.id) ? "Masquer les étapes" : "Voir les étapes"),
+      el("a", { classe: "bouton", href: `evaluation.html?lecon=${lecon.id}` }, "Évaluer les séances"),
     );
   }
   actions.append(

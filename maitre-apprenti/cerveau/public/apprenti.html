@@ -20,7 +20,9 @@
   <section id="choix" class="carte cache" style="margin-top: 16px">
     <h2>Comment veux-tu t'entraîner ?</h2>
     <p class="vide" id="attente-lunettes">Lance la leçon sur tes lunettes : cette page les suivra automatiquement.</p>
-    <div class="rangee">
+    <label for="prenom">Ton prénom <small>(pour que le maître suive tes progrès)</small></label>
+    <input id="prenom" type="text" autocomplete="given-name" style="max-width: 320px">
+    <div class="rangee" style="margin-top: 12px">
       <button class="principal" id="demarrer-camera">Utiliser la caméra de cet appareil</button>
     </div>
     <p class="vide">Le mode caméra sert à tester sans lunettes : pose la tablette au-dessus du plan de travail, elle filme en continu.</p>

@@ -3,12 +3,13 @@
 import { readFile } from "node:fs/promises";
 import { ReceptionDirect } from "./direct.ts";
 import { evaluerGeste, type ImageIA } from "./ia.ts";
+import { journalDisque, nouvelleSeance, type JournalSeance } from "./journal.ts";
 import { cheminMedia, nouvelId, urlMedia } from "./store.ts";
-import type { Commande, Lecon, Retour, Verdict } from "./types.ts";
-import { IMAGES_PAR_SECONDE, IMAGES_PAR_SEQUENCE } from "./video.ts";
+import type { Commande, Lecon, Retour, TypeEvenement, Verdict } from "./types.ts";
+import { cadenceValide, IMAGES_PAR_SEQUENCE } from "./video.ts";
 
 /** En direct, on relance une analyse dès que 2 secondes nouvelles sont arrivées (et que l'IA est libre). */
-const NOUVELLES_IMAGES_AVANT_ANALYSE = 2 * IMAGES_PAR_SECONDE;
+const SECONDES_NOUVELLES_AVANT_ANALYSE = 2;
 /** Nombre de conseils déjà donnés que l'IA garde en mémoire pendant une étape. */
 const CONSEILS_EN_MEMOIRE = 4;
 /** Délai avant de répéter à voix haute un message identique. */
@@ -27,9 +28,13 @@ async function chargerImageDisque(leconId: string, fichier: string): Promise<Buf
   return readFile(chemin);
 }
 
+/** Journal qui n'enregistre rien (tests, ou séance sans suivi). */
+const SANS_JOURNAL: JournalSeance = { evenement: () => {}, intervention: () => {} };
+
 export class SessionApprenti {
   readonly id = nouvelId();
-  readonly lecon: Lecon;
+  lecon: Lecon;
+  readonly apprenti: string;
   derniereActivite: number;
   private index = 0;
   private termine = false;
@@ -46,15 +51,25 @@ export class SessionApprenti {
   private readonly evaluateur: Evaluateur;
   private readonly chargerImage: ChargeurImage;
   private readonly maintenant: () => number;
+  private readonly journal: JournalSeance;
 
   constructor(
     lecon: Lecon,
-    options: { evaluateur?: Evaluateur; chargerImage?: ChargeurImage; maintenant?: () => number } = {},
+    options: {
+      evaluateur?: Evaluateur;
+      chargerImage?: ChargeurImage;
+      maintenant?: () => number;
+      apprenti?: string;
+      /** Fabrique le journal de la séance (par défaut : aucun). */
+      journal?: (session: SessionApprenti) => JournalSeance;
+    } = {},
   ) {
     if (lecon.statut !== "prete" || lecon.etapes.length === 0) {
       throw new Error("Cette leçon n'est pas encore prête");
     }
     this.lecon = lecon;
+    this.apprenti = options.apprenti?.trim() || "Anonyme";
+    this.journal = options.journal?.(this) ?? SANS_JOURNAL;
     this.evaluateur = options.evaluateur ?? evaluerGeste;
     this.chargerImage = options.chargerImage ?? chargerImageDisque;
     this.maintenant = options.maintenant ?? Date.now;
@@ -68,6 +83,26 @@ export class SessionApprenti {
 
   private get etape() {
     return this.lecon.etapes[this.index];
+  }
+
+  /** Cadence d'analyse de la leçon (images par seconde). */
+  get imagesParSeconde(): number {
+    return cadenceValide(this.lecon.imagesParSeconde);
+  }
+
+  /** Règles du maître qui s'appliquent à l'étape en cours (celles de l'étape et celles de toute la leçon). */
+  private reglesEtape(): string[] {
+    return (this.lecon.regles ?? []).filter((r) => r.etapeId === null || r.etapeId === this.etape.id).map((r) => r.texte);
+  }
+
+  /** Prend en compte une leçon modifiée (nouvelle règle du maître, cadence) sans interrompre la séance. */
+  majLecon(lecon: Lecon): void {
+    if (lecon.id !== this.lecon.id || lecon.etapes.length !== this.lecon.etapes.length) return;
+    this.lecon = lecon;
+  }
+
+  private noter(type: TypeEvenement): void {
+    this.journal.evenement(type, this.etape.id);
   }
 
   private annonceEtape(): string {
@@ -109,6 +144,7 @@ export class SessionApprenti {
 
   private changerEtape(index: number): void {
     this.index = index;
+    this.noter("etape");
     this.imagesDirect = [];
     this.nouvellesImages = 0;
     this.conseils = [];
@@ -150,8 +186,10 @@ export class SessionApprenti {
 
     const sequence = images.slice(-IMAGES_PAR_SEQUENCE);
     const indexAuDepart = this.index;
+    const etapeAuDepart = this.etape;
     this.analyseEnCours = true;
     let verdict: Verdict;
+    const debut = this.maintenant();
     try {
       verdict = await this.evaluateur({
         titreLecon: this.lecon.titre,
@@ -160,6 +198,8 @@ export class SessionApprenti {
         imagesMaitre: await this.referencesMaitre(),
         imagesApprenti: sequence.map((data) => ({ data })),
         derniersConseils: this.conseils,
+        regles: this.reglesEtape(),
+        imagesParSeconde: this.imagesParSeconde,
       });
     } catch (erreur) {
       const message = erreur instanceof Error ? erreur.message : String(erreur);
@@ -172,6 +212,26 @@ export class SessionApprenti {
     // L'apprenti a changé d'étape (commande) pendant l'analyse : ce verdict ne vaut plus.
     if (this.index !== indexAuDepart || this.termine) return this.dernierRetour;
 
+    const retour = this.appliquerVerdict(verdict);
+    // Chaque analyse est gardée, silences compris, pour que le maître puisse la juger.
+    this.journal.intervention(
+      {
+        etapeId: etapeAuDepart.id,
+        etapeNumero: etapeAuDepart.numero,
+        t: new Date(debut).toISOString(),
+        verdict: verdict.verdict,
+        message: verdict.message,
+        dit: retour.dire !== null && verdict.verdict !== "en_cours",
+        pointsValides: verdict.pointsValides,
+        latenceMs: this.maintenant() - debut,
+        usage: verdict.usage ?? null,
+      },
+      sequence,
+    );
+    return retour;
+  }
+
+  private appliquerVerdict(verdict: Verdict): Retour {
     switch (verdict.verdict) {
       case "etape_reussie":
         return this.etapeReussie(verdict.message || "Bravo !");
@@ -197,8 +257,10 @@ export class SessionApprenti {
   }
 
   private etapeReussie(bravo: string): Retour {
+    this.noter("etape_reussie");
     if (this.index === this.lecon.etapes.length - 1) {
       this.termine = true;
+      this.noter("termine");
       const fin = `${bravo} Tu as terminé « ${this.lecon.titre} ».`;
       return this.publier(this.retour({ verdict: "etape_reussie", afficher: fin, dire: fin }));
     }
@@ -213,7 +275,10 @@ export class SessionApprenti {
 
   /** Ouvre un point de réception vidéo en direct pour cette session. */
   ouvrirDirect(): ReceptionDirect {
-    this.direct ??= new ReceptionDirect({ surImage: (image) => this.imageDirect(image) });
+    this.direct ??= new ReceptionDirect({
+      surImage: (image) => this.imageDirect(image),
+      imagesParSeconde: this.imagesParSeconde,
+    });
     return this.direct;
   }
 
@@ -227,7 +292,7 @@ export class SessionApprenti {
     this.derniereActivite = this.maintenant();
     this.imagesDirect = [...this.imagesDirect, image].slice(-IMAGES_PAR_SEQUENCE);
     this.nouvellesImages++;
-    if (!this.analyseEnCours && this.nouvellesImages >= NOUVELLES_IMAGES_AVANT_ANALYSE) {
+    if (!this.analyseEnCours && this.nouvellesImages >= SECONDES_NOUVELLES_AVANT_ANALYSE * this.imagesParSeconde) {
       this.nouvellesImages = 0;
       // Les abonnés (lunettes, tablette) reçoivent le retour par le flux d'événements.
       void this.analyserSequence(this.imagesDirect);
@@ -237,7 +302,10 @@ export class SessionApprenti {
   commande(commande: Commande): Retour {
     switch (commande) {
       case "suivant":
-        if (this.index < this.lecon.etapes.length - 1) this.changerEtape(this.index + 1);
+        if (this.index < this.lecon.etapes.length - 1) {
+          this.noter("etape_passee");
+          this.changerEtape(this.index + 1);
+        }
         break;
       case "precedent":
         if (this.index > 0) this.changerEtape(this.index - 1);
@@ -271,9 +339,13 @@ function oublierSessionsInactives(): void {
   }
 }
 
-export function creerSession(lecon: Lecon): SessionApprenti {
+/** Démarre une séance, suivie dans le journal (pour l'évaluation par le maître). */
+export function creerSession(lecon: Lecon, apprenti = ""): SessionApprenti {
   oublierSessionsInactives();
-  const session = new SessionApprenti(lecon);
+  const session = new SessionApprenti(lecon, {
+    apprenti,
+    journal: (s) => journalDisque(nouvelleSeance(s.id, lecon, s.apprenti, lecon.etapes[0].id)),
+  });
   sessions.set(session.id, session);
   return session;
 }

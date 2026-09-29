@@ -41,7 +41,7 @@ export class Cerveau {
   }
 
   lecons = () => this.appel<ResumeLecon[]>("GET", "/lecons")
-  creerSession = (leconId: string) => this.appel<Retour>("POST", "/sessions", {leconId})
+  creerSession = (leconId: string, apprenti = "") => this.appel<Retour>("POST", "/sessions", {leconId, apprenti})
   etatSession = (id: string) => this.appel<Retour>("GET", `/sessions/${id}`)
   commande = (id: string, commande: string) => this.appel<Retour>("POST", `/sessions/${id}/commande`, {commande})
   ouvrirDirect = (id: string) => this.appel<{rtmpUrl: string}>("POST", `/sessions/${id}/direct`, {})

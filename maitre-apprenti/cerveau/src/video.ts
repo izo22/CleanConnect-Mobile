@@ -75,8 +75,13 @@ export class DecoupeurJpeg {
   }
 }
 
-/** Filtre ffmpeg qui produit les images d'analyse (cadence et largeur fixes). */
-export const FILTRE_ANALYSE = `fps=${IMAGES_PAR_SECONDE},scale=${LARGEUR_ANALYSE}:-2`;
+/** Filtre ffmpeg qui produit les images d'analyse, à la cadence de la leçon. */
+export const filtreAnalyse = (imagesParSeconde = IMAGES_PAR_SECONDE) =>
+  `fps=${imagesParSeconde},scale=${LARGEUR_ANALYSE}:-2`;
+
+/** Cadence d'analyse autorisée : 2 (gestes lents, 4 s vues) à 5 (gestes rapides, 1,6 s vue). */
+export const cadenceValide = (n: unknown): number =>
+  typeof n === "number" && Number.isInteger(n) && n >= 2 && n <= 5 ? n : IMAGES_PAR_SECONDE;
 
 export async function dureeVideo(fichier: string): Promise<number> {
   // ffmpeg sans sortie termine en erreur, mais affiche la durée dans stderr.
@@ -113,10 +118,10 @@ function optionsEntree(morceau: MorceauVideo): string[] {
 }
 
 /**
- * Transforme un morceau de vidéo en séquence de geste : les 8 dernières images (4 dernières
- * secondes) à 2 images par seconde, prêtes pour l'IA.
+ * Transforme un morceau de vidéo en séquence de geste : les 8 dernières images à la cadence
+ * demandée (2 images/s = 4 dernières secondes ; 4 images/s = 2 dernières secondes), prêtes pour l'IA.
  */
-export async function sequenceDepuisMorceau(morceau: MorceauVideo): Promise<Buffer[]> {
+export async function sequenceDepuisMorceau(morceau: MorceauVideo, imagesParSeconde = IMAGES_PAR_SECONDE): Promise<Buffer[]> {
   // Passage par un fichier : un MP4 ne se lit pas toujours en flux (index à la fin du fichier).
   const dossier = await mkdtemp(path.join(tmpdir(), "sequence-"));
   try {
@@ -124,7 +129,7 @@ export async function sequenceDepuisMorceau(morceau: MorceauVideo): Promise<Buff
     await writeFile(entree, morceau.donnees);
     const sortie = await ffmpegVersMemoire([
       ...optionsEntree(morceau), "-i", entree,
-      "-an", "-vf", FILTRE_ANALYSE, "-q:v", "5", "-f", "image2pipe", "-c:v", "mjpeg", "pipe:1",
+      "-an", "-vf", filtreAnalyse(imagesParSeconde), "-q:v", "5", "-f", "image2pipe", "-c:v", "mjpeg", "pipe:1",
     ]);
     const images = new DecoupeurJpeg().ajouter(sortie);
     if (images.length === 0) throw new Error("Aucune image lisible dans ce morceau de vidéo");

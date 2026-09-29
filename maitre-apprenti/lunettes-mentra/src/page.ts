@@ -49,6 +49,7 @@ export function pageReglages(reglages: Reglages, lecons: ResumeLecon[], erreur: 
     <label id="bloc-lecon">Leçon
       <select name="leconId"><option value="">La plus récente</option>${options}</select>
     </label>
+    <label id="bloc-apprenti">Ton prénom <input name="apprenti" value="${echapper(reglages.apprenti)}" autocomplete="given-name"></label>
     <label id="bloc-titre">Titre de la démonstration <input name="titreDemo" value="${echapper(reglages.titreDemo)}" placeholder="Croissant au beurre"></label>
     <label id="bloc-metier">Métier <input name="metierDemo" value="${echapper(reglages.metierDemo)}" placeholder="Boulangerie"></label>
     <button>Enregistrer</button>
@@ -62,6 +63,7 @@ export function pageReglages(reglages: Reglages, lecons: ResumeLecon[], erreur: 
   const maj = () => {
     const maitre = f.mode.value === "maitre";
     document.getElementById("bloc-lecon").hidden = maitre;
+    document.getElementById("bloc-apprenti").hidden = maitre;
     document.getElementById("bloc-titre").hidden = !maitre;
     document.getElementById("bloc-metier").hidden = !maitre;
   };

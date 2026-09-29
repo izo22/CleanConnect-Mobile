@@ -3,6 +3,7 @@
 
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer, type IncomingMessage } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -210,6 +211,55 @@ test("apprenti : un morceau de vidéo → séquence de 8 images comparée au ma�
   // Avant le point de cache : les 8 images du maître ; après : les 8 dernières de l'apprenti.
   assert.equal(contenu.slice(0, indexCache + 1).filter((b: any) => b.type === "image").length, 8);
   assert.equal(contenu.slice(indexCache + 1).filter((b: any) => b.type === "image").length, 8);
+});
+
+test("le maître juge une correction fausse : sa règle part à l'IA dès l'analyse suivante", async () => {
+  const session = (await postJson("/sessions", { leconId, apprenti: "Léa" })).corps;
+  const morceau = path.join(dossier, "apprenti-2.mp4");
+  await executer(FFMPEG, [
+    "-hide_banner", "-y", "-f", "lavfi", "-i", "testsrc2=duration=4:size=640x360:rate=25",
+    "-c:v", "libx264", "-pix_fmt", "yuv420p", morceau,
+  ]);
+  const envoyer = () =>
+    api(`/sessions/${session.sessionId}/video`, { method: "POST", headers: { "content-type": "video/mp4" }, body: readFileSync(morceau) });
+  await envoyer();
+  await new Promise((ok) => setTimeout(ok, 150)); // écriture du journal
+
+  // La séance est dans le journal, avec le prénom, les 8 images et le verdict.
+  const seances = (await api(`/lecons/${leconId}/seances`)).corps;
+  const seance = seances.find((s: any) => s.id === session.sessionId);
+  assert.equal(seance.apprenti, "Léa");
+  const { interventions } = (await api(`/seances/${session.sessionId}`)).corps;
+  assert.equal(interventions.length, 1);
+  assert.equal(interventions[0].images.length, 8);
+  assert.equal(interventions[0].verdict, "correction");
+  const image = await fetch(`${base}/api/seances/${session.sessionId}/images/${interventions[0].images[0]}`);
+  assert.equal(image.headers.get("content-type"), "image/jpeg");
+
+  // « Fausse », avec une explication qui devient une règle de l'étape.
+  const avis = await postJson(`/seances/${session.sessionId}/interventions/${interventions[0].id}/annotation`, {
+    avis: "fausse", commentaire: "Rouler depuis le bout est aussi correct.", regle: true, portee: "etape",
+  });
+  assert.equal(avis.statut, 200);
+  assert.equal(avis.corps.regle.etapeId, "etape-1");
+  assert.equal(avis.corps.intervention.annotation.regleId, avis.corps.regle.id);
+
+  // Cadence rapide : l'IA verra 4 images par seconde.
+  assert.equal((await postJson(`/lecons/${leconId}/reglages`, { imagesParSeconde: 4 })).corps.imagesParSeconde, 4);
+
+  const avant = requetes.length;
+  await envoyer();
+  const texte = JSON.stringify(requetes[avant].corps.messages);
+  assert.ok(texte.includes("Rouler depuis le bout est aussi correct."), "la règle du maître est envoyée à l'IA");
+  assert.ok(texte.includes("4 par seconde"));
+
+  const m = (await api(`/lecons/${leconId}/metriques`)).corps;
+  assert.equal(m.correctionsJugees, 1);
+  assert.equal(m.tauxFausses, 1);
+  assert.ok(m.analyses >= 2);
+
+  // On revient à la cadence normale pour les tests suivants.
+  await postJson(`/lecons/${leconId}/reglages`, { imagesParSeconde: 2 });
 });
 
 test("apprenti en direct (RTMP, lunettes Mentra) : analyse continue, retours dans le flux d'événements", async () => {

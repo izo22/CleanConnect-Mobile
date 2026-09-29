@@ -1,7 +1,7 @@
 // Appels à Claude : construire une leçon à partir des images du maître, puis juger l'apprenti.
 
 import Anthropic from "@anthropic-ai/sdk";
-import type { Etape, Parole, TypeVerdict, Verdict } from "./types.ts";
+import type { Consommation, Etape, Parole, TypeVerdict, Verdict } from "./types.ts";
 
 const MODELE = process.env.MODELE_IA ?? "claude-opus-5-5";
 
@@ -169,7 +169,7 @@ const SCHEMA_VERDICT = {
   additionalProperties: false,
 } as const;
 
-const SYSTEME_TUTEUR = `Tu es le tuteur d'un apprenti artisan. Il porte des lunettes connectées qui le filment en continu, vu de ses yeux. Tu reçois des extraits vidéo sous forme d'images successives : le déroulé de l'étape en cours chez le maître, puis les dernières secondes de l'apprenti (2 images par seconde). Tu compares ses gestes à ceux du maître et tu lui parles à l'oreille.
+const SYSTEME_TUTEUR = `Tu es le tuteur d'un apprenti artisan. Il porte des lunettes connectées qui le filment en continu, vu de ses yeux. Tu reçois des extraits vidéo sous forme d'images successives : le déroulé de l'étape en cours chez le maître, puis les dernières secondes de l'apprenti. Tu compares ses gestes à ceux du maître et tu lui parles à l'oreille. Tu es l'interprète du maître : quand il a donné des règles, elles priment sur ton propre jugement.
 
 Réponds avec un verdict :
 - "correction" : une erreur est clairement visible dans le geste ou le résultat (mauvais mouvement, mauvais ordre, mauvais outil, geste trop brusque ou trop timide, forme ratée). Le message dit quoi faire, pas ce qui ne va pas : une seule correction, la plus importante, à l'impératif, en tutoyant, en 15 mots maximum. Exemple : « Roule du centre vers les bords, en écartant les mains. »
@@ -185,7 +185,7 @@ Règles :
 - Si l'apprenti est en train d'appliquer une correction déjà donnée, ne la répète pas.
 - Dans points_valides, liste les points de contrôle que tu vois respectés dans l'extrait.`;
 
-function descriptionEtape(titreLecon: string, etape: Etape, total: number): string {
+function descriptionEtape(titreLecon: string, etape: Etape, total: number, regles: string[]): string {
   const liste = (titre: string, elements: string[]) =>
     elements.length ? `${titre} :\n${elements.map((e) => `- ${e}`).join("\n")}\n` : "";
   return (
@@ -194,6 +194,7 @@ function descriptionEtape(titreLecon: string, etape: Etape, total: number): stri
     liste("Points de contrôle", etape.pointsDeControle) +
     liste("Erreurs fréquentes", etape.erreursFrequentes) +
     liste("Critères de réussite", etape.criteresDeReussite) +
+    liste("Règles du maître (elles corrigent tes erreurs passées : respecte-les avant tout)", regles) +
     "Déroulé de cette étape chez le maître (images successives, de la plus ancienne à la plus récente) :"
   );
 }
@@ -205,9 +206,12 @@ export async function evaluerGeste(options: {
   imagesMaitre: ImageIA[];
   imagesApprenti: ImageIA[];
   derniersConseils: string[];
+  /** Règles du maître qui s'appliquent à cette étape. */
+  regles: string[];
+  imagesParSeconde: number;
 }): Promise<Verdict> {
   const referenceMaitre: Anthropic.Beta.BetaContentBlockParam[] = [
-    { type: "text", text: descriptionEtape(options.titreLecon, options.etape, options.totalEtapes) },
+    { type: "text", text: descriptionEtape(options.titreLecon, options.etape, options.totalEtapes, options.regles) },
     ...options.imagesMaitre.map(blocImage),
   ];
   // Tout ce qui précède ce point est identique pendant toute l'étape : on le met en cache.
@@ -237,7 +241,7 @@ export async function evaluerGeste(options: {
             { type: "text", text: conseils },
             {
               type: "text",
-              text: `Les ${options.imagesApprenti.length} dernières images de l'apprenti (2 par seconde, de la plus ancienne à la plus récente) :`,
+              text: `Les ${options.imagesApprenti.length} dernières images de l'apprenti (${options.imagesParSeconde} par seconde, de la plus ancienne à la plus récente) :`,
             },
             ...options.imagesApprenti.map(blocImage),
             { type: "text", text: "Ton verdict sur ce que fait l'apprenti ?" },
@@ -253,5 +257,11 @@ export async function evaluerGeste(options: {
     message: string;
     points_valides: string[];
   };
-  return { verdict: brut.verdict, message: brut.message.trim(), pointsValides: brut.points_valides };
+  const usage: Consommation = {
+    entree: reponse.usage.input_tokens,
+    sortie: reponse.usage.output_tokens,
+    cacheLecture: reponse.usage.cache_read_input_tokens ?? 0,
+    cacheEcriture: reponse.usage.cache_creation_input_tokens ?? 0,
+  };
+  return { verdict: brut.verdict, message: brut.message.trim(), pointsValides: brut.points_valides, usage };
 }

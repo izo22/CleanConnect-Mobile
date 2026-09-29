@@ -25,6 +25,8 @@ data class Reglages(
     val cle: String = "",
     val mode: Mode = Mode.APPRENTI,
     val leconId: String = "",
+    /** Prénom de l'apprenti, pour que le maître suive ses séances. */
+    val apprenti: String = "",
     val titreDemo: String = "",
     val metierDemo: String = "",
 )
@@ -163,7 +165,7 @@ class Controleur(
         return
       }
     }
-    val retour = api.creerSession(reglages.leconId)
+    val retour = api.creerSession(reglages.leconId, reglages.apprenti)
     sessionId = retour.sessionId
     sessionLeconId = reglages.leconId
     appliquer(retour)

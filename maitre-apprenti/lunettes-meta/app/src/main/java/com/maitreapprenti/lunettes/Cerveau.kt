@@ -53,7 +53,7 @@ private fun JSONObject.optChaine(nom: String): String? =
 interface ApiCerveau {
   suspend fun lecons(): List<ResumeLecon>
 
-  suspend fun creerSession(leconId: String): Retour
+  suspend fun creerSession(leconId: String, apprenti: String): Retour
 
   suspend fun etatSession(sessionId: String): Retour
 
@@ -126,8 +126,9 @@ class CerveauHttp(urlCerveau: String, private val cle: String) : ApiCerveau {
     }
   }
 
-  override suspend fun creerSession(leconId: String) =
-      Retour.depuisJson(JSONObject(post("/sessions", JSONObject().put("leconId", leconId))))
+  override suspend fun creerSession(leconId: String, apprenti: String) =
+      Retour.depuisJson(
+          JSONObject(post("/sessions", JSONObject().put("leconId", leconId).put("apprenti", apprenti))))
 
   override suspend fun etatSession(sessionId: String) =
       Retour.depuisJson(JSONObject(appel("GET", "/sessions/$sessionId")))

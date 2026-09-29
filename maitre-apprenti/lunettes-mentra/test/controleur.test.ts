@@ -93,6 +93,18 @@ describe("mode apprenti", () => {
     expect(f.appels).toContain("POST /sessions")
   })
 
+  test("transmet le prénom de l'apprenti au cerveau", async () => {
+    const {lunettes} = fausseLunettes()
+    let corpsSession: any = null
+    const f = fauxCerveau({
+      "POST /sessions": (corps) => ((corpsSession = corps), retour(0)),
+      "POST /sessions/:id/direct": () => ({rtmpUrl: "rtmp://x/live/1"}),
+    })
+    const c = new Controleur(lunettes, f.cerveau, {...REGLAGES_PAR_DEFAUT, leconId: "L1", apprenti: "Léa"}, () => {})
+    await c.demarrer()
+    expect(corpsSession).toEqual({leconId: "L1", apprenti: "Léa"})
+  })
+
   test("pause puis reprise : même session, vidéo relancée", async () => {
     const {lunettes, dit, videos, arrets} = fausseLunettes()
     const f = fauxCerveau({

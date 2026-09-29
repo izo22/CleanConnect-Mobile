@@ -129,3 +129,40 @@ button:disabled { opacity: 0.5; cursor: default; }
 label.case { display: flex; gap: 8px; align-items: center; font-weight: 400; margin-top: 16px; }
 
 .cache { display: none !important; }
+
+/* --- Page d'évaluation --- */
+
+select { width: 100%; padding: 10px 12px; border: 1px solid var(--bord); border-radius: 10px; background: var(--fond); color: var(--texte); font: inherit; }
+section > h2 { margin-top: 28px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+.grille-mesures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+@media (max-width: 760px) { .grille-mesures { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.mesure { background: var(--surface); border: 1px solid var(--bord); border-radius: var(--rayon); padding: 16px; }
+.mesure .valeur { font-size: 1.8rem; font-weight: 700; }
+.mesure .libelle { font-weight: 600; }
+.mesure .detail { color: var(--doux); font-size: 0.85rem; }
+
+.tableau { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.tableau th, .tableau td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--bord); }
+.tableau th { color: var(--doux); font-weight: 600; }
+
+.deux-colonnes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+@media (max-width: 760px) { .deux-colonnes { grid-template-columns: 1fr; } }
+
+.regles { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 8px; }
+.regles li { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--bord); }
+
+.liste-seances { display: grid; gap: 8px; }
+.seance { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; text-align: left; width: 100%; font-weight: 400; }
+.seance.choisie { border-color: var(--accent); border-width: 2px; }
+
+.intervention { margin-top: 12px; }
+.intervention .message { font-size: 1.15rem; margin: 10px 0; }
+.images { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin: 10px 0; }
+@media (max-width: 760px) { .images { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.images img { width: 100%; border-radius: 6px; background: #000; aspect-ratio: 16 / 9; object-fit: cover; }
+.avis button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-texte); }
+.detail-avis { margin-top: 12px; }
+.badge.correction, .badge.pas_visible { background: var(--alerte-fond); color: var(--alerte); }
+.badge.etape_reussie { background: var(--ok-fond); color: var(--ok); }

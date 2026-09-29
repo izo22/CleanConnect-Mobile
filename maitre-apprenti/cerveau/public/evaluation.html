@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Évaluation</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <a class="bouton" href="/">← Leçons</a>
+  <h1 id="titre" style="margin-top: 16px">Chargement…</h1>
+  <p class="sous-titre">Juge chaque intervention de l'IA. Tes avis alimentent les mesures du pilote, et tes explications deviennent des règles que l'IA applique aussitôt.</p>
+
+  <section>
+    <h2>Mesures du pilote</h2>
+    <div class="grille-mesures" id="mesures"></div>
+    <div class="carte" style="overflow-x: auto">
+      <table class="tableau" id="par-etape"></table>
+    </div>
+  </section>
+
+  <div class="deux-colonnes">
+    <section class="carte">
+      <h2>Cadence d'analyse</h2>
+      <label for="cadence">Images par seconde envoyées à l'IA</label>
+      <select id="cadence">
+        <option value="2">2 — l'IA voit les 4 dernières secondes (gestes lents)</option>
+        <option value="3">3 — les 2,7 dernières secondes</option>
+        <option value="4">4 — les 2 dernières secondes (gestes rapides)</option>
+        <option value="5">5 — les 1,6 dernières secondes (gestes très rapides)</option>
+      </select>
+      <p class="vide">Chaque analyse envoie toujours 8 images : le coût par analyse ne change pas, seule la durée observée change.</p>
+    </section>
+
+    <section class="carte">
+      <h2>Règles du maître</h2>
+      <ul class="regles" id="regles"></ul>
+      <form id="form-regle">
+        <label for="texte-regle">Nouvelle règle</label>
+        <textarea id="texte-regle" placeholder="Ex. : Une inclinaison de la lame à 30° est normale pour la baguette de tradition."></textarea>
+        <label for="etape-regle">S'applique à</label>
+        <select id="etape-regle"></select>
+        <div class="rangee" style="margin-top: 12px"><button class="principal" type="submit">Ajouter la règle</button></div>
+      </form>
+    </section>
+  </div>
+
+  <section>
+    <h2>Séances</h2>
+    <div id="seances"><p class="vide">Chargement…</p></div>
+  </section>
+
+  <section id="bloc-interventions" class="cache" style="margin-top: 28px">
+    <div class="rangee">
+      <h2 id="titre-seance" style="margin: 0">Interventions</h2>
+      <label class="case pousse" style="margin: 0"><input type="checkbox" id="silences"><span>Montrer aussi les silences (pour signaler les erreurs ratées)</span></label>
+    </div>
+    <div id="interventions"></div>
+  </section>
+</main>
+<script type="module" src="evaluation.js"></script>
+</body>
+</html>

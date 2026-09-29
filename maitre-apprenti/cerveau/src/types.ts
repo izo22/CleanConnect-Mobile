@@ -25,6 +25,17 @@ export interface Etape {
 
 export type StatutLecon = "en_preparation" | "prete" | "erreur";
 
+/** Règle donnée par le maître pour corriger l'interprétation de l'IA (elle prime sur son jugement). */
+export interface Regle {
+  id: string;
+  /** Étape concernée, ou null pour toute la leçon. */
+  etapeId: string | null;
+  texte: string;
+  creeLe: string;
+  /** Intervention jugée fausse qui a donné naissance à la règle, s'il y en a une. */
+  source: string | null;
+}
+
 export interface Lecon {
   id: string;
   titre: string;
@@ -34,6 +45,10 @@ export interface Lecon {
   statut: StatutLecon;
   erreur: string | null;
   etapes: Etape[];
+  /** Règles du maître (absent sur les leçons créées avant cette fonction). */
+  regles?: Regle[];
+  /** Cadence d'analyse : 2 (gestes lents) à 5 (gestes rapides) images par seconde. Défaut : 2. */
+  imagesParSeconde?: number;
 }
 
 /** Une image extraite de la vidéo (ou prise par les lunettes) du maître. */
@@ -49,11 +64,77 @@ export interface Parole {
 
 export type TypeVerdict = "en_cours" | "correction" | "etape_reussie" | "pas_visible";
 
+/** Jetons consommés par un appel à l'IA (pour calculer le coût). */
+export interface Consommation {
+  entree: number;
+  sortie: number;
+  cacheLecture: number;
+  cacheEcriture: number;
+}
+
 export interface Verdict {
   verdict: TypeVerdict;
   /** Phrase courte à dire ou afficher à l'apprenti. Vide si rien à dire. */
   message: string;
   pointsValides: string[];
+  usage?: Consommation;
+}
+
+// ---------------------------------------------------------------------------
+// Journal des séances (évaluation du pilote)
+// ---------------------------------------------------------------------------
+
+/**
+ * Avis du maître sur une intervention :
+ * - sur une correction ou une validation : "juste", "fausse" ou "inutile" ;
+ * - sur un silence : "ok" (rien à dire) ou "manquee" (l'IA aurait dû corriger).
+ */
+export type Avis = "juste" | "fausse" | "inutile" | "ok" | "manquee";
+
+export interface Annotation {
+  avis: Avis;
+  commentaire: string;
+  regleId: string | null;
+  le: string;
+}
+
+/** Une analyse de l'IA pendant une séance, avec les images qu'elle a vues. */
+export interface Intervention {
+  id: string;
+  seanceId: string;
+  leconId: string;
+  etapeId: string;
+  etapeNumero: number;
+  t: string;
+  verdict: TypeVerdict;
+  message: string;
+  /** Vrai si le message a été dit à l'apprenti (sinon : silence ou répétition évitée). */
+  dit: boolean;
+  pointsValides: string[];
+  images: string[];
+  /** Temps de réponse de l'IA, en millisecondes. */
+  latenceMs: number;
+  usage: Consommation | null;
+  coutUsd: number;
+  annotation: Annotation | null;
+}
+
+export type TypeEvenement = "etape" | "etape_reussie" | "etape_passee" | "termine";
+
+export interface Evenement {
+  t: string;
+  type: TypeEvenement;
+  etapeId: string;
+}
+
+export interface Seance {
+  id: string;
+  leconId: string;
+  apprenti: string;
+  debut: string;
+  derniereActivite: string;
+  termine: boolean;
+  evenements: Evenement[];
 }
 
 export type Commande = "suivant" | "precedent" | "repeter" | "recommencer";

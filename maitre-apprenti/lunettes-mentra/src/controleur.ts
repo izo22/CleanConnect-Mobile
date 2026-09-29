@@ -14,12 +14,14 @@ export interface Reglages {
   mode: Mode
   /** Leçon à suivre en mode apprenti (vide : la plus récente). */
   leconId: string
+  /** Prénom de l'apprenti, pour que le maître suive ses séances. */
+  apprenti: string
   /** Titre et métier de la démonstration en mode maître. */
   titreDemo: string
   metierDemo: string
 }
 
-export const REGLAGES_PAR_DEFAUT: Reglages = {mode: "apprenti", leconId: "", titreDemo: "", metierDemo: ""}
+export const REGLAGES_PAR_DEFAUT: Reglages = {mode: "apprenti", leconId: "", apprenti: "", titreDemo: "", metierDemo: ""}
 
 /** Ce que le contrôleur attend des lunettes (branché sur le SDK Mentra dans index.ts). */
 export interface Lunettes {
@@ -137,7 +139,7 @@ export class Controleur {
       if (retour) retour = {...retour, dire: `On reprend. ${retour.etape.titre}.`}
     }
     if (!retour) {
-      retour = await this.cerveau.creerSession(leconId)
+      retour = await this.cerveau.creerSession(leconId, this.reglages.apprenti)
       this.sessionId = retour.sessionId
       this.sessionLeconId = leconId
     }

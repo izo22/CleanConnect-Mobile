@@ -35,6 +35,7 @@ export function valider(brut: unknown): Reglages {
   return {
     mode: r.mode === "maitre" ? "maitre" : "apprenti",
     leconId: texte(r.leconId),
+    apprenti: texte(r.apprenti),
     titreDemo: texte(r.titreDemo),
     metierDemo: texte(r.metierDemo),
   }

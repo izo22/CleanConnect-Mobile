@@ -78,6 +78,7 @@ class MainActivity : ComponentActivity() {
   private lateinit var choixMode: RadioGroup
   private lateinit var blocApprenti: LinearLayout
   private lateinit var listeLecons: Spinner
+  private lateinit var champApprenti: EditText
   private lateinit var blocMaitre: LinearLayout
   private lateinit var champTitre: EditText
   private lateinit var champMetier: EditText
@@ -157,6 +158,7 @@ class MainActivity : ComponentActivity() {
         cle = p.getString("cle", "") ?: "",
         mode = if (p.getString("mode", "") == "maitre") Mode.MAITRE else Mode.APPRENTI,
         leconId = p.getString("leconId", "") ?: "",
+        apprenti = p.getString("apprenti", "") ?: "",
         titreDemo = p.getString("titreDemo", "") ?: "",
         metierDemo = p.getString("metierDemo", "") ?: "",
     )
@@ -168,6 +170,7 @@ class MainActivity : ComponentActivity() {
           cle = champCle.text.toString(),
           mode = if (choixMode.checkedRadioButtonId == ID_MAITRE) Mode.MAITRE else Mode.APPRENTI,
           leconId = lecons.getOrNull(listeLecons.selectedItemPosition)?.id ?: "",
+          apprenti = champApprenti.text.toString().trim(),
           titreDemo = champTitre.text.toString().trim(),
           metierDemo = champMetier.text.toString().trim(),
       )
@@ -180,6 +183,7 @@ class MainActivity : ComponentActivity() {
         .putString("cle", r.cle)
         .putString("mode", if (r.mode == Mode.MAITRE) "maitre" else "apprenti")
         .putString("leconId", r.leconId)
+        .putString("apprenti", r.apprenti)
         .putString("titreDemo", r.titreDemo)
         .putString("metierDemo", r.metierDemo)
         .apply()
@@ -278,8 +282,12 @@ class MainActivity : ComponentActivity() {
     racine.addView(choixMode)
 
     listeLecons = Spinner(this)
+    champApprenti = champ("Ton prénom", reglages.apprenti).apply {
+      inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
+    }
     blocApprenti = LinearLayout(this).apply {
       orientation = LinearLayout.VERTICAL
+      addView(champApprenti)
       addView(listeLecons)
       addView(bouton("Charger les leçons") { chargerLecons(reglagesActuels().leconId) })
     }
