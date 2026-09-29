@@ -19,6 +19,11 @@ export const IMAGES_PAR_SEQUENCE = 8;
 export const IMAGES_PAR_SECONDE = 2;
 /** Largeur des images envoyées à l'IA pour juger un geste (assez pour voir les mains, peu coûteux). */
 const LARGEUR_ANALYSE = 640;
+/**
+ * Largeur des images gardées en mémoire : deux fois plus que pour l'IA, pour pouvoir recadrer
+ * sur la zone où travaillent les mains sans perdre de détails (voir preparerPourIA).
+ */
+const LARGEUR_TRAVAIL = 1280;
 
 async function ffmpeg(args: string[]): Promise<string> {
   try {
@@ -76,9 +81,9 @@ export class DecoupeurJpeg {
   }
 }
 
-/** Filtre ffmpeg qui produit les images d'analyse, à la cadence de la leçon. */
+/** Filtre ffmpeg qui produit les images de travail (recadrées ensuite pour l'IA), à la cadence de la leçon. */
 export const filtreAnalyse = (imagesParSeconde = IMAGES_PAR_SECONDE) =>
-  `fps=${imagesParSeconde},scale=${LARGEUR_ANALYSE}:-2`;
+  `fps=${imagesParSeconde},scale='min(${LARGEUR_TRAVAIL},iw)':-2`;
 
 /** Cadence d'analyse autorisée : 2 (gestes lents, 4 s vues) à 5 (gestes rapides, 1,6 s vue). */
 export const cadenceValide = (n: unknown): number =>
@@ -183,6 +188,96 @@ export function mouvement(a: Buffer, b: Buffer): number {
   return somme / (n * 255);
 }
 
+// ---------------------------------------------------------------------------
+// Recadrage automatique sur la zone où travaillent les mains
+// ---------------------------------------------------------------------------
+
+/** Rectangle en fractions de l'image (0 à 1). */
+export interface Zone {
+  x: number;
+  y: number;
+  l: number;
+  h: number;
+}
+
+/** Un pixel de vignette « bouge » si sa différence moyenne d'une image à l'autre dépasse ce seuil (sur 255). */
+const SEUIL_PIXEL_ACTIF = 12;
+/** Marge ajoutée autour des mains, de chaque côté (en fraction de l'image). */
+const MARGE_ZONE = 0.12;
+/** On ne zoome jamais plus que 2 fois : le geste garde son contexte (bol, plan de travail…). */
+const TAILLE_MIN_ZONE = 0.5;
+/** Au-delà, recadrer n'apporte presque rien. */
+const TAILLE_MAX_ZONE = 0.85;
+
+/**
+ * Trouve la zone où ça bouge (les mains, l'outil) à partir des vignettes d'une séquence. Renvoie
+ * null s'il n'y a pas assez de mouvement ou s'il y en a partout (caméra portée sur la tête) :
+ * on garde alors l'image entière. La zone a les proportions de l'image.
+ */
+export function zoneActive(vignettes: Buffer[], largeur = VIGNETTE.largeur, hauteur = VIGNETTE.hauteur): Zone | null {
+  if (vignettes.length < 2) return null;
+  const energie = new Float64Array(largeur * hauteur);
+  for (let k = 1; k < vignettes.length; k++) {
+    for (let i = 0; i < energie.length; i++) energie[i] += Math.abs(vignettes[k][i] - vignettes[k - 1][i]);
+  }
+  let x0 = largeur;
+  let x1 = -1;
+  let y0 = hauteur;
+  let y1 = -1;
+  let actifs = 0;
+  for (let y = 0; y < hauteur; y++) {
+    for (let x = 0; x < largeur; x++) {
+      if (energie[y * largeur + x] / (vignettes.length - 1) < SEUIL_PIXEL_ACTIF) continue;
+      actifs++;
+      x0 = Math.min(x0, x);
+      x1 = Math.max(x1, x);
+      y0 = Math.min(y0, y);
+      y1 = Math.max(y1, y);
+    }
+  }
+  if (actifs < 3) return null;
+  const gauche = x0 / largeur - MARGE_ZONE;
+  const droite = (x1 + 1) / largeur + MARGE_ZONE;
+  const haut = y0 / hauteur - MARGE_ZONE;
+  const bas = (y1 + 1) / hauteur + MARGE_ZONE;
+  // Même fraction en largeur et en hauteur : la zone garde les proportions de l'image.
+  const cote = Math.max(droite - gauche, bas - haut, TAILLE_MIN_ZONE);
+  if (cote >= TAILLE_MAX_ZONE) return null;
+  const borner = (v: number) => Math.min(Math.max(v, 0), 1 - cote);
+  const arrondir = (v: number) => Number(v.toFixed(3));
+  return {
+    x: arrondir(borner((gauche + droite) / 2 - cote / 2)),
+    y: arrondir(borner((haut + bas) / 2 - cote / 2)),
+    l: arrondir(cote),
+    h: arrondir(cote),
+  };
+}
+
+/** Recadre des images JPEG sur une zone (ou pas) et les met à la taille envoyée à l'IA. */
+export async function recadrer(images: Buffer[], zone: Zone | null): Promise<Buffer[]> {
+  if (images.length === 0) return [];
+  const filtre = zone
+    ? `crop=iw*${zone.l}:ih*${zone.h}:iw*${zone.x}:ih*${zone.y},scale=${LARGEUR_ANALYSE}:-2`
+    : `scale='min(${LARGEUR_ANALYSE},iw)':-2`;
+  const sortie = await ffmpegVersMemoire(
+    ["-f", "image2pipe", "-c:v", "mjpeg", "-i", "pipe:0", "-vf", filtre, "-q:v", "5", "-f", "image2pipe", "-c:v", "mjpeg", "pipe:1"],
+    Buffer.concat(images),
+  );
+  const resultat = new DecoupeurJpeg().ajouter(sortie);
+  if (resultat.length !== images.length) throw new Error("Recadrage : nombre d'images inattendu");
+  return resultat;
+}
+
+/**
+ * Prépare des images de travail pour l'IA : recadrage automatique sur la zone où les mains
+ * bougent (repérée sur `reperage`, par défaut les images elles-mêmes), puis réduction à 640 px.
+ * L'IA voit ainsi les mains en plus gros pour le même prix, sans que personne ne règle le cadre.
+ */
+export async function preparerPourIA(images: Buffer[], reperage: Buffer[] = images): Promise<{ images: Buffer[]; zone: Zone | null }> {
+  const zone = zoneActive(await vignettesGris(reperage));
+  return { images: await recadrer(images, zone), zone };
+}
+
 /** Convertit un morceau reçu en MP4 H.264 à cadence fixe (pour pouvoir les mettre bout à bout). */
 export async function normaliserMorceau(morceau: MorceauVideo, sortie: string): Promise<void> {
   const dossier = await mkdtemp(path.join(tmpdir(), "morceau-"));
@@ -260,7 +355,7 @@ export async function extraireImages(
 
 /**
  * Séquence de référence d'une étape : `nombre` images réparties sur toute l'étape du maître,
- * au même format que les séquences de l'apprenti.
+ * en images de travail (à passer par preparerPourIA, comme celles de l'apprenti).
  */
 export async function sequenceEtape(
   video: string,
@@ -271,7 +366,7 @@ export async function sequenceEtape(
   const duree = Math.max(0.5, fin - debut);
   const sortie = await ffmpegVersMemoire([
     "-ss", debut.toFixed(2), "-t", duree.toFixed(2), "-i", video,
-    "-an", "-vf", `fps=${(nombre / duree).toFixed(4)},scale=${LARGEUR_ANALYSE}:-2`,
+    "-an", "-vf", `fps=${(nombre / duree).toFixed(4)},scale='min(${LARGEUR_TRAVAIL},iw)':-2`,
     "-frames:v", String(nombre), "-q:v", "4",
     "-f", "image2pipe", "-c:v", "mjpeg", "pipe:1",
   ]);

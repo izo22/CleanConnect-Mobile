@@ -58,6 +58,7 @@ function nouvelleSession(verdicts: Verdict[], horloge = { t: 0 }, options: Param
     evaluateur,
     chargerImage: async () => JPEG,
     vignettes: vignettesFactices,
+    preparerImages: async (i) => i,
     maintenant: () => horloge.t,
   });
   const publies: Retour[] = [];
@@ -123,6 +124,7 @@ test("ignore une séquence pendant qu'une analyse est déjà en cours", async ()
   const session = new SessionApprenti(lecon(), {
     evaluateur: () => new Promise<Verdict>((r) => (liberer = r)),
     chargerImage: async () => JPEG,
+    preparerImages: async (i) => i,
   });
   session.lecon.etapes.forEach((e) => (e.surveiller = true));
   const premiere = session.recevoirVideo([JPEG]);
@@ -138,6 +140,7 @@ test("un verdict arrivé après un changement d'étape est ignoré", async () =>
   const session = new SessionApprenti(lecon(), {
     evaluateur: () => new Promise<Verdict>((r) => (liberer = r)),
     chargerImage: async () => JPEG,
+    preparerImages: async (i) => i,
   });
   session.lecon.etapes.forEach((e) => (e.surveiller = true));
   const analyse = session.recevoirVideo([JPEG]);

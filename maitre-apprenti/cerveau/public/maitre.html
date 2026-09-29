@@ -11,7 +11,7 @@
 <main>
   <a class="bouton" href="/">← Leçons</a>
   <h1 style="margin-top: 16px">Filmer une démonstration</h1>
-  <p class="sous-titre">Pose le téléphone sur un support au-dessus du plan de travail, là où l'apprenti posera le sien. Travaille en expliquant à voix haute : ta voix est enregistrée avec la vidéo.</p>
+  <p class="sous-titre">Pose le téléphone sur un support au-dessus du plan de travail, en face de toi, incliné vers tes mains, là où l'apprenti posera le sien. Filme large : tout le plan de travail. Le logiciel resserre tout seul sur tes mains.</p>
 
   <section class="carte" id="preparation">
     <label for="titre">Titre de la leçon</label>
@@ -23,14 +23,23 @@
       <span>Commandes à la voix : dis « étape suivante » à chaque nouvelle étape, et « terminé » à la fin</span>
     </label>
     <div class="rangee" style="margin-top: 16px">
-      <button class="principal" id="commencer">Commencer la démonstration</button>
+      <button class="principal" id="ouvrir">Ouvrir la caméra</button>
     </div>
     <p class="erreur-texte" id="erreur" role="alert"></p>
   </section>
 
-  <section class="cache" id="tournage">
-    <div class="carte">
-      <div class="cadre-camera"><video id="camera" autoplay muted playsinline></video></div>
+  <section class="carte cache" id="bloc-camera">
+    <div class="cadre-camera"><video id="camera" autoplay muted playsinline></video></div>
+
+    <div id="installation">
+      <div id="controle" class="controle-bloc" role="status"></div>
+      <div class="rangee" style="margin-top: 12px">
+        <button id="recontroler">Refaire le contrôle</button>
+        <button class="principal pousse" id="commencer">Commencer l'enregistrement</button>
+      </div>
+    </div>
+
+    <div id="tournage" class="cache">
       <div class="rangee tournage-etat">
         <span class="badge enregistre" id="duree">● 0:00</span>
         <span id="nombre-etapes">Étape 1</span>

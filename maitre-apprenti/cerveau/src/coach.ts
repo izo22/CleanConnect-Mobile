@@ -11,7 +11,14 @@ import { evaluerGeste, type ImageIA } from "./ia.ts";
 import { journalDisque, nouvelleSeance, type JournalSeance } from "./journal.ts";
 import { cheminMedia, nouvelId, urlMedia } from "./store.ts";
 import type { Commande, Declencheur, Etape, Lecon, Retour, TypeEvenement, Verdict } from "./types.ts";
-import { cadenceValide, IMAGES_PAR_SEQUENCE, mouvement, SECONDES_MAX_EN_MEMOIRE, vignettesGris } from "./video.ts";
+import {
+  cadenceValide,
+  IMAGES_PAR_SEQUENCE,
+  mouvement,
+  preparerPourIA,
+  SECONDES_MAX_EN_MEMOIRE,
+  vignettesGris,
+} from "./video.ts";
 
 /** Étape surveillée en direct : on relance une analyse dès que 2 secondes nouvelles sont arrivées (et que l'IA est libre). */
 const SECONDES_NOUVELLES_AVANT_ANALYSE = 2;
@@ -36,6 +43,18 @@ const ECART_MIN_AUTO_MS = 10_000;
 export type Evaluateur = (options: Parameters<typeof evaluerGeste>[0]) => Promise<Verdict>;
 export type ChargeurImage = (leconId: string, fichier: string) => Promise<Buffer>;
 export type FabriqueVignettes = (images: Buffer[]) => Promise<Buffer[]>;
+/** Prépare les images envoyées à l'IA (recadrage sur les mains), `reperage` servant à trouver la zone. */
+export type PreparateurImages = (images: Buffer[], reperage: Buffer[]) => Promise<Buffer[]>;
+
+/** Recadrage automatique ; en cas d'échec (image illisible…), les images partent telles quelles. */
+async function recadrerSurLesMains(images: Buffer[], reperage: Buffer[]): Promise<Buffer[]> {
+  try {
+    return (await preparerPourIA(images, reperage)).images;
+  } catch (erreur) {
+    console.warn("Recadrage impossible, images entières :", erreur instanceof Error ? erreur.message : erreur);
+    return images;
+  }
+}
 
 async function chargerImageDisque(leconId: string, fichier: string): Promise<Buffer> {
   const chemin = cheminMedia(leconId, "images", fichier);
@@ -132,6 +151,7 @@ export class SessionApprenti {
   private readonly evaluateur: Evaluateur;
   private readonly chargerImage: ChargeurImage;
   private readonly vignettes: FabriqueVignettes;
+  private readonly preparer: PreparateurImages;
   private readonly maintenant: () => number;
   private readonly attendre: (ms: number) => Promise<void>;
   private readonly journal: JournalSeance;
@@ -142,6 +162,7 @@ export class SessionApprenti {
       evaluateur?: Evaluateur;
       chargerImage?: ChargeurImage;
       vignettes?: FabriqueVignettes;
+      preparerImages?: PreparateurImages;
       maintenant?: () => number;
       attendre?: (ms: number) => Promise<void>;
       apprenti?: string;
@@ -158,6 +179,7 @@ export class SessionApprenti {
     this.evaluateur = options.evaluateur ?? evaluerGeste;
     this.chargerImage = options.chargerImage ?? chargerImageDisque;
     this.vignettes = options.vignettes ?? vignettesGris;
+    this.preparer = options.preparerImages ?? recadrerSurLesMains;
     this.maintenant = options.maintenant ?? Date.now;
     this.attendre = options.attendre ?? ((ms) => new Promise((ok) => setTimeout(ok, ms)));
     this.derniereActivite = this.maintenant();
@@ -240,6 +262,7 @@ export class SessionApprenti {
         clipUrl: etape.clip ? urlMedia(this.lecon.id, "clips", etape.clip) : null,
         clipLunettesUrl: etape.clipLunettes ? urlMedia(this.lecon.id, "clips", etape.clipLunettes) : null,
         imageUrls: etape.images.map((f) => urlMedia(this.lecon.id, "images", f)),
+        imageGuideUrl: etape.imageGuide ? urlMedia(this.lecon.id, "images", etape.imageGuide) : null,
         explication: etape.explication?.trim() || etape.consigne,
         pointsDeControle: etape.pointsDeControle,
         erreursFrequentes: etape.erreursFrequentes,
@@ -392,14 +415,16 @@ export class SessionApprenti {
     // La vidéo arrive en continu ; si l'IA n'a pas fini la séquence précédente, on n'empile pas de retard.
     if (this.analyseEnCours) return this.sansNouveaute();
 
-    const sequence = this.images.slice(-IMAGES_PAR_SEQUENCE);
+    const brute = this.images.slice(-IMAGES_PAR_SEQUENCE);
     const indexAuDepart = this.index;
     const etape = this.etape;
     this.analyseEnCours = true;
     let verdict: Verdict;
+    let sequence = brute;
     const debut = this.maintenant();
     try {
-      verdict = await this.appelerIA(sequence, (sequence.length - 1) / this.imagesParSeconde, false);
+      sequence = await this.preparer(brute, brute);
+      verdict = await this.appelerIA(sequence, (brute.length - 1) / this.imagesParSeconde, false);
     } catch (erreur) {
       const message = erreur instanceof Error ? erreur.message : String(erreur);
       console.error(`Session ${this.id} : analyse impossible —`, message);
@@ -491,8 +516,9 @@ export class SessionApprenti {
         const message = "Je n'ai pas encore vu ton geste. Fais-le devant toi, puis redis « vérifie ».";
         return this.publier(this.retour({ afficher: message, dire: message }));
       }
-      const sequence = echantillonner(recentes);
       const debut = this.maintenant();
+      // La zone des mains est repérée sur 16 images de la tentative, puis 8 partent à l'IA.
+      const sequence = await this.preparer(echantillonner(recentes), echantillonner(recentes, 16));
       let verdict: Verdict;
       try {
         verdict = await this.appelerIA(sequence, (recentes.length - 1) / fps, true);

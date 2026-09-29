@@ -1,4 +1,5 @@
 import { api, cleAcces, el } from "./commun.js";
+import { afficherControle, controlerCamera } from "./controle.js";
 import { commandeApprenti, Ecoute, reconnaissanceDisponible } from "./voix.js";
 
 const $ = (id) => document.getElementById(id);
@@ -179,7 +180,7 @@ function montrerGeste() {
 
 function afficherGuide() {
   const guide = $("guide");
-  const url = etapeActuelle?.imageUrls[0];
+  const url = etapeActuelle?.imageGuideUrl ?? etapeActuelle?.imageUrls[0];
   const visible = $("guide-actif").checked && Boolean(url) && !$("bloc-camera").classList.contains("cache");
   guide.classList.toggle("cache", !visible);
   if (visible && guide.getAttribute("src") !== url) guide.src = url;
@@ -193,6 +194,27 @@ $("guide").addEventListener("load", (e) => {
 });
 $("guide-actif").addEventListener("change", afficherGuide);
 $("opacite-guide").addEventListener("input", afficherGuide);
+
+/** Contrôle unique de l'installation (lumière, netteté, stabilité) ; ensuite plus rien. */
+async function controlerInstallation() {
+  $("controle").textContent = "Contrôle de l'installation (3 secondes, ne touche pas au téléphone)…";
+  try {
+    afficherControle($("controle"), await controlerCamera($("camera")), el);
+  } catch (erreur) {
+    $("controle").textContent = `Contrôle impossible : ${erreur.message}`;
+  }
+}
+$("recontroler").onclick = controlerInstallation;
+
+// --- Miroir : la vidéo du maître inversée gauche-droite (maître filmé en face) -------------
+
+function appliquerMiroir(actif) {
+  for (const id of ["clip", "image-ref"]) $(id).classList.toggle("miroir", actif);
+  $("miroir").setAttribute("aria-pressed", String(actif));
+  try { localStorage.setItem("miroir", actif ? "1" : ""); } catch {}
+}
+$("miroir").onclick = () => appliquerMiroir($("miroir").getAttribute("aria-pressed") !== "true");
+try { appliquerMiroir(localStorage.getItem("miroir") === "1"); } catch {}
 
 /** Garde l'écran allumé pendant l'entraînement (sinon le téléphone se met en veille et coupe la caméra). */
 async function garderEcranAllume() {
@@ -252,9 +274,11 @@ async function demarrerCamera() {
   afficher(session);
 
   $("camera").srcObject = camera;
+  $("camera").play().catch(() => undefined);
   $("bloc-camera").classList.remove("cache");
   afficherGuide();
   garderEcranAllume();
+  controlerInstallation();
   // Mains prises : on active les commandes à la voix (le clic sur le bouton autorise le micro).
   if (reconnaissanceDisponible()) activerEcoute(true);
 

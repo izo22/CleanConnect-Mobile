@@ -13,6 +13,8 @@ import {
   dureeVideo,
   extraireImages,
   normaliserMorceau,
+  preparerPourIA,
+  recadrer,
   sequenceEtape,
   type MorceauVideo,
 } from "./video.ts";
@@ -107,8 +109,14 @@ async function preparerDepuisVideo(
       await decouperClip(video, debut, fin, path.join(dossierClips, etape.clip), "tablette");
       await decouperClip(video, debut, fin, path.join(dossierClips, etape.clipLunettes), "lunettes");
 
-      // Séquence de référence : le geste du maître sur toute l'étape, comme l'IA verra l'apprenti.
-      const sequence = await sequenceEtape(video, debut, fin);
+      // Séquence de référence : le geste du maître sur toute l'étape, recadrée sur ses mains
+      // comme le seront les images de l'apprenti. La première image entière sert de guide de placement.
+      const brutes = await sequenceEtape(video, debut, fin);
+      const { images: sequence } = await preparerPourIA(brutes);
+      if (brutes.length > 0) {
+        etape.imageGuide = `etape-${etape.numero}-guide.jpg`;
+        await writeFile(path.join(dossierImages, etape.imageGuide), (await recadrer([brutes[0]], null))[0]);
+      }
       etape.images = [];
       for (const [k, image] of sequence.entries()) {
         const fichier = `etape-${etape.numero}-ref-${k + 1}.jpg`;

@@ -36,6 +36,7 @@
       <p class="legende" id="legende">Le geste du maître pour cette étape</p>
       <div class="rangee">
         <button id="son">🔈 Son du maître</button>
+        <button id="miroir" aria-pressed="false" title="Inverse gauche et droite, si le maître a été filmé en face">⇋ Miroir</button>
         <a class="bouton pousse" id="lien-fiche" href="#">Fiche écrite complète</a>
       </div>
     </div>
@@ -73,6 +74,7 @@
         <div class="texte-etape" id="texte-etape"></div>
       </div>
       <div class="carte camera cache" id="bloc-camera">
+        <div id="controle" class="controle-bloc" role="status"></div>
         <div class="cadre-camera" id="cadre-camera">
           <video id="camera" autoplay muted playsinline></video>
           <img id="guide" alt="" class="guide cache">
@@ -83,6 +85,7 @@
         </label>
         <label for="opacite-guide" class="sr">Transparence du guide</label>
         <input type="range" id="opacite-guide" min="10" max="80" value="40" aria-label="Transparence du guide">
+        <div class="rangee" style="margin-top: 8px"><button id="recontroler">Refaire le contrôle de l'installation</button></div>
         <p class="vide" id="etat-camera">La caméra filme. L'IA regarde quand tu dis « vérifie » ou cliques sur « Vérifier mon geste ».</p>
       </div>
     </div>

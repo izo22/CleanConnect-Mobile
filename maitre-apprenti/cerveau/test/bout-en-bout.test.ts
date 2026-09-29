@@ -176,6 +176,9 @@ test("vidéo du maître → leçon avec clips et séquences de référence", asy
     assert.ok(etape.clip && etape.clipLunettes);
   }
   assert.equal(lecon.etapes[0].explication, ETAPES.etapes[0].explication);
+  // Guide de placement : la première image entière de chaque étape.
+  const guide = await fetch(`${base}/media/lecons/${lecon.id}/images/${lecon.etapes[0].imageGuide}`);
+  assert.equal(guide.headers.get("content-type"), "image/jpeg");
 
   const construction = requetes.find((r) => r.corps.stream === true)!;
   assert.equal(construction.corps.model, "claude-opus-5-5");
@@ -194,6 +197,7 @@ test("apprenti à la demande : la vidéo est gardée, « vérifie » envoie 8 im
   assert.equal(session.etape.clipLunettesUrl, `/media/lecons/${leconId}/clips/etape-1-lunettes.mp4`);
   assert.equal(session.etape.explication, ETAPES.etapes[0].explication);
   assert.equal(session.etape.fenetreS, 6);
+  assert.equal(session.etape.imageGuideUrl, `/media/lecons/${leconId}/images/etape-1-guide.jpg`);
 
   const avant = requetes.length;
   const morceau = path.join(dossier, "apprenti.mp4");

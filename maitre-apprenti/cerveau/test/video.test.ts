@@ -16,9 +16,12 @@ import {
   imagesDepuisMorceau,
   mouvement,
   normaliserMorceau,
+  preparerPourIA,
+  recadrer,
   sequenceDepuisMorceau,
   sequenceEtape,
   vignettesGris,
+  zoneActive,
 } from "../src/video.ts";
 
 const executer = promisify(execFile);
@@ -152,4 +155,56 @@ test("vignettes et mesure du mouvement (vérification automatique, sans IA)", as
   const fin = vignettes.length - 1;
   assert.ok(mouvement(vignettes[fin - 1], vignettes[fin]) > 0.02, "mire animée");
   assert.equal(mouvement(Buffer.alloc(4, 0), Buffer.alloc(4, 255)), 1);
+});
+
+/** Largeur et hauteur d'une image JPEG (marqueur SOF). */
+function tailleJpeg(image: Buffer): { largeur: number; hauteur: number } {
+  for (let i = 2; i < image.length - 9; i++) {
+    if (image[i] === 0xff && image[i + 1] >= 0xc0 && image[i + 1] <= 0xc2) {
+      return { hauteur: image.readUInt16BE(i + 5), largeur: image.readUInt16BE(i + 7) };
+    }
+  }
+  throw new Error("JPEG sans taille");
+}
+
+test("zone active : les pixels qui bougent, avec une marge, aux proportions de l'image", () => {
+  const vignette = (valeur: (x: number, y: number) => number) => {
+    const b = Buffer.alloc(32 * 18);
+    for (let y = 0; y < 18; y++) for (let x = 0; x < 32; x++) b[y * 32 + x] = valeur(x, y);
+    return b;
+  };
+  // Seul un carré en bas à droite (x 22 à 25, y 11 à 14) change d'une image à l'autre.
+  const mains = (k: number) => vignette((x, y) => (x >= 22 && x <= 25 && y >= 11 && y <= 14 ? (k % 2 ? 200 : 40) : 90));
+  const zone = zoneActive([mains(0), mains(1), mains(2), mains(3)]);
+  assert.ok(zone);
+  assert.equal(zone.l, 0.5); // zoom limité à 2 fois
+  assert.equal(zone.l, zone.h);
+  assert.ok(zone.x > 0.35 && zone.x + zone.l <= 1);
+  assert.ok(zone.y + zone.h <= 1);
+  // Rien ne bouge, ou tout bouge (caméra sur la tête) : image entière.
+  const fixe = vignette(() => 90);
+  assert.equal(zoneActive([fixe, fixe, fixe]), null);
+  assert.equal(zoneActive([vignette(() => 10), vignette(() => 200), vignette(() => 10)]), null);
+  assert.equal(zoneActive([fixe]), null);
+});
+
+test("recadrage automatique sur une vraie vidéo : l'IA reçoit la zone des mains à 640 px", async () => {
+  // Plan de travail fixe en 1280×720 ; seul un « outil » rouge bouge, en bas à droite.
+  const fichier = path.join(dossier, "mains.mp4");
+  await executer(FFMPEG, [
+    "-hide_banner", "-y",
+    "-f", "lavfi", "-i", "testsrc2=size=1280x720:rate=10:duration=4,hue=s=0",
+    "-f", "lavfi", "-i", "color=c=red:size=140x140:rate=10:duration=4",
+    "-filter_complex", "[0:v]trim=start=0:end=0.1,loop=loop=-1:size=1:start=0,setpts=N/10/TB[fond];[fond][1:v]overlay=x='900+120*sin(t*5)':y='480+60*cos(t*5)':shortest=1",
+    "-t", "4", "-c:v", "libx264", "-pix_fmt", "yuv420p", fichier,
+  ]);
+  const images = await imagesDepuisMorceau({ donnees: await readFile(fichier), type: "video/mp4" }, 2);
+  assert.equal(tailleJpeg(images[0]).largeur, 1280, "images de travail en 1280 px");
+  const { images: pourIA, zone } = await preparerPourIA(images);
+  assert.ok(zone, "une zone de mouvement est trouvée");
+  assert.ok(zone.x >= 0.4 && zone.y >= 0.3, `zone en bas à droite : ${JSON.stringify(zone)}`);
+  assert.equal(pourIA.length, images.length);
+  assert.deepEqual(tailleJpeg(pourIA[0]), { largeur: 640, hauteur: 360 });
+  // Sans zone : simple réduction.
+  assert.equal(tailleJpeg((await recadrer([images[0]], null))[0]).largeur, 640);
 });

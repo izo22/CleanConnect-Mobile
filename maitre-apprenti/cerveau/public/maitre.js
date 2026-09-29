@@ -2,7 +2,8 @@
 // morceaux de 10 secondes pendant le tournage ; les étapes sont marquées à la voix ou au bouton,
 // et ce que dit le maître est transcrit pour la fiche écrite.
 
-import { api } from "./commun.js";
+import { api, el } from "./commun.js";
+import { afficherControle, controlerCamera } from "./controle.js";
 import { commandeMaitre, Ecoute, reconnaissanceDisponible } from "./voix.js";
 
 const $ = (id) => document.getElementById(id);
@@ -21,6 +22,8 @@ let fileEnvoi = Promise.resolve();
 let echecs = 0;
 /** La boucle de tournage : elle se termine après avoir mis le dernier morceau dans la file. */
 let tournage = Promise.resolve();
+let flux = null;
+let format = "";
 
 function formatVideo() {
   const candidats = ["video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];
@@ -97,14 +100,14 @@ async function marquerEtape() {
 
 // --- Tournage ----------------------------------------------------------------------------
 
-async function commencer() {
+/** 1. Caméra ouverte : contrôle de l'installation avant d'enregistrer. */
+async function ouvrir() {
   $("erreur").textContent = "";
-  const format = typeof MediaRecorder === "undefined" ? "" : formatVideo();
+  format = typeof MediaRecorder === "undefined" ? "" : formatVideo();
   if (!format) {
     $("erreur").textContent = "Ce navigateur ne sait pas enregistrer de vidéo.";
     return;
   }
-  let flux;
   try {
     flux = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -114,6 +117,26 @@ async function commencer() {
     $("erreur").textContent = `Caméra ou micro inaccessible : ${erreur.message}`;
     return;
   }
+  $("preparation").classList.add("cache");
+  $("bloc-camera").classList.remove("cache");
+  $("camera").srcObject = flux;
+  $("camera").play().catch(() => undefined);
+  try { await navigator.wakeLock?.request("screen"); } catch {}
+  await controlerInstallation();
+}
+
+async function controlerInstallation() {
+  $("controle").textContent = "Contrôle de l'installation (3 secondes, ne touche pas au téléphone)…";
+  try {
+    afficherControle($("controle"), await controlerCamera($("camera")), el);
+  } catch (erreur) {
+    $("controle").textContent = `Contrôle impossible : ${erreur.message}`;
+  }
+}
+
+/** 2. Enregistrement. */
+async function commencer() {
+  $("commencer").disabled = true;
   try {
     const capture = await api("/captures", {
       method: "POST",
@@ -121,15 +144,13 @@ async function commencer() {
     });
     captureId = capture.captureId;
   } catch (erreur) {
-    flux.getTracks().forEach((piste) => piste.stop());
-    $("erreur").textContent = erreur.message;
+    $("controle").textContent = erreur.message;
+    $("commencer").disabled = false;
     return;
   }
 
-  $("preparation").classList.add("cache");
+  $("installation").classList.add("cache");
   $("tournage").classList.remove("cache");
-  $("camera").srcObject = flux;
-  try { await navigator.wakeLock?.request("screen"); } catch {}
   if ($("ecoute").checked && reconnaissanceDisponible()) ecoute.demarrer();
   else $("etat-ecoute").textContent = "Utilise les boutons pour marquer les étapes et terminer.";
 
@@ -160,7 +181,7 @@ function terminer() {
     await fileEnvoi;
     try {
       await api(`/captures/${captureId}/terminer`, { method: "POST", body: "{}" });
-      $("tournage").classList.add("cache");
+      $("bloc-camera").classList.add("cache");
       $("fin").classList.remove("cache");
       if (echecs) $("message-fin").textContent += ` Attention : ${echecs} morceau(x) de vidéo n'ont pas pu être envoyés.`;
     } catch (erreur) {
@@ -170,6 +191,8 @@ function terminer() {
   return fin;
 }
 
+$("ouvrir").onclick = ouvrir;
+$("recontroler").onclick = controlerInstallation;
 $("commencer").onclick = commencer;
 $("etape").onclick = marquerEtape;
 $("terminer").onclick = terminer;

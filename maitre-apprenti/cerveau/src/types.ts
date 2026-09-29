@@ -32,8 +32,10 @@ export interface Etape {
   clip: string | null;
   /** Même clip en très petit format, pour l'écran des lunettes Meta Ray-Ban Display. */
   clipLunettes: string | null;
-  /** Noms des fichiers des images de référence du maître. */
+  /** Noms des fichiers des images de référence du maître (recadrées sur ses mains). */
   images: string[];
+  /** Première image de l'étape, non recadrée : le guide de placement du téléphone de l'apprenti. */
+  imageGuide?: string | null;
 }
 
 export type StatutLecon = "en_preparation" | "prete" | "erreur";
@@ -179,6 +181,8 @@ export interface Retour {
     /** Version 266×150 sans son du clip, pour l'écran des lunettes. */
     clipLunettesUrl: string | null;
     imageUrls: string[];
+    /** Image entière du début de l'étape, pour caler le téléphone de l'apprenti (guide de placement). */
+    imageGuideUrl: string | null;
     /** Texte écrit de l'étape (fiche de l'apprenti). */
     explication: string;
     pointsDeControle: string[];

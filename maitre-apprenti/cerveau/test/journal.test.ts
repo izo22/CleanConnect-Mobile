@@ -55,6 +55,7 @@ test("une séance journalise chaque analyse avec ses images, les règles du maî
       return verdicts.shift()!;
     },
     chargerImage: async () => JPEG,
+    preparerImages: async (i) => i,
     journal: (s) => journalDisque(nouvelleSeance(s.id, s.lecon, s.apprenti, "etape-1")),
   });
   for (let i = 0; i < 4; i++) await session.recevoirVideo([JPEG, JPEG, JPEG]);

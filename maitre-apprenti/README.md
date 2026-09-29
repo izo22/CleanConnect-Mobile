@@ -162,7 +162,7 @@ Sur les **Ray-Ban Display**, l'écran montre l'étape et la correction, avec les
 ## Tests
 
 ```bash
-cd cerveau && npm test && npm run typecheck    # 52 tests
+cd cerveau && npm test && npm run typecheck    # 57 tests
 cd lunettes-mentra && bun test && bun run typecheck   # 10 tests, dont l'intégration avec le cerveau
 cd lunettes-meta && ./gradlew test             # 19 tests (contrôleur + découpage vidéo HEVC)
 ```
@@ -176,7 +176,7 @@ Vérifié, avec de vraies vidéos générées par ffmpeg et un **faux** serveur 
 - **Détection de fin de geste** sur de vraies images (image fixe puis mire animée), et la logique de déclenchement sur des images simulées.
 - **Appli Mentra** : test d'intégration avec le vrai cerveau, où des « lunettes » simulées envoient une vraie vidéo en direct.
 - **Appli Meta** : le découpage d'une vraie vidéo HEVC donne des morceaux que ffmpeg décode. Tout le code compile contre les vraies bibliothèques Meta (`mwdat` 1.0.0).
-- **Tablette** : dans un vrai navigateur (Chromium, caméra simulée), aucun appel à l'IA pendant 9 secondes de caméra, puis un seul appel par clic sur « Vérifier mon geste » ou « Suivant ». Fiche écrite affichée, modifiée et relue. Démonstration filmée depuis la page « maître » (caméra et micro simulés) : morceaux envoyés, étape marquée, leçon prête avec ses clips ; puis guide de placement affiché côté apprenti.
+- **Tablette** : dans un vrai navigateur (Chromium, caméra simulée), aucun appel à l'IA pendant 9 secondes de caméra, puis un seul appel par clic sur « Vérifier mon geste » ou « Suivant ». Fiche écrite affichée, modifiée et relue. Démonstration filmée depuis la page « maître » (caméra et micro simulés) : morceaux envoyés, étape marquée, leçon prête avec ses clips ; puis guide de placement affiché côté apprenti. Contrôle de l'installation (caméra simulée : tout est bon ; images synthétiques : sombre, contre-jour, flou, téléphone qui bouge). Recadrage automatique sur une vraie vidéo où seul un objet bouge dans un coin.
 
 Pas encore vérifié :
 - **La qualité des corrections de l'IA** sur de vrais gestes. Il faut une clé API et un vrai essai avec un artisan.
@@ -190,6 +190,12 @@ Pas encore vérifié :
 - **Le build Android complet (APK)** : il n'a pas pu être lancé dans l'environnement de développement (serveurs Google bloqués). Il faut compiler dans Android Studio.
 
 ## Téléphone : ce qu'il faut savoir
+
+**Installation.** Un support fixe par poste (un bras articulé serré sur l'étagère, par exemple), au-dessus du plan de travail, en face, incliné vers les mains : pas besoin d'un angle précis. On filme **large**, tout le plan de travail. Le maître règle le support une fois ; ensuite l'apprenti pose son téléphone dedans, sans rien régler. Personne n'a à surveiller le cadre en travaillant :
+- **Recadrage automatique** : les images sont gardées en 1280 px ; avant chaque analyse, le cerveau repère la zone où ça bouge (les mains, l'outil) et n'envoie que cette zone à l'IA, en 640 px. Plus de détails pour le même prix. Le zoom est limité à 2 fois pour garder le contexte (bol, plan de travail), et il n'y a pas de recadrage quand tout bouge (caméra portée sur la tête). Les images de référence du maître sont recadrées de la même façon.
+- **Contrôle de l'installation**, une seule fois quand la caméra s'ouvre (page maître et page apprenti) : lumière (sombre, trop clair, contre-jour), netteté (objectif sale ?), stabilité du téléphone. Un conseil concret s'il y a un problème, puis plus rien. Les seuils sont à régler sur le terrain.
+- **Guide de placement** : la première image entière de l'étape du maître, en transparence, si le support a bougé.
+- **Miroir** : bouton sur la page apprenti pour inverser gauche et droite la vidéo du maître (utile quand il a été filmé en face).
 
 - **HTTPS obligatoire** : le navigateur ne donne la caméra et le micro qu'à une page en HTTPS (ou `localhost`). Pour un essai, expose le cerveau avec un tunnel HTTPS (ngrok, Cloudflare Tunnel…).
 - **Reconnaissance vocale** : celle du navigateur (Chrome, Safari ; Firefox ne l'a pas). Elle passe par les serveurs de Google ou d'Apple. Si elle manque, les boutons restent là.
