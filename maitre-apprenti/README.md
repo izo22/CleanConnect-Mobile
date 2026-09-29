@@ -1,6 +1,6 @@
 # Maître & Apprenti
 
-Le maître filme ses gestes une fois (une baguette, un croissant, une soudure…). L'apprenti les refait avec des lunettes connectées qui **le filment en continu** : une IA compare ses gestes à ceux du maître et le corrige à l'oreille, étape par étape.
+Le maître filme ses gestes une fois (une baguette, un croissant, une soudure…). L'apprenti les refait avec des lunettes connectées qui le filment. Quand il dit **« vérifie »**, une IA compare son geste à celui du maître et le corrige à l'oreille, étape par étape. Chaque étape existe aussi **en texte** (fiche écrite relue par le maître).
 
 Ça marche pour n'importe quel métier où il y a **un geste et un résultat visible**.
 
@@ -15,16 +15,19 @@ Le maître filme ses gestes une fois (une baguette, un croissant, une soudure…
  │ 1. découpe la démonstration en étapes (Claude) : consigne, points de        │
  │    contrôle, erreurs fréquentes, critères de réussite ; pour chaque étape    │
  │    un clip du maître et une séquence de référence (8 images de son geste)   │
- │ 2. pendant la leçon : prend les 4 dernières secondes de vidéo de            │
- │    l'apprenti (8 images, 2 par seconde) et les compare au geste du maître   │
- │    → « correction », « étape réussie », « rien à dire », « je ne vois pas »  │
+ │ 2. pendant la leçon : garde la vidéo récente de l'apprenti (gratuit) ;     │
+ │    quand il dit « vérifie » ou « suivant », envoie 8 images de sa tentative │
+ │    à l'IA, qui les compare au geste du maître                               │
+ │    → « correction », « étape réussie », « rien de faux », « je ne vois pas » │
  └─────────────────────────────────────────────────────────────────────────────┘
         │  correction à dire / afficher, étape suivante, clip à montrer
         ▼
  lunettes (voix + écran s'il y en a un) et tablette (clip du maître en boucle)
 ```
 
-**Pourquoi « 8 images » ?** L'IA (Claude) ne lit pas un fichier vidéo directement : elle regarde une vidéo comme une suite d'images rapprochées. Le cerveau découpe donc la vidéo en séquences de 4 secondes, à 2 images par seconde, pour que l'IA juge le **mouvement** (sens, ordre, rythme) et pas une photo isolée.
+**Pourquoi « 8 images » ?** L'IA (Claude) ne lit pas un fichier vidéo directement : elle regarde une vidéo comme une suite d'images. Le cerveau prend donc 8 images réparties sur la tentative de l'apprenti, pour que l'IA juge le **mouvement** (sens, ordre, rythme) et pas une photo isolée.
+
+**Pourquoi « à la demande » ?** Regarder la vidéo du maître ne coûte rien, aussi souvent qu'on veut. Ce qui coûte, c'est chaque regard de l'IA sur l'apprenti (environ 2 centimes). En analysant en continu, on arrive à 10 à 15 $ de l'heure ; à la demande, à environ 1 à 1,5 $ de l'heure.
 
 ## Contenu du dossier
 
@@ -75,9 +78,22 @@ Dans les deux cas, l'IA découpe la démonstration en étapes en quelques minute
 
 - **Tablette seule (test sans lunettes).** Page d'accueil → « Apprendre » → « Utiliser la caméra de cet appareil ». La tablette filme en continu et envoie la vidéo par morceaux de 4 secondes.
 - **Lunettes + tablette.** Lance la leçon sur les lunettes. Si la page « Apprendre » est ouverte sur une tablette, elle rejoint la session toute seule : clip du maître en boucle à côté, conseils en direct.
-- **Commandes** (voix, bouton ou écran) : « suivant », « précédent », « répète », « recommence », « montre le geste », « pause ».
+- **Commandes** (voix, bouton ou écran) : « vérifie » (ou « regarde », « c'est bon ? »), « explique », « suivant », « précédent », « répète », « recommence », « montre le geste », « pause ».
 
-Le tuteur ne répète pas la même correction avant 15 secondes. Il passe à l'étape suivante quand il voit les critères de réussite. En cas de doute, il se tait : une fausse correction fait plus de mal qu'un silence.
+**Quand l'IA regarde.** Les lunettes filment tout le temps, mais le cerveau se contente de garder les 20 dernières secondes, sans appeler l'IA :
+- **« vérifie »** (voix, bouton Mentra en appui court, bouton « Vérifier mon geste » sur l'écran des Ray-Ban Display ou la tablette) : l'IA regarde 8 images réparties sur la tentative. La durée regardée est 1,5 fois la durée de l'étape chez le maître, entre 4 et 20 secondes. L'apprenti entend « Je regarde », puis la réponse : une correction, un bravo (et l'étape suivante), ou « rien de faux, continue » ;
+- **« suivant »** : l'IA vérifie d'abord la dernière tentative. Si elle voit une erreur, elle la dit et propose de redire « suivant » pour passer quand même ;
+- **vérification automatique** (option de la leçon, désactivée par défaut) : le cerveau repère, sans IA, que l'apprenti a bougé puis s'est arrêté (fin probable d'un geste), et vérifie une fois. Les seuils de mouvement sont à régler sur le terrain ;
+- **étapes à surveiller** (couteau, four…, cochées par le maître) : l'IA regarde en continu, toutes les 2 secondes, comme avant. L'apprenti est prévenu (« Je te surveille pendant cette étape »).
+
+Le tuteur ne répète pas la même correction spontanée avant 15 secondes. En cas de doute, il ne corrige pas : une fausse correction fait plus de mal qu'un silence.
+
+**Les étapes en texte.** Pour chaque étape, l'IA écrit une explication détaillée en plus de la consigne, avec les points clés, les erreurs à éviter, « c'est réussi quand », et ce que le maître a dit pendant l'étape (démonstration filmée avec les lunettes). Tout cela apparaît :
+- sur la page de l'apprenti (« Comment faire ») avec le plan de la leçon ;
+- dans la **fiche écrite** (`fiche.html?lecon=<id>`, bouton « Fiche écrite » de l'accueil), imprimable ;
+- à l'oreille quand l'apprenti dit « explique ».
+
+Le maître relit et corrige ce texte depuis la fiche (« Modifier le texte »). L'IA qui corrige l'apprenti s'appuie ensuite sur ce texte, et les séances en cours le reçoivent tout de suite.
 
 L'apprenti donne son prénom (tablette, page de réglages Mentra, appli Meta) pour que le maître suive ses séances.
 
@@ -96,9 +112,11 @@ Page d'accueil → « Évaluer les séances » (ou `http://<cerveau>/evaluation.
   - erreurs ratées ;
   - séances terminées ;
   - temps médian pour réussir chaque étape seul ;
-  - coût IA par séance ;
+  - coût IA par heure de pratique, par séance et par analyse, et ce qui a déclenché les analyses (demande, « suivant », automatique, surveillance) ;
+  - vérifications par étape ;
   - délai de réponse de l'IA.
-- **Cadence d'analyse :** de 2 à 5 images par seconde, leçon par leçon. À 2 images par seconde, l'IA voit les 4 dernières secondes ; à 4, les 2 dernières, pour les gestes rapides. Le coût par analyse ne change pas.
+- **Quand l'IA regarde :** vérification automatique oui ou non, étapes à surveiller en continu.
+- **Cadence des étapes surveillées :** de 2 à 5 images par seconde. À 2 images par seconde, l'IA voit les 4 dernières secondes ; à 4, les 2 dernières, pour les gestes rapides. Le coût par analyse ne change pas.
 
 Les séances sont rangées dans `donnees/seances/`. Les images des apprentis ne sont accessibles qu'avec la clé d'accès.
 
@@ -135,28 +153,29 @@ Mentra Live n'a pas d'écran : tout passe par la voix, et le clip du maître se 
 4. Dans l'appli : adresse du cerveau → « Enregistrer » → « Associer l'appli aux lunettes » (ouvre Meta AI) → « Connecter les lunettes » → « Démarrer ».
 
 Les lunettes filment en HEVC à 15 images par seconde. Le téléphone découpe ce flux en morceaux qui commencent toujours par une image complète, et les envoie tels quels au cerveau, sans les décoder.
-- **Apprenti :** les 4 dernières secondes.
+- **Apprenti :** le téléphone garde les 20 dernières secondes ; elles partent au cerveau avec « vérifie » ou « suivant ». Sur une étape surveillée (ou avec la vérification automatique), la vidéo part en continu par morceaux de 4 secondes.
 - **Maître :** toute la vidéo, sans trou.
 
-Sur les **Ray-Ban Display**, l'écran montre l'étape et la correction, avec les boutons « Voir le geste », « Répéter » et « Étape suivante ».
+Sur les **Ray-Ban Display**, l'écran montre l'étape et la correction, avec les boutons « Vérifier mon geste », « Voir le geste », « Répéter » et « Étape suivante ».
 
 ## Tests
 
 ```bash
-cd cerveau && npm test && npm run typecheck    # 31 tests
-cd lunettes-mentra && bun test && bun run typecheck   # 9 tests, dont l'intégration avec le cerveau
-cd lunettes-meta && ./gradlew test             # 16 tests (contrôleur + découpage vidéo HEVC)
+cd cerveau && npm test && npm run typecheck    # 49 tests
+cd lunettes-mentra && bun test && bun run typecheck   # 10 tests, dont l'intégration avec le cerveau
+cd lunettes-meta && ./gradlew test             # 19 tests (contrôleur + découpage vidéo HEVC)
 ```
 
 ## Ce qui a été vérifié, et ce qui ne l'a pas été
 
 Vérifié, avec de vraies vidéos générées par ffmpeg et un **faux** serveur Claude (qui vérifie aussi la forme exacte des requêtes) :
 - **Vidéo du maître → leçon** : étapes, clips aux deux formats, séquences de référence de 8 images.
-- **Morceaux de vidéo de l'apprenti**, en MP4, WebM (tablette) et HEVC brut (Meta) : 8 images comparées aux 8 du maître.
-- **Direct RTMP** : l'apprenti est analysé en continu, et la démonstration du maître est enregistrée puis transformée en leçon.
+- **Morceaux de vidéo de l'apprenti**, en MP4, WebM (tablette) et HEVC brut (Meta) : gardés sans appel à l'IA, puis 8 images comparées aux 8 du maître avec « vérifie » ou « suivant ».
+- **Direct RTMP** : rien n'est analysé avant « vérifie » ; une étape surveillée est analysée en continu ; la démonstration du maître est enregistrée puis transformée en leçon.
+- **Détection de fin de geste** sur de vraies images (image fixe puis mire animée), et la logique de déclenchement sur des images simulées.
 - **Appli Mentra** : test d'intégration avec le vrai cerveau, où des « lunettes » simulées envoient une vraie vidéo en direct.
 - **Appli Meta** : le découpage d'une vraie vidéo HEVC donne des morceaux que ffmpeg décode. Tout le code compile contre les vraies bibliothèques Meta (`mwdat` 1.0.0).
-- **Tablette** : dans un vrai navigateur (Chromium, caméra simulée), les morceaux de 4 secondes partent et les corrections reviennent.
+- **Tablette** : dans un vrai navigateur (Chromium, caméra simulée), aucun appel à l'IA pendant 9 secondes de caméra, puis un seul appel par clic sur « Vérifier mon geste » ou « Suivant ». Fiche écrite affichée, modifiée et relue.
 
 Pas encore vérifié :
 - **La qualité des corrections de l'IA** sur de vrais gestes. Il faut une clé API et un vrai essai avec un artisan.
@@ -165,11 +184,14 @@ Pas encore vérifié :
   - le format exact des images HEVC livrées par le SDK (le code accepte les deux formats courants) ;
   - la taille de vidéo acceptée par l'écran des Ray-Ban Display ;
   - la qualité du direct RTMP depuis le Wi-Fi des Mentra Live.
-- **Le délai réel** entre le geste et la correction (visé : 3 à 6 secondes, soit 4 s de vidéo plus le temps d'analyse).
+- **Le délai réel** entre « vérifie » et la réponse (visé : 3 à 5 secondes).
+- **Les seuils de la vérification automatique** (quand considère-t-on que l'apprenti s'est arrêté ?) avec une vraie caméra portée sur la tête.
 - **Le build Android complet (APK)** : il n'a pas pu être lancé dans l'environnement de développement (serveurs Google bloqués). Il faut compiler dans Android Studio.
 
 ## Coûts et vie privée
 
-- **Chaque séquence analysée = un appel à Claude avec 16 images** (8 du maître, mises en cache pendant l'étape, et 8 de l'apprenti), soit environ une analyse toutes les 2 à 5 secondes par apprenti. Les images sont réduites à 640 pixels de large pour limiter le coût. Le coût réel de chaque analyse est calculé et affiché sur la page d'évaluation.
+- **Créer une leçon** : environ 0,25 $, une seule fois. Ensuite, regarder les clips, la fiche et les étapes ne coûte rien, pour autant d'apprentis qu'on veut.
+- **Chaque vérification = un appel à Claude avec 16 images** (8 du maître, mises en cache pendant l'étape, et 8 de l'apprenti), environ 2 centimes avec le modèle par défaut. À la demande, compte environ 1 à 1,5 $ par heure de pratique ; une étape surveillée en continu revient à 10 à 15 $ de l'heure. Les images sont réduites à 640 pixels de large. Le coût réel est calculé et affiché sur la page d'évaluation (par heure, par séance, par analyse).
+- **Modèle moins cher** : `MODELE_IA=claude-sonnet-5-5` (environ deux fois moins cher) ou `MODELE_IA=claude-haiku-4-5` (environ quatre fois moins cher). Compare la justesse des corrections sur la page d'évaluation avant de changer.
 - La vidéo part vers le serveur, puis les images extraites partent vers l'API Claude. Préviens les personnes filmées et évite de filmer des clients ou des documents.
 - Les clips et images des leçons (`/media/...`) ne sont pas protégés par `CLE_ACCES`. Leurs adresses sont difficiles à deviner, mais ne sont pas secrètes. Les adresses de direct RTMP contiennent une clé aléatoire propre à chaque direct.

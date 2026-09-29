@@ -38,6 +38,7 @@ async function carteLecon(lecon) {
           afficherLecons();
         },
       }, ouvertes.has(lecon.id) ? "Masquer les étapes" : "Voir les étapes"),
+      el("a", { classe: "bouton", href: `fiche.html?lecon=${lecon.id}` }, "Fiche écrite"),
       el("a", { classe: "bouton", href: `evaluation.html?lecon=${lecon.id}` }, "Évaluer les séances"),
     );
   }
@@ -87,6 +88,7 @@ async function listeEtapes(id) {
     return el("li", {},
       el("strong", {}, `${etape.numero}. ${etape.titre}`),
       el("p", { style: "margin: 4px 0" }, etape.consigne),
+      etape.explication ? el("p", { classe: "details", style: "margin: 2px 0" }, etape.explication) : null,
       ...details.map((d) => el("p", { classe: "details", style: "margin: 2px 0" }, d)),
       media,
     );

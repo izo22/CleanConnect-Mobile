@@ -23,17 +23,24 @@ async function afficherMesures() {
     carte(String(m.erreursManquees), "Erreurs ratées", `détection : ${pourcent(m.detection)}`),
     carte(`${m.seancesTerminees} / ${m.seances}`, "Séances terminées", pourcent(m.tauxTermine)),
     carte(duree(m.dureeMedianeSeanceS), "Durée médiane d'une leçon", "séances terminées"),
-    carte(dollars(m.coutParSeanceUsd), "Coût IA par séance", `total ${dollars(m.coutTotalUsd)} · ${m.analyses} analyses`),
+    carte(
+      m.coutParHeureUsd === null ? "—" : `${dollars(m.coutParHeureUsd)}/h`,
+      "Coût IA par heure de pratique",
+      `${dollars(m.coutParSeanceUsd)} par séance · ${dollars(m.coutParAnalyseUsd)} par analyse · ${m.analyses} analyses ` +
+        `(demandées ${m.analysesParDeclencheur.demande}, avant « suivant » ${m.analysesParDeclencheur.suivant}, ` +
+        `auto ${m.analysesParDeclencheur.auto}, surveillance ${m.analysesParDeclencheur.continu})`,
+    ),
     carte(m.latenceMedianeMs === null ? "—" : `${(m.latenceMedianeMs / 1000).toFixed(1)} s`, "Temps de réponse de l'IA", "à ajouter à la durée observée"),
   );
   $("par-etape").replaceChildren(
-    el("thead", {}, el("tr", {}, ...["Étape", "Temps médian pour réussir seul", "Validées par l'IA", "Passées à la main", "Corrections", "Dont fausses"].map((t) => el("th", {}, t)))),
+    el("thead", {}, el("tr", {}, ...["Étape", "Temps médian pour réussir seul", "Validées par l'IA", "Passées à la main", "Vérifications", "Corrections", "Dont fausses"].map((t) => el("th", {}, t)))),
     el("tbody", {}, ...m.etapes.map((e) =>
       el("tr", {},
         el("td", {}, `${e.numero}. ${e.titre}`),
         el("td", {}, duree(e.dureeMedianeS)),
         el("td", {}, String(e.reussitesAuto)),
         el("td", {}, String(e.passagesManuels)),
+        el("td", {}, String(e.verifications)),
         el("td", {}, String(e.corrections)),
         el("td", {}, String(e.fausses)),
       ))),
@@ -62,9 +69,31 @@ function afficherRegles() {
   );
 }
 
-$("cadence").addEventListener("change", async (e) => {
-  await api(`/lecons/${leconId}/reglages`, { method: "POST", body: JSON.stringify({ imagesParSeconde: Number(e.target.value) }) });
-});
+async function enregistrerReglages(reglages) {
+  try {
+    await api(`/lecons/${leconId}/reglages`, { method: "POST", body: JSON.stringify(reglages) });
+    $("etat-reglages").textContent = "Enregistré : les séances en cours en tiennent compte tout de suite.";
+  } catch (erreur) {
+    $("etat-reglages").textContent = erreur.message;
+  }
+}
+
+function afficherReglages() {
+  $("cadence").value = String(lecon.imagesParSeconde ?? 2);
+  $("auto").checked = lecon.verificationAuto === true;
+  $("surveillees").replaceChildren(...lecon.etapes.map((etape) => {
+    const caseEtape = el("input", { type: "checkbox", value: etape.id });
+    caseEtape.checked = etape.surveiller === true;
+    caseEtape.addEventListener("change", () => {
+      etape.surveiller = caseEtape.checked;
+      enregistrerReglages({ etapesSurveillees: lecon.etapes.filter((e) => e.surveiller).map((e) => e.id) });
+    });
+    return el("label", { classe: "case", style: "margin-top: 6px" }, caseEtape, el("span", {}, `${etape.numero}. ${etape.titre}`));
+  }));
+}
+
+$("cadence").addEventListener("change", (e) => enregistrerReglages({ imagesParSeconde: Number(e.target.value) }));
+$("auto").addEventListener("change", (e) => enregistrerReglages({ verificationAuto: e.target.checked }));
 
 $("form-regle").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -114,6 +143,12 @@ const LIBELLES = {
   en_cours: "Silence",
   pas_visible: "« Je ne vois pas bien »",
 };
+const DECLENCHEURS = {
+  demande: "demandée par l'apprenti",
+  suivant: "avant « suivant »",
+  auto: "automatique (fin de geste)",
+  continu: "surveillance continue",
+};
 const BOUTONS = {
   correction: [["juste", "Juste"], ["fausse", "Fausse"], ["inutile", "Inutile"]],
   pas_visible: [["juste", "Justifié"], ["inutile", "Inutile"]],
@@ -125,7 +160,8 @@ async function afficherInterventions() {
   const { seance, interventions } = await api(`/seances/${seanceChoisie}`);
   $("titre-seance").textContent = `Séance de ${seance.apprenti}`;
   const avecSilences = $("silences").checked;
-  const visibles = interventions.filter((i) => avecSilences || i.verdict !== "en_cours");
+  // Une vérification demandée reçoit toujours une réponse, même sans erreur : elle reste visible.
+  const visibles = interventions.filter((i) => avecSilences || i.verdict !== "en_cours" || i.dit);
   const debut = Date.parse(seance.debut);
   $("interventions").replaceChildren(
     ...(visibles.length === 0
@@ -141,8 +177,9 @@ function carteIntervention(i, debut) {
   const detail = el("div", { classe: "detail-avis cache" });
   const carte = el("article", { classe: `carte intervention ${i.verdict}` },
     el("div", { classe: "rangee" },
-      el("span", { classe: `badge ${i.verdict}` }, LIBELLES[i.verdict] ?? i.verdict),
+      el("span", { classe: `badge ${i.verdict}` }, i.verdict === "en_cours" && i.dit ? "Rien de faux" : LIBELLES[i.verdict] ?? i.verdict),
       el("span", {}, `Étape ${i.etapeNumero} · ${titreEtape(i.etapeId)}`),
+      el("span", { classe: "vide" }, DECLENCHEURS[i.declencheur ?? "continu"]),
       el("span", { classe: "vide pousse" }, `${Math.floor(secondes / 60)}:${String(secondes % 60).padStart(2, "0")} · réponse en ${(i.latenceMs / 1000).toFixed(1)} s${i.dit ? "" : " · non dite"}`),
     ),
     i.message ? el("p", { classe: "message" }, `« ${i.message} »`) : null,
@@ -219,7 +256,8 @@ async function enregistrer(i, avis, commentaire, regle, portee) {
   }
   $("titre").textContent = `Évaluation — ${lecon.titre}`;
   document.title = `Évaluation — ${lecon.titre}`;
-  $("cadence").value = String(lecon.imagesParSeconde ?? 2);
+  $("lien-fiche").href = `fiche.html?lecon=${lecon.id}`;
+  afficherReglages();
   $("etape-regle").replaceChildren(
     el("option", { value: "" }, "Toute la leçon"),
     ...lecon.etapes.map((e) => el("option", { value: e.id }, `Étape ${e.numero} · ${e.titre}`)),

@@ -13,7 +13,13 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ControleurTest {
-  private fun retour(index: Int, dire: String? = null, afficher: String = "Consigne ${index + 1}", termine: Boolean = false) =
+  private fun retour(
+      index: Int,
+      dire: String? = null,
+      afficher: String = "Consigne ${index + 1}",
+      termine: Boolean = false,
+      envoiVideoContinu: Boolean = true,
+  ) =
       Retour(
           sessionId = "s1",
           termine = termine,
@@ -26,6 +32,8 @@ class ControleurTest {
           afficher = afficher,
           dire = dire,
           ignore = false,
+          envoiVideoContinu = envoiVideoContinu,
+          fenetreS = 6,
       )
 
   /** Faux cerveau : note les appels et renvoie des réponses programmées. */
@@ -33,12 +41,15 @@ class ControleurTest {
     val appels = mutableListOf<String>()
     var reponseVideo: () -> Retour = { error("pas de réponse") }
     var sessionExiste = true
+    var sessionContinue = true
 
     override suspend fun lecons() = emptyList<ResumeLecon>()
 
     override suspend fun creerSession(leconId: String, apprenti: String): Retour {
       appels += "creerSession $leconId${if (apprenti.isNotEmpty()) " $apprenti" else ""}"
-      return Retour("s1", false, 0, 3, "Pesée", "Pèse.", null, null, "Pèse.", "Étape 1", false)
+      return Retour(
+          "s1", false, 0, 3, "Pesée", "Pèse.", null, null, "Pèse.", "Étape 1", false,
+          envoiVideoContinu = sessionContinue, fenetreS = 6)
     }
 
     override suspend fun etatSession(sessionId: String): Retour {
@@ -47,17 +58,20 @@ class ControleurTest {
       return Retour("s1", false, 1, 3, "Façonnage", "Roule.", null, null, "Roule.", null, false)
     }
 
-    override suspend fun envoyerVideo(sessionId: String, morceau: MorceauVideo): Retour {
-      appels += "video ${morceau.donnees.size}"
-      return reponseVideo()
+    override suspend fun envoyerVideo(sessionId: String, morceau: MorceauVideo, commande: String?): Retour {
+      appels += "video ${morceau.donnees.size}${if (commande != null) " $commande" else ""}"
+      return if (commande == "suivant") reponseCommande() else reponseVideo()
     }
 
     override suspend fun commande(sessionId: String, commande: String): Retour {
       appels += "commande $commande"
-      return Retour(
-          "s1", false, 1, 3, "Façonnage", "Roule.", "/media/lecons/L1/clips/etape-2-lunettes.mp4", null,
-          "Roule.", "Étape 2", false)
+      return reponseCommande()
     }
+
+    private fun reponseCommande() =
+        Retour(
+            "s1", false, 1, 3, "Façonnage", "Roule.", "/media/lecons/L1/clips/etape-2-lunettes.mp4", null,
+            "Roule.", "Étape 2", false)
 
     override suspend fun creerCapture(titre: String, metier: String): String {
       appels += "creerCapture $titre/$metier"
@@ -96,6 +110,9 @@ class ControleurTest {
     }
 
     override fun dernierMorceau() = MorceauVideo(ByteArray(7), 15)
+
+    /** 10 octets par seconde demandée, pour vérifier la durée envoyée. */
+    override fun dernieresSecondes(secondes: Int) = MorceauVideo(ByteArray(secondes * 10), 15)
 
     override fun nouvelleVideo() {
       reinitialisations++
@@ -214,11 +231,47 @@ class ControleurTest {
     c.entendu("Suivant !")
     c.entendu("je prends le suivant dans la corbeille")
     c.entendu("montre le geste")
-    assertEquals(1, cerveau.appels.count { it == "commande suivant" })
+    // « Suivant » emporte la fin de la vidéo pas encore envoyée, pour que l'IA vérifie avant de passer.
+    assertEquals(1, cerveau.appels.count { it == "video 7 suivant" })
     // Le geste montré est celui de l'étape en cours (la 2, après « suivant »).
     assertEquals(listOf("https://cerveau.test/media/lecons/L1/clips/etape-2-lunettes.mp4"), lunettes.gestes)
     c.entendu("pause")
     assertFalse(c.actif)
+  }
+
+  @Test
+  fun `apprenti a la demande - la video reste sur le telephone jusqu a verifie`() = runTest {
+    val cerveau =
+        FauxCerveau().apply {
+          sessionContinue = false
+          reponseVideo = { retour(0, dire = "Tare la balance.", afficher = "Tare la balance.", envoiVideoContinu = false) }
+        }
+    val lunettes = FaussesLunettes()
+    val c = controleur(cerveau, lunettes)
+
+    c.demarrer()
+    advanceTimeBy(12_001)
+    runCurrent()
+    assertEquals(listOf("creerSession L1"), cerveau.appels)
+
+    c.entendu("vérifie")
+    // Les 6 dernières secondes (fenêtre donnée par le cerveau) partent avec la demande.
+    assertEquals("video 60 verifier", cerveau.appels.last())
+    assertEquals(listOf("Étape 1", "Je regarde.", "Tare la balance."), lunettes.dit)
+
+    c.entendu("explique")
+    assertEquals("commande expliquer", cerveau.appels.last())
+    c.arreter()
+  }
+
+  @Test
+  fun `apprenti en pause - verifier part sans video`() = runTest {
+    val cerveau = FauxCerveau().apply { reponseVideo = { retour(0) } }
+    val c = controleur(cerveau, FaussesLunettes())
+    c.demarrer()
+    c.arreter()
+    c.commande("verifier")
+    assertEquals("commande verifier", cerveau.appels.last())
   }
 
   @Test
@@ -278,6 +331,10 @@ class ControleurTest {
     assertEquals(CommandeVocale.PRECEDENT, commandeApprenti("Précédent"))
     assertEquals(CommandeVocale.REPETER, commandeApprenti("tu peux répéter"))
     assertEquals(CommandeVocale.VOIR_GESTE, commandeApprenti("montre moi"))
+    assertEquals(CommandeVocale.VERIFIER, commandeApprenti("Vérifie"))
+    assertEquals(CommandeVocale.VERIFIER, commandeApprenti("c'est bon ?"))
+    assertEquals(CommandeVocale.VERIFIER, commandeApprenti("regarde mon geste"))
+    assertEquals(CommandeVocale.EXPLIQUER, commandeApprenti("explique-moi"))
     assertNull(commandeApprenti("bonjour"))
     assertEquals(CommandeVocale.ETAPE_MAITRE, commandeMaitre("Nouvelle étape"))
     assertEquals(CommandeVocale.TERMINER_MAITRE, commandeMaitre("c'est fini"))

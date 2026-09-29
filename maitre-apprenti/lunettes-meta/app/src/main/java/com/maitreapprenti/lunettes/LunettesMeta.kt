@@ -38,6 +38,7 @@ import kotlinx.coroutines.launch
 
 /** Boutons affichés sur l'écran des lunettes (les appuis reviennent au téléphone). */
 enum class BoutonLunettes {
+  VERIFIER,
   VOIR_GESTE,
   SUIVANT,
   REPETER,
@@ -223,6 +224,8 @@ class LunettesMeta(
 
   override fun dernierMorceau(): MorceauVideo? = decoupeur.vider()
 
+  override fun dernieresSecondes(secondes: Int): MorceauVideo? = decoupeur.dernieresSecondes(secondes * 1_000_000L)
+
   override fun nouvelleVideo() = decoupeur.reinitialiser()
 
   override fun dire(texte: String) {
@@ -239,10 +242,16 @@ class LunettesMeta(
             flexBox(gap = 12, padding = 24, background = FlexBoxBackground.CARD) {
               text(ecran.titre, style = TextStyle.META, color = TextColor.SECONDARY)
               text(ecran.texte, style = TextStyle.BODY)
+              button(
+                  label = "Vérifier mon geste",
+                  style = ButtonStyle.PRIMARY,
+                  iconName = IconName.EYE,
+                  onClick = { surBouton(BoutonLunettes.VERIFIER) },
+              )
               if (ecran.clipUrl != null) {
                 button(
                     label = "Voir le geste",
-                    style = ButtonStyle.PRIMARY,
+                    style = ButtonStyle.SECONDARY,
                     iconName = IconName.TRIANGLE_RIGHT_CIRCLE,
                     onClick = { surBouton(BoutonLunettes.VOIR_GESTE) },
                 )

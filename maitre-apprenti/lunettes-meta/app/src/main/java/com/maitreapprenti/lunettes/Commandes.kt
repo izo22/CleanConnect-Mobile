@@ -10,6 +10,10 @@ enum class CommandeVocale {
   RECOMMENCER,
   PAUSE,
   VOIR_GESTE,
+  /** « Vérifie » : l'IA juge la dernière tentative. */
+  VERIFIER,
+  /** « Explique » : le texte écrit de l'étape est lu. */
+  EXPLIQUER,
   ETAPE_MAITRE,
   TERMINER_MAITRE,
 }
@@ -29,6 +33,8 @@ fun commandeApprenti(phrase: String): CommandeVocale? {
   val t = normaliser(phrase)
   if (t.isEmpty() || t.split(" ").size > 4) return null
   return when {
+    contient(t, "verifie", "verifier", "verif", "regarde", "check", "c'est bon") -> CommandeVocale.VERIFIER
+    contient(t, "explique", "expliquer", "explication", "details", "comment", "explain") -> CommandeVocale.EXPLIQUER
     contient(t, "suivant", "suivante", "next") -> CommandeVocale.SUIVANT
     contient(t, "precedent", "precedente", "retour", "back", "previous") -> CommandeVocale.PRECEDENT
     contient(t, "repete", "repeter", "redis", "repeat") -> CommandeVocale.REPETER

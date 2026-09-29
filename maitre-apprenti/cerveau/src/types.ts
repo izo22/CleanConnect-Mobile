@@ -12,6 +12,19 @@ export interface Etape {
   erreursFrequentes: string[];
   /** À quoi on reconnaît que l'étape est réussie (souvent le résultat visible). */
   criteresDeReussite: string[];
+  /**
+   * Le détail du geste, écrit pour la fiche de l'apprenti (quelques phrases). Relu et corrigé
+   * par le maître si besoin. Absent sur les leçons créées avant cette fonction.
+   */
+  explication?: string;
+  /** Ce que le maître a dit pendant cette étape de sa démonstration (lunettes). */
+  paroles?: string[];
+  /**
+   * Étape « à surveiller » (couteau, four…) : l'IA regarde en continu. Sinon, elle ne regarde
+   * que quand l'apprenti le demande (« vérifie »), quand il veut passer à la suite, ou à la fin
+   * d'un geste si la vérification automatique est activée.
+   */
+  surveiller?: boolean;
   /** Début et fin de l'étape dans la vidéo du maître, en secondes. */
   debut: number | null;
   fin: number | null;
@@ -49,6 +62,8 @@ export interface Lecon {
   regles?: Regle[];
   /** Cadence d'analyse : 2 (gestes lents) à 5 (gestes rapides) images par seconde. Défaut : 2. */
   imagesParSeconde?: number;
+  /** Vérifier tout seul quand l'apprenti s'arrête de bouger (fin probable d'un geste). Défaut : non. */
+  verificationAuto?: boolean;
 }
 
 /** Une image extraite de la vidéo (ou prise par les lunettes) du maître. */
@@ -98,6 +113,15 @@ export interface Annotation {
   le: string;
 }
 
+/**
+ * Ce qui a déclenché une analyse :
+ * - "demande" : l'apprenti a dit « vérifie » ou appuyé sur le bouton ;
+ * - "suivant" : il a voulu passer à l'étape suivante ;
+ * - "auto" : il s'est arrêté de bouger (vérification automatique) ;
+ * - "continu" : étape à surveiller, l'IA regarde en permanence.
+ */
+export type Declencheur = "demande" | "suivant" | "auto" | "continu";
+
 /** Une analyse de l'IA pendant une séance, avec les images qu'elle a vues. */
 export interface Intervention {
   id: string;
@@ -106,6 +130,8 @@ export interface Intervention {
   etapeId: string;
   etapeNumero: number;
   t: string;
+  /** Absent sur les séances enregistrées avant l'analyse à la demande (c'était alors "continu"). */
+  declencheur?: Declencheur;
   verdict: TypeVerdict;
   message: string;
   /** Vrai si le message a été dit à l'apprenti (sinon : silence ou répétition évitée). */
@@ -137,7 +163,7 @@ export interface Seance {
   evenements: Evenement[];
 }
 
-export type Commande = "suivant" | "precedent" | "repeter" | "recommencer";
+export type Commande = "suivant" | "precedent" | "repeter" | "recommencer" | "verifier" | "expliquer";
 
 /** Ce que les lunettes et la tablette reçoivent après chaque image ou commande. */
 export interface Retour {
@@ -153,12 +179,30 @@ export interface Retour {
     /** Version 266×150 sans son du clip, pour l'écran des lunettes. */
     clipLunettesUrl: string | null;
     imageUrls: string[];
+    /** Texte écrit de l'étape (fiche de l'apprenti). */
+    explication: string;
+    pointsDeControle: string[];
+    erreursFrequentes: string[];
+    criteresDeReussite: string[];
+    paroles: string[];
+    /** "demande" : l'IA regarde quand on lui demande ; "continu" : étape surveillée en permanence. */
+    analyse: "demande" | "continu";
+    /** Secondes de vidéo que l'IA regarde quand on lui demande de vérifier. */
+    fenetreS: number;
+    /**
+     * Vrai si le cerveau a besoin de la vidéo en permanence (étape surveillée ou vérification
+     * automatique). Sinon les lunettes peuvent n'envoyer la vidéo qu'avec « vérifie » ou « suivant ».
+     */
+    envoiVideoContinu: boolean;
   };
   verdict: TypeVerdict | null;
   /** Texte à afficher (écran des lunettes ou tablette). */
   afficher: string;
   /** Texte à dire à voix haute, ou null pour rester silencieux. */
   dire: string | null;
-  /** true si la séquence a été ignorée parce qu'une analyse était déjà en cours. */
+  /**
+   * true si rien de nouveau n'est à montrer : vidéo simplement gardée en mémoire (analyse à la
+   * demande) ou analyse déjà en cours.
+   */
   ignore: boolean;
 }

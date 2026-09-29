@@ -55,8 +55,9 @@ export function pageReglages(reglages: Reglages, lecons: ResumeLecon[], erreur: 
     <button>Enregistrer</button>
     <p class="doux" id="etat"></p>
   </form>
-  <p class="doux">Sur les lunettes : appui court pour démarrer ou mettre en pause, appui long pour l'étape suivante
-  (ou « terminé » en mode maître). À la voix : « suivant », « précédent », « répète », « pause ».</p>
+  <p class="doux">Sur les lunettes : appui court pour démarrer, puis pour faire vérifier ton geste ; appui long pour
+  l'étape suivante (ou « terminé » en mode maître). À la voix : « vérifie », « explique », « suivant », « précédent »,
+  « répète », « pause ».</p>
 </main>
 <script>
   const f = document.getElementById("f");

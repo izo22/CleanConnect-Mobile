@@ -9,7 +9,10 @@
 </head>
 <body>
 <main>
-  <a class="bouton" href="/">← Leçons</a>
+  <div class="rangee">
+    <a class="bouton" href="/">← Leçons</a>
+    <a class="bouton" id="lien-fiche" href="#">Fiche écrite (relire et corriger le texte)</a>
+  </div>
   <h1 id="titre" style="margin-top: 16px">Chargement…</h1>
   <p class="sous-titre">Juge chaque intervention de l'IA. Tes avis alimentent les mesures du pilote, et tes explications deviennent des règles que l'IA applique aussitôt.</p>
 
@@ -23,15 +26,21 @@
 
   <div class="deux-colonnes">
     <section class="carte">
-      <h2>Cadence d'analyse</h2>
-      <label for="cadence">Images par seconde envoyées à l'IA</label>
+      <h2>Quand l'IA regarde</h2>
+      <p class="vide" style="margin-top: 0">Par défaut, l'IA ne regarde que quand l'apprenti le demande (« vérifie », bouton) ou veut passer à l'étape suivante. Chaque regard coûte environ 2 centimes : c'est ce qui garde le coût bas.</p>
+      <label class="case"><input type="checkbox" id="auto"><span>Vérifier aussi tout seul quand l'apprenti s'arrête de bouger (fin probable d'un geste)</span></label>
+      <fieldset class="surveillees">
+        <legend>Étapes à surveiller en continu <small>(couteau, four… : l'IA regarde toutes les 2 secondes, environ 10 à 15 $ de l'heure)</small></legend>
+        <div id="surveillees"></div>
+      </fieldset>
+      <label for="cadence">Images par seconde pour les étapes surveillées</label>
       <select id="cadence">
         <option value="2">2 — l'IA voit les 4 dernières secondes (gestes lents)</option>
         <option value="3">3 — les 2,7 dernières secondes</option>
         <option value="4">4 — les 2 dernières secondes (gestes rapides)</option>
         <option value="5">5 — les 1,6 dernières secondes (gestes très rapides)</option>
       </select>
-      <p class="vide">Chaque analyse envoie toujours 8 images : le coût par analyse ne change pas, seule la durée observée change.</p>
+      <p class="vide" id="etat-reglages" role="status"></p>
     </section>
 
     <section class="carte">

@@ -1,4 +1,4 @@
-import { api, cleAcces } from "./commun.js";
+import { api, cleAcces, el } from "./commun.js";
 
 const $ = (id) => document.getElementById(id);
 const leconId = new URLSearchParams(location.search).get("lecon");
@@ -9,6 +9,10 @@ let clipActuel = null;
 let imageRefIndex = 0;
 let minuterieImages = null;
 let dernierMessageDit = null;
+let etapesLecon = [];
+/** Mode caméra de la tablette : l'enregistrement en cours, et la commande à envoyer avec lui. */
+let enregistreurActuel = null;
+let commandeEnAttente = null;
 
 // --- Affichage d'un retour du cerveau -------------------------------------------
 
@@ -22,6 +26,13 @@ function afficher(retour) {
   $("retour").textContent = retour.afficher;
   $("retour").className = `retour ${retour.verdict ?? ""}`;
   afficherDemo(etape);
+  afficherTexte(etape);
+  afficherPlan(retour.termine ? etape.total : etape.index);
+  $("verifier").disabled = retour.termine;
+  $("mode-analyse").textContent =
+    etape.analyse === "continu"
+      ? "Étape surveillée : l'IA regarde en continu pendant cette étape."
+      : `L'IA regarde les ${etape.fenetreS} dernières secondes quand tu demandes (ou quand tu dis « vérifie » avec les lunettes).`;
 
   if (retour.dire && $("voix").checked && retour.dire !== dernierMessageDit) {
     dernierMessageDit = retour.dire;
@@ -30,6 +41,30 @@ function afficher(retour) {
     phrase.lang = "fr-FR";
     speechSynthesis.speak(phrase);
   }
+}
+
+/** Le texte écrit de l'étape : explication, points clés, erreurs à éviter, paroles du maître. */
+function afficherTexte(etape) {
+  const liste = (titre, elements, classe) =>
+    elements?.length
+      ? el("div", { classe: `bloc-liste ${classe}` }, el("h3", {}, titre), el("ul", {}, ...elements.map((e) => el("li", {}, e))))
+      : null;
+  $("texte-etape").replaceChildren(
+    el("p", {}, etape.explication),
+    el("div", { classe: "listes" },
+      liste("Points clés", etape.pointsDeControle, "cles"),
+      liste("À éviter", etape.erreursFrequentes, "eviter"),
+      liste("C'est réussi quand", etape.criteresDeReussite, "reussi")),
+    etape.paroles?.length
+      ? el("div", { classe: "paroles" }, el("h3", {}, "Le maître dit"), ...etape.paroles.map((p) => el("blockquote", {}, `« ${p} »`)))
+      : null,
+  );
+}
+
+/** Le plan de la leçon : étapes faites, en cours, à venir. */
+function afficherPlan(indexActuel) {
+  $("plan").replaceChildren(...etapesLecon.map((e, i) =>
+    el("li", { classe: i < indexActuel ? "faite" : i === indexActuel ? "actuelle" : "", ...(i === indexActuel ? { "aria-current": "step" } : {}) }, e.titre)));
 }
 
 /** Le clip du maître en boucle, ou ses images de référence en diaporama. */
@@ -72,7 +107,17 @@ function suivreSession(id) {
 
 async function commande(nom) {
   if (!sessionId) return;
-  afficher(await api(`/sessions/${sessionId}/commande`, { method: "POST", body: JSON.stringify({ commande: nom }) }));
+  // Mode caméra : la vidéo des dernières secondes part avec « vérifie » et « suivant ».
+  if (enregistreurActuel && (nom === "verifier" || nom === "suivant")) {
+    commandeEnAttente = nom;
+    if (enregistreurActuel.state !== "inactive") enregistreurActuel.stop();
+    return;
+  }
+  try {
+    afficher(await api(`/sessions/${sessionId}/commande`, { method: "POST", body: JSON.stringify({ commande: nom }) }));
+  } catch (erreur) {
+    $("retour").textContent = erreur.message;
+  }
 }
 
 /** Rejoint la session lancée par les lunettes dès qu'elle apparaît. */
@@ -98,10 +143,11 @@ function formatVideo() {
   return candidats.find((f) => MediaRecorder.isTypeSupported(f)) ?? "";
 }
 
-/** Filme 4 secondes et renvoie la vidéo. */
+/** Filme 4 secondes (ou moins si l'apprenti demande une vérification) et renvoie la vidéo. */
 function filmerMorceau(camera, format) {
   return new Promise((ok, ko) => {
     const enregistreur = new MediaRecorder(camera, { mimeType: format, videoBitsPerSecond: 1_500_000 });
+    enregistreurActuel = enregistreur;
     const morceaux = [];
     enregistreur.ondataavailable = (e) => e.data.size && morceaux.push(e.data);
     enregistreur.onstop = () => ok(new Blob(morceaux, { type: enregistreur.mimeType }));
@@ -137,25 +183,35 @@ async function demarrerCamera() {
   $("camera").srcObject = camera;
   $("bloc-camera").classList.remove("cache");
 
-  // Filme en continu par morceaux de 4 s ; chaque morceau part à l'IA pendant que le suivant est filmé.
-  let envoiEnCours = false;
+  // Filme en continu par morceaux de 4 s, gardés quelques secondes par le cerveau. L'IA ne les
+  // regarde qu'avec « Vérifier » ou « Suivant » (sauf étape surveillée) : le morceau en cours
+  // est alors coupé et part avec la commande. Les réponses arrivent par le flux d'événements.
+  let envoiEnCours = null;
   for (;;) {
     const morceau = await filmerMorceau(camera, format);
-    if (envoiEnCours) continue; // l'IA n'a pas fini le précédent : on passe au morceau suivant
-    envoiEnCours = true;
-    api(`/sessions/${sessionId}/video`, {
-      method: "POST",
-      headers: { "content-type": morceau.type.split(";")[0] },
-      body: morceau,
-    })
-      .then(() => ($("etat-camera").textContent = "La vidéo est envoyée à l'IA par morceaux de 4 secondes."))
+    const avecCommande = commandeEnAttente;
+    commandeEnAttente = null;
+    if (envoiEnCours && !avecCommande) continue; // le cerveau n'a pas fini le précédent : on passe
+    const precedent = envoiEnCours ?? Promise.resolve();
+    const envoi = precedent.catch(() => undefined).then(() =>
+      api(`/sessions/${sessionId}/video${avecCommande ? `?commande=${avecCommande}` : ""}`, {
+        method: "POST",
+        headers: { "content-type": morceau.type.split(";")[0] },
+        body: morceau,
+      }));
+    envoiEnCours = envoi;
+    envoi
+      .then(() => ($("etat-camera").textContent = "La caméra filme. L'IA regarde quand tu cliques sur « Vérifier mon geste »."))
       .catch((erreur) => ($("etat-camera").textContent = `Envoi impossible : ${erreur.message}`))
-      .finally(() => (envoiEnCours = false));
+      .finally(() => {
+        if (envoiEnCours === envoi) envoiEnCours = null;
+      });
   }
 }
 
 // --- Démarrage -------------------------------------------------------------------
 
+$("verifier").onclick = () => commande("verifier");
 $("precedent").onclick = () => commande("precedent");
 $("suivant").onclick = () => commande("suivant");
 $("repeter").onclick = () => {
@@ -176,6 +232,8 @@ $("son").onclick = () => {
   }
   try {
     const lecon = await api(`/lecons/${leconId}`);
+    etapesLecon = lecon.etapes;
+    $("lien-fiche").href = `fiche.html?lecon=${lecon.id}`;
     $("titre").textContent = lecon.titre;
     document.title = `Apprenti — ${lecon.titre}`;
   } catch (erreur) {

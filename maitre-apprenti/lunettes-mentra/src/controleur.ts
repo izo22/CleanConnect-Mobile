@@ -1,7 +1,9 @@
 /**
  * Logique des lunettes, indépendante du SDK Mentra (pour pouvoir la tester) :
- * - mode apprenti : les lunettes filment en direct vers le cerveau, qui analyse le geste
- *   en continu et renvoie les corrections, dites à l'oreille ;
+ * - mode apprenti : les lunettes filment en direct vers le cerveau, qui garde les dernières
+ *   secondes ; l'IA juge le geste quand l'apprenti dit « vérifie » (ou appuie sur le bouton),
+ *   quand il dit « suivant », ou en continu sur les étapes à surveiller. Les corrections sont
+ *   dites à l'oreille ;
  * - mode maître : la démonstration est filmée en direct et enregistrée, avec la voix du maître,
  *   puis le cerveau en fait une leçon.
  */
@@ -32,7 +34,7 @@ export interface Lunettes {
   afficher(titre: string, texte: string): void
 }
 
-type Commande = "suivant" | "precedent" | "repeter" | "recommencer"
+type Commande = "suivant" | "precedent" | "repeter" | "recommencer" | "verifier" | "expliquer"
 
 function normaliser(texte: string): string {
   return texte
@@ -48,6 +50,8 @@ function normaliser(texte: string): string {
 export function commandeApprenti(texte: string): Commande | "pause" | null {
   const t = normaliser(texte)
   if (!t || t.split(" ").length > 4) return null
+  if (/\b(verifie|verifier|verif|regarde|check)\b|c'est bon/.test(t)) return "verifier"
+  if (/\b(explique|expliquer|explication|details|comment)\b/.test(t)) return "expliquer"
   if (/\b(suivant|suivante)\b/.test(t)) return "suivant"
   if (/\b(precedent|precedente|retour)\b/.test(t)) return "precedent"
   if (/\b(repete|repeter|redis|redire)\b/.test(t)) return "repeter"
@@ -242,15 +246,11 @@ export class Controleur {
     }
   }
 
-  /** Appui court : démarrer / mettre en pause (apprenti) ou marquer une étape (maître). */
+  /** Appui court : démarrer, puis « vérifie mon geste » (apprenti) ; marquer une étape (maître). */
   async boutonCourt(): Promise<void> {
     if (this.reglages.mode === "maitre" && this.actif) return this.marquerEtape()
-    if (this.actif) {
-      await this.arreter()
-      this.lunettes.dire("Pause.")
-    } else {
-      await this.demarrer()
-    }
+    if (this.actif) return this.commande("verifier")
+    await this.demarrer()
   }
 
   /** Appui long : étape suivante (apprenti) ou fin de la démonstration (maître). */

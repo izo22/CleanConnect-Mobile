@@ -25,23 +25,33 @@
     <div class="rangee" style="margin-top: 12px">
       <button class="principal" id="demarrer-camera">Utiliser la caméra de cet appareil</button>
     </div>
-    <p class="vide">Le mode caméra sert à tester sans lunettes : pose la tablette au-dessus du plan de travail, elle filme en continu.</p>
+    <p class="vide">Le mode caméra sert à tester sans lunettes : pose la tablette au-dessus du plan de travail. Elle filme en continu, mais l'IA ne regarde que quand tu le demandes.</p>
   </section>
 
   <section id="lecon" class="apprenti cache" style="margin-top: 16px">
+    <div>
     <div class="carte demo">
       <video id="clip" autoplay loop muted playsinline controls class="cache"></video>
       <img id="image-ref" alt="Geste du maître" class="cache">
       <p class="legende" id="legende">Le geste du maître pour cette étape</p>
       <div class="rangee">
         <button id="son">🔈 Son du maître</button>
+        <a class="bouton pousse" id="lien-fiche" href="#">Fiche écrite complète</a>
       </div>
+    </div>
+
+    <div class="carte plan-carte">
+      <h2>Les étapes</h2>
+      <ol class="plan" id="plan"></ol>
+    </div>
     </div>
 
     <div>
       <div class="carte">
         <div class="consigne" id="consigne"></div>
         <div class="retour" id="retour"></div>
+        <button class="principal verifier" id="verifier">✋ Vérifier mon geste</button>
+        <p class="mode-analyse" id="mode-analyse"></p>
         <div class="rangee" style="margin-top: 16px">
           <button id="precedent">← Précédent</button>
           <button id="repeter">Répéter</button>
@@ -53,9 +63,13 @@
           <span>Lire les conseils à voix haute sur cet appareil</span>
         </label>
       </div>
+      <div class="carte">
+        <h2>Comment faire</h2>
+        <div class="texte-etape" id="texte-etape"></div>
+      </div>
       <div class="carte camera cache" id="bloc-camera">
         <video id="camera" autoplay muted playsinline></video>
-        <p class="vide" id="etat-camera">La vidéo est envoyée à l'IA par morceaux de 4 secondes.</p>
+        <p class="vide" id="etat-camera">La caméra filme. L'IA regarde quand tu cliques sur « Vérifier mon geste ».</p>
       </div>
     </div>
   </section>

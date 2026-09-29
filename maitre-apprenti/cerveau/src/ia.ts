@@ -55,6 +55,7 @@ function texteReponse(reponse: Anthropic.Beta.BetaMessage): string {
 export interface EtapeBrute {
   titre: string;
   consigne: string;
+  explication: string;
   debut_s: number;
   fin_s: number;
   points_de_controle: string[];
@@ -72,6 +73,7 @@ const SCHEMA_LECON = {
         properties: {
           titre: { type: "string" },
           consigne: { type: "string" },
+          explication: { type: "string" },
           debut_s: { type: "number" },
           fin_s: { type: "number" },
           points_de_controle: { type: "array", items: { type: "string" } },
@@ -79,7 +81,7 @@ const SCHEMA_LECON = {
           criteres_de_reussite: { type: "array", items: { type: "string" } },
         },
         required: [
-          "titre", "consigne", "debut_s", "fin_s", "points_de_controle",
+          "titre", "consigne", "explication", "debut_s", "fin_s", "points_de_controle",
           "erreurs_frequentes", "criteres_de_reussite",
         ],
         additionalProperties: false,
@@ -96,6 +98,7 @@ Un apprenti refera ensuite les mêmes gestes avec des lunettes connectées qui l
 Découpe la démonstration en étapes concrètes, dans l'ordre (en général entre 4 et 12). Pour chaque étape :
 - titre : 2 à 6 mots.
 - consigne : ce que l'apprenti doit faire, en une ou deux phrases à l'impératif, en tutoyant. Elle sera lue à voix haute.
+- explication : le détail du geste pour la fiche écrite de l'apprenti, en 2 à 5 phrases courtes à l'impératif, en tutoyant : comment tenir l'outil ou la matière, dans quel sens et avec quelle amplitude bouger, jusqu'à quand. Reprends les mots et les astuces du maître quand il en donne.
 - debut_s et fin_s : les instants de début et de fin dans la vidéo, en secondes, d'après les instants indiqués sous chaque image.
 - points_de_controle : ce qui doit se voir dans le geste pendant l'étape (bon outil, bonne quantité lue sur la balance, ordre des mouvements, sens et amplitude du geste, position des mains, rythme...).
 - erreurs_frequentes : les erreurs visibles typiques d'un débutant sur cette étape (geste, ordre, résultat).
@@ -174,7 +177,7 @@ const SYSTEME_TUTEUR = `Tu es le tuteur d'un apprenti artisan. Il porte des lune
 Réponds avec un verdict :
 - "correction" : une erreur est clairement visible dans le geste ou le résultat (mauvais mouvement, mauvais ordre, mauvais outil, geste trop brusque ou trop timide, forme ratée). Le message dit quoi faire, pas ce qui ne va pas : une seule correction, la plus importante, à l'impératif, en tutoyant, en 15 mots maximum. Exemple : « Roule du centre vers les bords, en écartant les mains. »
 - "etape_reussie" : les critères de réussite de l'étape sont clairement visibles à la fin de l'extrait. Le message est un bravo très court.
-- "en_cours" : l'apprenti travaille, rien de faux n'est visible, ou tu as un doute. Message vide.
+- "en_cours" : l'apprenti travaille, rien de faux n'est visible, ou tu as un doute. Message vide, sauf si l'apprenti t'a demandé de vérifier (voir plus bas).
 - "pas_visible" : on ne voit pas ses mains ni son plan de travail. Le message lui dit comment se placer, en 12 mots maximum.
 
 Règles :
@@ -183,7 +186,9 @@ Règles :
 - Ne juge que ce qui se voit. Tu ne sens pas la pâte ni la pression des mains : ne les devine pas.
 - En cas de doute, choisis "en_cours". Une correction fausse fait plus de mal qu'un silence.
 - Si l'apprenti est en train d'appliquer une correction déjà donnée, ne la répète pas.
-- Dans points_valides, liste les points de contrôle que tu vois respectés dans l'extrait.`;
+- Dans points_valides, liste les points de contrôle que tu vois respectés dans l'extrait.
+
+Quand c'est indiqué, l'apprenti vient de finir une tentative et te demande de vérifier : il attend une réponse. Avec "en_cours", donne quand même un message de 15 mots maximum : ce qui est déjà bien, puis ce qu'il reste à faire pour finir l'étape.`;
 
 function descriptionEtape(titreLecon: string, etape: Etape, total: number, regles: string[]): string {
   const liste = (titre: string, elements: string[]) =>
@@ -191,12 +196,21 @@ function descriptionEtape(titreLecon: string, etape: Etape, total: number, regle
   return (
     `Leçon : « ${titreLecon} ». Étape ${etape.numero}/${total} : ${etape.titre}.\n` +
     `Consigne : ${etape.consigne}\n` +
+    (etape.explication ? `Détail du geste (validé par le maître) : ${etape.explication}\n` : "") +
     liste("Points de contrôle", etape.pointsDeControle) +
     liste("Erreurs fréquentes", etape.erreursFrequentes) +
     liste("Critères de réussite", etape.criteresDeReussite) +
     liste("Règles du maître (elles corrigent tes erreurs passées : respecte-les avant tout)", regles) +
     "Déroulé de cette étape chez le maître (images successives, de la plus ancienne à la plus récente) :"
   );
+}
+
+function presentationApprenti(nombre: number, dureeS: number, demande: boolean): string {
+  const ecart = nombre > 1 ? dureeS / (nombre - 1) : 0;
+  const images =
+    `${nombre} images de l'apprenti, réparties sur ses ${Math.round(dureeS)} dernières secondes ` +
+    `(environ une toutes les ${ecart.toFixed(1).replace(".", ",")} s), de la plus ancienne à la plus récente :`;
+  return demande ? `L'apprenti vient de finir une tentative et te demande de vérifier. Voici ${images}` : `Voici ${images}`;
 }
 
 export async function evaluerGeste(options: {
@@ -208,7 +222,10 @@ export async function evaluerGeste(options: {
   derniersConseils: string[];
   /** Règles du maître qui s'appliquent à cette étape. */
   regles: string[];
-  imagesParSeconde: number;
+  /** Secondes couvertes par les images de l'apprenti (de la première à la dernière). */
+  dureeS: number;
+  /** Vrai si l'apprenti a demandé la vérification (il attend une réponse). */
+  demande: boolean;
 }): Promise<Verdict> {
   const referenceMaitre: Anthropic.Beta.BetaContentBlockParam[] = [
     { type: "text", text: descriptionEtape(options.titreLecon, options.etape, options.totalEtapes, options.regles) },
@@ -239,10 +256,7 @@ export async function evaluerGeste(options: {
           content: [
             ...referenceMaitre,
             { type: "text", text: conseils },
-            {
-              type: "text",
-              text: `Les ${options.imagesApprenti.length} dernières images de l'apprenti (${options.imagesParSeconde} par seconde, de la plus ancienne à la plus récente) :`,
-            },
+            { type: "text", text: presentationApprenti(options.imagesApprenti.length, options.dureeS, options.demande) },
             ...options.imagesApprenti.map(blocImage),
             { type: "text", text: "Ton verdict sur ce que fait l'apprenti ?" },
           ],

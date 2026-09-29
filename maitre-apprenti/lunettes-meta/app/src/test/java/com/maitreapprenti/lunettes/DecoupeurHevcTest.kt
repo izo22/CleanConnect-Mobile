@@ -47,6 +47,20 @@ class DecoupeurHevcTest {
   }
 
   @Test
+  fun `a la demande - les dernieres secondes sans vider le tampon`() {
+    val d = DecoupeurHevc(15)
+    assertNull(d.dernieresSecondes(6_000_000))
+    d.ajouter(configuration, 0, estConfiguration = true)
+    d.filmer(0, 10)
+    // 6 s demandées : à partir de l'image clé de la seconde 3 (la dernière image est à 9,93 s).
+    val morceau = d.dernieresSecondes(6_000_000)!!
+    assertEquals(configuration.size + 7 * 15 * 7, morceau.donnees.size)
+    assertEquals(morceau.donnees.size, d.dernieresSecondes(6_000_000)!!.donnees.size)
+    // Plus que ce qui est filmé : tout le tampon.
+    assertEquals(configuration.size + 10 * 15 * 7, d.dernieresSecondes(30_000_000)!!.donnees.size)
+  }
+
+  @Test
   fun `maitre - morceaux continus sans trou ni doublon`() {
     val d = DecoupeurHevc(15)
     d.filmer(0, 5)

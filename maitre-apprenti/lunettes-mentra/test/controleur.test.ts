@@ -62,6 +62,10 @@ describe("commandes vocales", () => {
     expect(commandeApprenti("Suivant !")).toBe("suivant")
     expect(commandeApprenti("tu peux répéter")).toBe("repeter")
     expect(commandeApprenti("Pause")).toBe("pause")
+    expect(commandeApprenti("Vérifie")).toBe("verifier")
+    expect(commandeApprenti("c'est bon comme ça ?")).toBe("verifier")
+    expect(commandeApprenti("regarde")).toBe("verifier")
+    expect(commandeApprenti("explique-moi")).toBe("expliquer")
     expect(commandeApprenti("je prends le suivant dans la corbeille là")).toBeNull()
   })
   test("maître : étape suivante et fin", () => {
@@ -115,13 +119,35 @@ describe("mode apprenti", () => {
     })
     const c = new Controleur(lunettes, f.cerveau, {...REGLAGES_PAR_DEFAUT, leconId: "L1"}, () => {})
     await c.demarrer()
-    await c.boutonCourt() // pause
+    await c.entendu("pause")
     expect(arrets()).toBe(1)
     expect(f.appels).toContain("DELETE /sessions/s1/direct")
     await c.boutonCourt() // reprise
     expect(f.appels.filter((a) => a === "POST /sessions")).toHaveLength(1)
     expect(videos).toHaveLength(2)
     expect(dit).toContain("On reprend. Titre 2.")
+  })
+
+  test("« vérifie » ou appui court : l'IA juge le geste, la réponse est dite une seule fois", async () => {
+    const {lunettes, dit} = fausseLunettes()
+    const correction = retour(0, {verdict: "correction", afficher: "Tare la balance.", dire: "Tare la balance."})
+    let commandes: string[] = []
+    const f = fauxCerveau({
+      "POST /sessions": () => retour(0, {dire: "Étape 1"}),
+      "POST /sessions/:id/direct": () => ({rtmpUrl: "rtmp://x/live/1"}),
+      "POST /sessions/:id/commande": (corps) => (commandes.push(corps.commande), correction),
+    })
+    const c = new Controleur(lunettes, f.cerveau, {...REGLAGES_PAR_DEFAUT, leconId: "L1"}, () => {})
+    await c.demarrer()
+    await attendre()
+    await c.entendu("vérifie")
+    // Le flux d'événements relaie aussi la réponse : elle n'est pas redite.
+    f.pousser(correction)
+    await attendre()
+    await c.boutonCourt()
+    expect(commandes).toEqual(["verifier", "verifier"])
+    expect(c.actif).toBe(true)
+    expect(dit.filter((d) => d === "Tare la balance.")).toHaveLength(2)
   })
 
   test("s'arrête quand la leçon est terminée", async () => {
@@ -201,8 +227,8 @@ describe("intégration avec le cerveau", () => {
         const texte = String(corps.system).includes("Tu prépares une leçon")
           ? JSON.stringify({
               etapes: [
-                {titre: "Pesée", consigne: "Pèse la farine.", debut_s: 0, fin_s: 3, points_de_controle: [], erreurs_frequentes: [], criteres_de_reussite: []},
-                {titre: "Façonnage", consigne: "Roule la pâte.", debut_s: 3, fin_s: 6, points_de_controle: [], erreurs_frequentes: [], criteres_de_reussite: []},
+                {titre: "Pesée", consigne: "Pèse la farine.", explication: "Tare, puis verse en pluie.", debut_s: 0, fin_s: 3, points_de_controle: [], erreurs_frequentes: [], criteres_de_reussite: []},
+                {titre: "Façonnage", consigne: "Roule la pâte.", explication: "Du centre vers les bords.", debut_s: 3, fin_s: 6, points_de_controle: [], erreurs_frequentes: [], criteres_de_reussite: []},
               ],
             })
           : (analyses++, JSON.stringify({verdict: "correction", message: "Garde les mains à plat.", points_valides: []}))
@@ -294,14 +320,21 @@ describe("intégration avec le cerveau", () => {
       }
       expect(lecons[0]?.statut).toBe("prete")
 
-      // 2. L'apprenti suit la leçon : sa vidéo en direct est analysée en continu.
+      // 2. L'apprenti suit la leçon : sa vidéo en direct est gardée par le cerveau, sans appel à
+      //    l'IA, jusqu'à ce qu'il dise « vérifie ».
       const apprenti = lunettesSimulees(8)
       const ca = new Controleur(apprenti.lunettes, cerveau, {...REGLAGES_PAR_DEFAUT, leconId: lecons[0].id}, () => {})
       await ca.demarrer()
-      for (let i = 0; i < 100 && !apprenti.dit.includes("Garde les mains à plat."); i++) await attendre(100)
-      expect(apprenti.dit[0]).toBe("Étape 1 : Pesée. Pèse la farine.")
-      expect(apprenti.dit).toContain("Garde les mains à plat.")
-      expect(analyses).toBeGreaterThan(0)
+      await attendre(4000)
+      expect(apprenti.dit).toEqual(["Étape 1 : Pesée. Pèse la farine. Quand tu as fini un geste, dis « vérifie »."])
+      expect(analyses).toBe(0)
+      await ca.entendu("vérifie")
+      for (let i = 0; i < 50 && !apprenti.dit.includes("Garde les mains à plat."); i++) await attendre(100)
+      expect(apprenti.dit).toContain("Je regarde.")
+      expect(apprenti.dit.at(-1)).toBe("Garde les mains à plat.")
+      expect(analyses).toBe(1)
+      await ca.entendu("explique")
+      expect(apprenti.dit.at(-1)).toBe("Pesée. Tare, puis verse en pluie.")
       await ca.arreter()
     },
     60_000,

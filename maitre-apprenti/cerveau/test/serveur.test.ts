@@ -90,17 +90,31 @@ test("liste les leçons", async () => {
 test("une session d'apprenti se crée, reçoit de la vidéo et obéit aux commandes", async () => {
   const creee = await api("/sessions", { method: "POST", body: JSON.stringify({ leconId: LECON_ID }) });
   assert.equal(creee.statut, 201);
-  assert.equal(creee.corps.dire, "Étape 1 : Étape 1. Consigne 1");
+  assert.equal(creee.corps.dire, "Étape 1 : Étape 1. Consigne 1 Quand tu as fini un geste, dis « vérifie ».");
   const id = creee.corps.sessionId;
 
-  // L'IA est injoignable ici : le serveur doit répondre proprement sans planter.
+  // Analyse à la demande : la vidéo est seulement gardée en mémoire.
   const video = await api(`/sessions/${id}/video`, {
     method: "POST",
     headers: { "content-type": "video/webm" },
     body: morceau,
   });
   assert.equal(video.statut, 200);
-  assert.match(video.corps.afficher, /IA indisponible/);
+  assert.equal(video.corps.ignore, true);
+
+  // L'IA est injoignable ici : « vérifie » doit répondre proprement sans planter.
+  const verifie = await api(`/sessions/${id}/commande`, {
+    method: "POST",
+    body: JSON.stringify({ commande: "verifier" }),
+  });
+  assert.equal(verifie.statut, 200);
+  assert.match(verifie.corps.afficher, /IA indisponible/);
+
+  const explique = await api(`/sessions/${id}/commande`, {
+    method: "POST",
+    body: JSON.stringify({ commande: "expliquer" }),
+  });
+  assert.equal(explique.corps.dire, "Étape 1. Consigne 1");
 
   const suivant = await api(`/sessions/${id}/commande`, {
     method: "POST",
@@ -116,6 +130,40 @@ test("une session d'apprenti se crée, reçoit de la vidéo et obéit aux comman
     body: JSON.stringify({ commande: "danser" }),
   });
   assert.equal(inconnue.statut, 400);
+});
+
+test("le maître règle l'analyse et corrige le texte d'une étape", async () => {
+  const reglages = await api(`/lecons/${LECON_ID}/reglages`, {
+    method: "POST",
+    body: JSON.stringify({ verificationAuto: true, etapesSurveillees: ["etape-2"] }),
+  });
+  assert.deepEqual(reglages.corps, { imagesParSeconde: 2, verificationAuto: true, etapesSurveillees: ["etape-2"] });
+
+  const modifiee = await api(`/lecons/${LECON_ID}/etapes/etape-1`, {
+    method: "POST",
+    body: JSON.stringify({
+      explication: "  Farine en pluie, sans à-coups.  ",
+      pointsDeControle: ["Bol taré", "", "500 g"],
+    }),
+  });
+  assert.equal(modifiee.statut, 200);
+  assert.equal(modifiee.corps.explication, "Farine en pluie, sans à-coups.");
+  assert.deepEqual(modifiee.corps.pointsDeControle, ["Bol taré", "500 g"]);
+  assert.equal(modifiee.corps.consigne, "Consigne 1");
+
+  const session = (await api("/sessions", { method: "POST", body: JSON.stringify({ leconId: LECON_ID }) })).corps;
+  assert.equal(session.etape.explication, "Farine en pluie, sans à-coups.");
+  assert.equal(session.etape.envoiVideoContinu, true);
+
+  const vide = await api(`/lecons/${LECON_ID}/etapes/etape-1`, { method: "POST", body: JSON.stringify({ consigne: " " }) });
+  assert.equal(vide.statut, 400);
+  const inconnue = await api(`/lecons/${LECON_ID}/etapes/etape-9`, { method: "POST", body: JSON.stringify({ titre: "x" }) });
+  assert.equal(inconnue.statut, 404);
+
+  await api(`/lecons/${LECON_ID}/reglages`, {
+    method: "POST",
+    body: JSON.stringify({ verificationAuto: false, etapesSurveillees: [] }),
+  });
 });
 
 test("refuse les photos et les vidéos illisibles", async () => {
@@ -147,8 +195,9 @@ test("sert les clips par morceaux (lecture vidéo) et bloque les chemins suspect
   assert.equal(suspect.status, 404);
 });
 
-test("sert la page d'accueil", async () => {
+test("sert la page d'accueil et la fiche écrite", async () => {
   const reponse = await fetch(`${base}/`);
   assert.equal(reponse.status, 200);
   assert.match(await reponse.text(), /Maître/);
+  assert.equal((await fetch(`${base}/fiche.html`)).status, 200);
 });

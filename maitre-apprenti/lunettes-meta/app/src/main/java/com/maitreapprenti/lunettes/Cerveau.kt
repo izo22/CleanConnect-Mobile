@@ -22,6 +22,12 @@ data class Retour(
     val afficher: String,
     val dire: String?,
     val ignore: Boolean,
+    /** Texte écrit de l'étape (lu par « explique »). */
+    val explication: String = consigne,
+    /** Vrai si le cerveau a besoin de toute la vidéo (étape surveillée, vérification automatique). */
+    val envoiVideoContinu: Boolean = true,
+    /** Secondes de vidéo à envoyer avec « vérifie » ou « suivant ». */
+    val fenetreS: Int = 8,
 ) {
   companion object {
     fun depuisJson(json: JSONObject): Retour {
@@ -38,6 +44,9 @@ data class Retour(
           afficher = json.getString("afficher"),
           dire = json.optChaine("dire"),
           ignore = json.optBoolean("ignore", false),
+          explication = etape.optChaine("explication") ?: etape.getString("consigne"),
+          envoiVideoContinu = etape.optBoolean("envoiVideoContinu", true),
+          fenetreS = etape.optInt("fenetreS", 8),
       )
     }
   }
@@ -57,8 +66,11 @@ interface ApiCerveau {
 
   suspend fun etatSession(sessionId: String): Retour
 
-  /** Envoie un morceau de vidéo de l'apprenti ; le cerveau en analyse les dernières secondes. */
-  suspend fun envoyerVideo(sessionId: String, morceau: MorceauVideo): Retour
+  /**
+   * Envoie un morceau de vidéo de l'apprenti. Sans [commande], le cerveau le garde en mémoire (ou
+   * l'analyse sur une étape surveillée) ; avec « verifier » ou « suivant », l'IA juge ce geste.
+   */
+  suspend fun envoyerVideo(sessionId: String, morceau: MorceauVideo, commande: String? = null): Retour
 
   suspend fun commande(sessionId: String, commande: String): Retour
 
@@ -133,10 +145,12 @@ class CerveauHttp(urlCerveau: String, private val cle: String) : ApiCerveau {
   override suspend fun etatSession(sessionId: String) =
       Retour.depuisJson(JSONObject(appel("GET", "/sessions/$sessionId")))
 
-  override suspend fun envoyerVideo(sessionId: String, morceau: MorceauVideo) =
-      Retour.depuisJson(
-          JSONObject(
-              appel("POST", "/sessions/$sessionId/video?ips=${morceau.imagesParSeconde}", morceau.donnees, morceau.type)))
+  override suspend fun envoyerVideo(sessionId: String, morceau: MorceauVideo, commande: String?): Retour {
+    val suite = if (commande != null) "&commande=$commande" else ""
+    return Retour.depuisJson(
+        JSONObject(
+            appel("POST", "/sessions/$sessionId/video?ips=${morceau.imagesParSeconde}$suite", morceau.donnees, morceau.type)))
+  }
 
   override suspend fun commande(sessionId: String, commande: String) =
       Retour.depuisJson(

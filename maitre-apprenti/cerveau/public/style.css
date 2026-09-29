@@ -166,3 +166,46 @@ section > h2 { margin-top: 28px; }
 .detail-avis { margin-top: 12px; }
 .badge.correction, .badge.pas_visible { background: var(--alerte-fond); color: var(--alerte); }
 .badge.etape_reussie { background: var(--ok-fond); color: var(--ok); }
+
+/* --- Fiche écrite des étapes --- */
+
+.fiche { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; }
+.fiche-etape {
+  display: grid; grid-template-columns: 240px 1fr; gap: 20px; align-items: start;
+  background: var(--surface); border: 1px solid var(--bord); border-radius: var(--rayon); padding: 20px;
+  break-inside: avoid;
+}
+@media (max-width: 760px) { .fiche-etape { grid-template-columns: 1fr; } }
+.fiche-etape img { width: 100%; border-radius: 10px; background: #000; }
+.fiche-etape p { margin: 8px 0; }
+.consigne-fiche { font-size: 1.15rem; font-weight: 600; }
+.listes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 8px; }
+@media (max-width: 760px) { .listes { grid-template-columns: 1fr; } }
+.bloc-liste h3, .paroles h3 { font-size: 0.95rem; margin: 0 0 4px; }
+.bloc-liste ul { margin: 0; padding-left: 18px; }
+.bloc-liste.eviter h3 { color: var(--alerte); }
+.bloc-liste.reussi h3 { color: var(--ok); }
+.paroles blockquote { margin: 4px 0; padding-left: 12px; border-left: 3px solid var(--accent); font-style: italic; }
+button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-texte); }
+
+@media print {
+  body { background: #fff; color: #000; }
+  .sans-impression, .aide-modif { display: none !important; }
+  .fiche-etape { border-color: #ccc; grid-template-columns: 180px 1fr; }
+}
+
+/* --- Étapes écrites sur la page apprenti --- */
+
+.texte-etape { margin-top: 12px; }
+.texte-etape p { margin: 6px 0; }
+.texte-etape .listes { grid-template-columns: 1fr; gap: 8px; }
+.mode-analyse { color: var(--doux); font-size: 0.9rem; margin: 12px 0 0; }
+.plan { margin: 0; padding-left: 22px; }
+.plan li { padding: 4px 0; color: var(--doux); }
+.plan li.faite { text-decoration: line-through; }
+.plan li.actuelle { color: var(--texte); font-weight: 700; }
+button.verifier { font-size: 1.1rem; padding: 14px 20px; width: 100%; justify-content: center; margin-top: 16px; }
+fieldset.surveillees { border: 1px solid var(--bord); border-radius: 10px; margin: 16px 0 0; padding: 8px 14px 12px; }
+fieldset.surveillees legend { font-weight: 600; padding: 0 4px; }
+fieldset.surveillees legend small { font-weight: 400; color: var(--doux); }
+.paroles { margin-top: 10px; }

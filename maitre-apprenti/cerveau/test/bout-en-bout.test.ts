@@ -31,11 +31,13 @@ const ETAPES = {
   etapes: [
     {
       titre: "Pesée", consigne: "Pèse 500 g de farine.", debut_s: 0, fin_s: 4,
+      explication: "Pose le bol sur la balance et tare-la. Verse la farine en pluie jusqu'à 500 g.",
       points_de_controle: ["La balance affiche 500 g"], erreurs_frequentes: ["Oublier la tare"],
       criteres_de_reussite: ["500 g de farine dans le bol"],
     },
     {
       titre: "Façonnage", consigne: "Roule la pâte en baguette.", debut_s: 4, fin_s: 10,
+      explication: "Roule du centre vers les bords en écartant les mains.",
       points_de_controle: [], erreurs_frequentes: [], criteres_de_reussite: ["Baguette de 55 cm"],
     },
   ],
@@ -173,6 +175,7 @@ test("vidéo du maître → leçon avec clips et séquences de référence", asy
     assert.equal(etape.images.length, 8, "8 images de référence par étape");
     assert.ok(etape.clip && etape.clipLunettes);
   }
+  assert.equal(lecon.etapes[0].explication, ETAPES.etapes[0].explication);
 
   const construction = requetes.find((r) => r.corps.stream === true)!;
   assert.equal(construction.corps.model, "claude-opus-5-5");
@@ -185,10 +188,12 @@ test("vidéo du maître → leçon avec clips et séquences de référence", asy
   assert.equal(clip.headers.get("content-type"), "video/mp4");
 });
 
-test("apprenti : un morceau de vidéo → séquence de 8 images comparée au maître", async () => {
+test("apprenti à la demande : la vidéo est gardée, « vérifie » envoie 8 images au maître", async () => {
   const session = (await postJson("/sessions", { leconId })).corps;
-  assert.equal(session.dire, "Étape 1 : Pesée. Pèse 500 g de farine.");
+  assert.equal(session.dire, "Étape 1 : Pesée. Pèse 500 g de farine. Quand tu as fini un geste, dis « vérifie ».");
   assert.equal(session.etape.clipLunettesUrl, `/media/lecons/${leconId}/clips/etape-1-lunettes.mp4`);
+  assert.equal(session.etape.explication, ETAPES.etapes[0].explication);
+  assert.equal(session.etape.fenetreS, 6);
 
   const avant = requetes.length;
   const morceau = path.join(dossier, "apprenti.mp4");
@@ -196,15 +201,26 @@ test("apprenti : un morceau de vidéo → séquence de 8 images comparée au ma�
     "-hide_banner", "-y", "-f", "lavfi", "-i", "testsrc2=duration=5:size=640x360:rate=25",
     "-c:v", "libx264", "-pix_fmt", "yuv420p", morceau,
   ]);
-  const retour = (await api(`/sessions/${session.sessionId}/video`, {
+  const garde = (await api(`/sessions/${session.sessionId}/video`, {
     method: "POST",
     headers: { "content-type": "video/mp4" },
     body: await readFile(morceau),
   })).corps;
+  assert.equal(garde.ignore, true);
+  assert.equal(requetes.length, avant, "garder la vidéo ne coûte aucun appel à l'IA");
+
+  // Le maître précise le texte de l'étape : l'IA le reçoit.
+  await postJson(`/lecons/${leconId}/etapes/etape-1`, { explication: "Tare avant de verser, toujours." });
+
+  const retour = (await postJson(`/sessions/${session.sessionId}/commande`, { commande: "verifier" })).corps;
   assert.equal(retour.verdict, "correction");
   assert.equal(retour.dire, "Roule du centre vers les bords.");
+  assert.equal(requetes.length, avant + 1);
 
   const correction = requetes[avant];
+  const texte = JSON.stringify(correction.corps.messages);
+  assert.ok(texte.includes("te demande de vérifier"));
+  assert.ok(texte.includes("Tare avant de verser, toujours."));
   assert.equal(correction.corps.output_config.effort, "low");
   const contenu = correction.corps.messages[0].content;
   const indexCache = contenu.findIndex((b: any) => b.cache_control);
@@ -213,7 +229,26 @@ test("apprenti : un morceau de vidéo → séquence de 8 images comparée au ma�
   assert.equal(contenu.slice(indexCache + 1).filter((b: any) => b.type === "image").length, 8);
 });
 
+test("« suivant » avec la vidéo (lunettes Meta) : l'IA vérifie avant de passer", async () => {
+  const session = (await postJson("/sessions", { leconId })).corps;
+  const morceau = path.join(dossier, "apprenti.mp4");
+  const avant = requetes.length;
+  const retenu = (await api(`/sessions/${session.sessionId}/video?commande=suivant`, {
+    method: "POST",
+    headers: { "content-type": "video/mp4" },
+    body: await readFile(morceau),
+  })).corps;
+  assert.equal(requetes.length, avant + 1);
+  assert.equal(retenu.etape.index, 0);
+  assert.match(retenu.dire, /^Avant de passer : Roule du centre vers les bords\. Redis « suivant »/);
+  const passe = (await postJson(`/sessions/${session.sessionId}/commande`, { commande: "suivant" })).corps;
+  assert.equal(passe.etape.index, 1);
+  assert.equal(requetes.length, avant + 1);
+});
+
 test("le maître juge une correction fausse : sa règle part à l'IA dès l'analyse suivante", async () => {
+  // Étape à surveiller : l'IA analyse chaque morceau reçu.
+  await postJson(`/lecons/${leconId}/reglages`, { etapesSurveillees: ["etape-1"] });
   const session = (await postJson("/sessions", { leconId, apprenti: "Léa" })).corps;
   const morceau = path.join(dossier, "apprenti-2.mp4");
   await executer(FFMPEG, [
@@ -251,19 +286,24 @@ test("le maître juge une correction fausse : sa règle part à l'IA dès l'anal
   await envoyer();
   const texte = JSON.stringify(requetes[avant].corps.messages);
   assert.ok(texte.includes("Rouler depuis le bout est aussi correct."), "la règle du maître est envoyée à l'IA");
-  assert.ok(texte.includes("4 par seconde"));
+  assert.ok(texte.includes("une toutes les 0,3 s"));
 
   const m = (await api(`/lecons/${leconId}/metriques`)).corps;
   assert.equal(m.correctionsJugees, 1);
   assert.equal(m.tauxFausses, 1);
   assert.ok(m.analyses >= 2);
 
+  const parType = m.analysesParDeclencheur;
+  assert.ok(parType.continu >= 2 && parType.demande >= 1 && parType.suivant >= 1);
+  assert.ok(m.coutParHeureUsd > 0);
+
   // On revient à la cadence normale pour les tests suivants.
   await postJson(`/lecons/${leconId}/reglages`, { imagesParSeconde: 2 });
 });
 
-test("apprenti en direct (RTMP, lunettes Mentra) : analyse continue, retours dans le flux d'événements", async () => {
+test("apprenti en direct (RTMP, lunettes Mentra), étape surveillée : analyse continue, retours dans le flux d'événements", async () => {
   const session = (await postJson("/sessions", { leconId })).corps;
+  assert.equal(session.etape.analyse, "continu");
   const { statut, corps } = await postJson(`/sessions/${session.sessionId}/direct`);
   assert.equal(statut, 201);
   assert.match(corps.rtmpUrl, /^rtmp:\/\/127\.0\.0\.1:1935\d\/live\/[a-f0-9]{16}$/);
@@ -275,6 +315,22 @@ test("apprenti en direct (RTMP, lunettes Mentra) : analyse continue, retours dan
   assert.equal(retour.afficher, "Roule du centre vers les bords.");
 
   assert.equal((await api(`/sessions/${session.sessionId}/direct`, { method: "DELETE" })).statut, 200);
+  await postJson(`/lecons/${leconId}/reglages`, { etapesSurveillees: [] });
+});
+
+test("apprenti en direct, à la demande : rien n'est analysé avant « vérifie »", async () => {
+  const session = (await postJson("/sessions", { leconId })).corps;
+  const { corps } = await postJson(`/sessions/${session.sessionId}/direct`);
+  await new Promise((ok) => setTimeout(ok, 500));
+  const avant = requetes.length;
+  const regarde = attendreEvenement(session.sessionId, (r) => r.afficher === "Je regarde ton geste…");
+  await pousserDirect(corps.rtmpUrl, 4);
+  assert.equal(requetes.length, avant);
+  const retour = (await postJson(`/sessions/${session.sessionId}/commande`, { commande: "verifier" })).corps;
+  assert.equal((await regarde).dire, "Je regarde.");
+  assert.equal(retour.dire, "Roule du centre vers les bords.");
+  assert.equal(requetes.length, avant + 1);
+  await api(`/sessions/${session.sessionId}/direct`, { method: "DELETE" });
 });
 
 test("maître avec les lunettes Meta : morceaux HEVC + voix → leçon", async () => {

@@ -36,16 +36,23 @@ async function lireImages(dossier: string, images: ImageHorodatee[]): Promise<Im
   );
 }
 
-/** Transforme les étapes proposées par l'IA en étapes de la leçon, bornes remises dans la durée. */
-export function finaliserEtapes(brutes: EtapeBrute[], duree: number): Etape[] {
+/**
+ * Transforme les étapes proposées par l'IA en étapes de la leçon, bornes remises dans la durée.
+ * Ce que le maître a dit pendant une étape est rangé avec elle (fiche écrite de l'apprenti).
+ */
+export function finaliserEtapes(brutes: EtapeBrute[], duree: number, paroles: Parole[] = []): Etape[] {
   return brutes.map((brute, i) => {
     const debut = Math.max(0, Math.min(brute.debut_s, duree));
     const fin = Math.max(debut, Math.min(brute.fin_s, duree));
+    const derniere = i === brutes.length - 1;
+    const dites = paroles.filter((p) => p.t >= debut && (p.t < fin || (derniere && p.t <= duree)));
     return {
       id: `etape-${i + 1}`,
       numero: i + 1,
       titre: brute.titre,
       consigne: brute.consigne,
+      explication: brute.explication,
+      paroles: dites.map((p) => p.texte),
       pointsDeControle: brute.points_de_controle,
       erreursFrequentes: brute.erreurs_frequentes,
       criteresDeReussite: brute.criteres_de_reussite,
@@ -88,7 +95,7 @@ async function preparerDepuisVideo(
       duree,
       ...extras,
     });
-    const etapes = finaliserEtapes(brutes, duree);
+    const etapes = finaliserEtapes(brutes, duree, extras.paroles);
 
     for (const etape of etapes) {
       // Un clip trop court ne montre rien : on garde au moins 2 secondes autour de l'étape.

@@ -14,7 +14,7 @@ export const FFMPEG = process.env.FFMPEG_PATH ?? (ffmpegStatic as unknown as str
 
 /** Au-delà, la requête envoyée à l'IA pour construire la leçon devient trop lourde. */
 export const IMAGES_MAX_POUR_IA = 80;
-/** Une séquence de geste = 8 images sur 4 secondes (2 images par seconde). */
+/** Une séquence envoyée à l'IA = 8 images de l'apprenti (sur 4 s en continu, sur toute la tentative à la demande). */
 export const IMAGES_PAR_SEQUENCE = 8;
 export const IMAGES_PAR_SECONDE = 2;
 /** Largeur des images envoyées à l'IA pour juger un geste (assez pour voir les mains, peu coûteux). */
@@ -32,8 +32,8 @@ async function ffmpeg(args: string[]): Promise<string> {
   }
 }
 
-/** Lance ffmpeg et renvoie tout ce qu'il écrit sur sa sortie standard. */
-function ffmpegVersMemoire(args: string[]): Promise<Buffer> {
+/** Lance ffmpeg (avec `entree` sur son entrée standard) et renvoie tout ce qu'il écrit sur sa sortie standard. */
+function ffmpegVersMemoire(args: string[], entree?: Buffer): Promise<Buffer> {
   return new Promise((resoudre, rejeter) => {
     const processus = spawn(FFMPEG, ["-hide_banner", "-loglevel", "error", ...args]);
     const morceaux: Buffer[] = [];
@@ -45,7 +45,8 @@ function ffmpegVersMemoire(args: string[]): Promise<Buffer> {
       if (code === 0) resoudre(Buffer.concat(morceaux));
       else rejeter(new Error(`ffmpeg a échoué : ${erreurs.slice(-500)}`));
     });
-    processus.stdin.end();
+    processus.stdin.on("error", () => undefined); // ffmpeg peut fermer son entrée avant la fin
+    processus.stdin.end(entree);
   });
 }
 
@@ -117,11 +118,19 @@ function optionsEntree(morceau: MorceauVideo): string[] {
   return [];
 }
 
+/** Au plus ce nombre de secondes d'images est tiré d'un morceau (et gardé en mémoire par une séance). */
+export const SECONDES_MAX_EN_MEMOIRE = 20;
+
 /**
  * Transforme un morceau de vidéo en séquence de geste : les 8 dernières images à la cadence
  * demandée (2 images/s = 4 dernières secondes ; 4 images/s = 2 dernières secondes), prêtes pour l'IA.
  */
 export async function sequenceDepuisMorceau(morceau: MorceauVideo, imagesParSeconde = IMAGES_PAR_SECONDE): Promise<Buffer[]> {
+  return (await imagesDepuisMorceau(morceau, imagesParSeconde)).slice(-IMAGES_PAR_SEQUENCE);
+}
+
+/** Toutes les images d'un morceau à la cadence demandée (au plus les 20 dernières secondes). */
+export async function imagesDepuisMorceau(morceau: MorceauVideo, imagesParSeconde = IMAGES_PAR_SECONDE): Promise<Buffer[]> {
   // Passage par un fichier : un MP4 ne se lit pas toujours en flux (index à la fin du fichier).
   const dossier = await mkdtemp(path.join(tmpdir(), "sequence-"));
   try {
@@ -133,10 +142,45 @@ export async function sequenceDepuisMorceau(morceau: MorceauVideo, imagesParSeco
     ]);
     const images = new DecoupeurJpeg().ajouter(sortie);
     if (images.length === 0) throw new Error("Aucune image lisible dans ce morceau de vidéo");
-    return images.slice(-IMAGES_PAR_SEQUENCE);
+    return images.slice(-SECONDES_MAX_EN_MEMOIRE * imagesParSeconde);
   } finally {
     await rm(dossier, { recursive: true, force: true });
   }
+}
+
+// ---------------------------------------------------------------------------
+// Détection de mouvement (vérification automatique à la fin d'un geste), sans appel à l'IA
+// ---------------------------------------------------------------------------
+
+/** Taille des vignettes comparées : assez pour voir des mains bouger, négligeable à calculer. */
+export const VIGNETTE = { largeur: 32, hauteur: 18 };
+const TAILLE_VIGNETTE = VIGNETTE.largeur * VIGNETTE.hauteur;
+
+/** Réduit des images JPEG en vignettes 32×18 en niveaux de gris (un octet par pixel). */
+export async function vignettesGris(images: Buffer[]): Promise<Buffer[]> {
+  if (images.length === 0) return [];
+  const sortie = await ffmpegVersMemoire(
+    [
+      "-f", "image2pipe", "-c:v", "mjpeg", "-i", "pipe:0",
+      "-vf", `scale=${VIGNETTE.largeur}:${VIGNETTE.hauteur},format=gray`,
+      "-f", "rawvideo", "pipe:1",
+    ],
+    Buffer.concat(images),
+  );
+  const vignettes: Buffer[] = [];
+  for (let debut = 0; debut + TAILLE_VIGNETTE <= sortie.length; debut += TAILLE_VIGNETTE) {
+    vignettes.push(sortie.subarray(debut, debut + TAILLE_VIGNETTE));
+  }
+  return vignettes;
+}
+
+/** Différence moyenne entre deux vignettes, de 0 (identiques) à 1 (tout a changé). */
+export function mouvement(a: Buffer, b: Buffer): number {
+  const n = Math.min(a.length, b.length);
+  if (n === 0) return 0;
+  let somme = 0;
+  for (let i = 0; i < n; i++) somme += Math.abs(a[i] - b[i]);
+  return somme / (n * 255);
 }
 
 /** Convertit un morceau reçu en MP4 H.264 à cadence fixe (pour pouvoir les mettre bout à bout). */

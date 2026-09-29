@@ -13,9 +13,12 @@ import {
   dureeVideo,
   extraireImages,
   FFMPEG,
+  imagesDepuisMorceau,
+  mouvement,
   normaliserMorceau,
   sequenceDepuisMorceau,
   sequenceEtape,
+  vignettesGris,
 } from "../src/video.ts";
 
 const executer = promisify(execFile);
@@ -42,7 +45,7 @@ after(() => rm(dossier, { recursive: true, force: true }));
 
 test("finaliserEtapes numérote et borne les étapes dans la durée de la vidéo", () => {
   const brute = (debut_s: number, fin_s: number) => ({
-    titre: "Étape", consigne: "Fais ceci.", debut_s, fin_s,
+    titre: "Étape", consigne: "Fais ceci.", explication: "Détail.", debut_s, fin_s,
     points_de_controle: [], erreurs_frequentes: [], criteres_de_reussite: [],
   });
   const etapes = finaliserEtapes([brute(-3, 5), brute(5, 99)], 8);
@@ -130,4 +133,23 @@ test("les morceaux des lunettes du maître sont normalisés puis assemblés", as
   assert.ok((await stat(complet)).size > 0);
   const duree = await dureeVideo(complet);
   assert.ok(Math.abs(duree - 15) < 0.6, `durée assemblée ${duree}`);
+});
+
+test("vignettes et mesure du mouvement (vérification automatique, sans IA)", async () => {
+  // 3 s d'image fixe puis 3 s de mire animée.
+  const fixe = path.join(dossier, "fixe.mp4");
+  await executer(FFMPEG, [
+    "-hide_banner", "-y", "-f", "lavfi", "-i", "color=c=gray:size=320x240:duration=3:rate=15",
+    "-f", "lavfi", "-i", "testsrc2=size=320x240:duration=3:rate=15",
+    "-filter_complex", "[0:v][1:v]concat=n=2:v=1[v]", "-map", "[v]", "-c:v", "libx264", "-pix_fmt", "yuv420p", fixe,
+  ]);
+  const images = await imagesDepuisMorceau({ donnees: await readFile(fixe), type: "video/mp4" }, 2);
+  assert.ok(images.length >= 11 && images.length <= 13, `${images.length} images`);
+  const vignettes = await vignettesGris(images);
+  assert.equal(vignettes.length, images.length);
+  assert.equal(vignettes[0].length, 32 * 18);
+  assert.ok(mouvement(vignettes[0], vignettes[1]) < 0.01, "image fixe");
+  const fin = vignettes.length - 1;
+  assert.ok(mouvement(vignettes[fin - 1], vignettes[fin]) > 0.02, "mire animée");
+  assert.equal(mouvement(Buffer.alloc(4, 0), Buffer.alloc(4, 255)), 1);
 });

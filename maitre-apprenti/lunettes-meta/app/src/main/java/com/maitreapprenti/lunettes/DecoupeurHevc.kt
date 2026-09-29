@@ -77,6 +77,18 @@ class DecoupeurHevc(
     return morceau
   }
 
+  /**
+   * Analyse à la demande : les [dureeUs] dernières microsecondes (à partir de l'image clé qui les
+   * couvre, ou du début du tampon), sans rien retirer du tampon. Null si le tampon est vide.
+   */
+  @Synchronized
+  fun dernieresSecondes(dureeUs: Long): MorceauVideo? {
+    if (images.isEmpty()) return null
+    val fin = images.last().ptsUs
+    val debut = images.indices.lastOrNull { images[it].cle && fin - images[it].ptsUs >= dureeUs } ?: 0
+    return assembler(images.subList(debut, images.size))
+  }
+
   /** Repart de zéro (nouvelle leçon ou démonstration) ; la configuration du codec est gardée. */
   @Synchronized fun reinitialiser() = images.clear()
 

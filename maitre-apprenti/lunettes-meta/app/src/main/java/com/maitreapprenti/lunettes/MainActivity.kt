@@ -104,6 +104,7 @@ class MainActivity : ComponentActivity() {
             surBouton = { bouton ->
               lifecycleScope.launch {
                 when (bouton) {
+                  BoutonLunettes.VERIFIER -> controleur.commande("verifier")
                   BoutonLunettes.VOIR_GESTE -> controleur.montrerGeste()
                   BoutonLunettes.SUIVANT ->
                       if (controleur.actif && reglagesActuels().mode == Mode.MAITRE) controleur.marquerEtape()
@@ -336,6 +337,7 @@ class MainActivity : ComponentActivity() {
     racine.addView(texteErreur)
 
     commandesApprenti = ligne(
+        bouton("Vérifier") { lifecycleScope.launch { controleur.commande("verifier") } },
         bouton("←") { lifecycleScope.launch { controleur.commande("precedent") } },
         bouton("Répéter") { lifecycleScope.launch { controleur.commande("repeter") } },
         bouton("Geste") { controleur.montrerGeste() },

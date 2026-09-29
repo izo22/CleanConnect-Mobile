@@ -18,7 +18,7 @@ function lecon(): Lecon {
   const etape = (numero: number) => ({
     id: `etape-${numero}`, numero, titre: `Étape ${numero}`, consigne: `Consigne ${numero}`,
     pointsDeControle: [], erreursFrequentes: [], criteresDeReussite: [],
-    debut: 0, fin: 5, clip: null, clipLunettes: null, images: [],
+    debut: 0, fin: 5, clip: null, clipLunettes: null, images: [], surveiller: true,
   });
   return {
     id: "aaaaaaaaaaaa", titre: "Baguette", metier: "boulangerie", source: "video",
@@ -57,7 +57,7 @@ test("une séance journalise chaque analyse avec ses images, les règles du maî
     chargerImage: async () => JPEG,
     journal: (s) => journalDisque(nouvelleSeance(s.id, s.lecon, s.apprenti, "etape-1")),
   });
-  for (let i = 0; i < 4; i++) await session.analyserSequence([JPEG, JPEG, JPEG]);
+  for (let i = 0; i < 4; i++) await session.recevoirVideo([JPEG, JPEG, JPEG]);
   await attendreEcritures();
 
   // Étape 1 : règle de l'étape + règle de toute la leçon ; étape 2 : sa règle + celle de la leçon.

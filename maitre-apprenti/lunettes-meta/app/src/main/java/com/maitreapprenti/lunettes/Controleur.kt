@@ -9,8 +9,10 @@ import kotlinx.coroutines.launch
 
 /**
  * Logique des lunettes, sans dépendance au SDK Meta (pour pouvoir la tester sur ordinateur) :
- * - mode apprenti : les lunettes filment en continu ; les dernières secondes de vidéo partent
- *   au cerveau, qui juge le geste → correction à l'oreille ;
+ * - mode apprenti : les lunettes filment en continu et gardent les 20 dernières secondes. Quand
+ *   l'apprenti dit « vérifie » (ou « suivant »), ces secondes partent au cerveau, qui fait juger
+ *   le geste → correction à l'oreille. Sur une étape surveillée (ou avec la vérification
+ *   automatique), la vidéo part en continu, par morceaux d'environ 4 s ;
  * - mode maître : toute la vidéo de la démonstration + la voix du maître partent au cerveau,
  *   qui en fait une leçon.
  */
@@ -52,6 +54,9 @@ interface Lunettes {
   /** Ce qui reste de vidéo non envoyée (fin de la démonstration du maître). */
   fun dernierMorceau(): MorceauVideo?
 
+  /** Les dernières secondes filmées, sans les retirer (analyse à la demande). */
+  fun dernieresSecondes(secondes: Int): MorceauVideo?
+
   /** Oublie la vidéo filmée jusqu'ici (début d'une leçon ou d'une démonstration). */
   fun nouvelleVideo()
 
@@ -81,6 +86,9 @@ class Controleur(
   private var morceauxEnvoyes = 0
   private var derniereErreurDite = ""
   private var dernierRetour: Retour? = null
+  /** Mode d'analyse de l'étape en cours, tel que le cerveau l'a indiqué. */
+  private var envoiContinu = true
+  private var fenetreS = 8
 
   val actif: Boolean
     get() = etat.actif
@@ -173,12 +181,19 @@ class Controleur(
 
   private suspend fun tourApprenti() {
     val id = sessionId ?: return
+    // Analyse à la demande : la vidéo reste sur le téléphone jusqu'à « vérifie » ou « suivant ».
+    if (!envoiContinu) {
+      delay(500)
+      return
+    }
     val retour = api.envoyerVideo(id, lunettes.prochainMorceau(continu = false))
     appliquer(retour)
     if (retour.termine) arreter()
   }
 
   private fun appliquer(retour: Retour) {
+    envoiContinu = retour.envoiVideoContinu
+    fenetreS = retour.fenetreS
     if (retour.ignore) return
     dernierRetour = retour
     val etape = if (retour.termine) "Leçon terminée" else "Étape ${retour.index + 1}/${retour.total} : ${retour.titre}"
@@ -192,7 +207,19 @@ class Controleur(
     val id = sessionId ?: return
     if (reglages.mode != Mode.APPRENTI) return
     try {
-      appliquer(api.commande(id, commande))
+      // « Vérifie » et « suivant » emportent la vidéo du geste : les dernières secondes gardées
+      // sur le téléphone, ou seulement la fin pas encore envoyée si la vidéo part en continu.
+      val avecVideo = etat.actif && (commande == "verifier" || commande == "suivant")
+      if (commande == "verifier") lunettes.dire("Je regarde.")
+      val morceau =
+          when {
+            !avecVideo -> null
+            envoiContinu -> lunettes.dernierMorceau()
+            else -> lunettes.dernieresSecondes(fenetreS)
+          }
+      val retour = if (morceau != null) api.envoyerVideo(id, morceau, commande) else api.commande(id, commande)
+      appliquer(retour)
+      if (retour.termine) arreter()
     } catch (e: CancellationException) {
       throw e
     } catch (e: Exception) {
@@ -289,6 +316,8 @@ class Controleur(
       CommandeVocale.REPETER -> commande("repeter")
       CommandeVocale.RECOMMENCER -> commande("recommencer")
       CommandeVocale.VOIR_GESTE -> montrerGeste()
+      CommandeVocale.VERIFIER -> commande("verifier")
+      CommandeVocale.EXPLIQUER -> commande("expliquer")
       CommandeVocale.PAUSE -> {
         arreter()
         lunettes.dire("Pause. Reprends depuis le téléphone.")

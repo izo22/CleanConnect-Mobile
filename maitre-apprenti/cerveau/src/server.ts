@@ -9,8 +9,8 @@ import { creerSession, sessionsDeLecon, trouverSession } from "./coach.ts";
 import { CaptureMaitre, creerLeconDepuisVideo, demarrerCapture } from "./lecons.ts";
 import { annoter, calculerMetriques, cheminImageSeance, lireSeance, seancesDeLecon } from "./journal.ts";
 import { cheminMedia, listerLecons, lireLecon, nouvelId, sauverLecon, supprimerLecon } from "./store.ts";
-import type { Avis, Commande, Lecon, Regle } from "./types.ts";
-import { cadenceValide, sequenceDepuisMorceau, type MorceauVideo } from "./video.ts";
+import type { Avis, Commande, Etape, Lecon, Regle } from "./types.ts";
+import { cadenceValide, imagesDepuisMorceau, type MorceauVideo } from "./video.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
 /** Si défini, chaque appel à l'API doit fournir cette clé (en-tête x-cle ou paramètre ?cle=). */
@@ -155,6 +155,28 @@ function nouvelleRegle(texte: unknown, etapeId: unknown, lecon: Lecon, source: s
   return { id: nouvelId(), etapeId: etapeId as string | null, texte: propre, creeLe: new Date().toISOString(), source };
 }
 
+/** Texte d'une étape modifié par le maître (fiche écrite) : chaque champ envoyé remplace l'ancien. */
+function modifierTexteEtape(etape: Etape, corps: Record<string, unknown>): void {
+  const texte = (valeur: unknown, max: number) => {
+    if (typeof valeur !== "string") throw new ErreurHttp(400, "Texte attendu");
+    return valeur.trim().slice(0, max);
+  };
+  const liste = (valeur: unknown) => {
+    if (!Array.isArray(valeur)) throw new ErreurHttp(400, "Liste de phrases attendue");
+    return valeur.map((v) => texte(v, 300)).filter(Boolean).slice(0, 20);
+  };
+  if ("titre" in corps) etape.titre = texte(corps.titre, 80) || etape.titre;
+  if ("consigne" in corps) {
+    const consigne = texte(corps.consigne, 400);
+    if (!consigne) throw new ErreurHttp(400, "La consigne ne peut pas être vide");
+    etape.consigne = consigne;
+  }
+  if ("explication" in corps) etape.explication = texte(corps.explication, 2000);
+  if ("pointsDeControle" in corps) etape.pointsDeControle = liste(corps.pointsDeControle);
+  if ("erreursFrequentes" in corps) etape.erreursFrequentes = liste(corps.erreursFrequentes);
+  if ("criteresDeReussite" in corps) etape.criteresDeReussite = liste(corps.criteresDeReussite);
+}
+
 const AVIS: Avis[] = ["juste", "fausse", "inutile", "ok", "manquee"];
 
 function session(id: string) {
@@ -169,7 +191,7 @@ function capture(id: string) {
   return trouvee;
 }
 
-const COMMANDES: Commande[] = ["suivant", "precedent", "repeter", "recommencer"];
+const COMMANDES: Commande[] = ["suivant", "precedent", "repeter", "recommencer", "verifier", "expliquer"];
 
 async function router(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = new URL(req.url ?? "/", "http://localhost");
@@ -223,9 +245,35 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
     // --- Réglages et règles du maître ---------------------------------------
     case "POST /lecons/:id/reglages": {
-      const { imagesParSeconde } = await lireJson(req);
-      const lecon = await modifierLecon(id, (l) => (l.imagesParSeconde = cadenceValide(imagesParSeconde)));
-      return envoyerJson(res, 200, { imagesParSeconde: lecon.imagesParSeconde });
+      // Chaque réglage envoyé est modifié ; les autres restent tels quels.
+      const corps = await lireJson(req);
+      const lecon = await modifierLecon(id, (l) => {
+        if ("imagesParSeconde" in corps) l.imagesParSeconde = cadenceValide(corps.imagesParSeconde);
+        if ("verificationAuto" in corps) l.verificationAuto = corps.verificationAuto === true;
+        if ("etapesSurveillees" in corps) {
+          if (!Array.isArray(corps.etapesSurveillees)) throw new ErreurHttp(400, "etapesSurveillees : liste d'étapes attendue");
+          const surveillees = new Set(corps.etapesSurveillees);
+          for (const etape of l.etapes) etape.surveiller = surveillees.has(etape.id);
+        }
+      });
+      return envoyerJson(res, 200, {
+        imagesParSeconde: cadenceValide(lecon.imagesParSeconde),
+        verificationAuto: lecon.verificationAuto === true,
+        etapesSurveillees: lecon.etapes.filter((e) => e.surveiller).map((e) => e.id),
+      });
+    }
+
+    case "POST /lecons/:id/etapes/:id": {
+      // Le maître relit et corrige le texte d'une étape ; l'IA s'appuie ensuite sur ce texte.
+      const corps = await lireJson(req);
+      let modifiee: Etape | null = null;
+      await modifierLecon(id, (l) => {
+        const etape = l.etapes.find((e) => e.id === segments[4]);
+        if (!etape) throw new ErreurHttp(404, "Étape introuvable");
+        modifierTexteEtape(etape, corps);
+        modifiee = etape;
+      });
+      return envoyerJson(res, 200, modifiee);
     }
 
     case "POST /lecons/:id/regles": {
@@ -357,15 +405,20 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
       return envoyerJson(res, 200, session(id).etat);
 
     case "POST /sessions/:id/video": {
+      // ?commande=verifier ou ?commande=suivant : la vidéo accompagne la demande de l'apprenti.
       const enCours = session(id);
-      let sequence: Buffer[];
+      const commande = url.searchParams.get("commande");
+      if (commande !== null && commande !== "verifier" && commande !== "suivant") {
+        throw new ErreurHttp(400, "commande : verifier ou suivant");
+      }
+      let images: Buffer[];
       try {
-        sequence = await sequenceDepuisMorceau(await lireMorceau(req, url), enCours.imagesParSeconde);
+        images = await imagesDepuisMorceau(await lireMorceau(req, url), enCours.imagesParSeconde);
       } catch (erreur) {
         if (erreur instanceof ErreurHttp) throw erreur;
         throw new ErreurHttp(422, erreur instanceof Error ? erreur.message : String(erreur));
       }
-      return envoyerJson(res, 200, await enCours.analyserSequence(sequence));
+      return envoyerJson(res, 200, await enCours.recevoirVideo(images, commande ?? undefined));
     }
 
     case "POST /sessions/:id/direct": {
@@ -382,7 +435,7 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
       if (!COMMANDES.includes(commande as Commande)) {
         throw new ErreurHttp(400, `Commande inconnue (attendu : ${COMMANDES.join(", ")})`);
       }
-      return envoyerJson(res, 200, session(id).commande(commande as Commande));
+      return envoyerJson(res, 200, await session(id).commande(commande as Commande));
     }
 
     case "GET /sessions/:id/evenements": {

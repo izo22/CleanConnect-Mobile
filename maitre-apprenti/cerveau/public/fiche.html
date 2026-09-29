@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fiche</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <div class="rangee sans-impression">
+    <a class="bouton" href="/">← Leçons</a>
+    <a class="bouton principal" id="apprendre" href="#">Apprendre</a>
+    <button type="button" id="imprimer" class="pousse">Imprimer</button>
+    <button type="button" id="modifier" aria-pressed="false">Modifier le texte</button>
+  </div>
+  <h1 id="titre" style="margin-top: 16px">Chargement…</h1>
+  <p class="sous-titre" id="sous-titre"></p>
+  <p class="carte aide-modif cache" id="aide-modif">Tu es le maître : corrige les mots de l'IA pour qu'ils soient les tiens. Une ligne par point. L'IA qui corrige l'apprenti s'appuie ensuite sur ce texte.</p>
+  <ol class="fiche" id="etapes"></ol>
+</main>
+<script type="module" src="fiche.js"></script>
+</body>
+</html>

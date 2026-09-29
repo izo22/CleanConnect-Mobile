@@ -8,7 +8,7 @@
 import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { DOSSIER_DONNEES, idValide } from "./store.ts";
-import type { Annotation, Consommation, Evenement, Intervention, Lecon, Seance, TypeEvenement } from "./types.ts";
+import type { Annotation, Consommation, Declencheur, Evenement, Intervention, Lecon, Seance, TypeEvenement } from "./types.ts";
 
 const DOSSIER_SEANCES = path.join(DOSSIER_DONNEES, "seances");
 
@@ -16,6 +16,8 @@ const DOSSIER_SEANCES = path.join(DOSSIER_DONNEES, "seances");
 const PRIX: Record<string, { entree: number; sortie: number; cacheLecture: number; cacheEcriture: number }> = {
   "claude-opus-5-5": { entree: 4, sortie: 20, cacheLecture: 0.2, cacheEcriture: 5 },
   "claude-sonnet-5-5": { entree: 2, sortie: 10, cacheLecture: 0.2, cacheEcriture: 2.5 },
+  "claude-haiku-4-5": { entree: 1, sortie: 5, cacheLecture: 0.1, cacheEcriture: 1.25 },
+  "claude-haiku-4-5-20251001": { entree: 1, sortie: 5, cacheLecture: 0.1, cacheEcriture: 1.25 },
 };
 
 export function coutUsd(usage: Consommation | null | undefined, modele = process.env.MODELE_IA ?? "claude-opus-5-5"): number {
@@ -162,6 +164,8 @@ export interface Metriques {
   /** Part des séances terminées (apprenti allé jusqu'au bout). */
   tauxTermine: number | null;
   analyses: number;
+  /** Ce qui a déclenché les analyses : demande de l'apprenti, « suivant », automatique, étape surveillée. */
+  analysesParDeclencheur: Record<Declencheur, number>;
   correctionsDites: number;
   correctionsJugees: number;
   /** Corrections jugées justes / corrections jugées. */
@@ -179,6 +183,9 @@ export interface Metriques {
   latenceMedianeMs: number | null;
   coutTotalUsd: number;
   coutParSeanceUsd: number | null;
+  coutParAnalyseUsd: number | null;
+  /** Coût rapporté au temps passé en séance (du début à la dernière activité). */
+  coutParHeureUsd: number | null;
   /** Durée médiane d'une séance terminée, en secondes. */
   dureeMedianeSeanceS: number | null;
   etapes: {
@@ -191,6 +198,8 @@ export interface Metriques {
     passagesManuels: number;
     corrections: number;
     fausses: number;
+    /** Vérifications demandées par l'apprenti (« vérifie », « suivant ») ou automatiques. */
+    verifications: number;
   }[];
 }
 
@@ -228,12 +237,16 @@ export function calculerMetriques(
   }
 
   const coutTotal = interventions.reduce((somme, i) => somme + i.coutUsd, 0);
+  const heures = seances.reduce((somme, { seance }) => somme + Math.max(0, secondes(seance.debut, seance.derniereActivite)), 0) / 3600;
+  const parDeclencheur: Record<Declencheur, number> = { demande: 0, suivant: 0, auto: 0, continu: 0 };
+  for (const i of interventions) parDeclencheur[i.declencheur ?? "continu"]++;
   const terminees = seances.filter((s) => s.seance.termine).length;
   return {
     seances: seances.length,
     seancesTerminees: terminees,
     tauxTermine: ratio(terminees, seances.length),
     analyses: interventions.length,
+    analysesParDeclencheur: parDeclencheur,
     correctionsDites: corrections.length,
     correctionsJugees: jugees.length,
     precision: ratio(justes, jugees.length),
@@ -246,6 +259,8 @@ export function calculerMetriques(
     latenceMedianeMs: mediane(interventions.map((i) => i.latenceMs)),
     coutTotalUsd: coutTotal,
     coutParSeanceUsd: ratio(coutTotal, seances.length),
+    coutParAnalyseUsd: ratio(coutTotal, interventions.length),
+    coutParHeureUsd: heures > 0 ? coutTotal / heures : null,
     dureeMedianeSeanceS: mediane(dureesSeances),
     etapes: lecon.etapes.map((etape) => {
       const deLEtape = corrections.filter((i) => i.etapeId === etape.id);
@@ -258,6 +273,7 @@ export function calculerMetriques(
         passagesManuels: manuels.get(etape.id) ?? 0,
         corrections: deLEtape.length,
         fausses: avis(deLEtape, "fausse"),
+        verifications: interventions.filter((i) => i.etapeId === etape.id && (i.declencheur ?? "continu") !== "continu").length,
       };
     }),
   };
