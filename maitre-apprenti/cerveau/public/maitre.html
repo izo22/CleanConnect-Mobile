@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Démonstration du maître</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <a class="bouton" href="/">← Leçons</a>
+  <h1 style="margin-top: 16px">Filmer une démonstration</h1>
+  <p class="sous-titre">Pose le téléphone sur un support au-dessus du plan de travail, là où l'apprenti posera le sien. Travaille en expliquant à voix haute : ta voix est enregistrée avec la vidéo.</p>
+
+  <section class="carte" id="preparation">
+    <label for="titre">Titre de la leçon</label>
+    <input id="titre" type="text" placeholder="Baguette de tradition">
+    <label for="metier">Métier</label>
+    <input id="metier" type="text" placeholder="Boulangerie">
+    <label class="case">
+      <input type="checkbox" id="ecoute" checked>
+      <span>Commandes à la voix : dis « étape suivante » à chaque nouvelle étape, et « terminé » à la fin</span>
+    </label>
+    <div class="rangee" style="margin-top: 16px">
+      <button class="principal" id="commencer">Commencer la démonstration</button>
+    </div>
+    <p class="erreur-texte" id="erreur" role="alert"></p>
+  </section>
+
+  <section class="cache" id="tournage">
+    <div class="carte">
+      <div class="cadre-camera"><video id="camera" autoplay muted playsinline></video></div>
+      <div class="rangee tournage-etat">
+        <span class="badge enregistre" id="duree">● 0:00</span>
+        <span id="nombre-etapes">Étape 1</span>
+        <span class="vide pousse" id="etat-envoi" role="status"></span>
+      </div>
+      <div class="rangee" style="margin-top: 12px">
+        <button class="principal gros" id="etape">Étape suivante</button>
+        <button class="gros" id="terminer">Terminé</button>
+      </div>
+      <p class="vide etat-ecoute" id="etat-ecoute" role="status"></p>
+      <p class="derniere-parole" id="derniere-parole"></p>
+    </div>
+  </section>
+
+  <section class="carte cache" id="fin">
+    <h2>Merci !</h2>
+    <p id="message-fin">La leçon est en préparation : l'IA découpe ta démonstration en étapes. Elle sera prête dans quelques minutes.</p>
+    <div class="rangee"><a class="bouton principal" href="/">Voir les leçons</a></div>
+  </section>
+</main>
+<script type="module" src="maitre.js"></script>
+</body>
+</html>

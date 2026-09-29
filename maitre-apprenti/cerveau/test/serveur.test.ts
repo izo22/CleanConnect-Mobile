@@ -195,9 +195,11 @@ test("sert les clips par morceaux (lecture vidéo) et bloque les chemins suspect
   assert.equal(suspect.status, 404);
 });
 
-test("sert la page d'accueil et la fiche écrite", async () => {
+test("sert les pages : accueil, fiche écrite, démonstration au téléphone", async () => {
   const reponse = await fetch(`${base}/`);
   assert.equal(reponse.status, 200);
   assert.match(await reponse.text(), /Maître/);
   assert.equal((await fetch(`${base}/fiche.html`)).status, 200);
+  assert.equal((await fetch(`${base}/maitre.html`)).status, 200);
+  assert.equal((await fetch(`${base}/voix.js`)).headers.get("content-type"), "text/javascript; charset=utf-8");
 });

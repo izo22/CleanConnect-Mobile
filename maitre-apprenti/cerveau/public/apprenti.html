@@ -25,7 +25,7 @@
     <div class="rangee" style="margin-top: 12px">
       <button class="principal" id="demarrer-camera">Utiliser la caméra de cet appareil</button>
     </div>
-    <p class="vide">Le mode caméra sert à tester sans lunettes : pose la tablette au-dessus du plan de travail. Elle filme en continu, mais l'IA ne regarde que quand tu le demandes.</p>
+    <p class="vide">Sans lunettes : pose le téléphone ou la tablette sur un support au-dessus du plan de travail, et mets des écouteurs. Il filme en continu, mais l'IA ne regarde que quand tu le demandes. Tu pilotes à la voix : « vérifie », « suivant », « explique »…</p>
   </section>
 
   <section id="lecon" class="apprenti cache" style="margin-top: 16px">
@@ -62,14 +62,28 @@
           <input type="checkbox" id="voix">
           <span>Lire les conseils à voix haute sur cet appareil</span>
         </label>
+        <label class="case">
+          <input type="checkbox" id="ecoute">
+          <span>Commandes à la voix : « vérifie », « suivant », « précédent », « explique », « répète », « montre le geste »</span>
+        </label>
+        <p class="vide etat-ecoute" id="etat-ecoute" role="status"></p>
       </div>
       <div class="carte">
         <h2>Comment faire</h2>
         <div class="texte-etape" id="texte-etape"></div>
       </div>
       <div class="carte camera cache" id="bloc-camera">
-        <video id="camera" autoplay muted playsinline></video>
-        <p class="vide" id="etat-camera">La caméra filme. L'IA regarde quand tu cliques sur « Vérifier mon geste ».</p>
+        <div class="cadre-camera" id="cadre-camera">
+          <video id="camera" autoplay muted playsinline></video>
+          <img id="guide" alt="" class="guide cache">
+        </div>
+        <label class="case">
+          <input type="checkbox" id="guide-actif" checked>
+          <span>Guide de placement <small>(l'image du maître en transparence : cale ton plan de travail sur le sien, l'IA compare mieux sous le même angle)</small></span>
+        </label>
+        <label for="opacite-guide" class="sr">Transparence du guide</label>
+        <input type="range" id="opacite-guide" min="10" max="80" value="40" aria-label="Transparence du guide">
+        <p class="vide" id="etat-camera">La caméra filme. L'IA regarde quand tu dis « vérifie » ou cliques sur « Vérifier mon geste ».</p>
       </div>
     </div>
   </section>

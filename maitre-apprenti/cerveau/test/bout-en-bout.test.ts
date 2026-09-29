@@ -363,6 +363,43 @@ test("maître avec les lunettes Meta : morceaux HEVC + voix → leçon", async (
   assert.ok(construction.includes("changement d'étape"));
 });
 
+test("maître au téléphone : morceaux WebM de 10 s avec le son, paroles et étapes → leçon", async () => {
+  const { corps } = await postJson("/captures", { titre: "Pain de campagne", metier: "Boulangerie" });
+  const id = corps.captureId;
+  // Ce qu'envoie la page maitre.html : des WebM (VP8 + Opus) autonomes, l'un après l'autre.
+  for (let i = 0; i < 2; i++) {
+    const morceau = path.join(dossier, `telephone-${i}.webm`);
+    await executer(FFMPEG, [
+      "-hide_banner", "-y", "-f", "lavfi", "-i", "testsrc=duration=3:size=640x360:rate=25",
+      "-f", "lavfi", "-i", "sine=frequency=440:duration=3",
+      "-c:v", "libvpx", "-b:v", "500k", "-c:a", "libopus", "-shortest", morceau,
+    ]);
+    const envoi = await api(`/captures/${id}/video`, {
+      method: "POST",
+      headers: { "content-type": "video/webm" },
+      body: await readFile(morceau),
+    });
+    assert.equal(envoi.statut, 200);
+    if (i === 0) {
+      await postJson(`/captures/${id}/parole`, { texte: "Je farine le plan de travail" });
+      await postJson(`/captures/${id}/etape`);
+    }
+  }
+  const avant = requetes.length;
+  assert.equal((await postJson(`/captures/${id}/terminer`)).statut, 202);
+  const lecon = await attendreLecon(id);
+  assert.equal(lecon.statut, "prete", lecon.erreur);
+  assert.ok(lecon.etapes.every((e: any) => e.clip && e.images.length > 0));
+  const construction = JSON.stringify(requetes.slice(avant)[0].corps.messages);
+  assert.ok(construction.includes("Je farine le plan de travail"));
+  // Le clip de la tablette garde la voix du maître.
+  const clip = await fetch(`${base}/media/lecons/${id}/clips/${lecon.etapes[0].clip}`);
+  const fichierClip = path.join(dossier, "clip-telephone.mp4");
+  await import("node:fs/promises").then((fs) => clip.arrayBuffer().then((b) => fs.writeFile(fichierClip, Buffer.from(b))));
+  const infos = await executer(FFMPEG, ["-hide_banner", "-i", fichierClip]).catch((e: { stderr: string }) => e);
+  assert.match((infos as { stderr: string }).stderr, /Audio: aac/);
+});
+
 test("maître avec les lunettes Mentra : direct RTMP enregistré → leçon", async () => {
   const { corps } = await postJson("/captures", { titre: "Pain de mie", metier: "Boulangerie" });
   const id = corps.captureId;

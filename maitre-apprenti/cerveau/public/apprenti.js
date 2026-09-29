@@ -1,4 +1,5 @@
 import { api, cleAcces, el } from "./commun.js";
+import { commandeApprenti, Ecoute, reconnaissanceDisponible } from "./voix.js";
 
 const $ = (id) => document.getElementById(id);
 const leconId = new URLSearchParams(location.search).get("lecon");
@@ -13,6 +14,9 @@ let etapesLecon = [];
 /** Mode caméra de la tablette : l'enregistrement en cours, et la commande à envoyer avec lui. */
 let enregistreurActuel = null;
 let commandeEnAttente = null;
+let etapeActuelle = null;
+/** Fin de la dernière phrase dite par l'appareil : on n'écoute pas sa propre voix. */
+let finDerniereParole = 0;
 
 // --- Affichage d'un retour du cerveau -------------------------------------------
 
@@ -27,6 +31,8 @@ function afficher(retour) {
   $("retour").className = `retour ${retour.verdict ?? ""}`;
   afficherDemo(etape);
   afficherTexte(etape);
+  etapeActuelle = etape;
+  afficherGuide();
   afficherPlan(retour.termine ? etape.total : etape.index);
   $("verifier").disabled = retour.termine;
   $("mode-analyse").textContent =
@@ -39,6 +45,7 @@ function afficher(retour) {
     speechSynthesis.cancel();
     const phrase = new SpeechSynthesisUtterance(retour.dire);
     phrase.lang = "fr-FR";
+    phrase.onend = () => (finDerniereParole = Date.now());
     speechSynthesis.speak(phrase);
   }
 }
@@ -133,6 +140,70 @@ async function attendreLunettes() {
   setTimeout(attendreLunettes, 3000);
 }
 
+// --- Commandes à la voix (téléphone ou tablette sur un support) -------------------
+
+const ecoute = new Ecoute({
+  surPhrase: (phrase) => {
+    // L'appareil lit les conseils à voix haute : on ignore ce qu'il entend pendant qu'il parle.
+    if (speechSynthesis.speaking || Date.now() - finDerniereParole < 800) return;
+    const nom = commandeApprenti(phrase);
+    if (!nom) return;
+    $("etat-ecoute").textContent = `Entendu : « ${phrase} »`;
+    if (nom === "montrer") montrerGeste();
+    else {
+      if (nom === "repeter") dernierMessageDit = null;
+      commande(nom);
+    }
+  },
+  surEtat: (etat, message) => {
+    $("etat-ecoute").textContent = message;
+    if (etat === "refusee" || etat === "indisponible") $("ecoute").checked = false;
+  },
+});
+
+function activerEcoute(active) {
+  $("ecoute").checked = active && ecoute.demarrer();
+  if (!active) ecoute.arreter();
+}
+
+/** Rejoue le clip du maître depuis le début. */
+function montrerGeste() {
+  const clip = $("clip");
+  if (clip.classList.contains("cache")) return;
+  clip.currentTime = 0;
+  clip.play().catch(() => undefined);
+  clip.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+// --- Guide de placement : la première image de l'étape du maître, en transparence -----
+
+function afficherGuide() {
+  const guide = $("guide");
+  const url = etapeActuelle?.imageUrls[0];
+  const visible = $("guide-actif").checked && Boolean(url) && !$("bloc-camera").classList.contains("cache");
+  guide.classList.toggle("cache", !visible);
+  if (visible && guide.getAttribute("src") !== url) guide.src = url;
+  guide.style.opacity = String(Number($("opacite-guide").value) / 100);
+}
+
+// Le cadre prend les proportions de l'image du maître, pour que les deux se superposent.
+$("guide").addEventListener("load", (e) => {
+  const { naturalWidth: l, naturalHeight: h } = e.target;
+  if (l && h) $("cadre-camera").style.aspectRatio = `${l} / ${h}`;
+});
+$("guide-actif").addEventListener("change", afficherGuide);
+$("opacite-guide").addEventListener("input", afficherGuide);
+
+/** Garde l'écran allumé pendant l'entraînement (sinon le téléphone se met en veille et coupe la caméra). */
+async function garderEcranAllume() {
+  try {
+    let verrou = await navigator.wakeLock?.request("screen");
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState === "visible" && verrou?.released) verrou = await navigator.wakeLock.request("screen");
+    });
+  } catch {}
+}
+
 // --- Mode caméra de la tablette (test sans lunettes) ----------------------------
 
 const DUREE_MORCEAU_MS = 4000;
@@ -182,6 +253,10 @@ async function demarrerCamera() {
 
   $("camera").srcObject = camera;
   $("bloc-camera").classList.remove("cache");
+  afficherGuide();
+  garderEcranAllume();
+  // Mains prises : on active les commandes à la voix (le clic sur le bouton autorise le micro).
+  if (reconnaissanceDisponible()) activerEcoute(true);
 
   // Filme en continu par morceaux de 4 s, gardés quelques secondes par le cerveau. L'IA ne les
   // regarde qu'avec « Vérifier » ou « Suivant » (sauf étape surveillée) : le morceau en cours
@@ -201,7 +276,7 @@ async function demarrerCamera() {
       }));
     envoiEnCours = envoi;
     envoi
-      .then(() => ($("etat-camera").textContent = "La caméra filme. L'IA regarde quand tu cliques sur « Vérifier mon geste »."))
+      .then(() => ($("etat-camera").textContent = "La caméra filme. L'IA regarde quand tu dis « vérifie » ou cliques sur « Vérifier mon geste »."))
       .catch((erreur) => ($("etat-camera").textContent = `Envoi impossible : ${erreur.message}`))
       .finally(() => {
         if (envoiEnCours === envoi) envoiEnCours = null;
@@ -220,6 +295,11 @@ $("repeter").onclick = () => {
 };
 $("recommencer").onclick = () => commande("recommencer");
 $("demarrer-camera").onclick = demarrerCamera;
+$("ecoute").addEventListener("change", (e) => activerEcoute(e.target.checked));
+if (!reconnaissanceDisponible()) {
+  $("ecoute").disabled = true;
+  $("etat-ecoute").textContent = "Ce navigateur ne reconnaît pas la voix : utilise les boutons (ou Chrome, Safari).";
+}
 $("son").onclick = () => {
   $("clip").muted = !$("clip").muted;
   $("son").textContent = $("clip").muted ? "🔈 Son du maître" : "🔇 Couper le son";

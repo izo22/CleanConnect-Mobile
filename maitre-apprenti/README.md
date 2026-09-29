@@ -66,6 +66,7 @@ npm start                               # → http://localhost:8787
 ## 2. Créer une leçon (le maître)
 
 - **Depuis une vidéo.** Ouvre `http://<cerveau>/`, donne un titre et un métier, envoie la vidéo et ajoute si tu veux tes explications (quantités, pièges).
+- **En filmant avec un téléphone.** Page d'accueil → « Filmer une démonstration ». Téléphone sur un support, là où l'apprenti posera le sien. Tu travailles en expliquant à voix haute : la vidéo et le son partent au cerveau par morceaux de 10 secondes pendant le tournage. « Étape suivante » et « terminé » à la voix ou avec les gros boutons ; ce que tu dis est transcrit et rangé dans la fiche écrite.
 - **En filmant avec les lunettes.** Dans l'appli lunettes, choisis « Je suis le maître » et démarre, puis travaille en expliquant à voix haute. Dis « étape suivante » (ou appui court) à chaque étape, et « terminé » (ou appui long) à la fin. La vidéo complète est enregistrée, avec ta voix et tes repères d'étapes.
 
 Dans les deux cas, l'IA découpe la démonstration en étapes en quelques minutes. Chaque étape reçoit :
@@ -76,7 +77,7 @@ Dans les deux cas, l'IA découpe la démonstration en étapes en quelques minute
 
 ## 3. Apprendre (l'apprenti)
 
-- **Tablette seule (test sans lunettes).** Page d'accueil → « Apprendre » → « Utiliser la caméra de cet appareil ». La tablette filme en continu et envoie la vidéo par morceaux de 4 secondes.
+- **Téléphone ou tablette sur un support (sans lunettes).** Page d'accueil → « Apprendre » → « Utiliser la caméra de cet appareil ». Pose l'appareil au-dessus du plan de travail et mets des écouteurs. Il filme en continu ; l'apprenti pilote **à la voix** (« vérifie », « suivant », « explique »… : reconnaissance vocale du navigateur, Chrome ou Safari). Un **guide de placement** montre en transparence la première image de l'étape du maître, pour caler l'appareil sous le même angle : l'IA compare mieux deux vidéos prises du même point de vue. L'écran reste allumé pendant la leçon.
 - **Lunettes + tablette.** Lance la leçon sur les lunettes. Si la page « Apprendre » est ouverte sur une tablette, elle rejoint la session toute seule : clip du maître en boucle à côté, conseils en direct.
 - **Commandes** (voix, bouton ou écran) : « vérifie » (ou « regarde », « c'est bon ? »), « explique », « suivant », « précédent », « répète », « recommence », « montre le geste », « pause ».
 
@@ -161,7 +162,7 @@ Sur les **Ray-Ban Display**, l'écran montre l'étape et la correction, avec les
 ## Tests
 
 ```bash
-cd cerveau && npm test && npm run typecheck    # 49 tests
+cd cerveau && npm test && npm run typecheck    # 52 tests
 cd lunettes-mentra && bun test && bun run typecheck   # 10 tests, dont l'intégration avec le cerveau
 cd lunettes-meta && ./gradlew test             # 19 tests (contrôleur + découpage vidéo HEVC)
 ```
@@ -175,7 +176,7 @@ Vérifié, avec de vraies vidéos générées par ffmpeg et un **faux** serveur 
 - **Détection de fin de geste** sur de vraies images (image fixe puis mire animée), et la logique de déclenchement sur des images simulées.
 - **Appli Mentra** : test d'intégration avec le vrai cerveau, où des « lunettes » simulées envoient une vraie vidéo en direct.
 - **Appli Meta** : le découpage d'une vraie vidéo HEVC donne des morceaux que ffmpeg décode. Tout le code compile contre les vraies bibliothèques Meta (`mwdat` 1.0.0).
-- **Tablette** : dans un vrai navigateur (Chromium, caméra simulée), aucun appel à l'IA pendant 9 secondes de caméra, puis un seul appel par clic sur « Vérifier mon geste » ou « Suivant ». Fiche écrite affichée, modifiée et relue.
+- **Tablette** : dans un vrai navigateur (Chromium, caméra simulée), aucun appel à l'IA pendant 9 secondes de caméra, puis un seul appel par clic sur « Vérifier mon geste » ou « Suivant ». Fiche écrite affichée, modifiée et relue. Démonstration filmée depuis la page « maître » (caméra et micro simulés) : morceaux envoyés, étape marquée, leçon prête avec ses clips ; puis guide de placement affiché côté apprenti.
 
 Pas encore vérifié :
 - **La qualité des corrections de l'IA** sur de vrais gestes. Il faut une clé API et un vrai essai avec un artisan.
@@ -187,6 +188,13 @@ Pas encore vérifié :
 - **Le délai réel** entre « vérifie » et la réponse (visé : 3 à 5 secondes).
 - **Les seuils de la vérification automatique** (quand considère-t-on que l'apprenti s'est arrêté ?) avec une vraie caméra portée sur la tête.
 - **Le build Android complet (APK)** : il n'a pas pu être lancé dans l'environnement de développement (serveurs Google bloqués). Il faut compiler dans Android Studio.
+
+## Téléphone : ce qu'il faut savoir
+
+- **HTTPS obligatoire** : le navigateur ne donne la caméra et le micro qu'à une page en HTTPS (ou `localhost`). Pour un essai, expose le cerveau avec un tunnel HTTPS (ngrok, Cloudflare Tunnel…).
+- **Reconnaissance vocale** : celle du navigateur (Chrome, Safari ; Firefox ne l'a pas). Elle passe par les serveurs de Google ou d'Apple. Si elle manque, les boutons restent là.
+- **Micro partagé** : en mode maître, le micro sert à la fois à l'enregistrement et aux commandes vocales. Certains téléphones Android refusent les deux en même temps : la page le signale, et le maître utilise alors les boutons « Étape suivante » et « Terminé » (sa voix reste enregistrée dans la vidéo).
+- **Écouteurs** recommandés pour l'apprenti : sinon le téléphone s'entend lui-même (la page ignore ce qu'elle entend pendant qu'elle parle, mais un bruit d'atelier peut gêner).
 
 ## Coûts et vie privée
 
