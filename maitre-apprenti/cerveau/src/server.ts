@@ -6,16 +6,17 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { creerSession, sessionsDeLecon, trouverSession } from "./coach.ts";
-import { typeMedia } from "./ia.ts";
 import { CaptureMaitre, creerLeconDepuisVideo, demarrerCapture } from "./lecons.ts";
 import { cheminMedia, listerLecons, lireLecon, supprimerLecon } from "./store.ts";
 import type { Commande, Lecon } from "./types.ts";
+import { sequenceDepuisMorceau, type MorceauVideo } from "./video.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
 /** Si défini, chaque appel à l'API doit fournir cette clé (en-tête x-cle ou paramètre ?cle=). */
 const CLE_ACCES = process.env.CLE_ACCES ?? "";
 const TAILLE_MAX_VIDEO = 1024 * 1024 * 1024;
-const TAILLE_MAX_IMAGE = 15 * 1024 * 1024;
+/** Un morceau de quelques secondes (tablette, lunettes). */
+const TAILLE_MAX_MORCEAU = 50 * 1024 * 1024;
 const DOSSIER_PUBLIC = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
 
 const captures = new Map<string, CaptureMaitre>();
@@ -55,25 +56,23 @@ async function lireJson(req: IncomingMessage): Promise<Record<string, unknown>> 
 }
 
 /**
- * Récupère l'image d'une requête : soit le corps brut (JPEG/PNG), soit un JSON {imageUrl}
- * pointant vers une photo déjà en ligne (cas des lunettes Mentra).
+ * Lit un morceau de vidéo envoyé pendant une leçon ou une démonstration : fichier (MP4, WebM…)
+ * ou flux HEVC brut des lunettes Meta (type video/hevc, cadence dans ?ips=).
  */
-async function lireImage(req: IncomingMessage): Promise<Buffer> {
-  if ((req.headers["content-type"] ?? "").includes("application/json")) {
-    const { imageUrl } = await lireJson(req);
-    if (typeof imageUrl !== "string" || !imageUrl.startsWith("https://")) {
-      throw new ErreurHttp(400, "imageUrl doit être une adresse https");
-    }
-    const reponse = await fetch(imageUrl, { signal: AbortSignal.timeout(15_000) });
-    if (!reponse.ok) throw new ErreurHttp(502, `Photo inaccessible (${reponse.status})`);
-    const image = Buffer.from(await reponse.arrayBuffer());
-    if (image.length > TAILLE_MAX_IMAGE) throw new ErreurHttp(413, "Photo trop volumineuse");
-    if (!typeMedia(image)) throw new ErreurHttp(415, "L'adresse ne renvoie pas une image");
-    return image;
+async function lireMorceau(req: IncomingMessage, url: URL): Promise<MorceauVideo> {
+  const type = req.headers["content-type"] ?? "";
+  if (!type.startsWith("video/") && type !== "application/octet-stream") {
+    throw new ErreurHttp(415, "Morceau de vidéo attendu (video/mp4, video/webm, video/hevc…)");
   }
-  const image = await lireCorps(req, TAILLE_MAX_IMAGE);
-  if (!typeMedia(image)) throw new ErreurHttp(415, "Image JPEG, PNG, WebP ou GIF attendue");
-  return image;
+  const donnees = await lireCorps(req, TAILLE_MAX_MORCEAU);
+  if (donnees.length === 0) throw new ErreurHttp(400, "Morceau de vidéo vide");
+  const ips = Number(url.searchParams.get("ips") ?? "");
+  return { donnees, type, imagesParSeconde: ips > 0 && ips <= 60 ? ips : undefined };
+}
+
+/** Nom d'hôte public du serveur, pour construire l'adresse du direct RTMP. */
+function hote(req: IncomingMessage): string {
+  return (req.headers.host ?? "localhost").replace(/:\d+$/, "");
 }
 
 const TYPES_FICHIERS: Record<string, string> = {
@@ -210,9 +209,14 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
       return envoyerJson(res, 201, { captureId: nouvelle.lecon.id, lecon: nouvelle.lecon });
     }
 
-    case "POST /captures/:id/image": {
-      const image = await capture(id).ajouterImage(await lireImage(req));
-      return envoyerJson(res, 200, image);
+    case "POST /captures/:id/video": {
+      await capture(id).ajouterMorceau(await lireMorceau(req, url));
+      return envoyerJson(res, 200, { ok: true });
+    }
+
+    case "POST /captures/:id/direct": {
+      const direct = await capture(id).demarrerDirect();
+      return envoyerJson(res, 201, { rtmpUrl: direct.url(hote(req)) });
     }
 
     case "POST /captures/:id/parole": {
@@ -226,9 +230,9 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
     case "POST /captures/:id/terminer": {
       const enCours = capture(id);
-      enCours.terminer();
       captures.delete(id);
-      return envoyerJson(res, 202, { leconId: enCours.lecon.id, images: enCours.images.length });
+      await enCours.terminer();
+      return envoyerJson(res, 202, { leconId: enCours.lecon.id });
     }
 
     // --- Sessions d'apprentissage -------------------------------------------
@@ -241,7 +245,7 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
     }
 
     case "GET /sessions": {
-      // Seulement les sessions actives ces 2 dernières minutes (les lunettes envoient une image toutes les 3 s).
+      // Seulement les sessions actives ces 2 dernières minutes (les lunettes envoient de la vidéo en continu).
       const leconId = url.searchParams.get("lecon") ?? "";
       const actives = sessionsDeLecon(leconId).filter((s) => Date.now() - s.derniereActivite < 120_000);
       return envoyerJson(res, 200, actives.map((s) => s.etat));
@@ -250,10 +254,26 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
     case "GET /sessions/:id":
       return envoyerJson(res, 200, session(id).etat);
 
-    case "POST /sessions/:id/image": {
+    case "POST /sessions/:id/video": {
       const enCours = session(id);
-      return envoyerJson(res, 200, await enCours.analyserImage(await lireImage(req)));
+      let sequence: Buffer[];
+      try {
+        sequence = await sequenceDepuisMorceau(await lireMorceau(req, url));
+      } catch (erreur) {
+        if (erreur instanceof ErreurHttp) throw erreur;
+        throw new ErreurHttp(422, erreur instanceof Error ? erreur.message : String(erreur));
+      }
+      return envoyerJson(res, 200, await enCours.analyserSequence(sequence));
     }
+
+    case "POST /sessions/:id/direct": {
+      const direct = session(id).ouvrirDirect();
+      return envoyerJson(res, 201, { rtmpUrl: direct.url(hote(req)) });
+    }
+
+    case "DELETE /sessions/:id/direct":
+      await session(id).fermerDirect();
+      return envoyerJson(res, 200, { ok: true });
 
     case "POST /sessions/:id/commande": {
       const { commande } = await lireJson(req);

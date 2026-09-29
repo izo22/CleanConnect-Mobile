@@ -1,11 +1,21 @@
-// Fabrication des leçons : à partir d'une vidéo du maître, ou d'une démonstration filmée en direct avec les lunettes.
+// Fabrication des leçons à partir de la vidéo du maître : envoyée d'un bloc (page web),
+// en morceaux (lunettes Meta) ou en direct (lunettes Mentra).
 
-import { readFile, unlink, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { ReceptionDirect } from "./direct.ts";
 import { construireLecon, type EtapeBrute, type ImageIA } from "./ia.ts";
 import { dossierLecon, nouvelId, preparerDossierLecon, sauverLecon } from "./store.ts";
 import type { Etape, ImageHorodatee, Lecon, Parole } from "./types.ts";
-import { decouperClip, dureeVideo, extraireImages, IMAGES_MAX_POUR_IA } from "./video.ts";
+import {
+  assemblerVideos,
+  decouperClip,
+  dureeVideo,
+  extraireImages,
+  normaliserMorceau,
+  sequenceEtape,
+  type MorceauVideo,
+} from "./video.ts";
 
 function nouvelleLecon(titre: string, metier: string, source: Lecon["source"]): Lecon {
   return {
@@ -26,35 +36,11 @@ async function lireImages(dossier: string, images: ImageHorodatee[]): Promise<Im
   );
 }
 
-/** Garde au plus `max` éléments, régulièrement répartis. */
-export function echantillonner<T>(elements: T[], max: number): T[] {
-  if (elements.length <= max) return elements;
-  const pas = elements.length / max;
-  return Array.from({ length: max }, (_, i) => elements[Math.floor(i * pas)]);
-}
-
-/**
- * Transforme les étapes proposées par l'IA en étapes de la leçon : bornes remises dans la
- * durée, images de référence vérifiées (et choisies au milieu de l'étape si l'IA n'en donne pas).
- */
-export function finaliserEtapes(
-  brutes: EtapeBrute[],
-  images: ImageHorodatee[],
-  duree: number | null,
-): Etape[] {
-  const fin = duree ?? images[images.length - 1]?.t ?? 0;
+/** Transforme les étapes proposées par l'IA en étapes de la leçon, bornes remises dans la durée. */
+export function finaliserEtapes(brutes: EtapeBrute[], duree: number): Etape[] {
   return brutes.map((brute, i) => {
-    const debut = Math.max(0, Math.min(brute.debut_s, fin));
-    const finEtape = Math.max(debut, Math.min(brute.fin_s, fin));
-    const indices = [...new Set(brute.images_reference)].filter((n) => n >= 0 && n < images.length).slice(0, 3);
-    if (indices.length === 0 && images.length > 0) {
-      const milieu = (debut + finEtape) / 2;
-      let proche = 0;
-      images.forEach((image, n) => {
-        if (Math.abs(image.t - milieu) < Math.abs(images[proche].t - milieu)) proche = n;
-      });
-      indices.push(proche);
-    }
+    const debut = Math.max(0, Math.min(brute.debut_s, duree));
+    const fin = Math.max(debut, Math.min(brute.fin_s, duree));
     return {
       id: `etape-${i + 1}`,
       numero: i + 1,
@@ -64,22 +50,12 @@ export function finaliserEtapes(
       erreursFrequentes: brute.erreurs_frequentes,
       criteresDeReussite: brute.criteres_de_reussite,
       debut: Number(debut.toFixed(1)),
-      fin: Number(finEtape.toFixed(1)),
+      fin: Number(fin.toFixed(1)),
       clip: null,
       clipLunettes: null,
-      images: indices.map((n) => images[n].fichier),
+      images: [],
     };
   });
-}
-
-/** Supprime les images extraites qui ne servent de référence à aucune étape. */
-async function nettoyerImages(dossier: string, toutes: ImageHorodatee[], etapes: Etape[]): Promise<void> {
-  const utilisees = new Set(etapes.flatMap((e) => e.images));
-  await Promise.all(
-    toutes
-      .filter((image) => !utilisees.has(image.fichier))
-      .map((image) => unlink(path.join(dossier, image.fichier)).catch(() => undefined)),
-  );
 }
 
 async function echec(lecon: Lecon, erreur: unknown): Promise<void> {
@@ -89,8 +65,63 @@ async function echec(lecon: Lecon, erreur: unknown): Promise<void> {
   await sauverLecon(lecon);
 }
 
+/**
+ * Prépare une leçon à partir de la vidéo complète du maître :
+ * l'IA découpe en étapes, puis chaque étape reçoit ses clips et sa séquence de référence.
+ */
+async function preparerDepuisVideo(
+  lecon: Lecon,
+  video: string,
+  extras: { commentaire?: string; paroles?: Parole[]; reperes?: number[] } = {},
+): Promise<void> {
+  const dossier = dossierLecon(lecon.id);
+  const dossierImages = path.join(dossier, "images");
+  try {
+    const duree = await dureeVideo(video);
+    const extraites = await extraireImages(video, dossierImages, duree);
+    if (extraites.length === 0) throw new Error("Aucune image n'a pu être extraite de la vidéo");
+
+    const brutes = await construireLecon({
+      titre: lecon.titre,
+      metier: lecon.metier,
+      images: await lireImages(dossierImages, extraites),
+      duree,
+      ...extras,
+    });
+    const etapes = finaliserEtapes(brutes, duree);
+
+    for (const etape of etapes) {
+      // Un clip trop court ne montre rien : on garde au moins 2 secondes autour de l'étape.
+      const debut = Math.max(0, Math.min(etape.debut ?? 0, duree - 2));
+      const fin = Math.min(duree, Math.max(etape.fin ?? duree, debut + 2));
+      const dossierClips = path.join(dossier, "clips");
+      etape.clip = `etape-${etape.numero}.mp4`;
+      etape.clipLunettes = `etape-${etape.numero}-lunettes.mp4`;
+      await decouperClip(video, debut, fin, path.join(dossierClips, etape.clip), "tablette");
+      await decouperClip(video, debut, fin, path.join(dossierClips, etape.clipLunettes), "lunettes");
+
+      // Séquence de référence : le geste du maître sur toute l'étape, comme l'IA verra l'apprenti.
+      const sequence = await sequenceEtape(video, debut, fin);
+      etape.images = [];
+      for (const [k, image] of sequence.entries()) {
+        const fichier = `etape-${etape.numero}-ref-${k + 1}.jpg`;
+        await writeFile(path.join(dossierImages, fichier), image);
+        etape.images.push(fichier);
+      }
+    }
+
+    await Promise.all(extraites.map((i) => unlink(path.join(dossierImages, i.fichier)).catch(() => undefined)));
+    lecon.etapes = etapes;
+    lecon.statut = "prete";
+    await sauverLecon(lecon);
+    console.log(`Leçon ${lecon.id} prête : ${etapes.length} étapes.`);
+  } catch (erreur) {
+    await echec(lecon, erreur);
+  }
+}
+
 // ---------------------------------------------------------------------------
-// Depuis une vidéo
+// Vidéo envoyée d'un bloc
 // ---------------------------------------------------------------------------
 
 /**
@@ -108,75 +139,66 @@ export async function creerLeconDepuisVideo(options: {
   const cheminVideo = path.join(dossier, "source-video");
   await writeFile(cheminVideo, options.video);
   await sauverLecon(lecon);
-  void preparerDepuisVideo(lecon, cheminVideo, options.commentaire);
+  void preparerDepuisVideo(lecon, cheminVideo, { commentaire: options.commentaire });
   return lecon;
 }
 
-async function preparerDepuisVideo(lecon: Lecon, video: string, commentaire: string): Promise<void> {
-  const dossierImages = path.join(dossierLecon(lecon.id), "images");
-  try {
-    const duree = await dureeVideo(video);
-    const images = await extraireImages(video, dossierImages, duree);
-    if (images.length === 0) throw new Error("Aucune image n'a pu être extraite de la vidéo");
-
-    const brutes = await construireLecon({
-      titre: lecon.titre,
-      metier: lecon.metier,
-      images: await lireImages(dossierImages, images),
-      duree,
-      commentaire,
-    });
-    const etapes = finaliserEtapes(brutes, images, duree);
-
-    for (const etape of etapes) {
-      // Un clip trop court ne montre rien : on garde au moins 2 secondes autour de l'étape.
-      const debut = Math.max(0, Math.min(etape.debut ?? 0, duree - 2));
-      const fin = Math.min(duree, Math.max(etape.fin ?? duree, debut + 2));
-      const dossierClips = path.join(dossierLecon(lecon.id), "clips");
-      etape.clip = `etape-${etape.numero}.mp4`;
-      etape.clipLunettes = `etape-${etape.numero}-lunettes.mp4`;
-      await decouperClip(video, debut, fin, path.join(dossierClips, etape.clip), "tablette");
-      await decouperClip(video, debut, fin, path.join(dossierClips, etape.clipLunettes), "lunettes");
-    }
-
-    await nettoyerImages(dossierImages, images, etapes);
-    lecon.etapes = etapes;
-    lecon.statut = "prete";
-    await sauverLecon(lecon);
-    console.log(`Leçon ${lecon.id} prête : ${etapes.length} étapes.`);
-  } catch (erreur) {
-    await echec(lecon, erreur);
-  }
-}
-
 // ---------------------------------------------------------------------------
-// Depuis les lunettes du maître (démonstration en direct)
+// Démonstration filmée avec les lunettes (morceaux de vidéo ou direct)
 // ---------------------------------------------------------------------------
 
 export class CaptureMaitre {
   readonly lecon: Lecon;
   readonly debut = Date.now();
-  readonly images: ImageHorodatee[] = [];
   readonly paroles: Parole[] = [];
   readonly reperes: number[] = [];
   termine = false;
+  private readonly morceaux: string[] = [];
+  private fileAttente: Promise<void> = Promise.resolve();
+  private direct: ReceptionDirect | null = null;
+  /** Instant (depuis le début de la capture) où la vidéo commence vraiment. */
+  private debutVideo: number | null = null;
 
   constructor(lecon: Lecon) {
     this.lecon = lecon;
+  }
+
+  private get dossier(): string {
+    return path.join(dossierLecon(this.lecon.id), "capture");
   }
 
   private instant(): number {
     return Number(((Date.now() - this.debut) / 1000).toFixed(1));
   }
 
-  async ajouterImage(data: Buffer): Promise<ImageHorodatee> {
-    const image = {
-      t: this.instant(),
-      fichier: `direct_${String(this.images.length + 1).padStart(4, "0")}.jpg`,
-    };
-    await writeFile(path.join(dossierLecon(this.lecon.id), "images", image.fichier), data);
-    this.images.push(image);
-    return image;
+  /** Ajoute un morceau de vidéo (lunettes Meta). Les morceaux sont traités dans l'ordre d'arrivée. */
+  ajouterMorceau(morceau: MorceauVideo): Promise<void> {
+    const recu = this.instant();
+    const numero = this.morceaux.length + 1;
+    const fichier = path.join(this.dossier, `morceau-${String(numero).padStart(5, "0")}.mp4`);
+    this.morceaux.push(fichier);
+    const traitement = this.fileAttente.then(async () => {
+      await mkdir(this.dossier, { recursive: true });
+      await normaliserMorceau(morceau, fichier);
+      // Le premier morceau a été filmé juste avant de nous parvenir.
+      if (this.debutVideo === null) this.debutVideo = Math.max(0, recu - (await dureeVideo(fichier)));
+    });
+    // Un morceau illisible ne doit pas bloquer les suivants.
+    this.fileAttente = traitement.catch((e: unknown) => console.warn("Morceau ignoré :", e));
+    return traitement;
+  }
+
+  /** Ouvre un direct RTMP (lunettes Mentra) dont la vidéo est enregistrée pour la leçon. */
+  async demarrerDirect(): Promise<ReceptionDirect> {
+    if (this.direct) return this.direct;
+    await mkdir(this.dossier, { recursive: true });
+    this.direct = new ReceptionDirect({
+      dossierEnregistrement: this.dossier,
+      surImage: () => {
+        if (this.debutVideo === null) this.debutVideo = this.instant();
+      },
+    });
+    return this.direct;
   }
 
   ajouterParole(texte: string): void {
@@ -189,33 +211,34 @@ export class CaptureMaitre {
     return t;
   }
 
-  /** Termine la démonstration et prépare la leçon en arrière-plan. */
-  terminer(): void {
+  /** Termine la démonstration : la vidéo est assemblée et la leçon préparée en arrière-plan. */
+  async terminer(): Promise<void> {
     if (this.termine) return;
     this.termine = true;
+    await this.direct?.arreter();
+    await this.fileAttente;
     void this.preparer();
   }
 
   private async preparer(): Promise<void> {
-    const dossierImages = path.join(dossierLecon(this.lecon.id), "images");
     try {
-      if (this.images.length === 0) throw new Error("Aucune image reçue des lunettes du maître");
-      const choisies = echantillonner(this.images, IMAGES_MAX_POUR_IA);
-      const duree = this.instant();
-      const brutes = await construireLecon({
-        titre: this.lecon.titre,
-        metier: this.lecon.metier,
-        images: await lireImages(dossierImages, choisies),
-        duree,
-        paroles: this.paroles,
-        reperes: this.reperes,
+      const candidats = [...this.morceaux, ...(this.direct?.enregistrements ?? [])];
+      const existants: string[] = [];
+      for (const f of candidats) {
+        if (await access(f).then(() => true, () => false)) existants.push(f);
+      }
+      if (existants.length === 0) throw new Error("Aucune vidéo reçue des lunettes du maître");
+      const video = path.join(dossierLecon(this.lecon.id), "source-video.mp4");
+      await assemblerVideos(existants, video);
+      await rm(this.dossier, { recursive: true, force: true });
+
+      // Les paroles et repères sont datés depuis le début de la capture : on les recale sur la vidéo.
+      const decalage = this.debutVideo ?? 0;
+      const recaler = (t: number) => Number(Math.max(0, t - decalage).toFixed(1));
+      await preparerDepuisVideo(this.lecon, video, {
+        paroles: this.paroles.map((p) => ({ ...p, t: recaler(p.t) })),
+        reperes: this.reperes.map(recaler),
       });
-      const etapes = finaliserEtapes(brutes, choisies, duree);
-      await nettoyerImages(dossierImages, this.images, etapes);
-      this.lecon.etapes = etapes;
-      this.lecon.statut = "prete";
-      await sauverLecon(this.lecon);
-      console.log(`Leçon ${this.lecon.id} (lunettes) prête : ${etapes.length} étapes.`);
     } catch (erreur) {
       await echec(this.lecon, erreur);
     }
@@ -224,6 +247,7 @@ export class CaptureMaitre {
 
 export async function demarrerCapture(titre: string, metier: string): Promise<CaptureMaitre> {
   const lecon = nouvelleLecon(titre, metier, "lunettes");
+  await preparerDossierLecon(lecon.id);
   await sauverLecon(lecon);
   return new CaptureMaitre(lecon);
 }

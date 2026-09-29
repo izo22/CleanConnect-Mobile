@@ -1,12 +1,14 @@
-// Session d'un apprenti : suit l'étape en cours, envoie les images à l'IA et décide quoi dire.
+// Session d'un apprenti : suit l'étape en cours, envoie les séquences vidéo à l'IA et décide quoi dire.
 
 import { readFile } from "node:fs/promises";
+import { ReceptionDirect } from "./direct.ts";
 import { evaluerGeste, type ImageIA } from "./ia.ts";
 import { cheminMedia, nouvelId, urlMedia } from "./store.ts";
 import type { Commande, Lecon, Retour, Verdict } from "./types.ts";
+import { IMAGES_PAR_SECONDE, IMAGES_PAR_SEQUENCE } from "./video.ts";
 
-/** On n'envoie à l'IA que les images les plus récentes de l'apprenti (la dernière compte). */
-const IMAGES_APPRENTI = 2;
+/** En direct, on relance une analyse dès que 2 secondes nouvelles sont arrivées (et que l'IA est libre). */
+const NOUVELLES_IMAGES_AVANT_ANALYSE = 2 * IMAGES_PAR_SECONDE;
 /** Nombre de conseils déjà donnés que l'IA garde en mémoire pendant une étape. */
 const CONSEILS_EN_MEMOIRE = 4;
 /** Délai avant de répéter à voix haute un message identique. */
@@ -32,7 +34,9 @@ export class SessionApprenti {
   private index = 0;
   private termine = false;
   private analyseEnCours = false;
-  private imagesApprenti: Buffer[] = [];
+  private direct: ReceptionDirect | null = null;
+  private imagesDirect: Buffer[] = [];
+  private nouvellesImages = 0;
   private conseils: string[] = [];
   private dernierDit: { texte: string; quand: number } | null = null;
   private dernierPasVisible = 0;
@@ -105,7 +109,8 @@ export class SessionApprenti {
 
   private changerEtape(index: number): void {
     this.index = index;
-    this.imagesApprenti = [];
+    this.imagesDirect = [];
+    this.nouvellesImages = 0;
     this.conseils = [];
     this.dernierDit = null;
   }
@@ -132,14 +137,18 @@ export class SessionApprenti {
     return images;
   }
 
-  async analyserImage(image: Buffer): Promise<Retour> {
+  /**
+   * Analyse une séquence vidéo de l'apprenti (images successives, 2 par seconde, de la plus
+   * ancienne à la plus récente) et décide quoi lui dire.
+   */
+  async analyserSequence(images: Buffer[]): Promise<Retour> {
     this.derniereActivite = this.maintenant();
-    if (this.termine) return this.dernierRetour;
-    // Les lunettes envoient une image toutes les quelques secondes ; si l'IA n'a pas fini
-    // la précédente, on ignore celle-ci plutôt que d'empiler du retard.
+    if (this.termine || images.length === 0) return this.dernierRetour;
+    // La vidéo arrive en continu ; si l'IA n'a pas fini la séquence précédente, on ignore
+    // celle-ci plutôt que d'empiler du retard.
     if (this.analyseEnCours) return { ...this.dernierRetour, dire: null, ignore: true };
 
-    this.imagesApprenti = [...this.imagesApprenti, image].slice(-IMAGES_APPRENTI);
+    const sequence = images.slice(-IMAGES_PAR_SEQUENCE);
     const indexAuDepart = this.index;
     this.analyseEnCours = true;
     let verdict: Verdict;
@@ -149,7 +158,7 @@ export class SessionApprenti {
         etape: this.etape,
         totalEtapes: this.lecon.etapes.length,
         imagesMaitre: await this.referencesMaitre(),
-        imagesApprenti: this.imagesApprenti.map((data) => ({ data })),
+        imagesApprenti: sequence.map((data) => ({ data })),
         derniersConseils: this.conseils,
       });
     } catch (erreur) {
@@ -200,6 +209,31 @@ export class SessionApprenti {
     );
   }
 
+  // --- Direct (vidéo continue des lunettes Mentra) ----------------------------------
+
+  /** Ouvre un point de réception vidéo en direct pour cette session. */
+  ouvrirDirect(): ReceptionDirect {
+    this.direct ??= new ReceptionDirect({ surImage: (image) => this.imageDirect(image) });
+    return this.direct;
+  }
+
+  async fermerDirect(): Promise<void> {
+    const direct = this.direct;
+    this.direct = null;
+    await direct?.arreter();
+  }
+
+  private imageDirect(image: Buffer): void {
+    this.derniereActivite = this.maintenant();
+    this.imagesDirect = [...this.imagesDirect, image].slice(-IMAGES_PAR_SEQUENCE);
+    this.nouvellesImages++;
+    if (!this.analyseEnCours && this.nouvellesImages >= NOUVELLES_IMAGES_AVANT_ANALYSE) {
+      this.nouvellesImages = 0;
+      // Les abonnés (lunettes, tablette) reçoivent le retour par le flux d'événements.
+      void this.analyserSequence(this.imagesDirect);
+    }
+  }
+
   commande(commande: Commande): Retour {
     switch (commande) {
       case "suivant":
@@ -230,7 +264,10 @@ const sessions = new Map<string, SessionApprenti>();
 function oublierSessionsInactives(): void {
   const limite = Date.now() - DUREE_VIE_SESSION_MS;
   for (const [id, session] of sessions) {
-    if (session.derniereActivite < limite) sessions.delete(id);
+    if (session.derniereActivite < limite) {
+      void session.fermerDirect();
+      sessions.delete(id);
+    }
   }
 }
 

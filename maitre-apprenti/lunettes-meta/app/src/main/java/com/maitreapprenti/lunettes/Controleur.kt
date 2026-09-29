@@ -9,8 +9,10 @@ import kotlinx.coroutines.launch
 
 /**
  * Logique des lunettes, sans dépendance au SDK Meta (pour pouvoir la tester sur ordinateur) :
- * - mode apprenti : photo toutes les quelques secondes → le cerveau juge → correction à l'oreille ;
- * - mode maître : photos + voix du maître envoyées au cerveau, qui en fait une leçon.
+ * - mode apprenti : les lunettes filment en continu ; les dernières secondes de vidéo partent
+ *   au cerveau, qui juge le geste → correction à l'oreille ;
+ * - mode maître : toute la vidéo de la démonstration + la voix du maître partent au cerveau,
+ *   qui en fait une leçon.
  */
 
 enum class Mode {
@@ -39,8 +41,17 @@ data class Ecran(val titre: String, val texte: String, val clipUrl: String? = nu
 
 /** Ce que le contrôleur attend des lunettes (branché sur le SDK Meta dans LunettesMeta). */
 interface Lunettes {
-  /** Prend une photo et la renvoie en JPEG. */
-  suspend fun prendrePhoto(): ByteArray
+  /**
+   * Attend et renvoie le prochain morceau de vidéo filmé par les lunettes :
+   * les dernières secondes (apprenti), ou la suite exacte de la vidéo (maître, [continu] = true).
+   */
+  suspend fun prochainMorceau(continu: Boolean): MorceauVideo
+
+  /** Ce qui reste de vidéo non envoyée (fin de la démonstration du maître). */
+  fun dernierMorceau(): MorceauVideo?
+
+  /** Oublie la vidéo filmée jusqu'ici (début d'une leçon ou d'une démonstration). */
+  fun nouvelleVideo()
 
   fun dire(texte: String)
 
@@ -56,7 +67,6 @@ class Controleur(
     private var reglages: Reglages,
     private val notifier: (Etat) -> Unit,
     private val fabriqueApi: (Reglages) -> ApiCerveau = { CerveauHttp(it.urlCerveau, it.cle) },
-    private val intervalleMs: Long = 4_000,
 ) {
   var etat = Etat()
     private set
@@ -66,7 +76,7 @@ class Controleur(
   private var sessionId: String? = null
   private var sessionLeconId = ""
   private var captureId: String? = null
-  private var imagesEnvoyees = 0
+  private var morceauxEnvoyes = 0
   private var derniereErreurDite = ""
   private var dernierRetour: Retour? = null
 
@@ -89,7 +99,7 @@ class Controleur(
     val message = erreur.message ?: erreur.toString()
     maj(etat.copy(erreur = message))
     lunettes.afficher(Ecran("Problème", message))
-    // On ne répète pas la même erreur à l'oreille toutes les 4 secondes.
+    // On ne répète pas la même erreur à l'oreille à chaque morceau de vidéo.
     if (message != derniereErreurDite) {
       derniereErreurDite = message
       lunettes.dire("Je n'arrive pas à joindre le cerveau.")
@@ -104,8 +114,9 @@ class Controleur(
       maj(etat.copy(erreur = "Indique l'adresse du cerveau dans les réglages"))
       return
     }
-    imagesEnvoyees = 0
+    morceauxEnvoyes = 0
     derniereErreurDite = ""
+    lunettes.nouvelleVideo()
     maj(Etat(actif = true, message = "Démarrage…"))
     try {
       if (reglages.mode == Mode.APPRENTI) demarrerApprenti() else demarrerMaitre()
@@ -118,8 +129,8 @@ class Controleur(
     }
     boucle =
         scope.launch {
+          // Pas de minuterie : chaque tour attend le morceau de vidéo suivant (environ 4 s).
           while (isActive) {
-            val debut = System.currentTimeMillis()
             try {
               if (reglages.mode == Mode.APPRENTI) tourApprenti() else tourMaitre()
               if (etat.erreur != null) maj(etat.copy(erreur = null))
@@ -127,8 +138,8 @@ class Controleur(
               throw e
             } catch (e: Exception) {
               signalerErreur(e)
+              delay(2_000)
             }
-            delay(maxOf(500, intervalleMs - (System.currentTimeMillis() - debut)))
           }
         }
   }
@@ -160,7 +171,7 @@ class Controleur(
 
   private suspend fun tourApprenti() {
     val id = sessionId ?: return
-    val retour = api.envoyerImage(id, lunettes.prendrePhoto())
+    val retour = api.envoyerVideo(id, lunettes.prochainMorceau(continu = false))
     appliquer(retour)
     if (retour.termine) arreter()
   }
@@ -200,7 +211,7 @@ class Controleur(
   private suspend fun demarrerMaitre() {
     captureId = api.creerCapture(reglages.titreDemo, reglages.metierDemo)
     val consigne =
-        "Je t'écoute. Explique tes gestes à voix haute. Dis « étape suivante » à chaque nouvelle étape, et « terminé » à la fin."
+        "Je filme. Explique tes gestes à voix haute. Dis « étape suivante » à chaque nouvelle étape, et « terminé » à la fin."
     lunettes.afficher(Ecran("Démonstration", consigne))
     lunettes.dire(consigne)
     maj(etat.copy(etape = "Démonstration en cours", message = consigne))
@@ -208,9 +219,9 @@ class Controleur(
 
   private suspend fun tourMaitre() {
     val id = captureId ?: return
-    api.envoyerImageCapture(id, lunettes.prendrePhoto())
-    imagesEnvoyees++
-    maj(etat.copy(etape = "Démonstration : $imagesEnvoyees images envoyées"))
+    api.envoyerVideoCapture(id, lunettes.prochainMorceau(continu = true))
+    morceauxEnvoyes++
+    maj(etat.copy(etape = "Démonstration : ${morceauxEnvoyes * 4} s de vidéo envoyées"))
   }
 
   suspend fun marquerEtape() {
@@ -232,6 +243,8 @@ class Controleur(
     captureId = null
     arreter()
     try {
+      // Les dernières secondes filmées, pour ne rien perdre de la fin du geste.
+      lunettes.dernierMorceau()?.let { api.envoyerVideoCapture(id, it) }
       api.terminerCapture(id)
       val fin = "Merci ! La leçon est en préparation, elle sera prête dans quelques minutes."
       lunettes.afficher(Ecran("Démonstration terminée", fin))

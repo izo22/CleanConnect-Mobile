@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, before, test } from "node:test";
+import { promisify } from "node:util";
 
 // Données dans un dossier temporaire, clé d'accès activée, IA volontairement injoignable.
 const dossier = await mkdtemp(path.join(tmpdir(), "maitre-apprenti-serveur-"));
@@ -14,10 +16,12 @@ process.env.ANTHROPIC_BASE_URL = "http://127.0.0.1:9";
 
 const { serveur } = await import("../src/server.ts");
 const { sauverLecon, preparerDossierLecon } = await import("../src/store.ts");
+const { FFMPEG } = await import("../src/video.ts");
 
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46]);
 const LECON_ID = "0123456789ab";
 let base = "";
+let morceau = Buffer.alloc(0);
 
 async function api(chemin: string, options: RequestInit = {}) {
   const reponse = await fetch(`${base}/api${chemin}`, {
@@ -54,6 +58,13 @@ before(async () => {
       images: ["ref.jpg"],
     })),
   });
+  // Un morceau de vidéo de 4 s, comme en envoie la tablette.
+  const fichier = path.join(dossier, "morceau.webm");
+  await promisify(execFile)(FFMPEG, [
+    "-hide_banner", "-y", "-f", "lavfi", "-i", "testsrc=duration=4:size=320x240:rate=15",
+    "-c:v", "libvpx", "-b:v", "300k", fichier,
+  ]);
+  morceau = await readFile(fichier);
   await new Promise<void>((ok) => serveur.listen(0, "127.0.0.1", ok));
   base = `http://127.0.0.1:${(serveur.address() as AddressInfo).port}`;
 });
@@ -76,20 +87,20 @@ test("liste les leçons", async () => {
   assert.equal(corps[0].nombreEtapes, 2);
 });
 
-test("une session d'apprenti se crée, reçoit une image et obéit aux commandes", async () => {
+test("une session d'apprenti se crée, reçoit de la vidéo et obéit aux commandes", async () => {
   const creee = await api("/sessions", { method: "POST", body: JSON.stringify({ leconId: LECON_ID }) });
   assert.equal(creee.statut, 201);
   assert.equal(creee.corps.dire, "Étape 1 : Étape 1. Consigne 1");
   const id = creee.corps.sessionId;
 
   // L'IA est injoignable ici : le serveur doit répondre proprement sans planter.
-  const image = await api(`/sessions/${id}/image`, {
+  const video = await api(`/sessions/${id}/video`, {
     method: "POST",
-    headers: { "content-type": "image/jpeg" },
-    body: JPEG,
+    headers: { "content-type": "video/webm" },
+    body: morceau,
   });
-  assert.equal(image.statut, 200);
-  assert.match(image.corps.afficher, /IA indisponible/);
+  assert.equal(video.statut, 200);
+  assert.match(video.corps.afficher, /IA indisponible/);
 
   const suivant = await api(`/sessions/${id}/commande`, {
     method: "POST",
@@ -107,14 +118,21 @@ test("une session d'apprenti se crée, reçoit une image et obéit aux commandes
   assert.equal(inconnue.statut, 400);
 });
 
-test("refuse ce qui n'est pas une image", async () => {
+test("refuse les photos et les vidéos illisibles", async () => {
   const creee = await api("/sessions", { method: "POST", body: JSON.stringify({ leconId: LECON_ID }) });
-  const reponse = await api(`/sessions/${creee.corps.sessionId}/image`, {
+  const id = creee.corps.sessionId;
+  const photo = await api(`/sessions/${id}/video`, {
     method: "POST",
     headers: { "content-type": "image/jpeg" },
-    body: "pas une image",
+    body: JPEG,
   });
-  assert.equal(reponse.statut, 415);
+  assert.equal(photo.statut, 415);
+  const illisible = await api(`/sessions/${id}/video`, {
+    method: "POST",
+    headers: { "content-type": "video/mp4" },
+    body: "pas une vidéo",
+  });
+  assert.equal(illisible.statut, 422);
 });
 
 test("sert les clips par morceaux (lecture vidéo) et bloque les chemins suspects", async () => {

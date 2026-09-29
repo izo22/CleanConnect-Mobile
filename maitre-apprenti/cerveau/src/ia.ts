@@ -60,7 +60,6 @@ export interface EtapeBrute {
   points_de_controle: string[];
   erreurs_frequentes: string[];
   criteres_de_reussite: string[];
-  images_reference: number[];
 }
 
 const SCHEMA_LECON = {
@@ -78,11 +77,10 @@ const SCHEMA_LECON = {
           points_de_controle: { type: "array", items: { type: "string" } },
           erreurs_frequentes: { type: "array", items: { type: "string" } },
           criteres_de_reussite: { type: "array", items: { type: "string" } },
-          images_reference: { type: "array", items: { type: "integer" } },
         },
         required: [
           "titre", "consigne", "debut_s", "fin_s", "points_de_controle",
-          "erreurs_frequentes", "criteres_de_reussite", "images_reference",
+          "erreurs_frequentes", "criteres_de_reussite",
         ],
         additionalProperties: false,
       },
@@ -93,16 +91,15 @@ const SCHEMA_LECON = {
 } as const;
 
 const SYSTEME_LECON = `Tu prépares une leçon pratique à partir de la démonstration filmée d'un maître artisan.
-Un apprenti refera ensuite les mêmes gestes avec des lunettes connectées, et une IA comparera son travail à celui du maître, étape par étape, à partir de photos prises toutes les quelques secondes.
+Un apprenti refera ensuite les mêmes gestes avec des lunettes connectées qui le filment, et une IA comparera ses gestes à ceux du maître, étape par étape, à partir de courtes séquences vidéo.
 
 Découpe la démonstration en étapes concrètes, dans l'ordre (en général entre 4 et 12). Pour chaque étape :
 - titre : 2 à 6 mots.
 - consigne : ce que l'apprenti doit faire, en une ou deux phrases à l'impératif, en tutoyant. Elle sera lue à voix haute.
 - debut_s et fin_s : les instants de début et de fin dans la vidéo, en secondes, d'après les instants indiqués sous chaque image.
-- points_de_controle : ce qui doit être vérifiable sur une photo pendant l'étape (bon outil, bonne quantité lue sur la balance, bon ordre, forme, nombre, position des mains...).
-- erreurs_frequentes : les erreurs visibles typiques d'un débutant sur cette étape.
-- criteres_de_reussite : à quoi on voit sur une photo que l'étape est terminée et réussie.
-- images_reference : les numéros (#) des 1 à 3 images qui montrent le mieux le geste ou le résultat attendu.
+- points_de_controle : ce qui doit se voir dans le geste pendant l'étape (bon outil, bonne quantité lue sur la balance, ordre des mouvements, sens et amplitude du geste, position des mains, rythme...).
+- erreurs_frequentes : les erreurs visibles typiques d'un débutant sur cette étape (geste, ordre, résultat).
+- criteres_de_reussite : à quoi on voit que l'étape est terminée et réussie (souvent le résultat visible).
 
 Ne décris que ce qui se voit sur les images ou ce que le maître dit. N'invente pas de quantités, de températures ou de durées qui n'apparaissent pas. Rédige en français.`;
 
@@ -118,7 +115,7 @@ export async function construireLecon(options: {
   const contenu: Anthropic.Beta.BetaContentBlockParam[] = [];
   let intro = `Leçon : « ${options.titre} » (métier : ${options.metier}).\n`;
   if (options.duree !== null) intro += `Durée de la démonstration : ${Math.round(options.duree)} s.\n`;
-  intro += `Voici ${options.images.length} images de la démonstration, dans l'ordre.`;
+  intro += `Voici ${options.images.length} images extraites de la vidéo de la démonstration, dans l'ordre.`;
   contenu.push({ type: "text", text: intro });
 
   options.images.forEach((image, i) => {
@@ -172,20 +169,21 @@ const SCHEMA_VERDICT = {
   additionalProperties: false,
 } as const;
 
-const SYSTEME_TUTEUR = `Tu es le tuteur d'un apprenti artisan. Il porte des lunettes connectées qui te montrent son plan de travail, vu de ses yeux, toutes les quelques secondes. Tu compares ce qu'il fait avec la démonstration du maître pour l'étape en cours, et tu lui parles à l'oreille.
+const SYSTEME_TUTEUR = `Tu es le tuteur d'un apprenti artisan. Il porte des lunettes connectées qui le filment en continu, vu de ses yeux. Tu reçois des extraits vidéo sous forme d'images successives : le déroulé de l'étape en cours chez le maître, puis les dernières secondes de l'apprenti (2 images par seconde). Tu compares ses gestes à ceux du maître et tu lui parles à l'oreille.
 
 Réponds avec un verdict :
-- "correction" : une erreur est clairement visible. Le message dit quoi faire, pas ce qui ne va pas : une seule correction, la plus importante, à l'impératif, en tutoyant, en 15 mots maximum. Exemple : « Allonge encore ta baguette, elle doit faire deux mains de plus. »
-- "etape_reussie" : les critères de réussite de l'étape sont clairement visibles sur la dernière image. Le message est un bravo très court.
+- "correction" : une erreur est clairement visible dans le geste ou le résultat (mauvais mouvement, mauvais ordre, mauvais outil, geste trop brusque ou trop timide, forme ratée). Le message dit quoi faire, pas ce qui ne va pas : une seule correction, la plus importante, à l'impératif, en tutoyant, en 15 mots maximum. Exemple : « Roule du centre vers les bords, en écartant les mains. »
+- "etape_reussie" : les critères de réussite de l'étape sont clairement visibles à la fin de l'extrait. Le message est un bravo très court.
 - "en_cours" : l'apprenti travaille, rien de faux n'est visible, ou tu as un doute. Message vide.
 - "pas_visible" : on ne voit pas ses mains ni son plan de travail. Le message lui dit comment se placer, en 12 mots maximum.
 
 Règles :
+- Regarde le mouvement d'une image à l'autre : sens, amplitude, ordre et rythme des gestes, pas seulement la dernière image.
+- Le maître est montré sur toute l'étape, l'apprenti sur quelques secondes : compare le geste en cours avec le passage correspondant chez le maître.
 - Ne juge que ce qui se voit. Tu ne sens pas la pâte ni la pression des mains : ne les devine pas.
 - En cas de doute, choisis "en_cours". Une correction fausse fait plus de mal qu'un silence.
 - Si l'apprenti est en train d'appliquer une correction déjà donnée, ne la répète pas.
-- Les dernières images sont les plus récentes : c'est la dernière qui compte pour le verdict.
-- Dans points_valides, liste les points de contrôle que tu vois respectés sur la dernière image.`;
+- Dans points_valides, liste les points de contrôle que tu vois respectés dans l'extrait.`;
 
 function descriptionEtape(titreLecon: string, etape: Etape, total: number): string {
   const liste = (titre: string, elements: string[]) =>
@@ -196,7 +194,7 @@ function descriptionEtape(titreLecon: string, etape: Etape, total: number): stri
     liste("Points de contrôle", etape.pointsDeControle) +
     liste("Erreurs fréquentes", etape.erreursFrequentes) +
     liste("Critères de réussite", etape.criteresDeReussite) +
-    "Images du maître pour cette étape :"
+    "Déroulé de cette étape chez le maître (images successives, de la plus ancienne à la plus récente) :"
   );
 }
 
@@ -237,9 +235,12 @@ export async function evaluerGeste(options: {
           content: [
             ...referenceMaitre,
             { type: "text", text: conseils },
-            { type: "text", text: "Images de l'apprenti, de la plus ancienne à la plus récente :" },
+            {
+              type: "text",
+              text: `Les ${options.imagesApprenti.length} dernières images de l'apprenti (2 par seconde, de la plus ancienne à la plus récente) :`,
+            },
             ...options.imagesApprenti.map(blocImage),
-            { type: "text", text: "Ton verdict sur la dernière image ?" },
+            { type: "text", text: "Ton verdict sur ce que fait l'apprenti ?" },
           ],
         },
       ],

@@ -78,6 +78,6 @@ export interface Retour {
   afficher: string;
   /** Texte à dire à voix haute, ou null pour rester silencieux. */
   dire: string | null;
-  /** true si l'image a été ignorée parce qu'une analyse était déjà en cours. */
+  /** true si la séquence a été ignorée parce qu'une analyse était déjà en cours. */
   ignore: boolean;
 }

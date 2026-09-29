@@ -2,7 +2,6 @@ import { api, cleAcces } from "./commun.js";
 
 const $ = (id) => document.getElementById(id);
 const leconId = new URLSearchParams(location.search).get("lecon");
-const INTERVALLE_CAMERA_MS = 3000;
 
 let sessionId = null;
 let flux = null;
@@ -91,6 +90,27 @@ async function attendreLunettes() {
 
 // --- Mode caméra de la tablette (test sans lunettes) ----------------------------
 
+const DUREE_MORCEAU_MS = 4000;
+
+/** Format vidéo accepté par le navigateur (Safari : MP4, Chrome et Firefox : WebM). */
+function formatVideo() {
+  const candidats = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm", "video/mp4"];
+  return candidats.find((f) => MediaRecorder.isTypeSupported(f)) ?? "";
+}
+
+/** Filme 4 secondes et renvoie la vidéo. */
+function filmerMorceau(camera, format) {
+  return new Promise((ok, ko) => {
+    const enregistreur = new MediaRecorder(camera, { mimeType: format, videoBitsPerSecond: 1_500_000 });
+    const morceaux = [];
+    enregistreur.ondataavailable = (e) => e.data.size && morceaux.push(e.data);
+    enregistreur.onstop = () => ok(new Blob(morceaux, { type: enregistreur.mimeType }));
+    enregistreur.onerror = (e) => ko(e.error);
+    enregistreur.start();
+    setTimeout(() => enregistreur.state !== "inactive" && enregistreur.stop(), DUREE_MORCEAU_MS);
+  });
+}
+
 async function demarrerCamera() {
   let camera;
   try {
@@ -102,38 +122,34 @@ async function demarrerCamera() {
     alert(`Caméra inaccessible : ${erreur.message}`);
     return;
   }
+  const format = formatVideo();
+  if (!format) {
+    alert("Ce navigateur ne sait pas enregistrer de vidéo.");
+    return;
+  }
   const session = await api("/sessions", { method: "POST", body: JSON.stringify({ leconId }) });
   $("voix").checked = true;
   suivreSession(session.sessionId);
   afficher(session);
 
-  const video = $("camera");
-  video.srcObject = camera;
+  $("camera").srcObject = camera;
   $("bloc-camera").classList.remove("cache");
-  const toile = document.createElement("canvas");
 
-  const envoyer = async () => {
-    if (video.videoWidth > 0) {
-      const largeur = Math.min(1024, video.videoWidth);
-      toile.width = largeur;
-      toile.height = Math.round((video.videoHeight * largeur) / video.videoWidth);
-      toile.getContext("2d").drawImage(video, 0, 0, toile.width, toile.height);
-      const image = await new Promise((ok) => toile.toBlob(ok, "image/jpeg", 0.8));
-      try {
-        // Le retour arrive aussi par le flux d'événements ; on attend la réponse pour ne pas empiler.
-        await api(`/sessions/${sessionId}/image`, {
-          method: "POST",
-          headers: { "content-type": "image/jpeg" },
-          body: image,
-        });
-        $("etat-camera").textContent = "Une image est envoyée à l'IA toutes les 3 secondes.";
-      } catch (erreur) {
-        $("etat-camera").textContent = `Envoi impossible : ${erreur.message}`;
-      }
-    }
-    setTimeout(envoyer, INTERVALLE_CAMERA_MS);
-  };
-  envoyer();
+  // Filme en continu par morceaux de 4 s ; chaque morceau part à l'IA pendant que le suivant est filmé.
+  let envoiEnCours = false;
+  for (;;) {
+    const morceau = await filmerMorceau(camera, format);
+    if (envoiEnCours) continue; // l'IA n'a pas fini le précédent : on passe au morceau suivant
+    envoiEnCours = true;
+    api(`/sessions/${sessionId}/video`, {
+      method: "POST",
+      headers: { "content-type": morceau.type.split(";")[0] },
+      body: morceau,
+    })
+      .then(() => ($("etat-camera").textContent = "La vidéo est envoyée à l'IA par morceaux de 4 secondes."))
+      .catch((erreur) => ($("etat-camera").textContent = `Envoi impossible : ${erreur.message}`))
+      .finally(() => (envoiEnCours = false));
+  }
 }
 
 // --- Démarrage -------------------------------------------------------------------

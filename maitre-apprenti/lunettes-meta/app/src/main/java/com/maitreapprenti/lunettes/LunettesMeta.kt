@@ -1,17 +1,11 @@
 package com.maitreapprenti.lunettes
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
-import android.media.ExifInterface
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import com.meta.wearable.dat.camera.Camera
 import com.meta.wearable.dat.camera.addCamera
-import com.meta.wearable.dat.camera.types.PhotoData
 import com.meta.wearable.dat.camera.types.StreamConfiguration
-import com.meta.wearable.dat.camera.types.StreamState
 import com.meta.wearable.dat.camera.types.VideoQuality
 import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.selectors.AutoDeviceSelector
@@ -33,17 +27,14 @@ import com.meta.wearable.dat.display.views.TextStyle
 import com.meta.wearable.dat.display.views.VideoPlayer
 import com.meta.wearable.dat.speech.Speech
 import com.meta.wearable.dat.speech.addSpeech
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 
 /** Boutons affichés sur l'écran des lunettes (les appuis reviennent au téléphone). */
 enum class BoutonLunettes {
@@ -54,7 +45,8 @@ enum class BoutonLunettes {
 
 /**
  * Branche le contrôleur sur les lunettes Meta via le Wearables Device Access Toolkit :
- * caméra (photos), écran des Ray-Ban Display (étape, correction, clip du maître),
+ * caméra (vidéo HEVC en continu, découpée en morceaux), écran des Ray-Ban Display
+ * (étape, correction, clip du maître),
  * reconnaissance vocale des lunettes (commandes) et synthèse vocale du téléphone
  * (le son sort dans les haut-parleurs des lunettes, connectées en Bluetooth).
  */
@@ -75,6 +67,8 @@ class LunettesMeta(
   private var dernierEcran: Ecran? = null
   private var lecteur: VideoPlayer? = null
   private var tacheVideo: Job? = null
+  private val decoupeur = DecoupeurHevc(IMAGES_PAR_SECONDE)
+  @Volatile private var derniereImageMs = 0L
 
   private var voixPrete = false
   private val voix: TextToSpeech =
@@ -143,12 +137,28 @@ class LunettesMeta(
 
   private fun brancherCapacites(session: DeviceSession) {
     scope.launch {
-      // Caméra : flux à faible cadence, on n'en tire que des photos.
+      // Caméra : vidéo compressée (HEVC), transmise telle quelle au cerveau, sans décodage ici.
       if (camera == null && autorise(Permission.CAMERA)) {
         session
-            .addCamera(StreamConfiguration(videoQuality = VideoQuality.MEDIUM, frameRate = 2))
+            .addCamera(
+                StreamConfiguration(
+                    videoQuality = VideoQuality.MEDIUM,
+                    frameRate = IMAGES_PAR_SECONDE,
+                    compressVideo = true,
+                ))
             .onSuccess { ajoutee ->
               camera = ajoutee
+              // Abonnement avant start() pour ne pas manquer la configuration du codec.
+              taches +=
+                  scope.launch(Dispatchers.Default) {
+                    ajoutee.stream.videoStream.collect { image ->
+                      if (!image.isCompressed) return@collect
+                      val tampon = image.buffer.duplicate().apply { rewind() }
+                      val octets = ByteArray(tampon.remaining()).also { tampon.get(it) }
+                      decoupeur.ajouter(octets, image.presentationTimeUs, image.isCodecConfig)
+                      derniereImageMs = System.currentTimeMillis()
+                    }
+                  }
               ajoutee.stream.start().onFailure { erreur, _ ->
                 surConnexion("Caméra : ${erreur.description}")
               }
@@ -197,14 +207,23 @@ class LunettesMeta(
 
   // --- Lunettes (pour le contrôleur) -------------------------------------------------
 
-  override suspend fun prendrePhoto(): ByteArray {
-    val flux = camera?.stream ?: throw IOException("Caméra des lunettes non connectée")
-    // Au démarrage, on laisse au flux le temps de démarrer.
-    withTimeout(10_000) { flux.state.first { it == StreamState.STREAMING } }
-    val photo =
-        flux.capturePhoto().getOrNull() ?: throw IOException("La photo des lunettes a échoué")
-    return withContext(Dispatchers.Default) { enJpeg(photo) }
+  override suspend fun prochainMorceau(continu: Boolean): MorceauVideo {
+    if (camera == null) throw IOException("Caméra des lunettes non connectée")
+    val debut = System.currentTimeMillis()
+    while (true) {
+      val morceau = if (continu) decoupeur.morceauContinu() else decoupeur.morceauRecent()
+      if (morceau != null) return morceau
+      // Plus d'images depuis 15 s : le flux est coupé (lunettes éteintes, Bluetooth…).
+      if (System.currentTimeMillis() - maxOf(derniereImageMs, debut) > 15_000) {
+        throw IOException("Plus de vidéo des lunettes")
+      }
+      delay(200)
+    }
   }
+
+  override fun dernierMorceau(): MorceauVideo? = decoupeur.vider()
+
+  override fun nouvelleVideo() = decoupeur.reinitialiser()
 
   override fun dire(texte: String) {
     if (voixPrete) voix.speak(texte, TextToSpeech.QUEUE_FLUSH, null, "conseil")
@@ -283,47 +302,9 @@ class LunettesMeta(
     dernierEcran?.let { afficher(it) }
   }
 
-  // --- Conversion des photos -------------------------------------------------------------
-
-  private fun enJpeg(photo: PhotoData): ByteArray {
-    val image =
-        when (photo) {
-          is PhotoData.Bitmap -> photo.bitmap
-          is PhotoData.HEIC -> decoderHeic(photo)
-        }
-    // 1024 px de large suffisent à l'IA et allègent l'envoi.
-    val reduite =
-        if (image.width > 1024) {
-          Bitmap.createScaledBitmap(image, 1024, image.height * 1024 / image.width, true)
-        } else {
-          image
-        }
-    return ByteArrayOutputStream().use { sortie ->
-      reduite.compress(Bitmap.CompressFormat.JPEG, 85, sortie)
-      sortie.toByteArray()
-    }
-  }
-
-  private fun decoderHeic(photo: PhotoData.HEIC): Bitmap {
-    val tampon = photo.data.duplicate().apply { rewind() }
-    val octets = ByteArray(tampon.remaining()).also { tampon.get(it) }
-    val image =
-        BitmapFactory.decodeByteArray(octets, 0, octets.size) ?: throw IOException("Photo illisible")
-    // Les lunettes enregistrent l'orientation dans les données EXIF, non appliquées au décodage.
-    val rotation =
-        when (ExifInterface(ByteArrayInputStream(octets)).getAttributeInt(
-            ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
-          ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-          ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-          ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-          else -> 0f
-        }
-    if (rotation == 0f) return image
-    val matrice = Matrix().apply { postRotate(rotation) }
-    return Bitmap.createBitmap(image, 0, 0, image.width, image.height, matrice, true)
-  }
-
   private companion object {
     const val TAG = "MaitreApprenti"
+    /** Cadence de la vidéo des lunettes (valeurs possibles : 2, 7, 15, 24 ou 30). */
+    const val IMAGES_PAR_SECONDE = 15
   }
 }

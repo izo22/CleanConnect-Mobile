@@ -8,7 +8,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Réponse du cerveau après une image ou une commande (voir cerveau/src/types.ts, type Retour). */
+/** Réponse du cerveau après un morceau de vidéo ou une commande (voir cerveau/src/types.ts, type Retour). */
 data class Retour(
     val sessionId: String,
     val termine: Boolean,
@@ -57,13 +57,15 @@ interface ApiCerveau {
 
   suspend fun etatSession(sessionId: String): Retour
 
-  suspend fun envoyerImage(sessionId: String, jpeg: ByteArray): Retour
+  /** Envoie un morceau de vidéo de l'apprenti ; le cerveau en analyse les dernières secondes. */
+  suspend fun envoyerVideo(sessionId: String, morceau: MorceauVideo): Retour
 
   suspend fun commande(sessionId: String, commande: String): Retour
 
   suspend fun creerCapture(titre: String, metier: String): String
 
-  suspend fun envoyerImageCapture(captureId: String, jpeg: ByteArray)
+  /** Envoie un morceau de la vidéo du maître (les morceaux se suivent, sans trou). */
+  suspend fun envoyerVideoCapture(captureId: String, morceau: MorceauVideo)
 
   suspend fun parole(captureId: String, texte: String)
 
@@ -92,7 +94,7 @@ class CerveauHttp(urlCerveau: String, private val cle: String) : ApiCerveau {
         try {
           connexion.requestMethod = methode
           connexion.connectTimeout = 10_000
-          // L'analyse d'une image par l'IA prend quelques secondes.
+          // L'analyse d'une séquence vidéo par l'IA prend quelques secondes.
           connexion.readTimeout = 60_000
           connexion.setRequestProperty("x-cle", cle)
           if (corps != null) {
@@ -130,8 +132,10 @@ class CerveauHttp(urlCerveau: String, private val cle: String) : ApiCerveau {
   override suspend fun etatSession(sessionId: String) =
       Retour.depuisJson(JSONObject(appel("GET", "/sessions/$sessionId")))
 
-  override suspend fun envoyerImage(sessionId: String, jpeg: ByteArray) =
-      Retour.depuisJson(JSONObject(appel("POST", "/sessions/$sessionId/image", jpeg, "image/jpeg")))
+  override suspend fun envoyerVideo(sessionId: String, morceau: MorceauVideo) =
+      Retour.depuisJson(
+          JSONObject(
+              appel("POST", "/sessions/$sessionId/video?ips=${morceau.imagesParSeconde}", morceau.donnees, morceau.type)))
 
   override suspend fun commande(sessionId: String, commande: String) =
       Retour.depuisJson(
@@ -141,8 +145,8 @@ class CerveauHttp(urlCerveau: String, private val cle: String) : ApiCerveau {
       JSONObject(post("/captures", JSONObject().put("titre", titre).put("metier", metier)))
           .getString("captureId")
 
-  override suspend fun envoyerImageCapture(captureId: String, jpeg: ByteArray) {
-    appel("POST", "/captures/$captureId/image", jpeg, "image/jpeg")
+  override suspend fun envoyerVideoCapture(captureId: String, morceau: MorceauVideo) {
+    appel("POST", "/captures/$captureId/video?ips=${morceau.imagesParSeconde}", morceau.donnees, morceau.type)
   }
 
   override suspend fun parole(captureId: String, texte: String) {

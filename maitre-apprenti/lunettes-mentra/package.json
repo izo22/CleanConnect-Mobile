@@ -1,23 +1,20 @@
 {
-  "name": "com.maitreapprenti.lunettes",
+  "name": "maitre-apprenti-lunettes-mentra",
   "private": true,
+  "type": "module",
+  "description": "Appli MentraOS (cloud) : les lunettes filment en direct, le cerveau corrige l'apprenti.",
   "scripts": {
-    "dev": "mentra-miniapp dev",
-    "build": "bun run build.ts",
+    "start": "bun src/index.ts",
+    "dev": "bun --watch src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test",
-    "release": "mentra-miniapp release",
-    "pack": "mentra-miniapp pack"
+    "test": "bun test"
   },
   "dependencies": {
-    "@mentra/miniapp": "^3.1.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "@mentra/sdk": "^2.1.29"
   },
   "devDependencies": {
-    "@mentra/miniapp-cli": "0.1.0-beta.1",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/bun": "^1.2.0",
+    "@types/express": "^4",
     "typescript": "^5.6.0"
   }
 }

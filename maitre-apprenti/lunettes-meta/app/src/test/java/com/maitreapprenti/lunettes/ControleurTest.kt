@@ -31,7 +31,7 @@ class ControleurTest {
   /** Faux cerveau : note les appels et renvoie des réponses programmées. */
   private class FauxCerveau : ApiCerveau {
     val appels = mutableListOf<String>()
-    var reponseImage: () -> Retour = { error("pas de réponse") }
+    var reponseVideo: () -> Retour = { error("pas de réponse") }
     var sessionExiste = true
 
     override suspend fun lecons() = emptyList<ResumeLecon>()
@@ -47,9 +47,9 @@ class ControleurTest {
       return Retour("s1", false, 1, 3, "Façonnage", "Roule.", null, null, "Roule.", null, false)
     }
 
-    override suspend fun envoyerImage(sessionId: String, jpeg: ByteArray): Retour {
-      appels += "image ${jpeg.size}"
-      return reponseImage()
+    override suspend fun envoyerVideo(sessionId: String, morceau: MorceauVideo): Retour {
+      appels += "video ${morceau.donnees.size}"
+      return reponseVideo()
     }
 
     override suspend fun commande(sessionId: String, commande: String): Retour {
@@ -64,8 +64,8 @@ class ControleurTest {
       return "c1"
     }
 
-    override suspend fun envoyerImageCapture(captureId: String, jpeg: ByteArray) {
-      appels += "imageCapture"
+    override suspend fun envoyerVideoCapture(captureId: String, morceau: MorceauVideo) {
+      appels += "videoCapture ${morceau.donnees.size}"
     }
 
     override suspend fun parole(captureId: String, texte: String) {
@@ -83,12 +83,23 @@ class ControleurTest {
     override fun urlComplete(chemin: String) = "https://cerveau.test$chemin"
   }
 
+  /** Fausses lunettes : un morceau de vidéo toutes les 4 secondes (temps virtuel des tests). */
   private class FaussesLunettes : Lunettes {
     val dit = mutableListOf<String>()
     val ecrans = mutableListOf<Ecran>()
     val gestes = mutableListOf<String>()
+    var reinitialisations = 0
 
-    override suspend fun prendrePhoto() = ByteArray(42)
+    override suspend fun prochainMorceau(continu: Boolean): MorceauVideo {
+      kotlinx.coroutines.delay(4_000)
+      return MorceauVideo(ByteArray(if (continu) 100 else 42), 15)
+    }
+
+    override fun dernierMorceau() = MorceauVideo(ByteArray(7), 15)
+
+    override fun nouvelleVideo() {
+      reinitialisations++
+    }
 
     override fun dire(texte: String) {
       dit += texte
@@ -110,20 +121,20 @@ class ControleurTest {
       cerveau: FauxCerveau,
       lunettes: FaussesLunettes,
       r: Reglages = reglages,
-  ) = Controleur(backgroundScope, lunettes, r, {}, { cerveau }, intervalleMs = 4_000)
+  ) = Controleur(backgroundScope, lunettes, r, {}, { cerveau })
 
   @Test
-  fun `apprenti - photo toutes les 4 secondes, corrections dites et affichees`() = runTest {
-    val cerveau = FauxCerveau().apply { reponseImage = { retour(0, dire = "Ajoute de l'eau", afficher = "Ajoute de l'eau") } }
+  fun `apprenti - un morceau de video toutes les 4 secondes, corrections dites et affichees`() = runTest {
+    val cerveau = FauxCerveau().apply { reponseVideo = { retour(0, dire = "Ajoute de l'eau", afficher = "Ajoute de l'eau") } }
     val lunettes = FaussesLunettes()
     val c = controleur(cerveau, lunettes)
 
     c.demarrer()
-    runCurrent()
-    advanceTimeBy(4_001)
+    advanceTimeBy(8_001)
     runCurrent()
 
-    assertEquals(listOf("creerSession L1", "image 42", "image 42"), cerveau.appels)
+    assertEquals(listOf("creerSession L1", "video 42", "video 42"), cerveau.appels)
+    assertEquals(1, lunettes.reinitialisations)
     assertEquals(listOf("Étape 1", "Ajoute de l'eau", "Ajoute de l'eau"), lunettes.dit)
     assertEquals("Étape 1/3 : Titre 1", lunettes.ecrans.last().titre)
     assertEquals("https://cerveau.test/media/lecons/L1/clips/etape-1-lunettes.mp4", lunettes.ecrans.last().clipUrl)
@@ -133,7 +144,7 @@ class ControleurTest {
 
   @Test
   fun `apprenti - reprend la meme session apres une pause`() = runTest {
-    val cerveau = FauxCerveau().apply { reponseImage = { retour(1) } }
+    val cerveau = FauxCerveau().apply { reponseVideo = { retour(1) } }
     val lunettes = FaussesLunettes()
     val c = controleur(cerveau, lunettes)
 
@@ -148,7 +159,7 @@ class ControleurTest {
 
   @Test
   fun `apprenti - session expiree, on en ouvre une nouvelle`() = runTest {
-    val cerveau = FauxCerveau().apply { reponseImage = { retour(0) } }
+    val cerveau = FauxCerveau().apply { reponseVideo = { retour(0) } }
     val c = controleur(cerveau, FaussesLunettes())
     c.demarrer()
     c.arreter()
@@ -160,9 +171,10 @@ class ControleurTest {
 
   @Test
   fun `apprenti - s arrete a la fin de la lecon`() = runTest {
-    val cerveau = FauxCerveau().apply { reponseImage = { retour(2, dire = "Bravo", termine = true) } }
+    val cerveau = FauxCerveau().apply { reponseVideo = { retour(2, dire = "Bravo", termine = true) } }
     val c = controleur(cerveau, FaussesLunettes())
     c.demarrer()
+    advanceTimeBy(4_001)
     runCurrent()
     assertFalse(c.actif)
     assertEquals("Leçon terminée", c.etat.etape)
@@ -170,14 +182,14 @@ class ControleurTest {
 
   @Test
   fun `apprenti - une panne du cerveau est dite une seule fois`() = runTest {
-    val cerveau = FauxCerveau().apply { reponseImage = { throw ErreurCerveau("Erreur 502 du cerveau") } }
+    val cerveau = FauxCerveau().apply { reponseVideo = { throw ErreurCerveau("Erreur 502 du cerveau") } }
     val lunettes = FaussesLunettes()
     val c = controleur(cerveau, lunettes)
     c.demarrer()
+    advanceTimeBy(18_001)
     runCurrent()
-    advanceTimeBy(8_001)
-    runCurrent()
-    assertEquals(3, cerveau.appels.count { it.startsWith("image") })
+    // Envois à 4 s, 10 s et 16 s (4 s de vidéo + 2 s de pause après chaque erreur).
+    assertEquals(3, cerveau.appels.count { it.startsWith("video") })
     assertEquals(1, lunettes.dit.count { it.contains("cerveau") })
     assertEquals("Erreur 502 du cerveau", c.etat.erreur)
     assertTrue(c.actif)
@@ -186,7 +198,7 @@ class ControleurTest {
 
   @Test
   fun `apprenti - commandes vocales`() = runTest {
-    val cerveau = FauxCerveau().apply { reponseImage = { retour(0) } }
+    val cerveau = FauxCerveau().apply { reponseVideo = { retour(0) } }
     val lunettes = FaussesLunettes()
     val c = controleur(cerveau, lunettes)
     c.demarrer()
@@ -201,19 +213,27 @@ class ControleurTest {
   }
 
   @Test
-  fun `maitre - photos, paroles, etapes et fin`() = runTest {
+  fun `maitre - video, paroles, etapes et fin`() = runTest {
     val cerveau = FauxCerveau()
     val lunettes = FaussesLunettes()
     val c = controleur(cerveau, lunettes, reglages.copy(mode = Mode.MAITRE, titreDemo = "Croissant", metierDemo = "Boulangerie"))
 
     c.demarrer()
+    advanceTimeBy(4_001)
     runCurrent()
     c.entendu("Je rabats la pâte vers moi")
     c.entendu("Étape suivante")
     c.entendu("C'est terminé")
 
     assertEquals(
-        listOf("creerCapture Croissant/Boulangerie", "imageCapture", "parole Je rabats la pâte vers moi", "etape", "terminer"),
+        listOf(
+            "creerCapture Croissant/Boulangerie",
+            "videoCapture 100",
+            "parole Je rabats la pâte vers moi",
+            "etape",
+            // La fin de la vidéo part avant de clore la démonstration.
+            "videoCapture 7",
+            "terminer"),
         cerveau.appels)
     assertFalse(c.actif)
     assertTrue(lunettes.dit.last().contains("en préparation"))
