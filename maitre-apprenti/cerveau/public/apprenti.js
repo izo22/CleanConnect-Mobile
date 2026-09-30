@@ -4,6 +4,7 @@
 
 import { api, cleAcces, el } from "./commun.js";
 import { afficherControle, controlerCamera } from "./controle.js";
+import { SurveillantMouvement } from "./mouvement.js";
 import { commandeApprenti, Ecoute, reconnaissanceDisponible } from "./voix.js";
 
 const $ = (id) => document.getElementById(id);
@@ -22,11 +23,18 @@ let dernierMessageDit = null;
 let finDerniereParole = 0;
 /** Mode caméra : l'enregistrement en cours, et la commande à envoyer avec lui. */
 let enregistreurActuel = null;
+let debutEnregistrement = 0;
 let commandeEnAttente = null;
 let filmage = false;
 /** Vitesse de la vidéo du maître : normale, moitié, quart (« très doucement »). */
 const VITESSES = [1, 0.5, 0.25];
 let vitesse = 1;
+/** Alertes instantanées : suivi des mains sur le téléphone (chargé seulement si une étape en a besoin). */
+let suiviMains = null;
+let chargementSuivi = null;
+let surveillant = null;
+let mouvementSuivi = null;
+let minuterieAlerte = null;
 
 // --- Préférences (gardées sur l'appareil) -------------------------------------------------
 
@@ -93,6 +101,7 @@ function appliquer(retour) {
   $("consigne-etape").textContent = etape.consigne;
   afficherDemo(etape);
   remplirCommentFaire(etape, retour.termine ? etape.total : etape.index);
+  majSuiviMains(retour.termine ? null : etape.mouvementMains);
 
   clearTimeout(minuterieBravo);
   const [etat, message] = etatVisuel(retour);
@@ -115,6 +124,70 @@ function appliquer(retour) {
     phrase.onend = () => (finDerniereParole = Date.now());
     speechSynthesis.speak(phrase);
   }
+}
+
+// --- Alertes instantanées : suivi des mains sur le téléphone, sans IA -----------------------
+
+/** Démarre, change ou arrête la surveillance des mains selon l'étape en cours. */
+async function majSuiviMains(mouvement) {
+  const actif = Boolean(mouvement && flux && $("alertes-mains").checked);
+  if (!actif) {
+    suiviMains?.arreter();
+    surveillant = null;
+    mouvementSuivi = null;
+    $("etat-mains").textContent = "";
+    return;
+  }
+  if (mouvement !== mouvementSuivi) {
+    surveillant = new SurveillantMouvement(mouvement);
+    mouvementSuivi = mouvement;
+  }
+  if (suiviMains?.actif) return;
+  $("etat-mains").textContent = "👋 Préparation du suivi des mains…";
+  try {
+    chargementSuivi ??= import("./mains.js").then(({ SuiviMains }) => SuiviMains.creer());
+    suiviMains = await chargementSuivi;
+  } catch (erreur) {
+    $("etat-mains").textContent = "👋 Suivi des mains indisponible sur cet appareil.";
+    console.warn("Suivi des mains :", erreur);
+    return;
+  }
+  if (!surveillant) return; // l'étape a changé entre-temps
+  const texteSuivi = () =>
+    `👋 Je suis tes mains : alerte tout de suite si ${mouvementSuivi === "s_ecartent" ? "elles se rapprochent" : "elles s'écartent"}.`;
+  // On compte les mesures pour prévenir si le téléphone est trop lent pour des alertes rapides.
+  let compte = 0;
+  let debutCompte = null;
+  suiviMains.demarrer($("mini-camera"), (t, mains) => {
+    const conseil = surveillant?.ajouter(t, mains);
+    if (conseil) alerteInstantanee(conseil);
+    debutCompte ??= t;
+    compte++;
+    if (t - debutCompte >= 5) {
+      const parSeconde = compte / (t - debutCompte);
+      $("etat-mains").textContent = parSeconde < 3
+        ? "👋 Ce téléphone suit tes mains lentement : les alertes arriveront avec quelques secondes de retard."
+        : texteSuivi();
+      compte = 0;
+      debutCompte = t;
+    }
+  });
+  $("etat-mains").textContent = texteSuivi();
+}
+
+/** Erreur vue en direct : on prévient tout de suite, à l'écran et à l'oreille. */
+function alerteInstantanee(conseil) {
+  clearTimeout(minuterieAlerte);
+  montrerEtat("correction", `✋ ${conseil}`);
+  navigator.vibrate?.(200);
+  if ($("voix").checked) {
+    speechSynthesis.cancel();
+    const phrase = new SpeechSynthesisUtterance(conseil);
+    phrase.lang = "fr-FR";
+    phrase.onend = () => (finDerniereParole = Date.now());
+    speechSynthesis.speak(phrase);
+  }
+  minuterieAlerte = setTimeout(() => dernierRetour && montrerEtat("neutre", aide(dernierRetour.etape)), 6000);
 }
 
 function terminer() {
@@ -221,7 +294,10 @@ async function commande(nom) {
   if (filmage && enregistreurActuel && (nom === "verifier" || nom === "suivant")) {
     commandeEnAttente = nom;
     if (nom === "verifier") montrerEtat("regarde", "👀 Je regarde ton geste…");
-    if (enregistreurActuel.state !== "inactive") enregistreurActuel.stop();
+    // Un morceau coupé trop tôt ne contiendrait aucune image : au moins une demi-seconde de vidéo.
+    const enregistreur = enregistreurActuel;
+    const attente = Math.max(0, 600 - (Date.now() - debutEnregistrement));
+    setTimeout(() => enregistreur.state !== "inactive" && enregistreur.stop(), attente);
     return;
   }
   try {
@@ -261,6 +337,7 @@ function filmerMorceau(format) {
   return new Promise((ok, ko) => {
     const enregistreur = new MediaRecorder(flux, { mimeType: format, videoBitsPerSecond: 1_500_000 });
     enregistreurActuel = enregistreur;
+    debutEnregistrement = Date.now();
     const morceaux = [];
     enregistreur.ondataavailable = (e) => e.data.size && morceaux.push(e.data);
     enregistreur.onstop = () => ok(new Blob(morceaux, { type: enregistreur.mimeType }));
@@ -362,6 +439,7 @@ function entrerAtelier() {
   montrerEcran("atelier");
   $("mini-camera").classList.toggle("cache", !flux);
   if (dernierRetour) appliquer(dernierRetour);
+  majSuiviMains(dernierRetour?.etape.mouvementMains);
   if ($("ecoute").checked) activerEcoute(true);
   else majAideVoix();
 }
@@ -439,6 +517,11 @@ $("ecoute").disabled = !reconnaissanceDisponible();
 $("ecoute").addEventListener("change", (e) => {
   retenir("ecoute", e.target.checked);
   activerEcoute(e.target.checked);
+});
+$("alertes-mains").checked = preference("alertes-mains", true);
+$("alertes-mains").addEventListener("change", (e) => {
+  retenir("alertes-mains", e.target.checked);
+  majSuiviMains(dernierRetour?.etape.mouvementMains);
 });
 $("miroir").checked = preference("miroir", false);
 appliquerMiroir($("miroir").checked);

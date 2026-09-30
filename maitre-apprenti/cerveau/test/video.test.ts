@@ -47,11 +47,13 @@ before(async () => {
 after(() => rm(dossier, { recursive: true, force: true }));
 
 test("finaliserEtapes numérote et borne les étapes dans la durée de la vidéo", () => {
-  const brute = (debut_s: number, fin_s: number) => ({
-    titre: "Étape", consigne: "Fais ceci.", explication: "Détail.", debut_s, fin_s,
+  const brute = (debut_s: number, fin_s: number, mouvement_des_mains: "libre" | "s_ecartent" = "libre") => ({
+    titre: "Étape", consigne: "Fais ceci.", explication: "Détail.", mouvement_des_mains, debut_s, fin_s,
     points_de_controle: [], erreurs_frequentes: [], criteres_de_reussite: [],
   });
-  const etapes = finaliserEtapes([brute(-3, 5), brute(5, 99)], 8);
+  const etapes = finaliserEtapes([brute(-3, 5), brute(5, 99, "s_ecartent")], 8);
+  assert.equal(etapes[0].mouvementMains, null);
+  assert.equal(etapes[1].mouvementMains, "s_ecartent");
   assert.equal(etapes[0].numero, 1);
   assert.equal(etapes[0].debut, 0);
   assert.equal(etapes[1].fin, 8);

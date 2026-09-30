@@ -54,6 +54,7 @@ export function finaliserEtapes(brutes: EtapeBrute[], duree: number, paroles: Pa
       titre: brute.titre,
       consigne: brute.consigne,
       explication: brute.explication,
+      mouvementMains: brute.mouvement_des_mains === "libre" ? null : brute.mouvement_des_mains ?? null,
       paroles: dites.map((p) => p.texte),
       pointsDeControle: brute.points_de_controle,
       erreursFrequentes: brute.erreurs_frequentes,

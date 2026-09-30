@@ -32,6 +32,19 @@ function gesteEnImages(etape) {
     })));
 }
 
+const MOUVEMENTS_MAINS = {
+  "": "Aucune",
+  s_ecartent: "Les mains doivent s'écarter (ex. : allonger du centre vers les bouts)",
+  se_rapprochent: "Les mains doivent se rapprocher",
+};
+
+function selecteurMouvement(etape) {
+  const choix = el("select", { id: `${etape.id}-mouvement` },
+    ...Object.entries(MOUVEMENTS_MAINS).map(([valeur, libelle]) => el("option", { value: valeur }, libelle)));
+  choix.value = etape.mouvementMains ?? "";
+  return choix;
+}
+
 function etapeEnLecture(etape) {
   // L'image du milieu de l'étape montre en général le geste en cours.
   const image = etape.images[Math.floor(etape.images.length / 2)];
@@ -42,6 +55,9 @@ function etapeEnLecture(etape) {
         el("h2", { style: "margin: 0" }, `${etape.numero}. ${etape.titre}`),
         etape.surveiller ? el("span", { classe: "badge correction" }, "Étape surveillée") : null),
       el("p", { classe: "consigne-fiche" }, etape.consigne),
+      etape.mouvementMains
+        ? el("p", { classe: "vide", style: "margin: 0" }, `👋 Alerte instantanée : ${MOUVEMENTS_MAINS[etape.mouvementMains].toLowerCase()}.`)
+        : null,
       etape.explication ? el("p", {}, etape.explication) : null,
       el("div", { classe: "listes" },
         liste("Points clés", etape.pointsDeControle, "cles"),
@@ -72,6 +88,9 @@ function etapeEnModification(etape) {
     ...champ(etape, "cles", "Points clés (un par ligne)", etape.pointsDeControle.join("\n"), true),
     ...champ(etape, "eviter", "À éviter (un par ligne)", etape.erreursFrequentes.join("\n"), true),
     ...champ(etape, "reussi", "C'est réussi quand (un par ligne)", etape.criteresDeReussite.join("\n"), true),
+    el("label", { for: `${etape.id}-mouvement` }, "Alerte instantanée (sans IA) ",
+      el("small", {}, "(le téléphone de l'apprenti suit ses mains et le prévient tout de suite si elles vont dans l'autre sens)")),
+    selecteurMouvement(etape),
     etape.images.length
       ? el("fieldset", { classe: "legendes" },
           el("legend", {}, "Le geste en images ", el("small", {}, "(facultatif : un titre ou une astuce sous chaque image, l'apprenti et l'IA les voient)")),
@@ -102,6 +121,7 @@ function etapeEnModification(etape) {
           erreursFrequentes: lignes(valeur("eviter")),
           criteresDeReussite: lignes(valeur("reussi")),
           legendes: etape.images.map((_, i) => valeur(`legende-${i}`)),
+          mouvementMains: valeur("mouvement") || null,
         }),
       });
       Object.assign(etape, modifiee);

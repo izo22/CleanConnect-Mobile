@@ -11,10 +11,12 @@
     "start": "node src/server.ts",
     "dev": "node --watch src/server.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --test \"test/**/*.test.ts\""
+    "test": "node --test \"test/**/*.test.ts\"",
+    "modeles": "mkdir -p modeles && curl -fsSL -o modeles/hand_landmarker.task https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
+    "@mediapipe/tasks-vision": "^0.10.35",
     "ffmpeg-static": "^5.2.0",
     "qrcode": "^1.5.4"
   },

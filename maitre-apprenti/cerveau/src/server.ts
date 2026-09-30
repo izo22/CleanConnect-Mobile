@@ -10,7 +10,7 @@ import { creerSession, sessionsDeLecon, trouverSession } from "./coach.ts";
 import { CaptureMaitre, creerLeconDepuisVideo, demarrerCapture } from "./lecons.ts";
 import { annoter, calculerMetriques, cheminImageSeance, lireSeance, seancesDeLecon } from "./journal.ts";
 import { cheminMedia, listerLecons, lireLecon, nouvelId, sauverLecon, supprimerLecon } from "./store.ts";
-import type { Avis, Commande, Etape, Lecon, Regle } from "./types.ts";
+import { MOUVEMENTS_MAINS, type Avis, type Commande, type Etape, type Lecon, type MouvementMains, type Regle } from "./types.ts";
 import { cadenceValide, imagesDepuisMorceau, type MorceauVideo } from "./video.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -20,6 +20,13 @@ const TAILLE_MAX_VIDEO = 1024 * 1024 * 1024;
 /** Un morceau de quelques secondes (tablette, lunettes). */
 const TAILLE_MAX_MORCEAU = 50 * 1024 * 1024;
 const DOSSIER_PUBLIC = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
+/**
+ * Suivi des mains dans le navigateur (MediaPipe, gratuit, sans IA) : la bibliothèque vient de
+ * node_modules, le modèle de modeles/ (npm run modeles) ou, à défaut, directement de Google.
+ */
+const DOSSIER_MEDIAPIPE = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "node_modules", "@mediapipe", "tasks-vision");
+const MODELE_MAINS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "modeles", "hand_landmarker.task");
+const MODELE_MAINS_GOOGLE = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 
 const captures = new Map<string, CaptureMaitre>();
 
@@ -85,6 +92,10 @@ const TYPES_FICHIERS: Record<string, string> = {
   ".png": "image/png",
   ".svg": "image/svg+xml",
   ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".wasm": "application/wasm",
+  ".task": "application/octet-stream",
 };
 
 /** Envoie un fichier, avec prise en charge des requêtes partielles (nécessaire aux vidéos). */
@@ -176,6 +187,13 @@ function modifierTexteEtape(etape: Etape, corps: Record<string, unknown>): void 
   if ("pointsDeControle" in corps) etape.pointsDeControle = liste(corps.pointsDeControle);
   if ("erreursFrequentes" in corps) etape.erreursFrequentes = liste(corps.erreursFrequentes);
   if ("criteresDeReussite" in corps) etape.criteresDeReussite = liste(corps.criteresDeReussite);
+  if ("mouvementMains" in corps) {
+    const mouvement = corps.mouvementMains;
+    if (mouvement !== null && !MOUVEMENTS_MAINS.includes(mouvement as MouvementMains)) {
+      throw new ErreurHttp(400, `mouvementMains : ${MOUVEMENTS_MAINS.join(", ")} ou null`);
+    }
+    etape.mouvementMains = mouvement as MouvementMains | null;
+  }
   if ("legendes" in corps) {
     const legendes = corps.legendes;
     if (!Array.isArray(legendes)) throw new ErreurHttp(400, "legendes : une légende par image attendue");
@@ -210,6 +228,20 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
   // --- Pages et médias -------------------------------------------------------
   if (methode === "GET" && !url.pathname.startsWith("/api/")) {
+    if (segments[0] === "vendor" && segments[1] === "mediapipe") {
+      const fichier = segments.slice(2).join("/");
+      if (fichier === "hand_landmarker.task") {
+        const present = await stat(MODELE_MAINS).then((s) => s.isFile(), () => false);
+        if (present) return envoyerFichier(req, res, MODELE_MAINS);
+        res.writeHead(302, { location: MODELE_MAINS_GOOGLE });
+        res.end();
+        return;
+      }
+      if (fichier === "vision_bundle.mjs" || /^wasm\/[\w]+\.(js|wasm)$/.test(fichier)) {
+        return envoyerFichier(req, res, path.join(DOSSIER_MEDIAPIPE, fichier));
+      }
+      throw new ErreurHttp(404, "Fichier introuvable");
+    }
     if (segments[0] === "media" && segments[1] === "lecons" && segments.length === 5) {
       const [, , id, type, fichier] = segments;
       const chemin = type === "images" || type === "clips" ? cheminMedia(id, type, fichier) : null;
@@ -436,7 +468,10 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
         images = await imagesDepuisMorceau(await lireMorceau(req, url), enCours.imagesParSecondeMemoire);
       } catch (erreur) {
         if (erreur instanceof ErreurHttp) throw erreur;
-        throw new ErreurHttp(422, erreur instanceof Error ? erreur.message : String(erreur));
+        // Un morceau coupé trop court par « vérifie » ou « suivant » ne doit pas faire perdre la
+        // commande : elle s'exécute avec la vidéo déjà gardée en mémoire.
+        if (!commande) throw new ErreurHttp(422, erreur instanceof Error ? erreur.message : String(erreur));
+        images = [];
       }
       return envoyerJson(res, 200, await enCours.recevoirVideo(images, commande ?? undefined));
     }

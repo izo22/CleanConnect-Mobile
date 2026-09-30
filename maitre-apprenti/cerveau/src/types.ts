@@ -20,6 +20,12 @@ export interface Etape {
   /** Ce que le maître a dit pendant cette étape de sa démonstration (lunettes). */
   paroles?: string[];
   /**
+   * Alerte instantanée, sans IA : le mouvement que doivent faire les deux mains pendant l'étape.
+   * Le téléphone suit les mains en direct et prévient tout de suite si elles vont dans l'autre sens.
+   * Absent ou null : pas d'alerte instantanée.
+   */
+  mouvementMains?: MouvementMains | null;
+  /**
    * Étape « à surveiller » (couteau, four…) : l'IA regarde en continu. Sinon, elle ne regarde
    * que quand l'apprenti le demande (« vérifie »), quand il veut passer à la suite, ou à la fin
    * d'un geste si la vérification automatique est activée.
@@ -44,6 +50,10 @@ export interface Etape {
 }
 
 export type StatutLecon = "en_preparation" | "prete" | "erreur";
+
+/** Mouvement des deux mains qu'une étape exige (voir public/mouvement.js). */
+export type MouvementMains = "s_ecartent" | "se_rapprochent";
+export const MOUVEMENTS_MAINS: MouvementMains[] = ["s_ecartent", "se_rapprochent"];
 
 /** Règle donnée par le maître pour corriger l'interprétation de l'IA (elle prime sur son jugement). */
 export interface Regle {
@@ -188,6 +198,8 @@ export interface Retour {
     /** Version 266×150 sans son du clip, pour l'écran des lunettes. */
     clipLunettesUrl: string | null;
     imageUrls: string[];
+    /** Mouvement des mains surveillé en direct sur le téléphone (alerte instantanée), ou null. */
+    mouvementMains: MouvementMains | null;
     /** Légendes du maître, dans l'ordre des images ("" = pas de légende). */
     legendes: string[];
     /** Image entière du début de l'étape, pour caler le téléphone de l'apprenti (guide de placement). */

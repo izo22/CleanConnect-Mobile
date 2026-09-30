@@ -36,7 +36,7 @@ const ETAPES = {
       criteres_de_reussite: ["500 g de farine dans le bol"],
     },
     {
-      titre: "Façonnage", consigne: "Roule la pâte en baguette.", debut_s: 4, fin_s: 10,
+      titre: "Façonnage", consigne: "Roule la pâte en baguette.", debut_s: 4, fin_s: 10, mouvement_des_mains: "s_ecartent",
       explication: "Roule du centre vers les bords en écartant les mains.",
       points_de_controle: [], erreurs_frequentes: [], criteres_de_reussite: ["Baguette de 55 cm"],
     },
@@ -176,6 +176,7 @@ test("vidéo du maître → leçon avec clips et séquences de référence", asy
     assert.ok(etape.clip && etape.clipLunettes);
   }
   assert.equal(lecon.etapes[0].explication, ETAPES.etapes[0].explication);
+  assert.equal(lecon.etapes[1].mouvementMains, "s_ecartent");
   // Guide de placement : la première image entière de chaque étape.
   const guide = await fetch(`${base}/media/lecons/${lecon.id}/images/${lecon.etapes[0].imageGuide}`);
   assert.equal(guide.headers.get("content-type"), "image/jpeg");

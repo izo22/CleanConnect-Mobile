@@ -145,6 +145,7 @@ test("le maître règle l'analyse et corrige le texte d'une étape", async () =>
       explication: "  Farine en pluie, sans à-coups.  ",
       pointsDeControle: ["Bol taré", "", "500 g"],
       legendes: ["  Pouces dessous  ", "en trop : une seule image"],
+      mouvementMains: "s_ecartent",
     }),
   });
   assert.equal(modifiee.statut, 200);
@@ -156,6 +157,9 @@ test("le maître règle l'analyse et corrige le texte d'une étape", async () =>
   const session = (await api("/sessions", { method: "POST", body: JSON.stringify({ leconId: LECON_ID }) })).corps;
   assert.equal(session.etape.explication, "Farine en pluie, sans à-coups.");
   assert.deepEqual(session.etape.legendes, ["Pouces dessous"]);
+  assert.equal(session.etape.mouvementMains, "s_ecartent");
+  const mauvais = await api(`/lecons/${LECON_ID}/etapes/etape-1`, { method: "POST", body: JSON.stringify({ mouvementMains: "danser" }) });
+  assert.equal(mauvais.statut, 400);
   assert.equal(session.etape.envoiVideoContinu, true);
 
   const vide = await api(`/lecons/${LECON_ID}/etapes/etape-1`, { method: "POST", body: JSON.stringify({ consigne: " " }) });
@@ -184,6 +188,14 @@ test("refuse les photos et les vidéos illisibles", async () => {
     body: "pas une vidéo",
   });
   assert.equal(illisible.statut, 422);
+  // Avec une commande, un morceau illisible (coupé trop court) ne fait pas perdre la commande.
+  const avecCommande = await api(`/sessions/${id}/video?commande=suivant`, {
+    method: "POST",
+    headers: { "content-type": "video/webm" },
+    body: "trop court",
+  });
+  assert.equal(avecCommande.statut, 200);
+  assert.equal(avecCommande.corps.etape.index, 1);
 });
 
 test("sert les clips par morceaux (lecture vidéo) et bloque les chemins suspects", async () => {
@@ -210,4 +222,8 @@ test("sert les pages : accueil, fiche écrite, démonstration au téléphone", a
   const sansTexte = await api("/qr");
   assert.equal(sansTexte.statut, 400);
   assert.equal((await fetch(`${base}/voix.js`)).headers.get("content-type"), "text/javascript; charset=utf-8");
+  // Suivi des mains servi par le cerveau (bibliothèque MediaPipe et son moteur WebAssembly).
+  assert.equal((await fetch(`${base}/vendor/mediapipe/vision_bundle.mjs`)).status, 200);
+  assert.equal((await fetch(`${base}/vendor/mediapipe/wasm/vision_wasm_internal.wasm`)).headers.get("content-type"), "application/wasm");
+  assert.equal((await fetch(`${base}/vendor/mediapipe/../../package.json`)).status, 404);
 });

@@ -287,6 +287,7 @@ export class SessionApprenti {
         clipLunettesUrl: etape.clipLunettes ? urlMedia(this.lecon.id, "clips", etape.clipLunettes) : null,
         imageUrls: etape.images.map((f) => urlMedia(this.lecon.id, "images", f)),
         legendes: etape.images.map((_, i) => etape.legendes?.[i] ?? ""),
+        mouvementMains: etape.mouvementMains ?? null,
         imageGuideUrl: etape.imageGuide ? urlMedia(this.lecon.id, "images", etape.imageGuide) : null,
         explication: etape.explication?.trim() || etape.consigne,
         pointsDeControle: etape.pointsDeControle,

@@ -106,6 +106,12 @@ Le tuteur ne répète pas la même correction spontanée avant 15 secondes. En c
 
 **Le geste en images.** Chaque étape a 8 images de référence prises dans la vidéo du maître. Dans la fiche (« Modifier le texte »), le maître peut écrire un titre ou une astuce sous chacune (« pouces dessous », « on garde l'ovale »). Ces légendes apparaissent dans la fiche et dans « Comment faire » chez l'apprenti, et l'IA les lit à côté de chaque image pour mieux comprendre le geste.
 
+**Alertes instantanées, sans IA.** Pour certaines étapes, le téléphone suit les deux mains en direct (MediaPipe de Google, qui tourne sur le téléphone : aucune image ne part, 0 € de coût) et prévient **en une à deux secondes**, sans attendre « vérifie », si elles vont dans le mauvais sens. Exemple de la baguette : pour allonger, les mains doivent s'écarter du centre vers les bouts ; si elles se rapprochent en roulant, le téléphone dit tout de suite « Pars du centre et écarte les mains vers les bouts ». À la création de la leçon, l'IA indique les étapes concernées (« les mains s'écartent » ou « se rapprochent ») ; le maître peut changer ce réglage dans la fiche, et l'apprenti peut couper ces alertes dans ⚙. Le jugement complet (forme, résultat, ordre) reste celui de l'IA, à la demande.
+
+- Mesuré sur la vraie démonstration de baguette, image par image : geste juste → aucune alerte ; geste à l'envers → alerte 1,6 s après le début ; autres étapes (enrouler, dégazer) → aucune fausse alerte.
+- Sur un téléphone lent, la règle observe plus longtemps (jusqu'à 4 s) et la page prévient que les alertes auront du retard. La vitesse réelle sur un téléphone reste à mesurer (le navigateur de test, sans carte graphique, n'analyse qu'environ une image par seconde en direct).
+- Installation : `npm run modeles` télécharge le modèle des mains (8 Mo) dans `cerveau/modeles/` ; sans lui, le téléphone le charge directement chez Google.
+
 **Au ralenti.** Sur la vidéo du maître, le bouton de vitesse passe de 1× à ½× puis à ¼× (le choix reste pour les étapes suivantes). À la voix : « ralenti », « doucement », « vitesse normale ».
 
 Le maître relit et corrige ce texte depuis la fiche (« Modifier le texte »). L'IA qui corrige l'apprenti s'appuie ensuite sur ce texte, et les séances en cours le reçoivent tout de suite.
@@ -176,7 +182,7 @@ Sur les **Ray-Ban Display**, l'écran montre l'étape et la correction, avec les
 ## Tests
 
 ```bash
-cd cerveau && npm test && npm run typecheck    # 58 tests
+cd cerveau && npm test && npm run typecheck    # 65 tests
 cd lunettes-mentra && bun test && bun run typecheck   # 10 tests, dont l'intégration avec le cerveau
 cd lunettes-meta && ./gradlew test             # 19 tests (contrôleur + découpage vidéo HEVC)
 ```

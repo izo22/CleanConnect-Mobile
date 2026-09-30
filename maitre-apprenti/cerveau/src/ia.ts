@@ -56,6 +56,7 @@ export interface EtapeBrute {
   titre: string;
   consigne: string;
   explication: string;
+  mouvement_des_mains: "libre" | "s_ecartent" | "se_rapprochent";
   debut_s: number;
   fin_s: number;
   points_de_controle: string[];
@@ -74,6 +75,7 @@ const SCHEMA_LECON = {
           titre: { type: "string" },
           consigne: { type: "string" },
           explication: { type: "string" },
+          mouvement_des_mains: { type: "string", enum: ["libre", "s_ecartent", "se_rapprochent"] },
           debut_s: { type: "number" },
           fin_s: { type: "number" },
           points_de_controle: { type: "array", items: { type: "string" } },
@@ -81,7 +83,7 @@ const SCHEMA_LECON = {
           criteres_de_reussite: { type: "array", items: { type: "string" } },
         },
         required: [
-          "titre", "consigne", "explication", "debut_s", "fin_s", "points_de_controle",
+          "titre", "consigne", "explication", "mouvement_des_mains", "debut_s", "fin_s", "points_de_controle",
           "erreurs_frequentes", "criteres_de_reussite",
         ],
         additionalProperties: false,
@@ -99,6 +101,7 @@ Découpe la démonstration en étapes concrètes, dans l'ordre (en général ent
 - titre : 2 à 6 mots.
 - consigne : ce que l'apprenti doit faire, en une ou deux phrases à l'impératif, en tutoyant. Elle sera lue à voix haute.
 - explication : le détail du geste pour la fiche écrite de l'apprenti, en 2 à 5 phrases courtes à l'impératif, en tutoyant : comment tenir l'outil ou la matière, dans quel sens et avec quelle amplitude bouger, jusqu'à quand. Reprends les mots et les astuces du maître quand il en donne.
+- mouvement_des_mains : "s_ecartent" si le geste essentiel de toute l'étape consiste à écarter les deux mains l'une de l'autre (par exemple allonger un pâton en roulant du centre vers les bouts) ; "se_rapprochent" si c'est l'inverse ; sinon "libre". Dans le doute, "libre" : une alerte instantanée se déclenche si les mains vont dans l'autre sens.
 - debut_s et fin_s : les instants de début et de fin dans la vidéo, en secondes, d'après les instants indiqués sous chaque image.
 - points_de_controle : ce qui doit se voir dans le geste pendant l'étape (bon outil, bonne quantité lue sur la balance, ordre des mouvements, sens et amplitude du geste, position des mains, rythme...).
 - erreurs_frequentes : les erreurs visibles typiques d'un débutant sur cette étape (geste, ordre, résultat).

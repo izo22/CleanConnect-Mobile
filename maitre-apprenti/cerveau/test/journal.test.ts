@@ -32,7 +32,15 @@ function lecon(): Lecon {
   };
 }
 
-const attendreEcritures = () => new Promise((r) => setTimeout(r, 100));
+/** Le journal s'écrit en arrière-plan : on attend qu'il ait fini (jusqu'à 5 s si la machine est chargée). */
+async function attendreEcritures(seanceId?: string, interventions?: number) {
+  for (let i = 0; i < 50; i++) {
+    await new Promise((r) => setTimeout(r, 100));
+    if (!seanceId) return;
+    const lue = await lireSeance(seanceId);
+    if (lue && lue.interventions.length >= (interventions ?? 0) && lue.seance.termine) return;
+  }
+}
 
 test("coût d'un appel à l'IA", () => {
   const cout = coutUsd({ entree: 1_000_000, sortie: 100_000, cacheLecture: 1_000_000, cacheEcriture: 0 }, "claude-opus-5-5");
@@ -59,7 +67,7 @@ test("une séance journalise chaque analyse avec ses images, les règles du maî
     journal: (s) => journalDisque(nouvelleSeance(s.id, s.lecon, s.apprenti, "etape-1")),
   });
   for (let i = 0; i < 4; i++) await session.recevoirVideo([JPEG, JPEG, JPEG]);
-  await attendreEcritures();
+  await attendreEcritures(session.id, 4);
 
   // Étape 1 : règle de l'étape + règle de toute la leçon ; étape 2 : sa règle + celle de la leçon.
   assert.deepEqual(reglesVues[0], ["La lame inclinée à 30° est normale.", "Ne commente pas la couleur du plan de travail."]);
