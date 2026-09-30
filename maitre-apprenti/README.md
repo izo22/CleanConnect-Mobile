@@ -172,7 +172,7 @@ Sur les **Ray-Ban Display**, l'écran montre l'étape et la correction, avec les
 ## Tests
 
 ```bash
-cd cerveau && npm test && npm run typecheck    # 57 tests
+cd cerveau && npm test && npm run typecheck    # 58 tests
 cd lunettes-mentra && bun test && bun run typecheck   # 10 tests, dont l'intégration avec le cerveau
 cd lunettes-meta && ./gradlew test             # 19 tests (contrôleur + découpage vidéo HEVC)
 ```
@@ -188,8 +188,14 @@ Vérifié, avec de vraies vidéos générées par ffmpeg et un **faux** serveur 
 - **Appli Meta** : le découpage d'une vraie vidéo HEVC donne des morceaux que ffmpeg décode. Tout le code compile contre les vraies bibliothèques Meta (`mwdat` 1.0.0).
 - **Tablette** : dans un vrai navigateur (Chromium, caméra simulée), aucun appel à l'IA pendant 9 secondes de caméra, puis un seul appel par clic sur « Vérifier mon geste » ou « Suivant ». Fiche écrite affichée, modifiée et relue. Démonstration filmée depuis la page « maître » (caméra et micro simulés) : morceaux envoyés, étape marquée, leçon prête avec ses clips ; puis guide de placement affiché côté apprenti. Contrôle de l'installation (caméra simulée : tout est bon ; images synthétiques : sombre, contre-jour, flou, téléphone qui bouge). Recadrage automatique sur une vraie vidéo où seul un objet bouge dans un coin.
 
+**Premier essai avec la vraie IA** (septembre 2026), sur une vraie démonstration de façonnage de baguette (30 s) :
+- **Leçon** : prête en 46 s, 7 étapes justes (dégazer, détendre et allonger, replier le tiers, allonger, enrouler et souder, allonger à la longueur, saisir), avec des erreurs fréquentes pertinentes.
+- **Vérifications** : 10 cas avec la réponse attendue (gestes justes, geste d'une autre étape, gestes faits à l'envers, mains qui vont des bouts vers le centre). Avec 8 images régulières, l'IA en réussissait 7 sur 10 : elle voyait des positions, pas le sens du mouvement. Avec **4 paires d'images rapprochées (un quart de seconde) et datées**, plus deux règles précisées (« le résultat se défait » et « geste d'une autre étape » sont des erreurs), elle en réussit **10 sur 10, deux fois de suite**. C'est le réglage retenu.
+- **Temps de réponse** : 4,5 à 6 s. **Coût** : 0,016 à 0,026 $ par vérification (moins quand les images du maître sont en cache). Un effort de réflexion plus élevé n'apportait rien et doublait le temps de réponse.
+- Limite de cet essai : les « apprentis » étaient des extraits de la vidéo du maître (mêmes mains, même angle). Reste à tester avec un vrai apprenti filmé au téléphone.
+
 Pas encore vérifié :
-- **La qualité des corrections de l'IA** sur de vrais gestes. Il faut une clé API et un vrai essai avec un artisan.
+- **La qualité des corrections de l'IA** avec un vrai apprenti (autres mains, autre angle, vraies erreurs de débutant).
 - **Les vraies lunettes**, en particulier :
   - chez Meta, la caméra, l'écran et la voix sont des fonctions en préversion, et on ne sait pas si elles marchent ensemble ;
   - le format exact des images HEVC livrées par le SDK (le code accepte les deux formats courants) ;

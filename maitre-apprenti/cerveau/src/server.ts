@@ -424,7 +424,7 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
       }
       let images: Buffer[];
       try {
-        images = await imagesDepuisMorceau(await lireMorceau(req, url), enCours.imagesParSeconde);
+        images = await imagesDepuisMorceau(await lireMorceau(req, url), enCours.imagesParSecondeMemoire);
       } catch (erreur) {
         if (erreur instanceof ErreurHttp) throw erreur;
         throw new ErreurHttp(422, erreur instanceof Error ? erreur.message : String(erreur));

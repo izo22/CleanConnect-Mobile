@@ -172,7 +172,23 @@ const SCHEMA_VERDICT = {
   additionalProperties: false,
 } as const;
 
-const SYSTEME_TUTEUR = `Tu es le tuteur d'un apprenti artisan. Il porte des lunettes connectées qui le filment en continu, vu de ses yeux. Tu reçois des extraits vidéo sous forme d'images successives : le déroulé de l'étape en cours chez le maître, puis les dernières secondes de l'apprenti. Tu compares ses gestes à ceux du maître et tu lui parles à l'oreille. Tu es l'interprète du maître : quand il a donné des règles, elles priment sur ton propre jugement.
+/**
+ * Variante où l'IA décrit d'abord ce que font les mains d'une image à l'autre (sens, ordre du
+ * mouvement), puis juge : l'observation vient avant le verdict dans la réponse.
+ */
+const SCHEMA_VERDICT_OBSERVE = {
+  type: "object",
+  properties: {
+    observation: { type: "string" },
+    verdict: SCHEMA_VERDICT.properties.verdict,
+    message: SCHEMA_VERDICT.properties.message,
+    points_valides: SCHEMA_VERDICT.properties.points_valides,
+  },
+  required: ["observation", "verdict", "message", "points_valides"],
+  additionalProperties: false,
+} as const;
+
+const SYSTEME_TUTEUR = `Tu es le tuteur d'un apprenti artisan. Il est filmé par des lunettes connectées (vu de ses yeux) ou par un téléphone posé devant son plan de travail. Tu reçois des extraits vidéo sous forme d'images successives : le déroulé de l'étape en cours chez le maître, puis les dernières secondes de l'apprenti. Tu compares ses gestes à ceux du maître et tu lui parles à l'oreille. Tu es l'interprète du maître : quand il a donné des règles, elles priment sur ton propre jugement.
 
 Réponds avec un verdict :
 - "correction" : une erreur est clairement visible dans le geste ou le résultat (mauvais mouvement, mauvais ordre, mauvais outil, geste trop brusque ou trop timide, forme ratée). Le message dit quoi faire, pas ce qui ne va pas : une seule correction, la plus importante, à l'impératif, en tutoyant, en 15 mots maximum. Exemple : « Roule du centre vers les bords, en écartant les mains. »
@@ -181,10 +197,11 @@ Réponds avec un verdict :
 - "pas_visible" : on ne voit pas ses mains ni son plan de travail. Le message lui dit comment se placer, en 12 mots maximum.
 
 Règles :
-- Regarde le mouvement d'une image à l'autre : sens, amplitude, ordre et rythme des gestes, pas seulement la dernière image.
+- Regarde le mouvement d'une image à l'autre : sens, amplitude, ordre et rythme des gestes, pas seulement la dernière image. Quand les images sont datées, compare surtout des images proches dans le temps : c'est entre elles que se voit le sens du mouvement (vers le centre ou vers les bords, vers soi ou vers l'avant, qui s'enroule ou qui se déroule).
 - Le maître est montré sur toute l'étape, l'apprenti sur quelques secondes : compare le geste en cours avec le passage correspondant chez le maître.
 - Ne juge que ce qui se voit. Tu ne sens pas la pâte ni la pression des mains : ne les devine pas.
-- En cas de doute, choisis "en_cours". Une correction fausse fait plus de mal qu'un silence.
+- Deux cas sont des erreurs, même si chaque geste pris seul ressemble à celui du maître : le résultat se défait d'une image à l'autre au lieu de se former (le pli s'ouvre, le boudin se déroule, la pâte raccourcit) ; ou l'apprenti fait encore le geste d'une autre étape que celle en cours. Réponds alors "correction" avec le geste attendu pour cette étape.
+- Sinon, en cas de doute, choisis "en_cours". Une correction fausse fait plus de mal qu'un silence.
 - Si l'apprenti est en train d'appliquer une correction déjà donnée, ne la répète pas.
 - Dans points_valides, liste les points de contrôle que tu vois respectés dans l'extrait.
 
@@ -204,6 +221,12 @@ function descriptionEtape(titreLecon: string, etape: Etape, total: number, regle
     "Déroulé de cette étape chez le maître (images successives, de la plus ancienne à la plus récente) :"
   );
 }
+
+const CONSIGNE_OBSERVATION =
+  "Dans observation, en français, décris d'abord en une ou deux phrases ce que font les mains de l'apprenti d'une image à l'autre " +
+  "(sens et ordre du mouvement, forme obtenue), puis compare-le au geste du maître avant de choisir ton verdict.";
+
+const secondes = (t: number) => `${t.toFixed(2).replace(".", ",")} s`;
 
 function presentationApprenti(nombre: number, dureeS: number, demande: boolean): string {
   const ecart = nombre > 1 ? dureeS / (nombre - 1) : 0;
@@ -226,6 +249,15 @@ export async function evaluerGeste(options: {
   dureeS: number;
   /** Vrai si l'apprenti a demandé la vérification (il attend une réponse). */
   demande: boolean;
+  /**
+   * Instant de chaque image de l'apprenti, en secondes depuis la première : chaque image est alors
+   * datée pour l'IA (utile quand elles vont par paires rapprochées pour montrer le sens du mouvement).
+   */
+  instantsS?: number[];
+  /** Effort de réflexion de l'IA : "low" par défaut (réponse rapide). */
+  effort?: "low" | "medium";
+  /** L'IA décrit le mouvement observé avant de juger (champ observation de la réponse). */
+  observer?: boolean;
 }): Promise<Verdict> {
   const referenceMaitre: Anthropic.Beta.BetaContentBlockParam[] = [
     { type: "text", text: descriptionEtape(options.titreLecon, options.etape, options.totalEtapes, options.regles) },
@@ -248,7 +280,10 @@ export async function evaluerGeste(options: {
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
       // Effort bas : la réponse doit arriver en quelques secondes, pendant que l'apprenti travaille.
-      output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA_VERDICT } },
+      output_config: {
+        effort: options.effort ?? "low",
+        format: { type: "json_schema", schema: options.observer ? SCHEMA_VERDICT_OBSERVE : SCHEMA_VERDICT },
+      },
       system: SYSTEME_TUTEUR,
       messages: [
         {
@@ -257,8 +292,11 @@ export async function evaluerGeste(options: {
             ...referenceMaitre,
             { type: "text", text: conseils },
             { type: "text", text: presentationApprenti(options.imagesApprenti.length, options.dureeS, options.demande) },
-            ...options.imagesApprenti.map(blocImage),
-            { type: "text", text: "Ton verdict sur ce que fait l'apprenti ?" },
+            ...options.imagesApprenti.flatMap((image, i): Anthropic.Beta.BetaContentBlockParam[] =>
+              options.instantsS?.[i] === undefined
+                ? [blocImage(image)]
+                : [{ type: "text", text: `t = ${secondes(options.instantsS[i])}` }, blocImage(image)]),
+            { type: "text", text: options.observer ? `${CONSIGNE_OBSERVATION}\nTon verdict sur ce que fait l'apprenti ?` : "Ton verdict sur ce que fait l'apprenti ?" },
           ],
         },
       ],
@@ -267,6 +305,7 @@ export async function evaluerGeste(options: {
   );
 
   const brut = JSON.parse(texteReponse(reponse)) as {
+    observation?: string;
     verdict: TypeVerdict;
     message: string;
     points_valides: string[];
@@ -277,5 +316,11 @@ export async function evaluerGeste(options: {
     cacheLecture: reponse.usage.cache_read_input_tokens ?? 0,
     cacheEcriture: reponse.usage.cache_creation_input_tokens ?? 0,
   };
-  return { verdict: brut.verdict, message: brut.message.trim(), pointsValides: brut.points_valides, usage };
+  return {
+    verdict: brut.verdict,
+    message: brut.message.trim(),
+    pointsValides: brut.points_valides,
+    usage,
+    ...(brut.observation ? { observation: brut.observation.trim() } : {}),
+  };
 }

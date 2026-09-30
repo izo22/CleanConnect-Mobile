@@ -95,6 +95,8 @@ export interface Verdict {
   message: string;
   pointsValides: string[];
   usage?: Consommation;
+  /** Ce que l'IA a vu du mouvement avant de juger (variante « observer »). */
+  observation?: string;
 }
 
 // ---------------------------------------------------------------------------

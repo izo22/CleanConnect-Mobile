@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { DetecteurFinDeGeste, echantillonner, fenetreEtape, SessionApprenti, type Evaluateur } from "../src/coach.ts";
+import { DetecteurFinDeGeste, echantillonner, fenetreEtape, pairesRapprochees, SessionApprenti, type Evaluateur } from "../src/coach.ts";
 import type { Lecon, Retour, Verdict } from "../src/types.ts";
 
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
@@ -194,21 +194,20 @@ test("à la demande : la vidéo est gardée en mémoire sans appeler l'IA", asyn
   assert.equal(session.etat.etape.envoiVideoContinu, false);
 });
 
-test("« vérifie » : 8 images réparties sur la durée de l'étape, et une réponse à l'oreille", async () => {
+test("« vérifie » : 4 paires d'images rapprochées et datées sur la durée de l'étape, et une réponse à l'oreille", async () => {
   const { session, appels, publies } = sessionDemande([
     { verdict: "correction", message: "Pèse 500 g de farine.", pointsValides: [] },
   ]);
-  // 40 images à 2 par seconde = 20 s ; l'étape dure 10 s chez le maître → l'IA regarde les 15 dernières secondes.
-  await session.recevoirVideo(images(0, 40));
+  // 80 images gardées à 4 par seconde = 20 s ; l'étape dure 10 s chez le maître → l'IA regarde
+  // les 15 dernières secondes (images 20 à 79), en 4 moments de 2 images consécutives.
+  await session.recevoirVideo(images(0, 80));
   const retour = await session.commande("verifier");
 
   assert.equal(appels.length, 1);
   assert.equal(appels[0].demande, true);
-  assert.equal(appels[0].dureeS, 14.5);
-  const vues = appels[0].imagesApprenti.map((i) => i.data[2]);
-  assert.equal(vues.length, 8);
-  assert.equal(vues[0], 10);
-  assert.equal(vues[7], 39);
+  assert.equal(appels[0].dureeS, 14.75);
+  assert.deepEqual(appels[0].imagesApprenti.map((i) => i.data[2]), [20, 21, 39, 40, 59, 60, 78, 79]);
+  assert.deepEqual(appels[0].instantsS, [0, 0.25, 4.75, 5, 9.75, 10, 14.5, 14.75]);
   assert.equal(retour.dire, "Pèse 500 g de farine.");
   assert.equal(retour.verdict, "correction");
   // Pendant l'analyse, la tablette et les lunettes Mentra entendent « Je regarde. »
@@ -285,15 +284,16 @@ test("vérification automatique : l'IA regarde quand l'apprenti s'arrête de bou
     { verificationAuto: true },
   );
   assert.equal(session.etat.etape.envoiVideoContinu, true);
-  // 4 s de gestes (images alternées claires / sombres), puis 2 s d'immobilité.
-  const bouge = Array.from({ length: 8 }, (_, i) => image(i % 2 ? 200 : 20));
+  // 4 s de gestes (images alternées claires / sombres, 4 par seconde), puis 2 s d'immobilité.
+  const bouge = Array.from({ length: 16 }, (_, i) => image(i % 2 ? 200 : 20));
+  const calme = Array.from({ length: 8 }, () => image(100));
   assert.equal((await session.recevoirVideo(bouge)).ignore, true);
   assert.equal(appels.length, 0);
-  const immobile = await session.recevoirVideo([image(100), image(100), image(100), image(100)]);
+  const immobile = await session.recevoirVideo(calme);
   assert.equal(appels.length, 1);
   assert.equal(immobile.dire, "Écarte les mains.");
   // Toujours immobile : pas de nouvelle vérification (il faut un nouveau geste).
-  assert.equal((await session.recevoirVideo([image(100), image(100), image(100), image(100)])).ignore, true);
+  assert.equal((await session.recevoirVideo(calme)).ignore, true);
   assert.equal(appels.length, 1);
 });
 
@@ -301,8 +301,8 @@ test("vérification automatique : rien de faux, l'IA reste silencieuse", async (
   const { session, appels } = sessionDemande([{ verdict: "en_cours", message: "Continue.", pointsValides: [] }], {
     verificationAuto: true,
   });
-  await session.recevoirVideo(Array.from({ length: 8 }, (_, i) => image(i % 2 ? 200 : 20)));
-  const retour = await session.recevoirVideo([image(100), image(100), image(100), image(100)]);
+  await session.recevoirVideo(Array.from({ length: 16 }, (_, i) => image(i % 2 ? 200 : 20)));
+  const retour = await session.recevoirVideo(Array.from({ length: 8 }, () => image(100)));
   assert.equal(appels.length, 1);
   assert.equal(retour.dire, null);
 });
@@ -339,6 +339,11 @@ test("le retour porte le texte écrit de l'étape et le mode d'analyse", () => {
   assert.equal(surveillee.analyse, "continu");
   assert.equal(surveillee.envoiVideoContinu, true);
   assert.match(nouvelleSession([]).session.etat.dire ?? "", /Je te surveille pendant cette étape/);
+});
+
+test("paires d'images rapprochées", () => {
+  assert.deepEqual(pairesRapprochees(40), [0, 1, 13, 14, 25, 26, 38, 39]);
+  assert.deepEqual(pairesRapprochees(6), [0, 1, 2, 3, 4, 5]); // trop peu d'images : toutes
 });
 
 test("fenêtre regardée et échantillonnage", () => {

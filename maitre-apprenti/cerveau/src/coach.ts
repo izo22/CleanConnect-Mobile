@@ -37,6 +37,13 @@ const FENETRE_PAR_DEFAUT_S = 8;
 const FENETRE_MIN_S = 4;
 /** Il faut au moins 1 seconde de vidéo de l'étape pour vérifier quelque chose. */
 const SECONDES_MIN_POUR_VERIFIER = 1;
+/**
+ * La vidéo est gardée à 4 images par seconde au moins : assez pour montrer à l'IA des paires
+ * d'images à un quart de seconde d'écart, entre lesquelles se voit le sens du mouvement.
+ */
+const IMAGES_PAR_SECONDE_MEMOIRE = 4;
+/** Une vérification montre 4 moments de la tentative, chacun par 2 images rapprochées. */
+const MOMENTS_PAR_VERIFICATION = 4;
 /** Pas deux vérifications automatiques à moins de 10 secondes d'écart. */
 const ECART_MIN_AUTO_MS = 10_000;
 
@@ -78,6 +85,18 @@ export function fenetreEtape(etape: Etape): number {
 export function echantillonner<T>(elements: T[], nombre = IMAGES_PAR_SEQUENCE): T[] {
   if (elements.length <= nombre) return [...elements];
   return Array.from({ length: nombre }, (_, k) => elements[Math.round((k * (elements.length - 1)) / (nombre - 1))]);
+}
+
+/**
+ * Choisit les images d'une tentative : `moments` instants régulièrement répartis, chacun avec
+ * l'image qui le suit immédiatement. Mesuré sur de vraies vidéos : l'IA voit bien mieux le sens
+ * du mouvement (qui s'enroule ou se déroule, vers le centre ou vers les bouts) que sur 8 images
+ * régulières, pour le même nombre d'images. Renvoie les indices choisis, dans l'ordre.
+ */
+export function pairesRapprochees(nombre: number, moments = MOMENTS_PAR_VERIFICATION): number[] {
+  if (nombre <= moments * 2) return Array.from({ length: nombre }, (_, i) => i);
+  const departs = echantillonner(Array.from({ length: nombre - 1 }, (_, i) => i), moments);
+  return departs.flatMap((i) => [i, i + 1]);
 }
 
 /**
@@ -183,7 +202,7 @@ export class SessionApprenti {
     this.maintenant = options.maintenant ?? Date.now;
     this.attendre = options.attendre ?? ((ms) => new Promise((ok) => setTimeout(ok, ms)));
     this.derniereActivite = this.maintenant();
-    this.detecteur = new DetecteurFinDeGeste(this.imagesParSeconde);
+    this.detecteur = new DetecteurFinDeGeste(this.imagesParSecondeMemoire);
     const annonce = this.annonceEtape();
     const astuce = this.analyse === "demande" ? " Quand tu as fini un geste, dis « vérifie »." : "";
     this.dernierRetour = this.retour({ afficher: annonce, dire: annonce + astuce });
@@ -200,6 +219,11 @@ export class SessionApprenti {
   /** Cadence d'analyse de la leçon (images par seconde). */
   get imagesParSeconde(): number {
     return cadenceValide(this.lecon.imagesParSeconde);
+  }
+
+  /** Cadence de la vidéo gardée en mémoire (et donc des morceaux et du direct reçus). */
+  get imagesParSecondeMemoire(): number {
+    return Math.max(IMAGES_PAR_SECONDE_MEMOIRE, this.imagesParSeconde);
   }
 
   /** "continu" pour une étape à surveiller, sinon l'IA ne regarde que quand il le faut. */
@@ -220,9 +244,9 @@ export class SessionApprenti {
   /** Prend en compte une leçon modifiée (règles, textes, réglages) sans interrompre la séance. */
   majLecon(lecon: Lecon): void {
     if (lecon.id !== this.lecon.id || lecon.etapes.length !== this.lecon.etapes.length) return;
-    const cadence = this.imagesParSeconde;
+    const cadence = this.imagesParSecondeMemoire;
     this.lecon = lecon;
-    if (this.imagesParSeconde !== cadence) this.detecteur = new DetecteurFinDeGeste(this.imagesParSeconde);
+    if (this.imagesParSecondeMemoire !== cadence) this.detecteur = new DetecteurFinDeGeste(this.imagesParSecondeMemoire);
     // Les lunettes et la tablette reçoivent les nouveaux textes et le nouveau mode d'analyse.
     const actuel = this.dernierRetour;
     this.publier(this.retour({ verdict: actuel.verdict, afficher: actuel.afficher, dire: null }));
@@ -334,7 +358,7 @@ export class SessionApprenti {
   /** Garde des images en mémoire (gratuit : aucun appel à l'IA). */
   private memoriser(images: Buffer[]): void {
     this.derniereActivite = this.maintenant();
-    this.images = [...this.images, ...images].slice(-SECONDES_MAX_EN_MEMOIRE * this.imagesParSeconde);
+    this.images = [...this.images, ...images].slice(-SECONDES_MAX_EN_MEMOIRE * this.imagesParSecondeMemoire);
   }
 
   /**
@@ -368,7 +392,7 @@ export class SessionApprenti {
     return this.verifier("auto");
   }
 
-  private async appelerIA(sequence: Buffer[], dureeS: number, demande: boolean): Promise<Verdict> {
+  private async appelerIA(sequence: Buffer[], dureeS: number, demande: boolean, instantsS?: number[]): Promise<Verdict> {
     return this.evaluateur({
       titreLecon: this.lecon.titre,
       etape: this.etape,
@@ -379,6 +403,7 @@ export class SessionApprenti {
       regles: this.reglesEtape(),
       dureeS,
       demande,
+      instantsS,
     });
   }
 
@@ -415,7 +440,9 @@ export class SessionApprenti {
     // La vidéo arrive en continu ; si l'IA n'a pas fini la séquence précédente, on n'empile pas de retard.
     if (this.analyseEnCours) return this.sansNouveaute();
 
-    const brute = this.images.slice(-IMAGES_PAR_SEQUENCE);
+    // Les 8 dernières images à la cadence de la leçon (la mémoire en garde davantage).
+    const memoire = this.imagesParSecondeMemoire;
+    const brute = echantillonner(this.images.slice(-Math.round((IMAGES_PAR_SEQUENCE * memoire) / this.imagesParSeconde)));
     const indexAuDepart = this.index;
     const etape = this.etape;
     this.analyseEnCours = true;
@@ -491,7 +518,7 @@ export class SessionApprenti {
   private async verifier(declencheur: "demande" | "suivant" | "auto"): Promise<Retour | null> {
     if (this.termine) return null;
     if (this.analyseEnCours) return declencheur === "demande" ? this.sansNouveaute() : null;
-    const fps = this.imagesParSeconde;
+    const fps = this.imagesParSecondeMemoire;
     if (this.images.length < SECONDES_MIN_POUR_VERIFIER * fps && !this.direct) {
       if (declencheur !== "demande") return null;
       const message = "Je n'ai pas encore vu ton geste. Fais-le devant toi, puis redis « vérifie ».";
@@ -517,11 +544,14 @@ export class SessionApprenti {
         return this.publier(this.retour({ afficher: message, dire: message }));
       }
       const debut = this.maintenant();
-      // La zone des mains est repérée sur 16 images de la tentative, puis 8 partent à l'IA.
-      const sequence = await this.preparer(echantillonner(recentes), echantillonner(recentes, 16));
+      // La zone des mains est repérée sur 16 images de la tentative ; 4 paires d'images
+      // rapprochées et datées partent à l'IA.
+      const choix = pairesRapprochees(recentes.length);
+      const sequence = await this.preparer(choix.map((i) => recentes[i]), echantillonner(recentes, 16));
+      const instants = choix.map((i) => i / fps);
       let verdict: Verdict;
       try {
-        verdict = await this.appelerIA(sequence, (recentes.length - 1) / fps, true);
+        verdict = await this.appelerIA(sequence, (recentes.length - 1) / fps, true, instants);
       } catch (erreur) {
         const message = erreur instanceof Error ? erreur.message : String(erreur);
         console.error(`Session ${this.id} : vérification impossible —`, message);
@@ -573,7 +603,7 @@ export class SessionApprenti {
   ouvrirDirect(): ReceptionDirect {
     this.direct ??= new ReceptionDirect({
       surImage: (image) => this.imageDirect(image),
-      imagesParSeconde: this.imagesParSeconde,
+      imagesParSeconde: this.imagesParSecondeMemoire,
     });
     return this.direct;
   }
@@ -587,7 +617,7 @@ export class SessionApprenti {
   private imageDirect(image: Buffer): void {
     if (this.termine) return;
     this.memoriser([image]);
-    const fps = this.imagesParSeconde;
+    const fps = this.imagesParSecondeMemoire;
     if (this.analyse === "continu") {
       this.nouvellesImages++;
       if (!this.analyseEnCours && this.nouvellesImages >= SECONDES_NOUVELLES_AVANT_ANALYSE * fps) {
