@@ -2,7 +2,7 @@
 // morceaux de 10 secondes pendant le tournage ; les étapes sont marquées à la voix ou au bouton,
 // et ce que dit le maître est transcrit pour la fiche écrite.
 
-import { api, el } from "./commun.js";
+import { adresseLocale, api, boutonsLien, el, qrLecon } from "./commun.js";
 import { afficherControle, controlerCamera } from "./controle.js";
 import { commandeMaitre, Ecoute, reconnaissanceDisponible } from "./voix.js";
 
@@ -184,12 +184,46 @@ function terminer() {
       $("bloc-camera").classList.add("cache");
       $("fin").classList.remove("cache");
       if (echecs) $("message-fin").textContent += ` Attention : ${echecs} morceau(x) de vidéo n'ont pas pu être envoyés.`;
+      attendreLecon();
     } catch (erreur) {
       $("etat-envoi").textContent = `Fin impossible : ${erreur.message}`;
     }
   })();
   return fin;
 }
+
+/** Quand la leçon est prête : la fiche à relire et le QR code pour l'apprenti. */
+async function attendreLecon() {
+  let lecon;
+  try {
+    lecon = await api(`/lecons/${captureId}`);
+  } catch {
+    setTimeout(attendreLecon, 5000);
+    return;
+  }
+  if (lecon.statut === "en_preparation") {
+    setTimeout(attendreLecon, 4000);
+    return;
+  }
+  $("fin-attente").classList.add("cache");
+  if (lecon.statut === "erreur") {
+    $("fin-erreur").textContent = `La préparation a échoué : ${lecon.erreur}. Tu peux refilmer la démonstration.`;
+    return;
+  }
+  $("lien-fiche").href = `fiche.html?lecon=${lecon.id}`;
+  $("qr-fin").replaceChildren(
+    qrLecon(lecon.id),
+    adresseLocale() ? el("p", { classe: "erreur-texte" }, "Cette page est ouverte en local : ouvre-la avec l'adresse publique pour que le code marche.") : "",
+    boutonsLien(lecon.id, lecon.titre),
+  );
+  $("fin-prete").classList.remove("cache");
+}
+
+// Le métier est retenu pour la prochaine démonstration.
+try { $("metier").value = localStorage.getItem("metier") ?? ""; } catch {}
+$("metier").addEventListener("change", (e) => {
+  try { localStorage.setItem("metier", e.target.value.trim()); } catch {}
+});
 
 $("ouvrir").onclick = ouvrir;
 $("recontroler").onclick = controlerInstallation;

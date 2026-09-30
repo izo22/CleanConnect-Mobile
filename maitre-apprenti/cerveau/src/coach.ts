@@ -504,7 +504,7 @@ export class SessionApprenti {
     try {
       if (declencheur !== "auto") {
         const attente = declencheur === "demande" ? "Je regarde ton geste…" : "Je regarde ton geste avant de passer…";
-        this.publier(this.retour({ afficher: attente, dire: declencheur === "demande" ? "Je regarde." : null }));
+        this.publier(this.retour({ afficher: attente, dire: declencheur === "demande" ? "Je regarde." : null, regarde: true }));
       }
       // En direct, les dernières secondes du geste sont encore en route.
       if (this.direct && declencheur !== "auto") await this.attendre(RETARD_DIRECT_MS);

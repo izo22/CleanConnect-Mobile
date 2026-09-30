@@ -38,3 +38,70 @@ export function el(balise, attributs = {}, ...enfants) {
   }
   return noeud;
 }
+
+// --- Partager une leçon : QR code à scanner par l'apprenti ---------------------------------
+
+/** Adresse de la leçon pour l'apprenti (avec la clé d'accès du serveur, s'il y en a une). */
+export function lienApprenti(leconId) {
+  const url = new URL(`/apprenti.html?lecon=${encodeURIComponent(leconId)}`, location.origin);
+  if (cleAcces()) url.searchParams.set("cle", cleAcces());
+  return url.toString();
+}
+
+/** Vrai si la page est ouverte en local : un autre téléphone ne pourrait pas suivre le lien. */
+export const adresseLocale = () => ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
+
+/** Le QR code d'une leçon, à afficher dans une page. */
+export function qrLecon(leconId) {
+  const cle = cleAcces();
+  return el("img", {
+    classe: "qr",
+    alt: "QR code de la leçon, à scanner avec l'appareil photo du téléphone de l'apprenti",
+    src: `/api/qr?texte=${encodeURIComponent(lienApprenti(leconId))}${cle ? `&cle=${encodeURIComponent(cle)}` : ""}`,
+  });
+}
+
+/** Boutons « Envoyer le lien » (partage du téléphone) ou « Copier le lien ». */
+export function boutonsLien(leconId, titre) {
+  const lien = lienApprenti(leconId);
+  const etat = el("span", { classe: "vide", role: "status" });
+  const boutons = el("div", { classe: "rangee centre" });
+  if (navigator.share) {
+    boutons.append(el("button", {
+      type: "button",
+      onclick: () => navigator.share({ title: titre, text: `Leçon « ${titre} »`, url: lien }).catch(() => undefined),
+    }, "Envoyer le lien"));
+  }
+  boutons.append(
+    el("button", {
+      type: "button",
+      onclick: async () => {
+        try {
+          await navigator.clipboard.writeText(lien);
+          etat.textContent = "Lien copié.";
+        } catch {
+          prompt("Copie ce lien :", lien);
+        }
+      },
+    }, "Copier le lien"),
+    etat,
+  );
+  return boutons;
+}
+
+/** Fenêtre « Partager » : le QR code en grand, et le lien à envoyer. */
+export function ouvrirPartage(lecon) {
+  const fenetre = el("dialog", { classe: "partage", "aria-labelledby": "titre-partage" },
+    el("h2", { id: "titre-partage" }, `Partager « ${lecon.titre} »`),
+    el("p", {}, "Ton apprenti scanne ce code avec l'appareil photo de son téléphone : il arrive directement dans la leçon."),
+    qrLecon(lecon.id),
+    adresseLocale()
+      ? el("p", { classe: "erreur-texte" }, "Attention : cette page est ouverte en local (localhost). Ouvre-la avec l'adresse publique du serveur pour que le code marche sur un autre téléphone.")
+      : null,
+    boutonsLien(lecon.id, lecon.titre),
+    el("form", { method: "dialog", classe: "rangee centre" }, el("button", { classe: "principal" }, "Fermer")),
+  );
+  fenetre.addEventListener("close", () => fenetre.remove());
+  document.body.append(fenetre);
+  fenetre.showModal();
+}

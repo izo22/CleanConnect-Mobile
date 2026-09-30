@@ -9,21 +9,21 @@
 </head>
 <body>
 <main>
-  <a class="bouton" href="/">← Leçons</a>
+  <a class="bouton" href="/#maitre">← Mes leçons</a>
   <h1 style="margin-top: 16px">Filmer une démonstration</h1>
   <p class="sous-titre">Pose le téléphone sur un support au-dessus du plan de travail, en face de toi, incliné vers tes mains, là où l'apprenti posera le sien. Filme large : tout le plan de travail. Le logiciel resserre tout seul sur tes mains.</p>
 
   <section class="carte" id="preparation">
-    <label for="titre">Titre de la leçon</label>
-    <input id="titre" type="text" placeholder="Baguette de tradition">
-    <label for="metier">Métier</label>
-    <input id="metier" type="text" placeholder="Boulangerie">
+    <label for="titre" class="grand-label">Quel geste vas-tu montrer ?</label>
+    <input id="titre" class="grand-champ" type="text" placeholder="Baguette de tradition">
+    <label for="metier">Ton métier</label>
+    <input id="metier" type="text" placeholder="Boulangerie" autocomplete="organization-title">
     <label class="case">
       <input type="checkbox" id="ecoute" checked>
       <span>Commandes à la voix : dis « étape suivante » à chaque nouvelle étape, et « terminé » à la fin</span>
     </label>
     <div class="rangee" style="margin-top: 16px">
-      <button class="principal" id="ouvrir">Ouvrir la caméra</button>
+      <button class="principal enorme" id="ouvrir">🎥 Ouvrir la caméra</button>
     </div>
     <p class="erreur-texte" id="erreur" role="alert"></p>
   </section>
@@ -54,10 +54,26 @@
     </div>
   </section>
 
-  <section class="carte cache" id="fin">
-    <h2>Merci !</h2>
-    <p id="message-fin">La leçon est en préparation : l'IA découpe ta démonstration en étapes. Elle sera prête dans quelques minutes.</p>
-    <div class="rangee"><a class="bouton principal" href="/">Voir les leçons</a></div>
+  <section class="carte centre cache" id="fin">
+    <div id="fin-attente">
+      <p class="grosse-icone" aria-hidden="true">⏳</p>
+      <h2>Merci ! L'IA prépare ta leçon</h2>
+      <p id="message-fin">Elle découpe ta démonstration en étapes et écrit la fiche. Ça prend quelques minutes : tu peux laisser cette page ouverte.</p>
+      <div class="attente-barre" aria-hidden="true"><div></div></div>
+    </div>
+    <div id="fin-prete" class="cache">
+      <p class="grosse-icone" aria-hidden="true">✅</p>
+      <h2>Ta leçon est prête</h2>
+      <p class="etape-fin">1. Relis la fiche, et corrige les mots si besoin.</p>
+      <a class="bouton principal enorme" id="lien-fiche" href="#">📖 Relire la fiche</a>
+      <p class="etape-fin">2. Fais scanner ce code à ton apprenti avec son téléphone.</p>
+      <div id="qr-fin"></div>
+    </div>
+    <p class="erreur-texte" id="fin-erreur" role="alert"></p>
+    <div class="rangee centre" style="margin-top: 16px">
+      <a class="bouton" href="maitre.html">Filmer une autre leçon</a>
+      <a class="bouton" href="/#maitre">Mes leçons</a>
+    </div>
   </section>
 </main>
 <script type="module" src="maitre.js"></script>

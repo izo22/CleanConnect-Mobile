@@ -37,6 +37,16 @@ Le maître filme ses gestes une fois (une baguette, un croissant, une soudure…
 | `lunettes-mentra/` | Appli MentraOS « cloud » : direct vidéo des lunettes vers le cerveau | TypeScript (Bun) |
 | `lunettes-meta/` | Appli Android pour Ray-Ban Meta / Ray-Ban Display : vidéo HEVC découpée en morceaux | Kotlin |
 
+## L'interface en bref
+
+Pensée pour des mains prises et un téléphone posé à un mètre : un écran = une seule chose à faire, du texte énorme, et tout se pilote aussi à la voix.
+
+- **Accueil** : deux gros boutons, « Je suis le maître » et « Je suis l'apprenti ». L'appareil retient le choix.
+- **Maître** : « Filmer une nouvelle leçon » → titre → caméra ouverte et installation vérifiée → enregistrement (« étape suivante », « terminé ») → attente → « Ta leçon est prête » : relire la fiche, puis **QR code** à faire scanner à l'apprenti. Chaque leçon de la liste a aussi un bouton « Partager » (QR code, lien à envoyer ou copier). L'envoi d'une vidéo déjà filmée est rangé dans « Tu as déjà une vidéo ? ».
+- **Apprenti** : en quatre écrans. Ton prénom → « Pose ton téléphone sur le support » (image du maître en transparence, vérification automatique, grosse coche verte) → l'**atelier** → « Bravo, tu as terminé ! ».
+- **L'atelier** : numéro d'étape, titre en très gros, vidéo du maître, un bouton géant « Vérifier mon geste », et « Retour / Comment faire / Suivant ». La page entière change de couleur selon la réponse, pour se lire de loin : bleu « je regarde », orange « correction », vert « bravo ». Les réglages (voix, commandes vocales, miroir, replacer le téléphone) sont derrière ⚙.
+- **Avec des lunettes**, la page de l'apprenti suit la séance des lunettes toute seule et saute l'installation.
+
 ## 1. Lancer le cerveau
 
 Il faut **Node 22.18 ou plus** et une **clé API Claude** ([console Anthropic](https://console.anthropic.com)). ffmpeg est installé automatiquement avec les dépendances.

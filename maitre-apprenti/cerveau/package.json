@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Serveur qui transforme la vidéo d'un maître en leçon et corrige l'apprenti en direct.",
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "start": "node src/server.ts",
     "dev": "node --watch src/server.ts",
@@ -13,10 +15,12 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
-    "ffmpeg-static": "^5.2.0"
+    "ffmpeg-static": "^5.2.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "@types/qrcode": "^1.5.6",
     "typescript": "^5.6.0"
   }
 }

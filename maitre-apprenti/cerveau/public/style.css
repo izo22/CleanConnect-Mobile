@@ -11,6 +11,8 @@
   --alerte: #a8471c;
   --alerte-fond: #fcebe2;
   --info-fond: #f1ece5;
+  --bleu: #1d5fbf;
+  --bleu-fond: #e3edfb;
   --rayon: 14px;
   color-scheme: light dark;
 }
@@ -29,6 +31,8 @@
     --alerte: #f3a47a;
     --alerte-fond: #3d261b;
     --info-fond: #2f2822;
+    --bleu: #8db8f5;
+    --bleu-fond: #1d2a3d;
   }
 }
 
@@ -234,3 +238,129 @@ ul.controle li.alerte { color: var(--alerte); font-weight: 600; }
 ul.controle li.ok { color: var(--doux); }
 .miroir { transform: scaleX(-1); }
 #bloc-camera .cadre-camera { margin-bottom: 12px; }
+
+
+/* =====================================================================
+   Interface simple : un écran = une chose à faire, lisible à un mètre
+   ===================================================================== */
+
+.centre { text-align: center; }
+.rangee.centre { justify-content: center; }
+.colonne { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.vue > .bouton:first-child, .ecran > .bouton:first-child { margin-bottom: 8px; }
+
+button.enorme, .bouton.enorme {
+  font-size: 1.25rem; padding: 18px 26px; justify-content: center; border-radius: 16px;
+}
+@media (max-width: 600px) { button.enorme, .bouton.enorme { width: 100%; } }
+
+/* --- Accueil --- */
+
+.titre-accueil { font-size: clamp(2rem, 6vw, 3rem); text-align: center; margin: 24px 0 8px; }
+.grands-choix { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+@media (max-width: 600px) { .grands-choix { grid-template-columns: 1fr; } }
+.grand-choix {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+  padding: 32px 20px; border-radius: 20px; background: var(--surface); border: 2px solid var(--bord);
+  color: var(--texte); text-decoration: none;
+}
+.grand-choix:hover, .grand-choix:focus-visible { border-color: var(--accent); }
+.grand-choix .icone { font-size: 3.2rem; line-height: 1; }
+.grand-choix .libelle { font-size: 1.5rem; font-weight: 700; }
+.grand-choix .detail { color: var(--doux); }
+
+.liste-lecons { display: grid; gap: 12px; margin: 20px 0; }
+#vue-maitre > .bouton.enorme { margin-top: 8px; }
+details.plus summary { cursor: pointer; font-weight: 600; }
+details.menu-plus { position: relative; }
+details.menu-plus summary { list-style: none; cursor: pointer; padding: 8px 14px; border: 1px solid var(--bord); border-radius: 10px; font-weight: 700; }
+details.menu-plus summary::-webkit-details-marker { display: none; }
+details.menu-plus[open] > button { position: absolute; right: 0; top: 110%; white-space: nowrap; z-index: 2; color: var(--alerte); }
+
+.tuiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.tuile {
+  display: flex; flex-direction: column; gap: 6px; padding: 22px; border-radius: 18px;
+  background: var(--surface); border: 2px solid var(--bord); color: var(--texte); text-decoration: none;
+}
+.tuile:hover, .tuile:focus-visible { border-color: var(--accent); }
+.tuile-titre { font-size: 1.3rem; font-weight: 700; }
+.tuile-action { margin-top: 8px; color: var(--accent); font-weight: 700; }
+
+/* --- Fenêtres (partage, comment faire, réglages) --- */
+
+dialog {
+  width: min(640px, calc(100% - 32px)); max-height: calc(100% - 32px); border: 1px solid var(--bord);
+  border-radius: 20px; background: var(--surface); color: var(--texte); padding: 24px;
+}
+dialog::backdrop { background: rgb(0 0 0 / 0.5); }
+dialog.partage { text-align: center; }
+img.qr { display: block; width: min(280px, 70vw); margin: 12px auto; background: #fff; padding: 8px; border-radius: 12px; }
+
+/* --- Page apprenti --- */
+
+.page-apprenti main.apprenti-main { max-width: 1100px; }
+.surtitre { color: var(--doux); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.85rem; margin: 16px 0 0; }
+h1.grand { font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.15; margin: 8px 0; }
+label.grand-label { font-size: 1.2rem; margin-top: 24px; }
+input.grand-champ { font-size: 1.3rem; padding: 14px 16px; margin-bottom: 16px; }
+#ecran-accueil .enorme { margin-bottom: 16px; }
+.grand-controle p { font-size: 1.2rem; }
+.grand-controle ul.controle { font-size: 1.05rem; }
+#ecran-installation .cadre-camera { margin: 12px 0; }
+#ecran-installation .guide { opacity: 0.4; }
+
+.atelier-haut { display: flex; align-items: center; gap: 12px; }
+.etape-num { font-weight: 700; color: var(--doux); font-size: 1.05rem; }
+.points { display: flex; gap: 6px; }
+.points span { width: 12px; height: 12px; border-radius: 50%; background: var(--bord); }
+.points span.fait { background: var(--ok); }
+.points span.actuel { background: var(--accent); transform: scale(1.25); }
+.icone-bouton { font-size: 1.4rem; padding: 8px 12px; min-width: 48px; min-height: 48px; justify-content: center; }
+
+.titre-etape { font-size: clamp(2rem, 6vw, 3.2rem); line-height: 1.1; margin: 12px 0 6px; }
+.consigne-etape { font-size: clamp(1.15rem, 2.4vw, 1.5rem); margin: 0 0 16px; }
+
+.atelier-corps { display: grid; gap: 16px; }
+@media (min-width: 900px) { .atelier-corps { grid-template-columns: 1.3fr 1fr; align-items: start; } }
+.demo-atelier { position: relative; }
+.demo-atelier video#clip, .demo-atelier img { width: 100%; display: block; border-radius: var(--rayon); background: #000; aspect-ratio: 16 / 9; object-fit: contain; }
+.sur-video { position: absolute; top: 10px; right: 10px; background: rgb(0 0 0 / 0.55); color: #fff; border: none; }
+.mini-camera { position: absolute; left: 10px; bottom: 10px; width: 26%; border-radius: 10px; border: 2px solid #fff; background: #000; }
+
+.atelier-droite { display: flex; flex-direction: column; gap: 12px; }
+.retour-atelier {
+  padding: 20px; border-radius: 18px; font-size: clamp(1.2rem, 2.6vw, 1.6rem); font-weight: 600;
+  min-height: 96px; display: flex; align-items: center; white-space: pre-line;
+  background: var(--info-fond); color: var(--texte); transition: background 0.3s, color 0.3s;
+}
+/* Bandeau en couleur pleine, sur un fond de page teinté de la même couleur. */
+body[data-etat="regarde"] .retour-atelier { background: var(--bleu); color: var(--surface); }
+body[data-etat="correction"] .retour-atelier { background: var(--alerte); color: var(--surface); }
+body[data-etat="bravo"] .retour-atelier { background: var(--ok); color: var(--surface); font-size: clamp(1.6rem, 4vw, 2.2rem); justify-content: center; }
+body[data-etat="ok"] .retour-atelier { background: var(--ok-fond); color: var(--ok); }
+/* Toute la page se teinte : on voit l'état de loin, même sans lire. */
+body.page-apprenti { transition: background 0.3s; }
+body.page-apprenti[data-etat="regarde"] { background: var(--bleu-fond); }
+body.page-apprenti[data-etat="correction"] { background: var(--alerte-fond); }
+body.page-apprenti[data-etat="bravo"] { background: var(--ok-fond); }
+
+button.verifier-geant { font-size: clamp(1.4rem, 3vw, 1.8rem); min-height: 88px; justify-content: center; border-radius: 20px; }
+body[data-etat="regarde"] button.verifier-geant { opacity: 0.6; }
+.navigation { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px; }
+.navigation button { justify-content: center; min-height: 56px; font-size: 1.05rem; padding: 10px 8px; }
+.aide-voix { color: var(--doux); text-align: center; margin: 0; min-height: 1.5em; }
+
+.grosse-icone { font-size: 4rem; margin: 24px 0 0; line-height: 1; }
+#ecran-fin .colonne { max-width: 420px; margin: 24px auto; }
+.explication { font-size: 1.15rem; }
+
+/* --- Page maître : fin --- */
+
+.etape-fin { font-weight: 600; margin: 20px 0 8px; }
+.attente-barre { height: 8px; background: var(--info-fond); border-radius: 999px; overflow: hidden; max-width: 360px; margin: 16px auto; }
+.attente-barre > div { height: 100%; width: 35%; background: var(--accent); border-radius: 999px; animation: attente 1.6s ease-in-out infinite; }
+@keyframes attente { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+@media (prefers-reduced-motion: reduce) {
+  .attente-barre > div { animation: none; width: 100%; opacity: 0.5; }
+  body.page-apprenti, .retour-atelier { transition: none; }
+}

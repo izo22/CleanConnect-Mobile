@@ -204,6 +204,8 @@ export interface Retour {
   afficher: string;
   /** Texte à dire à voix haute, ou null pour rester silencieux. */
   dire: string | null;
+  /** true pendant que l'IA regarde le geste (l'écran de l'apprenti passe en « je regarde… »). */
+  regarde?: boolean;
   /**
    * true si rien de nouveau n'est à montrer : vidéo simplement gardée en mémoire (analyse à la
    * demande) ou analyse déjà en cours.

@@ -213,6 +213,7 @@ test("« vérifie » : 8 images réparties sur la durée de l'étape, et une ré
   assert.equal(retour.verdict, "correction");
   // Pendant l'analyse, la tablette et les lunettes Mentra entendent « Je regarde. »
   assert.equal(publies[0].dire, "Je regarde.");
+  assert.equal(publies[0].regarde, true);
 });
 
 test("« vérifie » sans erreur visible : l'apprenti a quand même une réponse", async () => {

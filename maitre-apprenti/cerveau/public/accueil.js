@@ -1,138 +1,140 @@
-import { api, cleAcces, el } from "./commun.js";
+// Accueil : « Je suis le maître » ou « Je suis l'apprenti », puis une seule chose à faire par écran.
 
-const conteneur = document.getElementById("lecons");
-const formulaire = document.getElementById("formulaire");
-const etatEnvoi = document.getElementById("etat-envoi");
-const progression = document.getElementById("progression");
-const ouvertes = new Set();
+import { api, cleAcces, el, ouvrirPartage } from "./commun.js";
+
+const $ = (id) => document.getElementById(id);
 let minuterie = null;
 
-const LIBELLES = { en_preparation: "En préparation…", prete: "Prête", erreur: "Erreur" };
+const ETATS = { en_preparation: "En préparation…", prete: "Prête", erreur: "Problème" };
 
-async function afficherLecons() {
+// --- Navigation : #maitre, #apprenti, ou le choix -------------------------------------------
+
+function afficherVue() {
+  const vue = location.hash.slice(1);
+  for (const nom of ["choix", "maitre", "apprenti"]) {
+    $(`vue-${nom}`).classList.toggle("cache", nom !== (vue === "maitre" || vue === "apprenti" ? vue : "choix"));
+  }
+  try { localStorage.setItem("role", vue); } catch {}
+  clearTimeout(minuterie);
+  if (vue === "maitre") afficherLeconsMaitre();
+  if (vue === "apprenti") afficherLeconsApprenti();
+}
+window.addEventListener("hashchange", afficherVue);
+
+// --- Le maître -----------------------------------------------------------------------------
+
+async function afficherLeconsMaitre() {
   let lecons;
   try {
     lecons = await api("/lecons");
   } catch (erreur) {
-    conteneur.replaceChildren(el("p", { classe: "erreur-texte" }, erreur.message));
+    $("lecons-maitre").replaceChildren(el("p", { classe: "erreur-texte" }, erreur.message));
     return;
   }
-  if (lecons.length === 0) {
-    conteneur.replaceChildren(el("p", { classe: "vide" }, "Aucune leçon pour l'instant."));
-  } else {
-    conteneur.replaceChildren(...(await Promise.all(lecons.map(carteLecon))));
-  }
-  // Tant qu'une leçon est en préparation, on rafraîchit régulièrement.
-  clearTimeout(minuterie);
-  if (lecons.some((l) => l.statut === "en_preparation")) minuterie = setTimeout(afficherLecons, 5000);
+  $("lecons-maitre").replaceChildren(
+    ...(lecons.length === 0
+      ? [el("p", { classe: "vide" }, "Pas encore de leçon. Filme ton premier geste : ça prend quelques minutes.")]
+      : lecons.map(carteMaitre)),
+  );
+  // Tant qu'une leçon est en préparation, on rafraîchit.
+  if (lecons.some((l) => l.statut === "en_preparation")) minuterie = setTimeout(afficherLeconsMaitre, 5000);
 }
 
-async function carteLecon(lecon) {
+function carteMaitre(lecon) {
   const actions = el("div", { classe: "rangee" });
   if (lecon.statut === "prete") {
     actions.append(
-      el("a", { classe: "bouton principal", href: `apprenti.html?lecon=${lecon.id}` }, "Apprendre"),
-      el("button", {
-        onclick: () => {
-          ouvertes.has(lecon.id) ? ouvertes.delete(lecon.id) : ouvertes.add(lecon.id);
-          afficherLecons();
-        },
-      }, ouvertes.has(lecon.id) ? "Masquer les étapes" : "Voir les étapes"),
-      el("a", { classe: "bouton", href: `fiche.html?lecon=${lecon.id}` }, "Fiche écrite"),
-      el("a", { classe: "bouton", href: `evaluation.html?lecon=${lecon.id}` }, "Évaluer les séances"),
+      el("button", { type: "button", classe: "principal", onclick: () => ouvrirPartage(lecon) }, "📲 Partager"),
+      el("a", { classe: "bouton", href: `fiche.html?lecon=${lecon.id}` }, "📖 Relire la fiche"),
+      el("a", { classe: "bouton", href: `evaluation.html?lecon=${lecon.id}` }, "✔ Juger l'IA"),
     );
   }
-  actions.append(
+  const plus = el("details", { classe: "menu-plus pousse" },
+    el("summary", { "aria-label": `Autres actions pour ${lecon.titre}` }, "⋯"),
     el("button", {
-      classe: "pousse",
+      type: "button",
       onclick: async () => {
         if (!confirm(`Supprimer la leçon « ${lecon.titre} » ?`)) return;
         await api(`/lecons/${lecon.id}`, { method: "DELETE" });
-        afficherLecons();
+        afficherLeconsMaitre();
       },
-    }, "Supprimer"),
+    }, "Supprimer la leçon"),
   );
-
-  const carte = el(
-    "article",
-    { classe: "carte" },
+  actions.append(plus);
+  return el("article", { classe: "carte" },
     el("div", { classe: "rangee" },
       el("h2", { style: "margin: 0" }, lecon.titre),
-      el("span", { classe: `badge ${lecon.statut}` }, LIBELLES[lecon.statut]),
+      el("span", { classe: `badge ${lecon.statut}` }, ETATS[lecon.statut]),
     ),
-    el("p", { classe: "vide" },
-      `${lecon.metier} · ${lecon.source === "lunettes" ? "filmée avec les lunettes" : "vidéo"}` +
-      (lecon.nombreEtapes ? ` · ${lecon.nombreEtapes} étapes` : ""),
-    ),
-    lecon.erreur ? el("p", { classe: "erreur-texte" }, lecon.erreur) : null,
+    el("p", { classe: "vide" }, `${lecon.metier}${lecon.nombreEtapes ? ` · ${lecon.nombreEtapes} étapes` : ""}`),
+    lecon.statut === "en_preparation" ? el("p", { classe: "vide" }, "L'IA découpe ta démonstration en étapes. Quelques minutes…") : null,
+    lecon.erreur ? el("p", { classe: "erreur-texte" }, `La préparation a échoué : ${lecon.erreur}`) : null,
     actions,
   );
-
-  if (ouvertes.has(lecon.id)) carte.append(await listeEtapes(lecon.id));
-  return carte;
 }
 
-async function listeEtapes(id) {
-  const lecon = await api(`/lecons/${id}`);
-  return el("ol", { classe: "etapes" }, ...lecon.etapes.map((etape) => {
-    const media = etape.clip
-      ? el("video", { src: `/media/lecons/${id}/clips/${etape.clip}`, controls: "", preload: "metadata" })
-      : etape.images[0]
-        ? el("img", { src: `/media/lecons/${id}/images/${etape.images[0]}`, alt: "", style: "max-width: 360px; border-radius: 10px" })
-        : null;
-    const details = [
-      etape.pointsDeControle.length ? `À vérifier : ${etape.pointsDeControle.join(" · ")}` : null,
-      etape.erreursFrequentes.length ? `Erreurs fréquentes : ${etape.erreursFrequentes.join(" · ")}` : null,
-      etape.criteresDeReussite.length ? `Réussi quand : ${etape.criteresDeReussite.join(" · ")}` : null,
-    ].filter(Boolean);
-    return el("li", {},
-      el("strong", {}, `${etape.numero}. ${etape.titre}`),
-      el("p", { style: "margin: 4px 0" }, etape.consigne),
-      etape.explication ? el("p", { classe: "details", style: "margin: 2px 0" }, etape.explication) : null,
-      ...details.map((d) => el("p", { classe: "details", style: "margin: 2px 0" }, d)),
-      media,
-    );
-  }));
-}
-
-formulaire.addEventListener("submit", (evenement) => {
+// Envoi d'une vidéo déjà filmée (avec la progression).
+$("formulaire").addEventListener("submit", (evenement) => {
   evenement.preventDefault();
-  const fichier = document.getElementById("video").files[0];
+  const fichier = $("video").files[0];
   if (!fichier) return;
-  const requete = new URLSearchParams({
-    titre: document.getElementById("titre").value,
-    metier: document.getElementById("metier").value,
-    commentaire: document.getElementById("commentaire").value,
-  });
-  // XMLHttpRequest plutôt que fetch pour afficher la progression de l'envoi.
+  const requete = new URLSearchParams({ titre: $("titre").value, metier: $("metier").value, commentaire: $("commentaire").value });
   const xhr = new XMLHttpRequest();
   xhr.open("POST", `/api/lecons?${requete}`);
   xhr.setRequestHeader("x-cle", cleAcces());
   xhr.setRequestHeader("content-type", fichier.type || "application/octet-stream");
-  progression.classList.remove("cache");
-  const barre = progression.firstElementChild;
-  xhr.upload.onprogress = (e) => {
-    if (e.lengthComputable) barre.style.width = `${(100 * e.loaded) / e.total}%`;
-  };
+  const barre = $("progression").firstElementChild;
+  $("progression").classList.remove("cache");
+  xhr.upload.onprogress = (e) => e.lengthComputable && (barre.style.width = `${(100 * e.loaded) / e.total}%`);
   xhr.onload = () => {
-    progression.classList.add("cache");
+    $("progression").classList.add("cache");
     barre.style.width = "0";
     if (xhr.status === 202) {
-      etatEnvoi.textContent = "Vidéo reçue. L'IA découpe la démonstration en étapes (quelques minutes).";
-      formulaire.reset();
-      afficherLecons();
+      $("etat-envoi").textContent = "Vidéo reçue. L'IA prépare la leçon (quelques minutes).";
+      $("formulaire").reset();
+      afficherLeconsMaitre();
     } else {
       let message = `Erreur ${xhr.status}`;
       try { message = JSON.parse(xhr.responseText).erreur ?? message; } catch {}
-      etatEnvoi.textContent = message;
+      $("etat-envoi").textContent = message;
     }
   };
   xhr.onerror = () => {
-    progression.classList.add("cache");
-    etatEnvoi.textContent = "L'envoi a échoué (connexion ?)";
+    $("progression").classList.add("cache");
+    $("etat-envoi").textContent = "L'envoi a échoué (connexion ?)";
   };
-  etatEnvoi.textContent = "Envoi de la vidéo…";
+  $("etat-envoi").textContent = "Envoi de la vidéo…";
   xhr.send(fichier);
 });
 
-afficherLecons();
+// --- L'apprenti ----------------------------------------------------------------------------
+
+async function afficherLeconsApprenti() {
+  let lecons;
+  try {
+    lecons = (await api("/lecons")).filter((l) => l.statut === "prete");
+  } catch (erreur) {
+    $("lecons-apprenti").replaceChildren(el("p", { classe: "erreur-texte" }, erreur.message));
+    return;
+  }
+  $("lecons-apprenti").replaceChildren(
+    ...(lecons.length === 0
+      ? [el("p", { classe: "vide" }, "Pas encore de leçon prête. Demande à ton maître de filmer son geste.")]
+      : lecons.map((lecon) =>
+          el("a", { classe: "tuile", href: `apprenti.html?lecon=${lecon.id}` },
+            el("span", { classe: "tuile-titre" }, lecon.titre),
+            el("span", { classe: "vide" }, `${lecon.metier} · ${lecon.nombreEtapes} étapes`),
+            el("span", { classe: "tuile-action" }, "Commencer →"),
+          ))),
+  );
+}
+
+// --- Démarrage : on revient là où on était la dernière fois -------------------------------
+
+if (!location.hash) {
+  try {
+    const role = localStorage.getItem("role");
+    if (role === "maitre" || role === "apprenti") history.replaceState(null, "", `#${role}`);
+  } catch {}
+}
+afficherVue();

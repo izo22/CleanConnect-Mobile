@@ -7,90 +7,102 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-<main>
-  <div class="rangee">
-    <a class="bouton" href="/">← Leçons</a>
-    <h1 id="titre" style="margin: 0 8px">Chargement…</h1>
-    <span id="etape-num" class="badge pousse"></span>
-  </div>
-  <div class="progression"><div id="barre"></div></div>
+<body class="page-apprenti" data-etat="neutre">
+<main class="apprenti-main">
 
-  <!-- Choix du mode tant qu'aucune session n'est ouverte -->
-  <section id="choix" class="carte cache" style="margin-top: 16px">
-    <h2>Comment veux-tu t'entraîner ?</h2>
-    <p class="vide" id="attente-lunettes">Lance la leçon sur tes lunettes : cette page les suivra automatiquement.</p>
-    <label for="prenom">Ton prénom <small>(pour que le maître suive tes progrès)</small></label>
-    <input id="prenom" type="text" autocomplete="given-name" style="max-width: 320px">
-    <div class="rangee" style="margin-top: 12px">
-      <button class="principal" id="demarrer-camera">Utiliser la caméra de cet appareil</button>
-    </div>
-    <p class="vide">Sans lunettes : pose le téléphone ou la tablette sur un support au-dessus du plan de travail, et mets des écouteurs. Il filme en continu, mais l'IA ne regarde que quand tu le demandes. Tu pilotes à la voix : « vérifie », « suivant », « explique »…</p>
+  <!-- 1. Ton prénom -->
+  <section id="ecran-accueil" class="ecran cache">
+    <a class="bouton" href="/#apprenti">← Leçons</a>
+    <p class="surtitre">Leçon</p>
+    <h1 id="titre-lecon" class="grand">Chargement…</h1>
+    <p class="sous-titre" id="resume-lecon"></p>
+    <label for="prenom" class="grand-label">Ton prénom</label>
+    <input id="prenom" class="grand-champ" type="text" autocomplete="given-name" enterkeyhint="go">
+    <button class="principal enorme" id="continuer">Continuer</button>
+    <p class="vide" id="attente-lunettes">Tu as des lunettes connectées ? Lance la leçon sur les lunettes : cette page les suivra toute seule.</p>
+    <p class="erreur-texte" id="erreur-accueil" role="alert"></p>
   </section>
 
-  <section id="lecon" class="apprenti cache" style="margin-top: 16px">
-    <div>
-    <div class="carte demo">
-      <video id="clip" autoplay loop muted playsinline controls class="cache"></video>
-      <img id="image-ref" alt="Geste du maître" class="cache">
-      <p class="legende" id="legende">Le geste du maître pour cette étape</p>
-      <div class="rangee">
-        <button id="son">🔈 Son du maître</button>
-        <button id="miroir" aria-pressed="false" title="Inverse gauche et droite, si le maître a été filmé en face">⇋ Miroir</button>
-        <a class="bouton pousse" id="lien-fiche" href="#">Fiche écrite complète</a>
-      </div>
+  <!-- 2. Installation du téléphone -->
+  <section id="ecran-installation" class="ecran cache">
+    <h1 class="grand">Pose ton téléphone sur le support</h1>
+    <p class="sous-titre">Face à ton plan de travail. Cale-toi sur l'image du maître, en transparence.</p>
+    <div class="cadre-camera" id="cadre-camera">
+      <video id="camera" autoplay muted playsinline></video>
+      <img id="guide" class="guide cache" alt="">
     </div>
+    <div id="controle" class="controle-bloc grand-controle" role="status"></div>
+    <div class="rangee">
+      <button id="recontroler">Revérifier</button>
+      <button class="principal enorme pousse" id="cest-parti">C'est parti !</button>
+    </div>
+  </section>
 
-    <div class="carte plan-carte">
-      <h2>Les étapes</h2>
-      <ol class="plan" id="plan"></ol>
+  <!-- 3. L'atelier : une étape, un gros bouton -->
+  <section id="ecran-atelier" class="ecran atelier cache">
+    <header class="atelier-haut">
+      <span id="etape-num" class="etape-num"></span>
+      <div class="points" id="points" aria-hidden="true"></div>
+      <button class="icone-bouton pousse" id="ouvrir-reglages" aria-label="Réglages">⚙</button>
+    </header>
+    <h1 class="titre-etape" id="titre-etape"></h1>
+    <p class="consigne-etape" id="consigne-etape"></p>
+    <div class="atelier-corps">
+      <div class="demo-atelier">
+        <video id="clip" autoplay loop muted playsinline></video>
+        <img id="image-ref" alt="Le geste du maître" class="cache">
+        <button class="icone-bouton sur-video" id="son" aria-label="Mettre le son du maître">🔈</button>
+        <video id="mini-camera" class="mini-camera cache" autoplay muted playsinline aria-label="Ce que voit ta caméra"></video>
+      </div>
+      <div class="atelier-droite">
+        <div class="retour-atelier" id="retour" role="status" aria-live="polite"></div>
+        <button class="principal verifier-geant" id="verifier">✋ Vérifier mon geste</button>
+        <div class="navigation">
+          <button id="precedent">◀ Retour</button>
+          <button id="comment-faire">📖 Comment faire</button>
+          <button id="suivant">Suivant ▶</button>
+        </div>
+        <p class="aide-voix" id="aide-voix"></p>
+      </div>
     </div>
-    </div>
+  </section>
 
-    <div>
-      <div class="carte">
-        <div class="consigne" id="consigne"></div>
-        <div class="retour" id="retour"></div>
-        <button class="principal verifier" id="verifier">✋ Vérifier mon geste</button>
-        <p class="mode-analyse" id="mode-analyse"></p>
-        <div class="rangee" style="margin-top: 16px">
-          <button id="precedent">← Précédent</button>
-          <button id="repeter">Répéter</button>
-          <button id="suivant">Suivant →</button>
-          <button id="recommencer" class="pousse">Recommencer</button>
-        </div>
-        <label class="case">
-          <input type="checkbox" id="voix">
-          <span>Lire les conseils à voix haute sur cet appareil</span>
-        </label>
-        <label class="case">
-          <input type="checkbox" id="ecoute">
-          <span>Commandes à la voix : « vérifie », « suivant », « précédent », « explique », « répète », « montre le geste »</span>
-        </label>
-        <p class="vide etat-ecoute" id="etat-ecoute" role="status"></p>
-      </div>
-      <div class="carte">
-        <h2>Comment faire</h2>
-        <div class="texte-etape" id="texte-etape"></div>
-      </div>
-      <div class="carte camera cache" id="bloc-camera">
-        <div id="controle" class="controle-bloc" role="status"></div>
-        <div class="cadre-camera" id="cadre-camera">
-          <video id="camera" autoplay muted playsinline></video>
-          <img id="guide" alt="" class="guide cache">
-        </div>
-        <label class="case">
-          <input type="checkbox" id="guide-actif" checked>
-          <span>Guide de placement <small>(l'image du maître en transparence : cale ton plan de travail sur le sien, l'IA compare mieux sous le même angle)</small></span>
-        </label>
-        <label for="opacite-guide" class="sr">Transparence du guide</label>
-        <input type="range" id="opacite-guide" min="10" max="80" value="40" aria-label="Transparence du guide">
-        <div class="rangee" style="margin-top: 8px"><button id="recontroler">Refaire le contrôle de l'installation</button></div>
-        <p class="vide" id="etat-camera">La caméra filme. L'IA regarde quand tu dis « vérifie » ou cliques sur « Vérifier mon geste ».</p>
-      </div>
+  <!-- 4. Fin -->
+  <section id="ecran-fin" class="ecran centre cache">
+    <p class="grosse-icone" aria-hidden="true">🎉</p>
+    <h1 class="grand">Bravo, tu as terminé !</h1>
+    <p class="sous-titre" id="texte-fin"></p>
+    <div class="colonne">
+      <button class="principal enorme" id="recommencer-fin">Recommencer la leçon</button>
+      <a class="bouton" href="/#apprenti">Choisir une autre leçon</a>
     </div>
   </section>
 </main>
+
+<dialog id="fenetre-comment" aria-labelledby="titre-comment">
+  <h2 id="titre-comment">Comment faire</h2>
+  <div class="texte-etape" id="texte-etape"></div>
+  <h3>Les étapes de la leçon</h3>
+  <ol class="plan" id="plan"></ol>
+  <div class="rangee">
+    <a class="bouton" id="lien-fiche" href="#">Toute la fiche</a>
+    <form method="dialog" class="pousse"><button class="principal">Fermer</button></form>
+  </div>
+</dialog>
+
+<dialog id="fenetre-reglages" aria-labelledby="titre-reglages">
+  <h2 id="titre-reglages">Réglages</h2>
+  <label class="case"><input type="checkbox" id="voix"><span>Lire les conseils à voix haute</span></label>
+  <label class="case"><input type="checkbox" id="ecoute"><span>Commandes à la voix (« vérifie », « suivant »…)</span></label>
+  <label class="case"><input type="checkbox" id="miroir"><span>Inverser gauche et droite la vidéo du maître</span></label>
+  <div class="colonne" style="margin-top: 16px">
+    <button id="replacer">📱 Replacer le téléphone</button>
+    <button id="recommencer">↺ Recommencer la leçon</button>
+    <a class="bouton" href="/#apprenti">Quitter la leçon</a>
+  </div>
+  <form method="dialog" class="rangee" style="margin-top: 16px"><button class="principal pousse">Fermer</button></form>
+</dialog>
+
 <script type="module" src="apprenti.js"></script>
 </body>
 </html>

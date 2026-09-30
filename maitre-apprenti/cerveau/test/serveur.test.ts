@@ -201,5 +201,10 @@ test("sert les pages : accueil, fiche écrite, démonstration au téléphone", a
   assert.match(await reponse.text(), /Maître/);
   assert.equal((await fetch(`${base}/fiche.html`)).status, 200);
   assert.equal((await fetch(`${base}/maitre.html`)).status, 200);
+  const qr = await fetch(`${base}/api/qr?cle=secret&texte=${encodeURIComponent("https://exemple.fr/apprenti.html?lecon=abc")}`);
+  assert.equal(qr.headers.get("content-type"), "image/svg+xml");
+  assert.match(await qr.text(), /^<svg/);
+  const sansTexte = await api("/qr");
+  assert.equal(sansTexte.statut, 400);
   assert.equal((await fetch(`${base}/voix.js`)).headers.get("content-type"), "text/javascript; charset=utf-8");
 });

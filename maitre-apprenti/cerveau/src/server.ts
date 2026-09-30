@@ -5,6 +5,7 @@ import { stat } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import QRCode from "qrcode";
 import { creerSession, sessionsDeLecon, trouverSession } from "./coach.ts";
 import { CaptureMaitre, creerLeconDepuisVideo, demarrerCapture } from "./lecons.ts";
 import { annoter, calculerMetriques, cheminImageSeance, lireSeance, seancesDeLecon } from "./journal.ts";
@@ -217,6 +218,16 @@ async function router(req: IncomingMessage, res: ServerResponse): Promise<void> 
   const id = segments[2] ?? "";
 
   switch (route) {
+    // --- QR code (le maître partage une leçon : l'apprenti le scanne) ------------
+    case "GET /qr": {
+      const texte = url.searchParams.get("texte") ?? "";
+      if (!texte || texte.length > 1000) throw new ErreurHttp(400, "texte : adresse à encoder (1000 caractères au plus)");
+      const svg = await QRCode.toString(texte, { type: "svg", margin: 2, errorCorrectionLevel: "M" });
+      res.writeHead(200, { "content-type": "image/svg+xml", "cache-control": "private, max-age=3600" });
+      res.end(svg);
+      return;
+    }
+
     // --- Leçons -------------------------------------------------------------
     case "GET /lecons":
       return envoyerJson(res, 200, (await listerLecons()).map(resumeLecon));
