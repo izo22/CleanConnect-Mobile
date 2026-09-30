@@ -49,7 +49,7 @@ Pensée pour des mains prises et un téléphone posé à un mètre : un écran =
 
 ## 1. Lancer le cerveau
 
-Il faut **Node 22.18 ou plus** et une **clé API Claude** ([console Anthropic](https://console.anthropic.com)). ffmpeg est installé automatiquement avec les dépendances.
+Il faut **Node 22.6 ou plus** et une **clé API Claude** ([console Anthropic](https://console.anthropic.com)). ffmpeg est installé automatiquement avec les dépendances. `npm start` et `npm test` vérifient d'abord l'installation (version de Node, dépendances, ffmpeg) et disent quoi faire s'il manque quelque chose ; `npm run verifier` fait cette vérification seule.
 
 ```bash
 cd cerveau
@@ -182,10 +182,12 @@ Sur les **Ray-Ban Display**, l'écran montre l'étape et la correction, avec les
 ## Tests
 
 ```bash
-cd cerveau && npm test && npm run typecheck    # 65 tests
+cd cerveau && npm ci && npm test && npm run typecheck    # 65 tests
 cd lunettes-mentra && bun test && bun run typecheck   # 10 tests, dont l'intégration avec le cerveau
 cd lunettes-meta && ./gradlew test             # 19 tests (contrôleur + découpage vidéo HEVC)
 ```
+
+Les tests du cerveau tournent sur Node 22.6, 22.16 et 22.22 (vérifié sur une installation neuve avec `npm ci`). À chaque envoi sur GitHub, le workflow `.github/workflows/maitre-apprenti.yml` les relance sur Node 22.6, 22.16 et la dernière version 22, avec la vérification des types et les tests Mentra.
 
 ## Ce qui a été vérifié, et ce qui ne l'a pas été
 

@@ -1,0 +1,47 @@
+name: Maître & Apprenti
+
+on:
+  push:
+    paths:
+      - "maitre-apprenti/**"
+      - ".github/workflows/maitre-apprenti.yml"
+  pull_request:
+    paths:
+      - "maitre-apprenti/**"
+      - ".github/workflows/maitre-apprenti.yml"
+  workflow_dispatch:
+
+jobs:
+  cerveau:
+    name: Cerveau (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22.6", "22.16", "22"]
+    defaults:
+      run:
+        working-directory: maitre-apprenti/cerveau
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: maitre-apprenti/cerveau/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+
+  lunettes-mentra:
+    name: Lunettes Mentra
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: maitre-apprenti/lunettes-mentra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test
+      - run: bun run typecheck

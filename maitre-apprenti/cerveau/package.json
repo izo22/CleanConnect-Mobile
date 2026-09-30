@@ -5,13 +5,16 @@
   "type": "module",
   "description": "Serveur qui transforme la vidéo d'un maître en leçon et corrige l'apprenti en direct.",
   "engines": {
-    "node": ">=22.18"
+    "node": ">=22.6"
   },
   "scripts": {
-    "start": "node src/server.ts",
-    "dev": "node --watch src/server.ts",
+    "verifier": "node scripts/verifier-installation.mjs",
+    "prestart": "node scripts/verifier-installation.mjs",
+    "start": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/server.ts",
+    "dev": "node --experimental-strip-types --disable-warning=ExperimentalWarning --watch src/server.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --test \"test/**/*.test.ts\"",
+    "pretest": "node scripts/verifier-installation.mjs",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test \"test/**/*.test.ts\"",
     "modeles": "mkdir -p modeles && curl -fsSL -o modeles/hand_landmarker.task https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
   },
   "dependencies": {
