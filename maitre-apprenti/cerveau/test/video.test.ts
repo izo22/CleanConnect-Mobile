@@ -74,7 +74,8 @@ test("extrait les images pour l'IA et découpe les clips aux deux formats", asyn
   const images = path.join(dossier, "images");
   await executer("mkdir", ["-p", images]);
   const extraites = await extraireImages(video, images, duree);
-  assert.deepEqual(extraites.map((i) => i.t), [1, 3, 5, 7, 9, 11]);
+  // Une image par seconde (vidéo courte), datée au milieu de sa seconde.
+  assert.deepEqual(extraites.map((i) => i.t), [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5]);
   assert.ok((await readdir(images)).includes("extrait_0001.jpg"));
 
   const clip = path.join(dossier, "etape-1.mp4");

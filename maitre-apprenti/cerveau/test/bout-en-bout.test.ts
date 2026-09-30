@@ -184,7 +184,7 @@ test("vidéo du maître → leçon avec clips et séquences de référence", asy
   assert.equal(construction.corps.model, "claude-opus-5-5");
   assert.equal(construction.corps.fallbacks, "default");
   assert.match(String(construction.entetes["anthropic-beta"]), /server-side-fallback-2026-07-01/);
-  assert.equal(construction.corps.messages[0].content.filter((b: any) => b.type === "image").length, 5);
+  assert.equal(construction.corps.messages[0].content.filter((b: any) => b.type === "image").length, 10);
   assert.ok(JSON.stringify(construction.corps.messages).includes("500 g de farine"));
 
   const clip = await fetch(`${base}/media/lecons/${lecon.id}/clips/${lecon.etapes[1].clip}`);
@@ -214,7 +214,10 @@ test("apprenti à la demande : la vidéo est gardée, « vérifie » envoie 8 im
   assert.equal(requetes.length, avant, "garder la vidéo ne coûte aucun appel à l'IA");
 
   // Le maître précise le texte de l'étape : l'IA le reçoit.
-  await postJson(`/lecons/${leconId}/etapes/etape-1`, { explication: "Tare avant de verser, toujours." });
+  await postJson(`/lecons/${leconId}/etapes/etape-1`, {
+    explication: "Tare avant de verser, toujours.",
+    legendes: ["", "", "La farine tombe en pluie"],
+  });
 
   const retour = (await postJson(`/sessions/${session.sessionId}/commande`, { commande: "verifier" })).corps;
   assert.equal(retour.verdict, "correction");
@@ -225,6 +228,7 @@ test("apprenti à la demande : la vidéo est gardée, « vérifie » envoie 8 im
   const texte = JSON.stringify(correction.corps.messages);
   assert.ok(texte.includes("te demande de vérifier"));
   assert.ok(texte.includes("Tare avant de verser, toujours."));
+  assert.ok(texte.includes("Le maître, sur l'image suivante : « La farine tombe en pluie »"));
   assert.equal(correction.corps.output_config.effort, "low");
   const contenu = correction.corps.messages[0].content;
   const indexCache = contenu.findIndex((b: any) => b.cache_control);

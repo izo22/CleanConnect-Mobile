@@ -89,7 +89,7 @@ Dans les deux cas, l'IA découpe la démonstration en étapes en quelques minute
 
 - **Téléphone ou tablette sur un support (sans lunettes).** Page d'accueil → « Apprendre » → « Utiliser la caméra de cet appareil ». Pose l'appareil au-dessus du plan de travail et mets des écouteurs. Il filme en continu ; l'apprenti pilote **à la voix** (« vérifie », « suivant », « explique »… : reconnaissance vocale du navigateur, Chrome ou Safari). Un **guide de placement** montre en transparence la première image de l'étape du maître, pour caler l'appareil sous le même angle : l'IA compare mieux deux vidéos prises du même point de vue. L'écran reste allumé pendant la leçon.
 - **Lunettes + tablette.** Lance la leçon sur les lunettes. Si la page « Apprendre » est ouverte sur une tablette, elle rejoint la session toute seule : clip du maître en boucle à côté, conseils en direct.
-- **Commandes** (voix, bouton ou écran) : « vérifie » (ou « regarde », « c'est bon ? »), « explique », « suivant », « précédent », « répète », « recommence », « montre le geste », « pause ».
+- **Commandes** (voix, bouton ou écran) : « vérifie » (ou « regarde », « c'est bon ? »), « explique », « suivant », « précédent », « répète », « recommence », « montre le geste », « ralenti », « vitesse normale », « pause ».
 
 **Quand l'IA regarde.** Les lunettes filment tout le temps, mais le cerveau se contente de garder les 20 dernières secondes, sans appeler l'IA :
 - **« vérifie »** (voix, bouton Mentra en appui court, bouton « Vérifier mon geste » sur l'écran des Ray-Ban Display ou la tablette) : l'IA regarde 8 images réparties sur la tentative. La durée regardée est 1,5 fois la durée de l'étape chez le maître, entre 4 et 20 secondes. L'apprenti entend « Je regarde », puis la réponse : une correction, un bravo (et l'étape suivante), ou « rien de faux, continue » ;
@@ -103,6 +103,10 @@ Le tuteur ne répète pas la même correction spontanée avant 15 secondes. En c
 - sur la page de l'apprenti (« Comment faire ») avec le plan de la leçon ;
 - dans la **fiche écrite** (`fiche.html?lecon=<id>`, bouton « Fiche écrite » de l'accueil), imprimable ;
 - à l'oreille quand l'apprenti dit « explique ».
+
+**Le geste en images.** Chaque étape a 8 images de référence prises dans la vidéo du maître. Dans la fiche (« Modifier le texte »), le maître peut écrire un titre ou une astuce sous chacune (« pouces dessous », « on garde l'ovale »). Ces légendes apparaissent dans la fiche et dans « Comment faire » chez l'apprenti, et l'IA les lit à côté de chaque image pour mieux comprendre le geste.
+
+**Au ralenti.** Sur la vidéo du maître, le bouton de vitesse passe de 1× à ½× puis à ¼× (le choix reste pour les étapes suivantes). À la voix : « ralenti », « doucement », « vitesse normale ».
 
 Le maître relit et corrige ce texte depuis la fiche (« Modifier le texte »). L'IA qui corrige l'apprenti s'appuie ensuite sur ce texte, et les séances en cours le reçoivent tout de suite.
 

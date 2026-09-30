@@ -24,6 +24,9 @@ let finDerniereParole = 0;
 let enregistreurActuel = null;
 let commandeEnAttente = null;
 let filmage = false;
+/** Vitesse de la vidéo du maître : normale, moitié, quart (« très doucement »). */
+const VITESSES = [1, 0.5, 0.25];
+let vitesse = 1;
 
 // --- Préférences (gardées sur l'appareil) -------------------------------------------------
 
@@ -131,10 +134,13 @@ function afficherDemo(etape) {
     image.classList.add("cache");
     clip.classList.remove("cache");
     $("son").classList.remove("cache");
+    $("vitesse").classList.remove("cache");
     clip.src = etape.clipUrl;
+    appliquerVitesse();
   } else {
     clip.classList.add("cache");
     $("son").classList.add("cache");
+    $("vitesse").classList.add("cache");
     image.classList.remove("cache");
     let i = 0;
     const suivante = () => {
@@ -143,6 +149,24 @@ function afficherDemo(etape) {
     suivante();
     minuterieImages = setInterval(suivante, 2500);
   }
+}
+
+/** Applique la vitesse choisie à la vidéo du maître (elle reste pour les étapes suivantes). */
+function appliquerVitesse() {
+  const clip = $("clip");
+  clip.defaultPlaybackRate = vitesse;
+  clip.playbackRate = vitesse;
+  const libelle = vitesse === 1 ? "1×" : vitesse === 0.5 ? "½×" : "¼×";
+  const texte = vitesse === 1 ? "normale" : vitesse === 0.5 ? "deux fois plus lente" : "quatre fois plus lente";
+  $("vitesse").textContent = libelle;
+  $("vitesse").setAttribute("aria-label", `Vitesse de la vidéo du maître : ${texte}`);
+  $("vitesse").classList.toggle("ralentie", vitesse !== 1);
+}
+
+function changerVitesse(nouvelle) {
+  vitesse = nouvelle;
+  appliquerVitesse();
+  montrerGeste();
 }
 
 /** Rejoue le clip du maître depuis le début. */
@@ -169,6 +193,13 @@ function remplirCommentFaire(etape, indexActuel) {
       ? el("div", { classe: "paroles" }, el("h3", {}, "Le maître dit"), ...etape.paroles.map((p) => el("blockquote", {}, `« ${p} »`)))
       : null,
   );
+  const images = etape.imageUrls.map((url, i) => {
+    const legende = etape.legendes?.[i]?.trim();
+    return el("li", {}, el("img", { src: url, alt: legende || `Image ${i + 1} du geste`, loading: "lazy" }),
+      legende ? el("span", { classe: "legende-geste" }, legende) : null);
+  });
+  $("images-etape").replaceChildren(...images);
+  $("bloc-images-etape").classList.toggle("cache", images.length === 0);
   $("plan").replaceChildren(...(lecon?.etapes ?? []).map((e, i) =>
     el("li", { classe: i < indexActuel ? "faite" : i === indexActuel ? "actuelle" : "", ...(i === indexActuel ? { "aria-current": "step" } : {}) }, e.titre)));
 }
@@ -367,6 +398,8 @@ const ecoute = new Ecoute({
     $("aide-voix").textContent = `🎤 J'ai entendu « ${phrase} »`;
     setTimeout(majAideVoix, 3000);
     if (nom === "montrer") return montrerGeste();
+    if (nom === "ralentir") return changerVitesse(VITESSES[Math.min(VITESSES.indexOf(vitesse) + 1, VITESSES.length - 1)]);
+    if (nom === "vitesse-normale") return changerVitesse(1);
     if (nom === "repeter") dernierMessageDit = null;
     commande(nom);
   },
@@ -387,7 +420,7 @@ function activerEcoute(active) {
 
 function majAideVoix() {
   $("aide-voix").textContent = $("ecoute").checked
-    ? "🎤 Tu peux dire « vérifie », « suivant » ou « explique »."
+    ? "🎤 Tu peux dire « vérifie », « suivant », « explique » ou « ralenti »."
     : reconnaissanceDisponible()
       ? "🎤 Commandes à la voix coupées (⚙ pour les remettre)."
       : "";
@@ -445,6 +478,7 @@ $("recommencer-fin").onclick = () => {
   commande("recommencer");
   entrerAtelier();
 };
+$("vitesse").onclick = () => changerVitesse(VITESSES[(VITESSES.indexOf(vitesse) + 1) % VITESSES.length]);
 $("son").onclick = () => {
   const clip = $("clip");
   clip.muted = !clip.muted;

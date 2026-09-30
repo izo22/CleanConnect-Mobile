@@ -34,6 +34,11 @@ export interface Etape {
   clipLunettes: string | null;
   /** Noms des fichiers des images de référence du maître (recadrées sur ses mains). */
   images: string[];
+  /**
+   * Légendes écrites par le maître sous les images de référence (même ordre que `images` ;
+   * "" = pas de légende). L'apprenti les voit, et l'IA s'en sert pour comprendre le geste.
+   */
+  legendes?: string[];
   /** Première image de l'étape, non recadrée : le guide de placement du téléphone de l'apprenti. */
   imageGuide?: string | null;
 }
@@ -183,6 +188,8 @@ export interface Retour {
     /** Version 266×150 sans son du clip, pour l'écran des lunettes. */
     clipLunettesUrl: string | null;
     imageUrls: string[];
+    /** Légendes du maître, dans l'ordre des images ("" = pas de légende). */
+    legendes: string[];
     /** Image entière du début de l'étape, pour caler le téléphone de l'apprenti (guide de placement). */
     imageGuideUrl: string | null;
     /** Texte écrit de l'étape (fiche de l'apprenti). */

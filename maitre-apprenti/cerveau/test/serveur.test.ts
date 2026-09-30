@@ -144,15 +144,18 @@ test("le maître règle l'analyse et corrige le texte d'une étape", async () =>
     body: JSON.stringify({
       explication: "  Farine en pluie, sans à-coups.  ",
       pointsDeControle: ["Bol taré", "", "500 g"],
+      legendes: ["  Pouces dessous  ", "en trop : une seule image"],
     }),
   });
   assert.equal(modifiee.statut, 200);
   assert.equal(modifiee.corps.explication, "Farine en pluie, sans à-coups.");
   assert.deepEqual(modifiee.corps.pointsDeControle, ["Bol taré", "500 g"]);
   assert.equal(modifiee.corps.consigne, "Consigne 1");
+  assert.deepEqual(modifiee.corps.legendes, ["Pouces dessous"]); // une légende par image de référence
 
   const session = (await api("/sessions", { method: "POST", body: JSON.stringify({ leconId: LECON_ID }) })).corps;
   assert.equal(session.etape.explication, "Farine en pluie, sans à-coups.");
+  assert.deepEqual(session.etape.legendes, ["Pouces dessous"]);
   assert.equal(session.etape.envoiVideoContinu, true);
 
   const vide = await api(`/lecons/${LECON_ID}/etapes/etape-1`, { method: "POST", body: JSON.stringify({ consigne: " " }) });

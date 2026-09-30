@@ -176,6 +176,15 @@ function modifierTexteEtape(etape: Etape, corps: Record<string, unknown>): void 
   if ("pointsDeControle" in corps) etape.pointsDeControle = liste(corps.pointsDeControle);
   if ("erreursFrequentes" in corps) etape.erreursFrequentes = liste(corps.erreursFrequentes);
   if ("criteresDeReussite" in corps) etape.criteresDeReussite = liste(corps.criteresDeReussite);
+  if ("legendes" in corps) {
+    const legendes = corps.legendes;
+    if (!Array.isArray(legendes)) throw new ErreurHttp(400, "legendes : une légende par image attendue");
+    // Une légende par image de référence, dans l'ordre ; les vides sont gardées pour l'alignement.
+    etape.legendes = etape.images.map((_, i) => {
+      const legende: unknown = legendes[i];
+      return typeof legende === "string" ? legende.trim().slice(0, 200) : "";
+    });
+  }
 }
 
 const AVIS: Avis[] = ["juste", "fausse", "inutile", "ok", "manquee"];

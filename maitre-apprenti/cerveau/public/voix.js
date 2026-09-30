@@ -22,6 +22,9 @@ export function commandeApprenti(texte) {
   if (/\b(precedent|precedente|retour|back)\b/.test(t)) return "precedent";
   if (/\b(repete|repeter|redis|redire|repeat)\b/.test(t)) return "repeter";
   if (/\b(recommence|recommencer|restart)\b/.test(t)) return "recommencer";
+  // Vitesse de la vidéo du maître (avant « montre » : « montre au ralenti » ralentit).
+  if (/\b(ralenti|ralentis|ralentir|doucement|lentement|slow)\b|moins vite/.test(t)) return "ralentir";
+  if (/\b(normal|normale|normalement)\b|vitesse normale|plus vite/.test(t)) return "vitesse-normale";
   if (/\b(montre|geste|video|show)\b/.test(t)) return "montrer";
   return null;
 }

@@ -51,7 +51,10 @@
       <div class="demo-atelier">
         <video id="clip" autoplay loop muted playsinline></video>
         <img id="image-ref" alt="Le geste du maître" class="cache">
-        <button class="icone-bouton sur-video" id="son" aria-label="Mettre le son du maître">🔈</button>
+        <div class="commandes-video">
+          <button class="icone-bouton sur-video" id="vitesse" aria-label="Vitesse de la vidéo du maître : normale">1×</button>
+          <button class="icone-bouton sur-video" id="son" aria-label="Mettre le son du maître">🔈</button>
+        </div>
         <video id="mini-camera" class="mini-camera cache" autoplay muted playsinline aria-label="Ce que voit ta caméra"></video>
       </div>
       <div class="atelier-droite">
@@ -82,6 +85,10 @@
 <dialog id="fenetre-comment" aria-labelledby="titre-comment">
   <h2 id="titre-comment">Comment faire</h2>
   <div class="texte-etape" id="texte-etape"></div>
+  <div id="bloc-images-etape" class="geste-images">
+    <h3>Le geste en images</h3>
+    <ol class="vignettes-geste" id="images-etape"></ol>
+  </div>
   <h3>Les étapes de la leçon</h3>
   <ol class="plan" id="plan"></ol>
   <div class="rangee">

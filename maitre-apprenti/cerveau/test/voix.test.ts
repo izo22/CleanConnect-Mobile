@@ -19,6 +19,9 @@ test("commandes de l'apprenti, courtes seulement", () => {
   assert.equal(voix.commandeApprenti("tu peux répéter"), "repeter");
   assert.equal(voix.commandeApprenti("on recommence"), "recommencer");
   assert.equal(voix.commandeApprenti("montre le geste"), "montrer");
+  assert.equal(voix.commandeApprenti("montre au ralenti"), "ralentir");
+  assert.equal(voix.commandeApprenti("plus doucement"), "ralentir");
+  assert.equal(voix.commandeApprenti("vitesse normale"), "vitesse-normale");
   assert.equal(voix.commandeApprenti("je prends le suivant dans la corbeille"), null);
   assert.equal(voix.commandeApprenti(""), null);
 });

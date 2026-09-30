@@ -338,7 +338,8 @@ export async function extraireImages(
   dossierSortie: string,
   duree: number,
 ): Promise<ImageHorodatee[]> {
-  const intervalle = Math.max(2, duree / IMAGES_MAX_POUR_IA);
+  // Une image par seconde pour les vidéos courtes (limites d'étapes plus précises), au plus 80 en tout.
+  const intervalle = Math.max(1, duree / IMAGES_MAX_POUR_IA);
   await ffmpeg([
     "-i", video,
     "-vf", `fps=1/${intervalle.toFixed(3)},scale=768:-2`,

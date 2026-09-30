@@ -324,7 +324,9 @@ input.grand-champ { font-size: 1.3rem; padding: 14px 16px; margin-bottom: 16px; 
 @media (min-width: 900px) { .atelier-corps { grid-template-columns: 1.3fr 1fr; align-items: start; } }
 .demo-atelier { position: relative; }
 .demo-atelier video#clip, .demo-atelier img { width: 100%; display: block; border-radius: var(--rayon); background: #000; aspect-ratio: 16 / 9; object-fit: contain; }
-.sur-video { position: absolute; top: 10px; right: 10px; background: rgb(0 0 0 / 0.55); color: #fff; border: none; }
+.commandes-video { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; }
+.sur-video { background: rgb(0 0 0 / 0.6); color: #fff; border: none; font-weight: 700; }
+.sur-video.ralentie { background: var(--accent); color: var(--accent-texte); }
 .mini-camera { position: absolute; left: 10px; bottom: 10px; width: 26%; border-radius: 10px; border: 2px solid #fff; background: #000; }
 
 .atelier-droite { display: flex; flex-direction: column; gap: 12px; }
@@ -364,3 +366,21 @@ body[data-etat="regarde"] button.verifier-geant { opacity: 0.6; }
   .attente-barre > div { animation: none; width: 100%; opacity: 0.5; }
   body.page-apprenti, .retour-atelier { transition: none; }
 }
+
+/* --- Le geste en images (légendes du maître) --- */
+
+.geste-images { margin-top: 14px; }
+.geste-images h3 { font-size: 0.95rem; margin: 0 0 6px; }
+ol.vignettes-geste { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+ol.vignettes-geste li { display: flex; flex-direction: column; gap: 4px; }
+ol.vignettes-geste img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; background: #000; }
+.legende-geste { font-size: 0.85rem; line-height: 1.3; }
+fieldset.legendes { border: 1px solid var(--bord); border-radius: 12px; margin: 16px 0 0; padding: 10px 14px 14px; }
+fieldset.legendes legend { font-weight: 600; padding: 0 4px; }
+fieldset.legendes legend small { font-weight: 400; color: var(--doux); }
+.grille-legendes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 700px) { .grille-legendes, ol.vignettes-geste { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.case-legende { display: flex; flex-direction: column; gap: 6px; }
+.case-legende img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; background: #000; }
+.case-legende input { padding: 8px 10px; font-size: 0.9rem; }
+@media print { ol.vignettes-geste { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

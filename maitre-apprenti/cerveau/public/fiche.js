@@ -17,11 +17,26 @@ function liste(titre, elements, classe) {
     el("ul", {}, ...elements.map((e) => el("li", {}, e))));
 }
 
+const urlImage = (fichier) => `/media/lecons/${lecon.id}/images/${fichier}${cle()}`;
+
+/** Le geste en images : les images de référence de l'étape, avec les légendes du maître. */
+function gesteEnImages(etape) {
+  if (!etape.images.length) return null;
+  return el("div", { classe: "geste-images" },
+    el("h3", {}, "Le geste en images"),
+    el("ol", { classe: "vignettes-geste" }, ...etape.images.map((fichier, i) => {
+      const legende = etape.legendes?.[i]?.trim();
+      return el("li", {},
+        el("img", { src: urlImage(fichier), alt: legende || `Image ${i + 1} du geste`, loading: "lazy" }),
+        legende ? el("span", { classe: "legende-geste" }, legende) : null);
+    })));
+}
+
 function etapeEnLecture(etape) {
   // L'image du milieu de l'étape montre en général le geste en cours.
   const image = etape.images[Math.floor(etape.images.length / 2)];
   return el("li", { classe: "fiche-etape" },
-    image ? el("img", { src: `/media/lecons/${lecon.id}/images/${image}${cle()}`, alt: `Le maître pendant l'étape ${etape.numero}` }) : null,
+    image ? el("img", { src: urlImage(image), alt: `Le maître pendant l'étape ${etape.numero}` }) : null,
     el("div", {},
       el("div", { classe: "rangee" },
         el("h2", { style: "margin: 0" }, `${etape.numero}. ${etape.titre}`),
@@ -35,6 +50,7 @@ function etapeEnLecture(etape) {
       etape.paroles?.length
         ? el("div", { classe: "paroles" }, el("h3", {}, "Le maître dit"), ...etape.paroles.map((p) => el("blockquote", {}, `« ${p} »`)))
         : null,
+      gesteEnImages(etape),
     ));
 }
 
@@ -56,6 +72,19 @@ function etapeEnModification(etape) {
     ...champ(etape, "cles", "Points clés (un par ligne)", etape.pointsDeControle.join("\n"), true),
     ...champ(etape, "eviter", "À éviter (un par ligne)", etape.erreursFrequentes.join("\n"), true),
     ...champ(etape, "reussi", "C'est réussi quand (un par ligne)", etape.criteresDeReussite.join("\n"), true),
+    etape.images.length
+      ? el("fieldset", { classe: "legendes" },
+          el("legend", {}, "Le geste en images ", el("small", {}, "(facultatif : un titre ou une astuce sous chaque image, l'apprenti et l'IA les voient)")),
+          el("div", { classe: "grille-legendes" }, ...etape.images.map((fichier, i) => {
+            const id = `${etape.id}-legende-${i}`;
+            const saisie = el("input", { id, type: "text", maxlength: "200", placeholder: "Ex. : pouces dessous, doigts écartés" });
+            saisie.value = etape.legendes?.[i] ?? "";
+            return el("div", { classe: "case-legende" },
+              el("img", { src: urlImage(fichier), alt: "" }),
+              el("label", { for: id, classe: "sr" }, `Légende de l'image ${i + 1}`),
+              saisie);
+          })))
+      : null,
     el("div", { classe: "rangee", style: "margin-top: 12px" }, el("button", { type: "submit", classe: "principal" }, "Enregistrer"), etat),
   );
   formulaire.addEventListener("submit", async (e) => {
@@ -72,6 +101,7 @@ function etapeEnModification(etape) {
           pointsDeControle: lignes(valeur("cles")),
           erreursFrequentes: lignes(valeur("eviter")),
           criteresDeReussite: lignes(valeur("reussi")),
+          legendes: etape.images.map((_, i) => valeur(`legende-${i}`)),
         }),
       });
       Object.assign(etape, modifiee);

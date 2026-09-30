@@ -241,6 +241,8 @@ export async function evaluerGeste(options: {
   etape: Etape;
   totalEtapes: number;
   imagesMaitre: ImageIA[];
+  /** Légendes du maître sur ses images, dans le même ordre ("" = pas de légende). */
+  legendesMaitre?: string[];
   imagesApprenti: ImageIA[];
   derniersConseils: string[];
   /** Règles du maître qui s'appliquent à cette étape. */
@@ -261,7 +263,11 @@ export async function evaluerGeste(options: {
 }): Promise<Verdict> {
   const referenceMaitre: Anthropic.Beta.BetaContentBlockParam[] = [
     { type: "text", text: descriptionEtape(options.titreLecon, options.etape, options.totalEtapes, options.regles) },
-    ...options.imagesMaitre.map(blocImage),
+    // Une légende du maître précède l'image qu'elle décrit.
+    ...options.imagesMaitre.flatMap((image, i): Anthropic.Beta.BetaContentBlockParam[] => {
+      const legende = options.legendesMaitre?.[i]?.trim();
+      return legende ? [{ type: "text", text: `Le maître, sur l'image suivante : « ${legende} »` }, blocImage(image)] : [blocImage(image)];
+    }),
   ];
   // Tout ce qui précède ce point est identique pendant toute l'étape : on le met en cache.
   const dernier = referenceMaitre[referenceMaitre.length - 1];
