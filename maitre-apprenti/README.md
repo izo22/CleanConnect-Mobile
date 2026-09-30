@@ -183,7 +183,7 @@ Sur les **Ray-Ban Display**, l'écran montre l'étape et la correction, avec les
 
 ```bash
 cd cerveau && npm ci && npm test && npm run typecheck    # 65 tests
-cd lunettes-mentra && bun test && bun run typecheck   # 10 tests, dont l'intégration avec le cerveau
+cd lunettes-mentra && bun test && bun run typecheck   # 10 tests, dont l'intégration avec le vrai cerveau (installé avant avec npm ci)
 cd lunettes-meta && ./gradlew test             # 19 tests (contrôleur + découpage vidéo HEVC)
 ```
 

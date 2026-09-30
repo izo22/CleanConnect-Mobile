@@ -1,6 +1,6 @@
 import {afterAll, beforeAll, describe, expect, test} from "bun:test"
 import {spawn, type ChildProcess} from "node:child_process"
-import {mkdtempSync, rmSync} from "node:fs"
+import {existsSync, mkdtempSync, rmSync} from "node:fs"
 import {tmpdir} from "node:os"
 import path from "node:path"
 import {Cerveau} from "../src/cerveau"
@@ -220,6 +220,7 @@ describe("intégration avec le cerveau", () => {
   let analyses = 0
 
   beforeAll(async () => {
+    if (!existsSync(ffmpeg)) throw new Error("le cerveau n'est pas installé : lance « npm ci » dans ../cerveau")
     fauxClaude = Bun.serve({
       port: 0,
       async fetch(req) {
@@ -251,7 +252,8 @@ describe("intégration avec le cerveau", () => {
         return Response.json(message)
       },
     })
-    cerveauProcessus = spawn("node", ["src/server.ts"], {
+    // Mode TypeScript activé explicitement, comme « npm start » : le cerveau démarre dès Node 22.6.
+    cerveauProcessus = spawn("node", ["--experimental-strip-types", "--disable-warning=ExperimentalWarning", "src/server.ts"], {
       cwd: racine,
       env: {
         ...process.env,
@@ -262,14 +264,16 @@ describe("intégration avec le cerveau", () => {
         PORTS_RTMP: "19370-19379",
         CLE_ACCES: "",
       },
-      stdio: "ignore",
+      stdio: ["ignore", "ignore", "pipe"],
     })
-    for (let i = 0; i < 50; i++) {
+    let erreurs = ""
+    cerveauProcessus.stderr?.on("data", (d) => void (erreurs += d))
+    for (let i = 0; i < 150; i++) {
       if (await fetch(`http://127.0.0.1:${portCerveau}/api/lecons`).then((r) => r.ok, () => false)) return
       await attendre(100)
     }
-    throw new Error("le cerveau n'a pas démarré")
-  })
+    throw new Error(`le cerveau n'a pas démarré${erreurs ? ` : ${erreurs.slice(-500)}` : ""}`)
+  }, 20_000)
 
   afterAll(() => {
     cerveauProcessus?.kill()
