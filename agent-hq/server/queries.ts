@@ -20,6 +20,7 @@ import { actionsFor } from "./playbooks.ts";
 import type { GlobalBudgetParams } from "./guard.ts";
 import { describeRule } from "./rules.ts";
 import { REVIEW_MODEL, pendingCount, reviewerEnabled } from "./reviewer.ts";
+import { controlLevel } from "./n8n.ts";
 
 const SEVERITY_ORDER = { critical: 0, blocked: 1, warning: 2 } as const;
 const STATUS_ORDER: Record<AgentStatus, number> = { blocked: 0, attention: 1, paused: 2, ok: 3 };
@@ -73,6 +74,8 @@ export function agentSummaries(db: DB, now = Date.now()) {
         mission: a.mission,
         owner_name: a.owner_name,
         platform: a.platform,
+        source: a.source,
+        control: controlLevel(a, now),
         status: statusOf(a, alerts),
         autonomy: a.autonomy,
         paused: !!a.paused,
@@ -164,6 +167,9 @@ export function agentDetail(db: DB, id: string, now = Date.now()) {
     access: JSON.parse(agent.access) as string[],
     minutes_per_task: agent.minutes_per_task,
     api_key: agent.api_key,
+    integration_id: agent.integration_id,
+    external_id: agent.external_id,
+    last_check_at: agent.last_check_at,
     prompts: all<PromptVersionRow>(db, "SELECT * FROM prompt_versions WHERE agent_id = ? ORDER BY version DESC", id),
     alerts: all<AlertRow>(db, "SELECT * FROM alerts WHERE agent_id = ? ORDER BY created_at DESC LIMIT 10", id).map((a) => alertView(db, a)),
     review_rate: agent.review_rate,

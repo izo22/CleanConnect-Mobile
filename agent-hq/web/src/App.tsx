@@ -6,11 +6,12 @@ import { Alerts } from "./views/Alerts.tsx";
 import { Brief } from "./views/Brief.tsx";
 import { Decisions } from "./views/Decisions.tsx";
 import { Quality } from "./views/Quality.tsx";
+import { Connections } from "./views/Connections.tsx";
 import { Rules } from "./views/Rules.tsx";
 import { Team } from "./views/Team.tsx";
 
-export type View = "brief" | "team" | "alerts" | "decisions" | "quality" | "rules" | "journal";
-const VIEWS: View[] = ["brief", "team", "alerts", "decisions", "quality", "rules", "journal"];
+export type View = "brief" | "team" | "alerts" | "decisions" | "quality" | "rules" | "connections" | "journal";
+const VIEWS: View[] = ["brief", "team", "alerts", "decisions", "quality", "rules", "connections", "journal"];
 
 /** `#/team/relance-factures` → { view: "team", id: "relance-factures" } */
 function parseHash(): { view: View; id: string | null } {
@@ -75,6 +76,7 @@ function Shell({ connected }: { connected: boolean }) {
           {item("decisions", "check", "Décisions", pending > 0 && <span className="badge">{pending}</span>)}
           {item("quality", "eye", "Qualité", flagged > 0 && <span className="badge hot">{flagged}</span>)}
           {item("rules", "shield", "Garde-fous")}
+          {item("connections", "plug", "Connexions")}
           {item("journal", "journal", "Journal")}
         </div>
         {month && (
@@ -97,6 +99,7 @@ function Shell({ connected }: { connected: boolean }) {
           {route.view === "decisions" && <Decisions />}
           {route.view === "quality" && <Quality />}
           {route.view === "rules" && <Rules />}
+          {route.view === "connections" && <Connections />}
           {route.view === "journal" && <Journal />}
         </div>
       </main>

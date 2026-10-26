@@ -6,6 +6,7 @@ import { buildApp } from "./app.ts";
 import { get, openDb } from "./db.ts";
 import { evaluateAll } from "./engine.ts";
 import { notifyChange } from "./model.ts";
+import { syncAll } from "./n8n.ts";
 import { startReviewer } from "./reviewer.ts";
 import { seed } from "./seed.ts";
 
@@ -38,6 +39,14 @@ setInterval(() => {
 }, 60_000).unref();
 
 startReviewer(db);
+
+// n8n: read new executions and enforce pauses every N8N_SYNC_SECONDS (30 by default).
+let syncing = false;
+setInterval(async () => {
+  if (syncing) return;
+  syncing = true;
+  try { await syncAll(db); } finally { syncing = false; }
+}, Number(process.env.N8N_SYNC_SECONDS ?? 30) * 1000).unref();
 
 await app.listen({ port, host });
 console.log(`Agent HQ en ligne sur http://localhost:${port}`);

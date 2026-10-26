@@ -17,7 +17,7 @@ export interface Translation {
 const PATTERNS: Array<{ family: ErrorFamily; test: RegExp }> = [
   { family: "auth", test: /\b(401|403)\b|auth|unauthori[sz]ed|forbidden|token.*(expired|invalid)|expired.*token|invalid[_ ]?api[_ ]?key|permission/i },
   { family: "rate_limit", test: /\b429\b|rate.?limit|too many requests|quota|overloaded/i },
-  { family: "timeout", test: /timeout|timed out|ETIMEDOUT|ECONNRESET|\b50[234]\b|unavailable/i },
+  { family: "timeout", test: /timeout|timed out|ETIMEDOUT|ECONNRESET|ECONNREFUSED|ENOTFOUND|\b50[234]\b|unavailable/i },
   { family: "not_found", test: /\b404\b|not.?found|does not exist/i },
   { family: "invalid_input", test: /\b(400|422)\b|invalid|validation|malformed|schema/i },
   { family: "model", test: /context.?length|max.?tokens|content.?filter|refus/i },
@@ -68,8 +68,9 @@ const TOOL_NAMES: Record<string, string> = {
 
 /** "hubspot.update" → "HubSpot" */
 export function toolLabel(actionOrTool: string): string {
-  const key = actionOrTool.split(/[.:/]/)[0].toLowerCase();
-  return TOOL_NAMES[key] ?? key.charAt(0).toUpperCase() + key.slice(1);
+  const raw = actionOrTool.split(/[.:/]/)[0].trim();
+  const key = raw.toLowerCase();
+  return TOOL_NAMES[key] ?? raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 const ACTION_VERBS: Record<string, string> = {

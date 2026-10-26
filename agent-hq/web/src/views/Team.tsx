@@ -3,6 +3,7 @@ import { api, useData, type AgentDetail, type AgentSummary } from "../api.ts";
 import { euros, num, pct, shortTime } from "../format.ts";
 import { Avatar, ErrorBox, Icon, Skeleton, Sparkline, StatusPill, Trust, useAction, useToast } from "../components/ui.tsx";
 import { Exchange, ReportModal, VerdictPill } from "../components/quality.tsx";
+import { ControlBlock, ControlChip } from "../components/control.tsx";
 
 type Filter = "all" | "issues" | "paused";
 const FILTERS: Array<{ id: Filter; label: string; test: (a: AgentSummary) => boolean }> = [
@@ -81,16 +82,17 @@ function AgentCard({ agent: a, selected, onSelect }: { agent: AgentSummary; sele
         <Avatar id={a.id} name={a.name} size={46} />
         <span style={{ minWidth: 0 }}>
           <span className="n">{a.name}</span>
-          <span className="o">{a.owner_name}</span>
+          <span className="o">{a.source === "n8n" ? "Workflow n8n" : a.owner_name}</span>
         </span>
       </button>
       <p className="mission">{a.mission}</p>
+      <ControlChip control={a.control} />
       <div className="line"><StatusPill status={a.status} /><Trust level={a.autonomy} /></div>
       <Sparkline values={a.sparkline} width={214} height={30} color={a.status === "ok" ? "#5B3DF5" : a.status === "paused" ? "#9C97A3" : "#FF7A45"} />
       <div className="minis">
         <div><span>Réussite</span><b>{pct(a.success_rate)}</b></div>
         <div><span>Tâches 24 h</span><b>{num(a.tasks_24h)}</b></div>
-        <div><span>Par tâche</span><b>{a.cost_per_task_cents == null ? "—" : euros(a.cost_per_task_cents, 2)}</b></div>
+        <div title={a.source === "n8n" ? "n8n ne transmet pas le coût des appels d'IA" : undefined}><span>Par tâche</span><b>{a.cost_per_task_cents == null || (a.source === "n8n" && !a.cost_per_task_cents) ? "—" : euros(a.cost_per_task_cents, 2)}</b></div>
       </div>
       <button type="button" className="btn" disabled={busy !== null} onClick={() => run("p", `/api/agents/${a.id}/actions/${a.paused ? "resume" : "pause"}`)}>
         {a.paused ? "Reprendre" : "Mettre en pause"}
@@ -147,6 +149,8 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
         <div className="fact"><span>Plateforme</span><b>{data.platform}</b></div>
       </div>
       {data.pause_reason && <span className="note">En pause : {data.pause_reason}</span>}
+
+      <ControlBlock agent={data} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <span className="block-title">Niveau de confiance</span>

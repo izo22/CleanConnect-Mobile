@@ -23,6 +23,10 @@ export interface AgentRow {
   minutes_per_task: number;
   api_key: string;
   review_rate: number;
+  source: "sdk" | "n8n";
+  integration_id: number | null;
+  external_id: string | null;
+  last_check_at: number | null;
   created_at: number;
 }
 
@@ -54,6 +58,8 @@ export interface ApprovalRow {
   created_at: number;
   decided_at: number | null;
   decided_by: string | null;
+  callback_url: string | null;
+  callback_status: string | null;
 }
 
 export interface RuleRow {

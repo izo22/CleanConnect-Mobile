@@ -32,6 +32,7 @@ export function Decisions() {
                   <h3>{p.title}</h3>
                   {p.context && <p className="ctx">{p.context}</p>}
                   <p className="why"><strong>Pourquoi je vous demande :</strong> {p.reason}</p>
+                  {p.callback_url && <p className="note">Le workflow est en attente : il reprendra dès votre réponse.</p>}
                   <div className="row"><DecisionButtons approval={p} big /></div>
                 </article>
               ))}
@@ -44,7 +45,7 @@ export function Decisions() {
                 {data.decided.map((d) => (
                   <div key={d.id} className="resolved-row">
                     <span className="t"><strong>{d.agent?.name}</strong> · {d.title}</span>
-                    <span className="muted" style={{ fontSize: 13 }}>{d.decided_by} · {d.decided_at ? ago(d.decided_at) : ""}</span>
+                    <span className="muted" style={{ fontSize: 13 }}>{d.decided_by} · {d.decided_at ? ago(d.decided_at) : ""}{callbackText(d.callback_status)}</span>
                     <span className="pill" style={d.status === "approved" ? { background: "#DDF7E9", color: "#0E6B3F" } : { background: "#F1EDE7", color: "#45424C" }}>
                       {d.status === "approved" ? "Approuvé" : "Refusé"}
                     </span>
@@ -57,4 +58,11 @@ export function Decisions() {
       )}
     </>
   );
+}
+
+function callbackText(status: string | null) {
+  if (!status) return "";
+  if (status === "sent") return " · transmis au workflow";
+  if (status.startsWith("refused")) return " · le workflow n'attendait plus";
+  return " · transmission au workflow impossible";
 }

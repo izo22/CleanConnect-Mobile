@@ -31,6 +31,7 @@ Les agents simulés passent par le vrai SDK. Ils s'arrêtent quand vous les mett
 | `npm test` | tests du moteur, des garde-fous et de l'API |
 | `npm run typecheck` | vérification TypeScript |
 | `npm run seed` | remet la base de démonstration à zéro |
+| `npm run verify:n8n` | vérifie l'intégration contre un vrai n8n (voir docs/INTEGRATION-N8N.md) |
 
 ### Configuration
 
@@ -44,6 +45,8 @@ Les agents simulés passent par le vrai SDK. Ils s'arrêtent quand vous les mett
 | `ANTHROPIC_API_KEY` | — | active la relecture par IA (Claude) |
 | `REVIEW_MODEL` | `claude-opus-5-5` | modèle utilisé pour la relecture |
 | `REVIEW_ENABLED` | auto | `false` pour couper la relecture même avec une clé |
+| `N8N_SYNC_SECONDS` | `30` | fréquence de lecture des workflows et exécutions n8n |
+| `PUBLIC_URL` | adresse de la requête | adresse d'Agent HQ écrite dans le bloc n8n à copier |
 
 Node.js 22.5 ou plus récent est requis (la base utilise `node:sqlite`, sans dépendance native).
 
@@ -60,6 +63,12 @@ Node.js 22.5 ou plus récent est requis (la base utilise `node:sqlite`, sans dé
 - **Journal** : qui a fait quoi, humains et agents.
 
 L'interface se met à jour en direct (Server-Sent Events).
+
+## Connecter n8n
+
+**Connexions → Connecter un serveur n8n** : avec une clé API n8n aux droits limités, Agent HQ lit lui-même vos workflows et leurs exécutions (niveau 1 : voir), et « Mettre en pause » désactive réellement le workflow dans n8n (niveau 2 : arrêter). Pour qu'un workflow attende votre feu vert avant une étape sensible (niveau 3 : contrôler), collez le bloc « Demander l'autorisation » fourni dans la fiche de l'agent.
+
+Mode d'emploi complet, limites et résultats des tests contre un vrai n8n : [docs/INTEGRATION-N8N.md](docs/INTEGRATION-N8N.md).
 
 ## Connecter un agent
 
@@ -89,7 +98,7 @@ Sans SDK, l'API HTTP suffit (n8n, Make et Zapier savent faire des requêtes HTTP
 | Méthode | Route | Rôle |
 | --- | --- | --- |
 | `POST` | `/api/v1/events` | un événement ou `{ "events": [...] }` (500 max) |
-| `POST` | `/api/v1/check` | `{ action, amount_cents?, summary?, sensitive? }` → `allow`, `deny` ou `needs_approval` |
+| `POST` | `/api/v1/check` | `{ action, amount_cents?, summary?, sensitive?, callback_url? }` → `allow`, `deny` ou `needs_approval` ; si `callback_url` est fourni, la décision humaine y est envoyée en POST (`{ approved, decision, … }`) |
 | `GET` | `/api/v1/approvals/:id` | statut d'une demande (`pending`, `approved`, `rejected`) |
 | `GET` | `/api/v1/config` | pause, niveau de confiance, modèle, consignes actives |
 
@@ -104,6 +113,9 @@ agent-hq/
     guard.ts     décisions allow / deny / needs_approval
     playbooks.ts actions en un clic
     reviewer.ts  relecture des réponses par Claude (sortie JSON contrainte)
+    n8n.ts       intégration n8n (lecture, arrêt d'urgence)
+    n8n-template.ts bloc « Demander l'autorisation » à coller dans n8n
+    callbacks.ts renvoi de la décision humaine au workflow en attente
     translate.ts erreurs techniques → français
     queries.ts   modèles de lecture pour l'interface
   web/           interface React (Vite)
@@ -116,5 +128,6 @@ agent-hq/
 - Un seul espace de travail, protégé par un code d'accès partagé (`ADMIN_TOKEN`), sans comptes utilisateurs.
 - Les notifications partent vers un webhook unique ; pas encore d'e-mail ni de notification mobile.
 - La relecture IA ne voit que ce que l'agent transmet (`input` / `output`) ; elle juge par rapport aux consignes, pas par rapport à vos données réelles (stock, CRM…).
-- Pas encore de connecteurs natifs : les agents s'intègrent par le SDK ou l'API HTTP.
+- n8n est intégré (voir plus haut) ; Make et Zapier passent encore par l'API HTTP.
+- Un agent qui ne passe ni par n8n connecté, ni par le SDK / `/api/v1/check` est seulement supervisé : la pause et les garde-fous ne peuvent pas l'arrêter. Chaque fiche agent affiche son niveau réel.
 - Les garde-fous existants se règlent depuis l'interface ; en créer de nouveaux types demande du code.

@@ -1,5 +1,5 @@
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
-import { get, run, tx, type DB } from "./db.ts";
+import { all, get, run, tx, type DB } from "./db.ts";
 import { evaluateAgent, evaluateReports } from "./engine.ts";
 import { check, type CheckRequest } from "./guard.ts";
 import {
@@ -13,13 +13,17 @@ import {
   newApiKey,
   notifyChange,
   type AgentRow,
+  type AlertRow,
   type ApprovalRow,
   type RuleRow,
 } from "./model.ts";
-import { PlaybookError, applyToAgent, runPlaybook, type PlaybookId } from "./playbooks.ts";
+import { PlaybookError, actionsFor, applyToAgent, runPlaybook, type PlaybookId } from "./playbooks.ts";
 import { notify } from "./notify.ts";
 import { describeRule } from "./rules.ts";
 import { shouldSample } from "./reviewer.ts";
+import { deliverDecision, validCallbackUrl } from "./callbacks.ts";
+import { N8nClient, N8nError, getIntegration, setWorkflowActive, syncIntegration, type IntegrationRow } from "./n8n.ts";
+import { n8nSnippet } from "./n8n-template.ts";
 import { activity, agentDetail, agentSummaries, alertsView, approvalsView, overview, qualityView, rulesView } from "./queries.ts";
 
 export interface AppOptions {
@@ -28,6 +32,8 @@ export interface AppOptions {
   adminToken?: string;
   now?: () => number;
   logger?: boolean;
+  /** Injected in tests to fake n8n and callback endpoints. */
+  fetchImpl?: typeof fetch;
 }
 
 interface EventIn {
@@ -74,11 +80,15 @@ const PLAYBOOK_IDS: PlaybookId[] = ["pause", "resume", "rollback", "handoff", "n
 const slug = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "agent";
 
-export function buildApp({ db, adminToken, now = Date.now, logger = false }: AppOptions) {
+/** Which state the real workflow must be in after a playbook action. */
+const REMOTE_STATE: Partial<Record<PlaybookId, boolean>> = { pause: false, handoff: false, resume: true, rollback: true };
+
+export function buildApp({ db, adminToken, now = Date.now, logger = false, fetchImpl = fetch }: AppOptions) {
   const app = Fastify({ logger, bodyLimit: 2 * 1024 * 1024 });
 
   app.setErrorHandler((err: Error & { statusCode?: number; validation?: unknown }, _req, reply) => {
     if (err instanceof PlaybookError) return reply.code(409).send({ error: err.message });
+    if (err instanceof N8nError) return reply.code(502).send({ error: err.message });
     if (err.validation) return reply.code(400).send({ error: "Requête invalide : " + err.message });
     const code = err.statusCode && err.statusCode >= 400 ? err.statusCode : 500;
     if (code === 500) app.log.error(err);
@@ -183,12 +193,22 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false }: App
             context: { type: "string", maxLength: 3000 },
             sensitive: { type: "boolean" },
             payload: {},
+            callback_url: { type: "string", maxLength: 2000 },
           },
         },
       },
     },
     async (req) => {
       const agent = agentOf(req);
+      const cb = req.body.callback_url;
+      if (cb !== undefined) {
+        if (!validCallbackUrl(cb)) throw Object.assign(new Error("callback_url doit être une adresse http(s)."), { statusCode: 400 });
+        // An n8n agent may only be called back on its own n8n server.
+        const integration = agent.integration_id ? getIntegration(db, agent.integration_id) : undefined;
+        if (integration && new URL(cb).hostname !== new URL(integration.base_url).hostname) {
+          throw Object.assign(new Error("callback_url doit pointer vers le serveur n8n connecté."), { statusCode: 400 });
+        }
+      }
       const result = tx(db, () => check(db, agent, req.body, now()));
       if (result.decision !== "allow") notifyChange();
       return result;
@@ -344,8 +364,11 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false }: App
     admin.post<{ Params: { id: string; action: string } }>("/api/agents/:id/actions/:action", async (req) => {
       const agent = getAgent(db, req.params.id);
       if (!agent) throw notFound("Agent");
-      const action = req.params.action as PlaybookId;
+      let action = req.params.action as PlaybookId;
       if (!PLAYBOOK_IDS.includes(action)) throw notFound("Action");
+      if (action === "pause" && agent.paused) action = "resume";
+      // Act on the real workflow first: the screen must never say "paused" while n8n runs.
+      if (REMOTE_STATE[action] !== undefined) await setWorkflowActive(db, agent, REMOTE_STATE[action]!, fetchImpl);
       const message = tx(db, () => applyToAgent(db, agent, action, actorOf(req), now()));
       notifyChange();
       return { message };
@@ -361,7 +384,13 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false }: App
     });
 
     admin.post<{ Params: { id: string; action: string } }>("/api/alerts/:id/actions/:action", async (req) => {
-      const message = runPlaybook(db, Number(req.params.id), req.params.action as PlaybookId, actorOf(req), now());
+      const action = req.params.action as PlaybookId;
+      const alert = get<AlertRow>(db, "SELECT * FROM alerts WHERE id = ?", Number(req.params.id));
+      // Only touch the real workflow if Agent HQ will accept the action too.
+      if (alert?.status === "open" && actionsFor(db, alert).some((a) => a.id === action) && REMOTE_STATE[action] !== undefined) {
+        await setWorkflowActive(db, getAgent(db, alert.agent_id)!, REMOTE_STATE[action]!, fetchImpl);
+      }
+      const message = runPlaybook(db, Number(req.params.id), action, actorOf(req), now());
       notifyChange();
       return { message };
     });
@@ -381,6 +410,8 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false }: App
           logActivity(db, actorOf(req), msg, a.agent_id, t);
           return msg;
         });
+        // Wake up the waiting workflow (n8n "Wait" node) in the background.
+        void deliverDecision(db, Number(req.params.id), fetchImpl).then(() => notifyChange());
         notifyChange();
         return { message };
       },
@@ -415,6 +446,69 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false }: App
         return rulesView(db).find((r) => r.id === rule.id);
       },
     );
+
+    // ---------- n8n connections ----------
+
+    const integrationView = (i: IntegrationRow) => ({
+      id: i.id, kind: i.kind, name: i.name, base_url: i.base_url, last_sync_at: i.last_sync_at, last_error: i.last_error, created_at: i.created_at,
+      api_key_hint: "…" + i.api_key.slice(-4),
+      agents: get<{ n: number }>(db, "SELECT COUNT(*) n FROM agents WHERE integration_id = ?", i.id)?.n ?? 0,
+    });
+
+    admin.get("/api/integrations", async () => all<IntegrationRow>(db, "SELECT * FROM integrations ORDER BY created_at").map(integrationView));
+
+    admin.post<{ Body: { name?: string; base_url: string; api_key: string } }>(
+      "/api/integrations",
+      {
+        schema: {
+          body: {
+            type: "object",
+            required: ["base_url", "api_key"],
+            additionalProperties: false,
+            properties: { name: { type: "string", maxLength: 80 }, base_url: { type: "string", minLength: 8, maxLength: 500 }, api_key: { type: "string", minLength: 10, maxLength: 2000 } },
+          },
+        },
+      },
+      async (req, reply) => {
+        const { base_url, api_key } = req.body;
+        if (!validCallbackUrl(base_url)) throw Object.assign(new Error("L'adresse de n8n doit commencer par http:// ou https://"), { statusCode: 400 });
+        // Test the connection before saving anything.
+        const workflows = await new N8nClient(base_url, api_key, fetchImpl).listWorkflows();
+        const name = req.body.name?.trim() || new URL(base_url).hostname;
+        const t = now();
+        const res = run(db, "INSERT INTO integrations (kind, name, base_url, api_key, created_at) VALUES ('n8n', ?, ?, ?, ?)", name, base_url.replace(/\/+$/, ""), api_key, t);
+        const integration = getIntegration(db, Number(res.lastInsertRowid))!;
+        const result = await syncIntegration(db, integration, new N8nClient(integration.base_url, api_key, fetchImpl), t);
+        logActivity(db, actorOf(req), `Connexion à n8n « ${name} » : ${workflows.length} workflow(s) importé(s).`, null, t);
+        return reply.code(201).send({ ...integrationView(getIntegration(db, integration.id)!), sync: result });
+      },
+    );
+
+    admin.post<{ Params: { id: string } }>("/api/integrations/:id/sync", async (req) => {
+      const integration = getIntegration(db, Number(req.params.id));
+      if (!integration) throw notFound("Connexion");
+      const result = await syncIntegration(db, integration, new N8nClient(integration.base_url, integration.api_key, fetchImpl), now());
+      return { ...integrationView(getIntegration(db, integration.id)!), sync: result, message: `Synchronisé : ${result.workflows} workflow(s), ${result.imported} nouvelle(s) exécution(s).` };
+    });
+
+    admin.delete<{ Params: { id: string } }>("/api/integrations/:id", async (req) => {
+      const integration = getIntegration(db, Number(req.params.id));
+      if (!integration) throw notFound("Connexion");
+      tx(db, () => {
+        // The agents and their history stay; they are just no longer synchronised.
+        run(db, "UPDATE agents SET integration_id = NULL WHERE integration_id = ?", integration.id);
+        run(db, "DELETE FROM integrations WHERE id = ?", integration.id);
+      });
+      notifyChange();
+      return { message: `Connexion « ${integration.name} » supprimée. Les agents et leur historique sont conservés.` };
+    });
+
+    admin.get<{ Params: { id: string } }>("/api/agents/:id/n8n-snippet", async (req) => {
+      const agent = getAgent(db, req.params.id);
+      if (!agent) throw notFound("Agent");
+      const host = `${req.protocol}://${req.headers.host}`;
+      return n8nSnippet(process.env.PUBLIC_URL ?? host, agent.api_key);
+    });
 
     // Server-sent events: the dashboard refetches when something changes.
     admin.get("/api/stream", (req, reply) => {

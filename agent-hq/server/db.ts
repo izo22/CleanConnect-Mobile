@@ -118,6 +118,20 @@ CREATE TABLE IF NOT EXISTS reports (
   created_at INTEGER NOT NULL
 );
 
+-- Connections to automation platforms (n8n today). Agent HQ reads their
+-- workflows and executions itself, so supervision needs no change in them.
+CREATE TABLE IF NOT EXISTS integrations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL CHECK (kind IN ('n8n')),
+  name TEXT NOT NULL,
+  base_url TEXT NOT NULL,
+  api_key TEXT NOT NULL,
+  cursor_execution_id INTEGER NOT NULL DEFAULT 0,
+  last_sync_at INTEGER,
+  last_error TEXT,
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS activity (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ts INTEGER NOT NULL,
@@ -143,6 +157,17 @@ const ADDED_COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   // NULL = not sampled, 'pending' = waiting for the AI reviewer, 'done' = reviewed.
   ["events", "review_state", "TEXT"],
   ["agents", "review_rate", "REAL NOT NULL DEFAULT 0.1"],
+  // Where the agent lives: 'sdk' (reports itself) or 'n8n' (read from an n8n instance).
+  ["agents", "source", "TEXT NOT NULL DEFAULT 'sdk'"],
+  ["agents", "integration_id", "INTEGER"],
+  ["agents", "external_id", "TEXT"],
+  // Last time the agent asked permission before acting: proves "control" is wired.
+  ["agents", "last_check_at", "INTEGER"],
+  // Identifier on the source platform (n8n execution id), to never import twice.
+  ["events", "external_ref", "TEXT"],
+  // Where to send the human decision (an n8n "Wait" node resume URL).
+  ["approvals", "callback_url", "TEXT"],
+  ["approvals", "callback_status", "TEXT"],
 ];
 
 function migrate(db: DB) {
@@ -151,6 +176,8 @@ function migrate(db: DB) {
     if (!cols.some((c) => c.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
   }
   db.exec("CREATE INDEX IF NOT EXISTS events_review ON events (review_state) WHERE review_state = 'pending'");
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS events_external ON events (agent_id, external_ref) WHERE external_ref IS NOT NULL");
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS agents_external ON agents (integration_id, external_id) WHERE external_id IS NOT NULL");
 }
 
 export function tx<T>(db: DB, fn: () => T): T {

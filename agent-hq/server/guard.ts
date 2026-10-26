@@ -17,6 +17,11 @@ export interface CheckRequest {
   /** Agents mark actions that change something important (money, customers). */
   sensitive?: boolean;
   payload?: unknown;
+  /**
+   * Called with the human decision once it is taken. n8n passes the resume URL
+   * of a "Wait" node here, so the workflow sleeps until someone decides.
+   */
+  callback_url?: string;
 }
 
 export type CheckResult =
@@ -48,16 +53,17 @@ function requestApproval(db: DB, agent: AgentRow, req: CheckRequest, reason: str
   const title = req.summary?.trim() || `${req.action}${req.amount_cents ? " · " + euros(req.amount_cents) : ""}`;
   const res = run(
     db,
-    `INSERT INTO approvals (agent_id, action, title, context, reason, amount_cents, payload, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO approvals (agent_id, action, title, context, reason, amount_cents, payload, callback_url, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     agent.id, req.action, title, req.context ?? "", reason, req.amount_cents ?? null,
-    req.payload === undefined ? null : JSON.stringify(req.payload), now,
+    req.payload === undefined ? null : JSON.stringify(req.payload), req.callback_url ?? null, now,
   );
   logActivity(db, agent.name, `Demande de validation : ${title}`, agent.id, now);
   return Number(res.lastInsertRowid);
 }
 
 export function check(db: DB, agent: AgentRow, req: CheckRequest, now = Date.now()): CheckResult {
+  run(db, "UPDATE agents SET last_check_at = ? WHERE id = ?", now, agent.id);
   if (agent.paused) {
     return { decision: "deny", reason: agent.pause_reason ? `Agent en pause (${agent.pause_reason}).` : "Agent en pause." };
   }
