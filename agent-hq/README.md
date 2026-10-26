@@ -4,6 +4,8 @@
 
 Agent HQ est le poste de pilotage d'une équipe d'agents IA. On y voit chaque matin ce qui a besoin de vous, on règle un incident en un clic, on valide les décisions sensibles, et on fixe des garde-fous écrits en français. Tout ça fonctionne quelle que soit la plateforme utilisée pour construire les agents (n8n, Make, Zapier, Claude Agent SDK, OpenAI Agents, script maison).
 
+![Brief du matin](docs/captures/1-brief-du-matin.png)
+
 ## Démarrer
 
 ```bash
