@@ -66,7 +66,7 @@ export function ControlBlock({ agent }: { agent: AgentDetail }) {
       </div>
       {agent.source === "sdk" && rank < 2 && (
         <span className="muted" style={{ fontSize: 13 }}>
-          Tant que cet agent ne consulte pas Agent HQ avant d'agir (SDK ou appel à /api/v1/check), la pause et les garde-fous ne l'arrêtent pas.
+          Tant que cet agent ne consulte pas Agent HQ avant d'agir (SDK, appel à /api/v1/check, ou étape Zapier « Agent HQ · Ask Permission »), la pause et les garde-fous ne l'arrêtent pas.
         </span>
       )}
       {agent.source === "n8n" && (

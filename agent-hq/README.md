@@ -47,6 +47,7 @@ Les agents simulés passent par le vrai SDK. Ils s'arrêtent quand vous les mett
 | `REVIEW_MODEL` | `claude-opus-5-5` | modèle utilisé pour la relecture |
 | `REVIEW_ENABLED` | auto | `false` pour couper la relecture même avec une clé |
 | `N8N_SYNC_SECONDS` | `30` | fréquence de lecture des workflows et exécutions n8n |
+| `ALLOW_PRIVATE_HOOKS` | `false` | `true` en développement seulement : autorise les abonnements vers des adresses locales |
 | `PUBLIC_URL` | adresse de la requête | adresse d'Agent HQ écrite dans le bloc n8n à copier |
 
 Node.js 22.5 ou plus récent est requis (la base utilise `node:sqlite`, sans dépendance native).
@@ -70,6 +71,10 @@ L'interface se met à jour en direct (Server-Sent Events).
 **Connexions → Connecter un serveur n8n** : avec une clé API n8n aux droits limités, Agent HQ lit lui-même vos workflows et leurs exécutions (niveau 1 : voir), et « Mettre en pause » désactive réellement le workflow dans n8n (niveau 2 : arrêter). Pour qu'un workflow attende votre feu vert avant une étape sensible (niveau 3 : contrôler), collez le bloc « Demander l'autorisation » fourni dans la fiche de l'agent.
 
 Mode d'emploi complet, limites et résultats des tests contre un vrai n8n : [docs/INTEGRATION-N8N.md](docs/INTEGRATION-N8N.md).
+
+## Connecter Zapier
+
+Application **Agent HQ pour Zapier** (privée, partagée par lien d'invitation) dans `zapier/` : actions « Ask Permission » et « Report Activity », déclencheurs « Decision Made » et « Agent Paused or Resumed ». Mode d'emploi et recettes : [docs/INTEGRATION-ZAPIER.md](docs/INTEGRATION-ZAPIER.md).
 
 ## Connecter un agent
 
@@ -102,6 +107,8 @@ Sans SDK, l'API HTTP suffit (n8n, Make et Zapier savent faire des requêtes HTTP
 | `POST` | `/api/v1/check` | `{ action, amount_cents?, summary?, sensitive?, callback_url? }` → `allow`, `deny` ou `needs_approval` ; si `callback_url` est fourni, la décision humaine y est envoyée en POST (`{ approved, decision, … }`) |
 | `GET` | `/api/v1/approvals/:id` | statut d'une demande (`pending`, `approved`, `rejected`) |
 | `GET` | `/api/v1/config` | pause, niveau de confiance, modèle, consignes actives |
+| `POST` / `DELETE` | `/api/v1/hooks` | abonnement d'une plateforme (Zapier) aux décisions (`decision`) ou aux pauses (`agent_state`) de l'agent ; adresses https publiques uniquement |
+| `GET` | `/api/v1/decisions` | dernières décisions de l'agent, avec les données gardées (`payload`) |
 
 En-tête : `Authorization: Bearer <clé de l'agent>`.
 

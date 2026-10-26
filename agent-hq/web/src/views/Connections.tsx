@@ -70,6 +70,22 @@ export function Connections() {
         </div>
       )}
 
+      <section className="card" aria-labelledby="zapier-h" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span className="avatar" style={{ width: 46, height: 46, background: "#FFE9DF", color: "#9A3412", fontSize: 12 }}>Zap</span>
+          <h2 id="zapier-h" className="h2" style={{ fontSize: 22 }}>Zapier</h2>
+        </div>
+        <p className="sub" style={{ fontSize: 14 }}>
+          Ajoutez l'application <b>Agent HQ</b> dans vos Zaps (lien d'invitation fourni par votre administrateur), puis connectez-la avec la <b>clé de l'agent</b> (fiche de l'agent → Connexion).
+        </p>
+        <div className="explain">
+          <span><strong>Contrôler :</strong> étape « Ask Permission » avant l'action sensible + un Zap qui part de « Decision Made » pour l'exécuter après votre accord.</span>
+          <span><strong>Voir :</strong> étape « Report Activity » en fin de Zap.</span>
+          <span><strong>Arrêter :</strong> Zap « Agent Paused or Resumed » → Zapier Manager « Turn Zap On/Off ».</span>
+          <span><strong>Limite :</strong> Zapier ne laisse pas Agent HQ lire vos Zaps lui-même tant que nous ne sommes pas partenaire ; seules les étapes Agent HQ ajoutées remontent.</span>
+        </div>
+      </section>
+
       <section className="card" aria-labelledby="add-n8n" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <h2 id="add-n8n" className="h2" style={{ fontSize: 22 }}>Connecter un serveur n8n</h2>
         <ol style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.7, color: "#45424C" }}>

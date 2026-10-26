@@ -1,0 +1,13 @@
+{
+  "name": "agent-hq-zapier",
+  "version": "1.0.0",
+  "description": "Agent HQ for Zapier: ask permission before sensitive actions, act on human decisions, report activity.",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "zapier-platform-core": "19.2.1"
+  }
+}

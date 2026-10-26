@@ -25,7 +25,8 @@ const app = buildApp({ db, adminToken: process.env.ADMIN_TOKEN, logger: process.
 
 const dist = join(root, "web", "dist");
 if (existsSync(dist)) {
-  await app.register(fastifyStatic, { root: dist, wildcard: false });
+  // wildcard (default): files rebuilt after start-up are served too.
+  await app.register(fastifyStatic, { root: dist });
   app.setNotFoundHandler((req, reply) => {
     if (req.url.startsWith("/api/")) return reply.code(404).send({ error: "Introuvable." });
     return reply.sendFile("index.html");

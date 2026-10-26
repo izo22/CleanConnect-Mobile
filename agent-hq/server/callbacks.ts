@@ -8,13 +8,21 @@ import { logActivity, type ApprovalRow } from "./model.ts";
 
 const RETRY_DELAYS = [0, 2_000, 10_000, 30_000, 120_000];
 
+/** What a workflow receives once a human has decided, including the data it asked to keep. */
 export function callbackBody(a: ApprovalRow) {
   return {
+    id: a.id,
     approval_id: a.id,
     decision: a.status,
     approved: a.status === "approved",
     decided_by: a.decided_by,
+    decided_at: a.decided_at ? new Date(a.decided_at).toISOString() : null,
     title: a.title,
+    action: a.action,
+    amount_cents: a.amount_cents,
+    amount: a.amount_cents === null ? null : a.amount_cents / 100,
+    context: a.context,
+    payload: a.payload ? JSON.parse(a.payload) : null,
   };
 }
 

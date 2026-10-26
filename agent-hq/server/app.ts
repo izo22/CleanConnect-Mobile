@@ -24,6 +24,7 @@ import { shouldSample } from "./reviewer.ts";
 import { deliverDecision, validCallbackUrl } from "./callbacks.ts";
 import { N8nClient, N8nError, getIntegration, setWorkflowActive, syncIntegration, type IntegrationRow } from "./n8n.ts";
 import { n8nSnippet } from "./n8n-template.ts";
+import { agentStatePayload, decisionPayload, fireAgentState, fireDecision, safeOutboundUrl, subscribe, unsubscribe } from "./hooks.ts";
 import { activity, agentDetail, agentSummaries, alertsView, approvalsView, overview, qualityView, rulesView } from "./queries.ts";
 
 export interface AppOptions {
@@ -153,6 +154,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     },
     async (req) => {
       const agent = agentOf(req);
+      const wasPaused = agent.paused;
       const list = "events" in req.body ? req.body.events : [req.body];
       const t = now();
       const stmt = db.prepare(
@@ -173,6 +175,8 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         evaluateAgent(db, agent.id, t);
       });
       notifyChange();
+      // A guardrail may just have paused this agent: tell subscribed platforms.
+      if (getAgent(db, agent.id)!.paused !== wasPaused) void fireAgentState(db, agent.id, fetchImpl);
       return { accepted: list.length, control: control(agent) };
     },
   );
@@ -208,10 +212,12 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         if (integration && new URL(cb).hostname !== new URL(integration.base_url).hostname) {
           throw Object.assign(new Error("callback_url doit pointer vers le serveur n8n connecté."), { statusCode: 400 });
         }
+        if (!integration && !safeOutboundUrl(cb)) throw Object.assign(new Error("callback_url doit être une adresse https publique."), { statusCode: 400 });
       }
       const result = tx(db, () => check(db, agent, req.body, now()));
       if (result.decision !== "allow") notifyChange();
-      return result;
+      // Plain booleans make no-code filters ("only continue if allowed") easy.
+      return { ...result, allowed: result.decision === "allow", needs_approval: result.decision === "needs_approval" };
     },
   );
 
@@ -223,6 +229,50 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
   });
 
   app.get("/api/v1/config", async (req) => control(agentOf(req)));
+
+  // ---------- REST hooks (Zapier) ----------
+
+  app.post<{ Body: { event: "decision" | "agent_state"; target_url: string; filter?: Record<string, unknown> } }>(
+    "/api/v1/hooks",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["event", "target_url"],
+          additionalProperties: false,
+          properties: {
+            event: { enum: ["decision", "agent_state"] },
+            target_url: { type: "string", maxLength: 2000 },
+            filter: { type: "object", additionalProperties: { type: ["string", "boolean", "null"] } },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      const agent = agentOf(req);
+      if (!safeOutboundUrl(req.body.target_url)) throw Object.assign(new Error("target_url doit être une adresse https publique."), { statusCode: 400 });
+      const id = subscribe(db, agent.id, req.body.event, req.body.target_url, req.body.filter ?? null, now());
+      return reply.code(201).send({ id });
+    },
+  );
+
+  app.delete<{ Params: { id: string } }>("/api/v1/hooks/:id", async (req) => {
+    const agent = agentOf(req);
+    if (!unsubscribe(db, agent.id, Number(req.params.id))) throw notFound("Abonnement");
+    return { ok: true };
+  });
+
+  /** Latest decisions for this agent: Zapier uses it for samples and as a polling fallback. */
+  app.get<{ Querystring: { only_approved?: string; action?: string } }>("/api/v1/decisions", async (req) => {
+    const agent = agentOf(req);
+    const rows = all<ApprovalRow>(db, "SELECT * FROM approvals WHERE agent_id = ? AND status != 'pending' ORDER BY decided_at DESC LIMIT 25", agent.id);
+    return rows
+      .map(decisionPayload)
+      .filter((d) => req.query.only_approved !== "true" || d.approved)
+      .filter((d) => !req.query.action || d.action === req.query.action);
+  });
+
+  app.get("/api/v1/agent-state", async (req) => [agentStatePayload(db, agentOf(req).id)]);
 
   // ---------- Dashboard API ----------
 
@@ -371,6 +421,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       if (REMOTE_STATE[action] !== undefined) await setWorkflowActive(db, agent, REMOTE_STATE[action]!, fetchImpl);
       const message = tx(db, () => applyToAgent(db, agent, action, actorOf(req), now()));
       notifyChange();
+      if (getAgent(db, agent.id)!.paused !== agent.paused) void fireAgentState(db, agent.id, fetchImpl);
       return { message };
     });
 
@@ -390,7 +441,9 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       if (alert?.status === "open" && actionsFor(db, alert).some((a) => a.id === action) && REMOTE_STATE[action] !== undefined) {
         await setWorkflowActive(db, getAgent(db, alert.agent_id)!, REMOTE_STATE[action]!, fetchImpl);
       }
+      const pausedBefore = alert ? getAgent(db, alert.agent_id)?.paused : undefined;
       const message = runPlaybook(db, Number(req.params.id), action, actorOf(req), now());
+      if (alert && getAgent(db, alert.agent_id)?.paused !== pausedBefore) void fireAgentState(db, alert.agent_id, fetchImpl);
       notifyChange();
       return { message };
     });
@@ -412,6 +465,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         });
         // Wake up the waiting workflow (n8n "Wait" node) in the background.
         void deliverDecision(db, Number(req.params.id), fetchImpl).then(() => notifyChange());
+        void fireDecision(db, Number(req.params.id), fetchImpl);
         notifyChange();
         return { message };
       },

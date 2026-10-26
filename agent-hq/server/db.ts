@@ -132,6 +132,17 @@ CREATE TABLE IF NOT EXISTS integrations (
   created_at INTEGER NOT NULL
 );
 
+-- Subscriptions from automation platforms (Zapier REST hooks): Agent HQ
+-- POSTs to target_url when a decision is taken or an agent is paused/resumed.
+CREATE TABLE IF NOT EXISTS hooks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  event TEXT NOT NULL CHECK (event IN ('decision', 'agent_state')),
+  target_url TEXT NOT NULL,
+  filter TEXT,
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS activity (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ts INTEGER NOT NULL,
