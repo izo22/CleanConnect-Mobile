@@ -16,6 +16,7 @@
     "seed": "tsx server/seed-cli.ts",
     "simulate": "tsx scripts/simulate.ts",
     "verify:n8n": "tsx scripts/verify-n8n.ts",
+    "eval:review": "tsx scripts/eval-review.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

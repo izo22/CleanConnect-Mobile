@@ -31,6 +31,7 @@ Les agents simulés passent par le vrai SDK. Ils s'arrêtent quand vous les mett
 | `npm test` | tests du moteur, des garde-fous et de l'API |
 | `npm run typecheck` | vérification TypeScript |
 | `npm run seed` | remet la base de démonstration à zéro |
+| `npm run eval:review` | mesure la fiabilité de la relecture IA sur 20 cas connus (clé Claude requise) |
 | `npm run verify:n8n` | vérifie l'intégration contre un vrai n8n (voir docs/INTEGRATION-N8N.md) |
 
 ### Configuration
@@ -127,6 +128,7 @@ agent-hq/
 
 - Un seul espace de travail, protégé par un code d'accès partagé (`ADMIN_TOKEN`), sans comptes utilisateurs.
 - Les notifications partent vers un webhook unique ; pas encore d'e-mail ni de notification mobile.
+- Relecture IA mesurée sur 20 cas écrits à la main (10 erreurs, 10 réponses justes, une tentative de manipulation) : 20/20, environ 0,4 centime et 4 secondes par relecture avec Claude Opus 5.5. C'est un petit échantillon aux erreurs nettes ; les cas réels seront plus ambigus.
 - La relecture IA ne voit que ce que l'agent transmet (`input` / `output`) ; elle juge par rapport aux consignes, pas par rapport à vos données réelles (stock, CRM…).
 - n8n est intégré (voir plus haut) ; Make et Zapier passent encore par l'API HTTP.
 - Un agent qui ne passe ni par n8n connecté, ni par le SDK / `/api/v1/check` est seulement supervisé : la pause et les garde-fous ne peuvent pas l'arrêter. Chaque fiche agent affiche son niveau réel.

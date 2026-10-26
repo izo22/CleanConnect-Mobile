@@ -13,6 +13,8 @@ export interface Judgement {
   score: number;
   summary: string;
   issues: Array<{ type: string; detail: string }>;
+  /** Tokens used by the review call, to know what supervision costs. */
+  usage?: { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number | null };
 }
 
 export interface ReviewInput {
@@ -99,7 +101,8 @@ export const claudeJudge: Judge = async (r) => {
   const text = res.content.find((b) => b.type === "text");
   if (!text || text.type !== "text") throw new Error("Réponse de relecture vide.");
   const j = JSON.parse(text.text) as Judgement;
-  return { ...j, score: Math.max(0, Math.min(100, Math.round(j.score))) };
+  const usage = { input_tokens: res.usage.input_tokens, output_tokens: res.usage.output_tokens, cache_read_input_tokens: res.usage.cache_read_input_tokens };
+  return { ...j, score: Math.max(0, Math.min(100, Math.round(j.score))), usage };
 };
 
 export function reviewerEnabled(): boolean {
