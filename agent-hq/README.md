@@ -15,7 +15,7 @@ npm run build      # construit l'interface
 npm start          # http://localhost:8787
 ```
 
-Au premier lancement, une base de démonstration est créée : 100 agents, 8 jours d'historique et 4 vrais incidents détectés par le moteur (relances en double, réponses en anglais, coûts en hausse, accès HubSpot expiré).
+Au premier lancement, une base de démonstration est créée : 100 agents, 8 jours d'historique et de vrais incidents détectés par le moteur (relances en double, réponses en anglais, coûts en hausse, accès HubSpot expiré, erreurs de jugement repérées par la relecture IA, erreur signalée par un collègue).
 
 Pour voir des agents travailler en direct, dans un second terminal :
 
@@ -41,6 +41,9 @@ Les agents simulés passent par le vrai SDK. Ils s'arrêtent quand vous les mett
 | `ADMIN_TOKEN` | — | si défini, l'interface demande ce code d'accès |
 | `NOTIFY_WEBHOOK_URL` | — | webhook Slack/Teams pour prévenir les responsables |
 | `SEED_DEMO` | `true` | `false` pour démarrer avec une base vide |
+| `ANTHROPIC_API_KEY` | — | active la relecture par IA (Claude) |
+| `REVIEW_MODEL` | `claude-opus-5-5` | modèle utilisé pour la relecture |
+| `REVIEW_ENABLED` | auto | `false` pour couper la relecture même avec une clé |
 
 Node.js 22.5 ou plus récent est requis (la base utilise `node:sqlite`, sans dépendance native).
 
@@ -50,6 +53,8 @@ Node.js 22.5 ou plus récent est requis (la base utilise `node:sqlite`, sans dé
 - **Mon équipe IA** : une fiche par agent (mission, responsable, budget, accès, niveau de confiance 0/1/2, consignes versionnées, journal, clé de connexion).
 - **Alertes en français** : le moteur détecte les actions en double, les échecs répétés (accès expiré, limite de débit, panne), les réponses dans la mauvaise langue, les hausses de coût et les budgets presque épuisés. Chaque alerte dit *ce qui se passe, pourquoi et l'impact*, et se ferme seule quand le problème disparaît.
 - **Actions en un clic** : mettre en pause, revenir à la version d'avant des consignes, confier à un humain, tout faire valider, passer au modèle économique, relever le budget, prévenir le responsable.
+- **Qualité — relecture par IA** : une part des réponses de chaque agent (10 % par défaut, 100 % au niveau 0, réglable par agent) est relue par Claude, qui la compare aux consignes de l'agent et signale les réponses fausses, inventées, hors consignes ou dans la mauvaise langue. Un humain tranche (« Oui, c'est une erreur » / « Fausse alerte »). Au-delà de 15 % d'erreurs sur 24 h, une alerte s'ouvre.
+- **Signaler une erreur** : n'importe qui dans l'équipe peut signaler une bêtise d'un agent, sur une réponse précise ou en général. Le responsable est prévenu et une alerte s'ouvre, avec les actions habituelles.
 - **Décisions** : les agents demandent la permission avant une action qui dépasse leurs garde-fous, et attendent la réponse.
 - **Garde-fous** : seuils de montant, heures de silence, plafond de dépense mensuel, pause automatique en cas de boucle.
 - **Journal** : qui a fait quoi, humains et agents.
@@ -75,7 +80,8 @@ await hq.guard(
 );
 
 // 3. Rendre compte de son travail.
-await hq.report({ kind: "task", action: "zendesk.reply", cost_cents: 3, language: "fr" });
+// input/output sont facultatifs mais permettent la relecture par IA.
+await hq.report({ kind: "task", action: "zendesk.reply", cost_cents: 3, language: "fr", input: ticket, output: answer });
 ```
 
 Sans SDK, l'API HTTP suffit (n8n, Make et Zapier savent faire des requêtes HTTP) :
@@ -97,6 +103,7 @@ agent-hq/
     engine.ts    moteur d'alertes (détection, mise à jour, fermeture automatique)
     guard.ts     décisions allow / deny / needs_approval
     playbooks.ts actions en un clic
+    reviewer.ts  relecture des réponses par Claude (sortie JSON contrainte)
     translate.ts erreurs techniques → français
     queries.ts   modèles de lecture pour l'interface
   web/           interface React (Vite)
@@ -108,5 +115,6 @@ agent-hq/
 
 - Un seul espace de travail, protégé par un code d'accès partagé (`ADMIN_TOKEN`), sans comptes utilisateurs.
 - Les notifications partent vers un webhook unique ; pas encore d'e-mail ni de notification mobile.
+- La relecture IA ne voit que ce que l'agent transmet (`input` / `output`) ; elle juge par rapport aux consignes, pas par rapport à vos données réelles (stock, CRM…).
 - Pas encore de connecteurs natifs : les agents s'intègrent par le SDK ou l'API HTTP.
 - Les garde-fous existants se règlent depuis l'interface ; en créer de nouveaux types demande du code.

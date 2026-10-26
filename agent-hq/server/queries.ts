@@ -19,6 +19,7 @@ import {
 import { actionsFor } from "./playbooks.ts";
 import type { GlobalBudgetParams } from "./guard.ts";
 import { describeRule } from "./rules.ts";
+import { REVIEW_MODEL, pendingCount, reviewerEnabled } from "./reviewer.ts";
 
 const SEVERITY_ORDER = { critical: 0, blocked: 1, warning: 2 } as const;
 const STATUS_ORDER: Record<AgentStatus, number> = { blocked: 0, attention: 1, paused: 2, ok: 3 };
@@ -148,6 +149,7 @@ export function overview(db: DB, now = Date.now()) {
     },
     alerts,
     approvals,
+    quality_flagged: get<{ n: number }>(db, "SELECT COUNT(*) n FROM reviews WHERE verdict != 'ok' AND human_verdict IS NULL")?.n ?? 0,
   };
 }
 
@@ -164,6 +166,8 @@ export function agentDetail(db: DB, id: string, now = Date.now()) {
     api_key: agent.api_key,
     prompts: all<PromptVersionRow>(db, "SELECT * FROM prompt_versions WHERE agent_id = ? ORDER BY version DESC", id),
     alerts: all<AlertRow>(db, "SELECT * FROM alerts WHERE agent_id = ? ORDER BY created_at DESC LIMIT 10", id).map((a) => alertView(db, a)),
+    review_rate: agent.review_rate,
+    quality: agentQuality(db, id, now),
     activity: activity(db, 15, id),
   };
 }
@@ -189,3 +193,71 @@ export type ApprovalView = ApprovalsView["pending"][number];
 export type AgentDetail = NonNullable<ReturnType<typeof agentDetail>>;
 export type RuleView = ReturnType<typeof rulesView>[number];
 export type ActivityRow = ReturnType<typeof activity>[number];
+
+interface ReviewedExchange {
+  review_id: number;
+  event_id: number;
+  agent_id: string;
+  agent_name: string;
+  ts: number;
+  action: string | null;
+  input: string | null;
+  output: string | null;
+  verdict: "ok" | "doubt" | "error";
+  score: number;
+  summary: string;
+  issues: string;
+  reviewer: string;
+  human_verdict: "confirmed" | "dismissed" | null;
+}
+
+const EXCHANGE_SQL = `
+  SELECT r.id review_id, e.id event_id, e.agent_id, a.name agent_name, e.ts, e.action, e.input, e.output,
+         r.verdict, r.score, r.summary, r.issues, r.reviewer, r.human_verdict
+  FROM reviews r JOIN events e ON e.id = r.event_id JOIN agents a ON a.id = r.agent_id`;
+
+const exchangeView = (x: ReviewedExchange) => ({ ...x, issues: JSON.parse(x.issues) as Array<{ type: string; detail: string }> });
+
+function qualityStats(db: DB, from: number, agentId?: string) {
+  const row = get<{ n: number; errors: number | null; doubts: number | null }>(
+    db,
+    `SELECT COUNT(*) n,
+            SUM(verdict = 'error' AND COALESCE(human_verdict, '') != 'dismissed' OR human_verdict = 'confirmed') errors,
+            SUM(verdict = 'doubt' AND human_verdict IS NULL) doubts
+     FROM reviews WHERE created_at >= ?${agentId ? " AND agent_id = ?" : ""}`,
+    ...(agentId ? [from, agentId] : [from]),
+  );
+  const n = row?.n ?? 0;
+  const errors = row?.errors ?? 0;
+  return { reviewed: n, errors, doubts: row?.doubts ?? 0, quality: n ? 1 - errors / n : null };
+}
+
+export function qualityView(db: DB, now = Date.now()) {
+  const flagged = all<ReviewedExchange>(
+    db,
+    `${EXCHANGE_SQL} WHERE r.verdict != 'ok' AND r.human_verdict IS NULL ORDER BY e.ts DESC LIMIT 50`,
+  ).map(exchangeView);
+  const reports = all<{ id: number; agent_id: string; agent_name: string; author: string; description: string; status: string; created_at: number }>(
+    db,
+    "SELECT p.*, a.name agent_name FROM reports p JOIN agents a ON a.id = p.agent_id ORDER BY p.created_at DESC LIMIT 30",
+  );
+  return {
+    reviewer: { enabled: reviewerEnabled(), model: REVIEW_MODEL, pending: pendingCount(db) },
+    stats: qualityStats(db, now - 7 * DAY),
+    flagged,
+    reports,
+  };
+}
+
+export function agentQuality(db: DB, agentId: string, now = Date.now()) {
+  const recent = all<ReviewedExchange>(db, `${EXCHANGE_SQL} WHERE r.agent_id = ? ORDER BY e.ts DESC LIMIT 6`, agentId).map(exchangeView);
+  const unreviewed = all<{ id: number; ts: number; action: string | null; input: string | null; output: string | null }>(
+    db,
+    "SELECT id, ts, action, input, output FROM events WHERE agent_id = ? AND output IS NOT NULL ORDER BY ts DESC LIMIT 5",
+    agentId,
+  );
+  return { stats: qualityStats(db, now - 7 * DAY, agentId), recent, latest: unreviewed };
+}
+
+export type QualityView = ReturnType<typeof qualityView>;
+export type ExchangeView = ReturnType<typeof exchangeView>;

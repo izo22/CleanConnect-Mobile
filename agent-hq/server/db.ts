@@ -94,6 +94,30 @@ CREATE TABLE IF NOT EXISTS rules (
   created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_id INTEGER NOT NULL UNIQUE REFERENCES events(id) ON DELETE CASCADE,
+  agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  verdict TEXT NOT NULL CHECK (verdict IN ('ok', 'doubt', 'error')),
+  score INTEGER NOT NULL,
+  summary TEXT NOT NULL,
+  issues TEXT NOT NULL DEFAULT '[]',
+  reviewer TEXT NOT NULL,
+  human_verdict TEXT CHECK (human_verdict IN ('confirmed', 'dismissed')),
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS reviews_agent ON reviews (agent_id, created_at);
+
+CREATE TABLE IF NOT EXISTS reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  event_id INTEGER REFERENCES events(id) ON DELETE SET NULL,
+  author TEXT NOT NULL,
+  description TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS activity (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ts INTEGER NOT NULL,
@@ -108,7 +132,25 @@ export function openDb(path = ":memory:"): DB {
   const db = new DatabaseSync(path);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
   db.exec(SCHEMA);
+  migrate(db);
   return db;
+}
+
+/** Columns added after the first release; ALTER them into older databases. */
+const ADDED_COLUMNS: Array<[table: string, column: string, ddl: string]> = [
+  ["events", "input", "TEXT"],
+  ["events", "output", "TEXT"],
+  // NULL = not sampled, 'pending' = waiting for the AI reviewer, 'done' = reviewed.
+  ["events", "review_state", "TEXT"],
+  ["agents", "review_rate", "REAL NOT NULL DEFAULT 0.1"],
+];
+
+function migrate(db: DB) {
+  for (const [table, column, ddl] of ADDED_COLUMNS) {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+    if (!cols.some((c) => c.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
+  }
+  db.exec("CREATE INDEX IF NOT EXISTS events_review ON events (review_state) WHERE review_state = 'pending'");
 }
 
 export function tx<T>(db: DB, fn: () => T): T {

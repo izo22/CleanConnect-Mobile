@@ -110,7 +110,7 @@ export function seed(db: DB, now = Date.now()) {
     insertEvent.run(agentId, Math.round(ts), kind, action, target, ok ? 1 : 0, cost, Math.round(800 + rand() * 6000), language, code, msg);
 
   tx(db, () => {
-    for (const t of ["events", "alerts", "approvals", "prompt_versions", "activity", "rules", "agents"]) db.exec(`DELETE FROM ${t}`);
+    for (const t of ["reviews", "reports", "events", "alerts", "approvals", "prompt_versions", "activity", "rules", "agents"]) db.exec(`DELETE FROM ${t}`);
 
     for (const a of agents) {
       const daily = (a.tasksPerDay * a.costCents) / 100;
@@ -172,6 +172,52 @@ export function seed(db: DB, now = Date.now()) {
     for (let i = 0; i < 14; i++) {
       event("qualification-leads", now - 26 * MINUTE + i * 110_000, "task", "hubspot.update", `lead-${5400 + i}`, false, 0.5, null, "401", "Unauthorized: OAuth access token expired");
     }
+
+    // Incident 4 — judgement errors that only a reader can see. The AI review
+    // (here pre-filled, marked "démo") caught them on the refunds agent.
+    run(db, "UPDATE prompt_versions SET content = ? WHERE agent_id = 'remboursements'",
+      "Tu traites les demandes de remboursement. Rembourse le montant exact de la commande si l'article est arrivé endommagé ET qu'une photo est jointe, dans les 30 jours suivant la livraison. Une erreur de couleur ou de goût n'est pas un dommage : propose un échange. Au-delà de 200 €, demande une validation. Ne donne jamais d'information de livraison que tu n'as pas.");
+    const refundCases: Array<[string, string, "ok" | "doubt" | "error", string, Array<[string, string]>]> = [
+      ["Commande n° 8790 · 98,00 € · bol en céramique cassé, photo jointe.", "Remboursement de 89,00 € effectué sur la carte du client.", "error",
+        "Il a remboursé 89 € alors que la commande faisait 98 €.", [["incorrect", "Le montant remboursé ne correspond pas au montant de la commande (98 €)."]]],
+      ["Commande n° 8771 · 45,00 € · livrée le 2 septembre. Le client demande un remboursement le 20 octobre, sans photo.", "Remboursement de 45,00 € effectué. Bonne journée !", "error",
+        "Il a remboursé hors délai (48 jours) et sans photo, contrairement à ses consignes.", [["hors_consignes", "Le délai de 30 jours est dépassé et aucune photo n'a été fournie."]]],
+      ["Commande n° 8802 · 64,00 € · le client dit n'avoir jamais reçu son colis.", "Je vous confirme que le transporteur a livré votre colis le 18 octobre à 10 h 12, signé par M. Durand.", "error",
+        "Il invente une preuve de livraison (heure et signataire) qui n'apparaît nulle part.", [["invente", "Aucune information de suivi n'était disponible : l'heure et le nom du signataire sont inventés."]]],
+      ["Commande n° 8810 · 120,00 € · le client trouve que la couleur ne correspond pas à la photo du site.", "Remboursement de 120,00 € effectué.", "doubt",
+        "Une couleur différente n'est pas un dommage : il aurait dû proposer un échange.", [["hors_consignes", "Les consignes prévoient un échange pour une erreur de couleur."]]],
+    ];
+    for (let i = 0; i < 8; i++) {
+      const amount = [32, 54, 18, 76, 41, 23, 67, 95][i];
+      refundCases.push([`Commande n° ${8820 + i} · ${amount},00 € · article arrivé cassé, photo jointe.`, `Remboursement de ${amount},00 € effectué. Toutes nos excuses pour ce désagrément.`, "ok",
+        "Montant exact, photo présente, dans les délais.", []]);
+    }
+    refundCases.forEach(([input, output, verdict, summary, issues], i) => {
+      const ts = now - (19 - i * 1.5) * HOUR;
+      const res = run(db,
+        "INSERT INTO events (agent_id, ts, kind, action, target, success, cost_cents, input, output, review_state) VALUES ('remboursements', ?, 'task', 'stripe.refund', ?, 1, 9, ?, ?, 'done')",
+        Math.round(ts), `refund-${i}`, input, output);
+      run(db, "INSERT INTO reviews (event_id, agent_id, verdict, score, summary, issues, reviewer, created_at) VALUES (?, 'remboursements', ?, ?, ?, ?, 'démo', ?)",
+        Number(res.lastInsertRowid), verdict, verdict === "ok" ? 95 : verdict === "doubt" ? 55 : 15, summary,
+        JSON.stringify(issues.map(([type, detail]) => ({ type, detail }))), Math.round(ts + MINUTE));
+    });
+
+    // Recent support answers, readable in the agent's file (not reviewed yet).
+    const support: Array<[string, string]> = [
+      ["Bonjour, ma commande 4521 devait arriver lundi et je n'ai toujours rien.", "Bonjour, je suis désolé pour ce retard. Votre colis 4521 est en transit et devrait arriver demain avant 13 h. Je reste disponible si besoin."],
+      ["Est-ce que vous livrez en Belgique ?", "Bonjour ! Oui, nous livrons en Belgique en 3 à 5 jours ouvrés. Les frais de port sont offerts dès 60 € d'achat."],
+      ["Je n'arrive pas à me connecter à mon compte.", "Hello! You can reset your password using the 'Forgot password' link on the login page."],
+    ];
+    support.forEach(([input, output], i) => {
+      run(db,
+        "INSERT INTO events (agent_id, ts, kind, action, target, success, cost_cents, language, input, output) VALUES ('support-client-fr', ?, 'task', 'zendesk.reply', ?, 1, 7, ?, ?, ?)",
+        now - (40 - i * 12) * MINUTE, `ticket-9${i}`, /^Hello/.test(output) ? "en" : "fr", input, output);
+    });
+
+    // An error spotted by a colleague.
+    run(db, "INSERT INTO reports (agent_id, author, description, created_at) VALUES ('redaction-devis', 'Karim Benali', ?, ?)",
+      "Le devis envoyé à Garage Lemaire était calculé avec une TVA à 10 % au lieu de 20 %.", now - 3 * HOUR);
+    logActivity(db, "Karim Benali", "Erreur signalée sur Rédaction devis : TVA à 10 % au lieu de 20 %.", "redaction-devis", now - 3 * HOUR);
 
     // Pending decisions.
     const approval = (agent: string, action: string, title: string, context: string, reason: string, amount: number | null, ago: number) =>

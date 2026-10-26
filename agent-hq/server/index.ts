@@ -6,6 +6,7 @@ import { buildApp } from "./app.ts";
 import { get, openDb } from "./db.ts";
 import { evaluateAll } from "./engine.ts";
 import { notifyChange } from "./model.ts";
+import { startReviewer } from "./reviewer.ts";
 import { seed } from "./seed.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -35,6 +36,8 @@ setInterval(() => {
   evaluateAll(db);
   notifyChange();
 }, 60_000).unref();
+
+startReviewer(db);
 
 await app.listen({ port, host });
 console.log(`Agent HQ en ligne sur http://localhost:${port}`);

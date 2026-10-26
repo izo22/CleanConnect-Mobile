@@ -213,9 +213,55 @@ function detectBudget(db: DB, agent: AgentRow, now: number): Finding | "healthy"
   };
 }
 
+const QUALITY_WINDOW = DAY;
+
+function detectQuality(db: DB, agent: AgentRow, now: number): Finding | "healthy" | null {
+  const from = since(db, agent.id, ["quality"], now - QUALITY_WINDOW);
+  const rows = all<{ verdict: string; human_verdict: string | null; summary: string; created_at: number }>(
+    db,
+    `SELECT verdict, human_verdict, summary, created_at FROM reviews
+     WHERE agent_id = ? AND created_at >= ? AND (human_verdict IS NULL OR human_verdict = 'confirmed')
+     ORDER BY created_at DESC`,
+    agent.id, from,
+  );
+  const errors = rows.filter((r) => r.verdict === "error" || r.human_verdict === "confirmed");
+  const rate = rows.length ? errors.length / rows.length : 0;
+  if (errors.length === 0 || (rows.length >= 5 && rate < 0.05)) return "healthy";
+  if (rows.length < 5 || errors.length < 3 || rate < 0.15) return null;
+  return {
+    kind: "quality",
+    severity: rate >= 0.3 ? "critical" : "warning",
+    title: `${errors.length} réponses sur ${rows.length} relues contiennent des erreurs`,
+    cause: `la relecture par IA a trouvé des réponses fausses ou hors consignes. Dernier exemple : « ${errors[0].summary} »`,
+    impact: `environ ${Math.round(rate * 100)} % de ses réponses relues sont à corriger.`,
+    since: Math.min(...errors.map((e) => e.created_at)),
+  };
+}
+
+function detectReports(db: DB, agent: AgentRow): Finding | "healthy" {
+  const open = all<{ author: string; description: string; created_at: number }>(
+    db,
+    "SELECT author, description, created_at FROM reports WHERE agent_id = ? AND status = 'open' ORDER BY created_at DESC",
+    agent.id,
+  );
+  if (!open.length) return "healthy";
+  const authors = [...new Set(open.map((r) => r.author))];
+  return {
+    kind: "human_report",
+    severity: open.length >= 2 ? "critical" : "warning",
+    title: open.length > 1 ? `${open.length} erreurs signalées par votre équipe` : `Erreur signalée par ${open[0].author}`,
+    cause: `« ${open[0].description} »`,
+    impact: open.length > 1 ? `signalé par ${authors.join(", ")}.` : "à vérifier avant que cela se reproduise.",
+    since: open[open.length - 1].created_at,
+  };
+}
+
 export function evaluateAgent(db: DB, agentId: string, now = Date.now()): void {
   const agent = getAgent(db, agentId);
   if (!agent) return;
+
+  const reports = detectReports(db, agent);
+  if (reports !== "healthy") upsertAlert(db, agent.id, reports, now);
 
   const dup = detectDuplicates(db, agent, now);
   if (dup) {
@@ -240,11 +286,18 @@ export function evaluateAgent(db: DB, agentId: string, now = Date.now()): void {
     }
   }
 
-  for (const [detector, kind] of [[detectLanguage, "language"], [detectCost, "cost"], [detectBudget, "budget"]] as const) {
+  for (const [detector, kind] of [[detectLanguage, "language"], [detectCost, "cost"], [detectBudget, "budget"], [detectQuality, "quality"]] as const) {
     const found = detector(db, agent, now);
     if (found === "healthy") autoResolve(db, agent.id, [kind], "Revenu à la normale.", now);
     else if (found) upsertAlert(db, agent.id, found, now);
   }
+}
+
+export function evaluateReports(db: DB, agentId: string, now = Date.now()): void {
+  const agent = getAgent(db, agentId);
+  if (!agent) return;
+  const found = detectReports(db, agent);
+  if (found !== "healthy") upsertAlert(db, agent.id, found, now);
 }
 
 export function evaluateAll(db: DB, now = Date.now()): void {

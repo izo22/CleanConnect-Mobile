@@ -1,0 +1,61 @@
+import { useData, type QualityView } from "../api.ts";
+import { ago, num, pct } from "../format.ts";
+import { ErrorBox, Skeleton } from "../components/ui.tsx";
+import { FlaggedCard } from "../components/quality.tsx";
+
+export function Quality() {
+  const { data, error } = useData<QualityView>("/api/quality");
+  return (
+    <>
+      <header className="page-head">
+        <div className="titles">
+          <h1 className="h1">Qualité</h1>
+          <span className="sub">Une IA relit une partie des réponses de vos agents et signale celles qui semblent fausses. Vous tranchez.</span>
+        </div>
+      </header>
+      {error && <ErrorBox message={error.message} />}
+      {!data && !error && <Skeleton count={2} />}
+      {data && (
+        <>
+          {data.reviewer.enabled ? (
+            <div className="banner on"><span className="dot" />Relecture IA active · {data.reviewer.pending > 0 ? `${data.reviewer.pending} réponse${data.reviewer.pending > 1 ? "s" : ""} en attente de relecture` : "à jour"}</div>
+          ) : (
+            <div className="banner off"><span className="dot" />Relecture IA en pause : ajoutez une clé ANTHROPIC_API_KEY sur le serveur pour l'activer. Les relectures affichées ici sont des exemples de démonstration.</div>
+          )}
+
+          <div className="kpis" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+            <div className="kpi violet"><span className="k">Réponses relues</span><span className="v">{num(data.stats.reviewed)}</span><span className="h">7 derniers jours</span></div>
+            <div className="kpi coral"><span className="k">Erreurs trouvées</span><span className="v">{num(data.stats.errors)}</span><span className="h">dont {data.stats.doubts} à vérifier</span></div>
+            <div className="kpi green"><span className="k">Taux de réponses justes</span><span className="v">{pct(data.stats.quality)}</span><span className="h">sur les réponses relues</span></div>
+          </div>
+
+          <section className="section" aria-labelledby="flag-h">
+            <h2 id="flag-h" className="h2">À trancher <span className="muted">· {data.flagged.length}</span></h2>
+            {data.flagged.length === 0 ? (
+              <p className="empty">Rien à trancher. Les réponses relues sont correctes.</p>
+            ) : (
+              <div className="grid-cards">{data.flagged.map((x) => <FlaggedCard key={x.review_id} x={x} />)}</div>
+            )}
+          </section>
+
+          {data.reports.length > 0 && (
+            <section className="section" aria-labelledby="rep-h">
+              <h2 id="rep-h" className="h2" style={{ fontSize: 22 }}>Erreurs signalées par l'équipe</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {data.reports.map((r) => (
+                  <div key={r.id} className="resolved-row">
+                    <span className="t"><strong>{r.agent_name}</strong> · « {r.description} »</span>
+                    <span className="muted" style={{ fontSize: 13 }}>{r.author} · {ago(r.created_at)}</span>
+                    <span className="pill" style={r.status === "open" ? { background: "#FFE9DF", color: "#9A3412" } : { background: "#DDF7E9", color: "#0E6B3F" }}>
+                      {r.status === "open" ? "Ouvert" : "Réglé"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
+      )}
+    </>
+  );
+}

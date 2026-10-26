@@ -8,7 +8,9 @@ export type {
   AlertsView,
   ApprovalView,
   ApprovalsView,
+  ExchangeView,
   Overview,
+  QualityView,
   RuleView,
 } from "../../server/queries.ts";
 

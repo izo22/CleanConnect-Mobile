@@ -273,3 +273,22 @@ details.prompt p { font-size: 13px; line-height: 1.5; color: var(--ink-2); paddi
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Quality ---------- */
+.banner { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 18px; font-size: 14px; }
+.banner.on { background: var(--ok-soft); color: var(--ok-text); }
+.banner.off { background: #fff4ee; color: var(--warn-text); }
+.banner .dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; flex: none; }
+.issues { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.exchange { display: grid; gap: 8px; }
+.exchange .bubble { padding: 10px 12px; border-radius: 14px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+.exchange .bubble.in { background: var(--sunken); }
+.exchange .bubble.out { background: var(--accent-soft); color: #2e2470; }
+.exchange .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); }
+details.more-ex summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent-text); padding: 4px 0; }
+.mini-ex { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px; background: var(--sunken); }
+.mini-ex .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mini-ex p { font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+.btn.small { min-height: 34px; padding: 0 12px; font-size: 12px; }
+.btn.danger { background: #fdecea; color: #8a1c16; }
+.btn.danger:hover:not(:disabled) { background: #fbd9d5; }

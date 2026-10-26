@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { api, useData, type AgentDetail, type AgentSummary } from "../api.ts";
 import { euros, num, pct, shortTime } from "../format.ts";
 import { Avatar, ErrorBox, Icon, Skeleton, Sparkline, StatusPill, Trust, useAction, useToast } from "../components/ui.tsx";
+import { Exchange, ReportModal, VerdictPill } from "../components/quality.tsx";
 
 type Filter = "all" | "issues" | "paused";
 const FILTERS: Array<{ id: Filter; label: string; test: (a: AgentSummary) => boolean }> = [
@@ -105,8 +106,9 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   const [editing, setEditing] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [showKey, setShowKey] = useState(false);
+  const [reporting, setReporting] = useState<{ eventId?: number; excerpt?: string | null } | null>(null);
 
-  useEffect(() => { setEditing(false); setShowKey(false); }, [id]);
+  useEffect(() => { setEditing(false); setShowKey(false); setReporting(null); }, [id]);
 
   if (error) return <aside className="drawer"><ErrorBox message={error.message} /></aside>;
   if (!data) return <aside className="drawer"><div className="skeleton" /></aside>;
@@ -180,7 +182,10 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
         </button>
         {canRollback && <button type="button" className="btn" disabled={busy !== null} onClick={() => run("r", `/api/agents/${id}/actions/rollback`).then(reload)}>Revenir à la version d'avant</button>}
         {!data.paused && <button type="button" className="btn" disabled={busy !== null} onClick={() => run("h", `/api/agents/${id}/actions/handoff`).then(reload)}>Confier à {data.owner_name.split(" ")[0] || "un humain"}</button>}
+        <button type="button" className="btn danger" onClick={() => setReporting({})}><Icon name="flag" size={15} /> Signaler une erreur</button>
       </div>
+
+      <QualityBlock data={data} onReport={(eventId, excerpt) => setReporting({ eventId, excerpt })} onRate={(review_rate) => patch({ review_rate }, review_rate ? `L'IA relira ${Math.round(review_rate * 100)} % de ses réponses.` : "Relecture désactivée pour cet agent.")} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -228,7 +233,52 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
           </div>
         </div>
       )}
+      {reporting && <ReportModal agentId={data.id} agentName={data.name} eventId={reporting.eventId} excerpt={reporting.excerpt} onClose={() => { setReporting(null); reload(); }} />}
     </aside>
+  );
+}
+
+const RATES = [0, 0.05, 0.1, 0.25, 1];
+
+function QualityBlock({ data, onReport, onRate }: { data: AgentDetail; onReport: (eventId: number, excerpt: string | null) => void; onRate: (rate: number) => void }) {
+  const q = data.quality;
+  const reviewedIds = new Set(q.recent.map((r) => r.event_id));
+  const unreviewed = q.latest.filter((e) => !reviewedIds.has(e.id)).slice(0, 3);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+        <span className="block-title">Qualité des réponses</span>
+        <span style={{ fontSize: 13, color: "#45424C" }}>
+          {q.stats.reviewed ? `${pct(q.stats.quality)} justes · ${q.stats.reviewed} relues en 7 j` : "Pas encore de relecture"}
+        </span>
+      </div>
+      <div className="field">
+        <label htmlFor="rate">Part des réponses relues par l'IA</label>
+        <select id="rate" value={RATES.includes(data.review_rate) ? data.review_rate : 0.1} onChange={(e) => onRate(Number(e.target.value))} disabled={data.autonomy === 0}>
+          {RATES.map((r) => <option key={r} value={r}>{r === 0 ? "Aucune" : r === 1 ? "Toutes" : `${Math.round(r * 100)} %`}</option>)}
+        </select>
+        {data.autonomy === 0 && <span className="hint">Au niveau 0, toutes ses réponses sont relues.</span>}
+      </div>
+      {q.recent.map((x) => (
+        <div key={x.review_id} className="mini-ex">
+          <div className="top"><VerdictPill verdict={x.verdict} /><span className="muted" style={{ fontSize: 12 }}>{shortTime(x.ts)}{x.human_verdict === "confirmed" ? " · confirmée" : x.human_verdict === "dismissed" ? " · fausse alerte" : ""}</span></div>
+          <p>{x.summary}</p>
+          <details className="more-ex"><summary>Voir l'échange</summary><Exchange input={x.input} output={x.output} /></details>
+          {x.verdict === "ok" && !x.human_verdict && <button type="button" className="btn small" style={{ alignSelf: "flex-start" }} onClick={() => onReport(x.event_id, x.output)}>En fait, c'est faux</button>}
+        </div>
+      ))}
+      {unreviewed.length > 0 && (
+        <>
+          <span className="muted" style={{ fontSize: 13 }}>Dernières réponses, pas encore relues :</span>
+          {unreviewed.map((e) => (
+            <div key={e.id} className="mini-ex">
+              <details className="more-ex"><summary>{shortTime(e.ts)} · {(e.output ?? "").slice(0, 70)}{(e.output ?? "").length > 70 ? "…" : ""}</summary><Exchange input={e.input} output={e.output} /></details>
+              <button type="button" className="btn small" style={{ alignSelf: "flex-start" }} onClick={() => onReport(e.id, e.output)}>Signaler une erreur</button>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
   );
 }
 

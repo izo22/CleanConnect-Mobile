@@ -1,6 +1,6 @@
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import { get, run, tx, type DB } from "./db.ts";
-import { evaluateAgent } from "./engine.ts";
+import { evaluateAgent, evaluateReports } from "./engine.ts";
 import { check, type CheckRequest } from "./guard.ts";
 import {
   DAY,
@@ -17,8 +17,10 @@ import {
   type RuleRow,
 } from "./model.ts";
 import { PlaybookError, applyToAgent, runPlaybook, type PlaybookId } from "./playbooks.ts";
+import { notify } from "./notify.ts";
 import { describeRule } from "./rules.ts";
-import { activity, agentDetail, agentSummaries, alertsView, approvalsView, overview, rulesView } from "./queries.ts";
+import { shouldSample } from "./reviewer.ts";
+import { activity, agentDetail, agentSummaries, alertsView, approvalsView, overview, qualityView, rulesView } from "./queries.ts";
 
 export interface AppOptions {
   db: DB;
@@ -38,6 +40,8 @@ interface EventIn {
   language?: string;
   error_code?: string;
   error_message?: string;
+  input?: string;
+  output?: string;
   ts?: number;
   meta?: Record<string, unknown>;
 }
@@ -56,10 +60,14 @@ const eventSchema = {
     language: { type: "string", maxLength: 10 },
     error_code: { type: "string", maxLength: 100 },
     error_message: { type: "string", maxLength: 2000 },
+    input: { type: "string", maxLength: 20_000 },
+    output: { type: "string", maxLength: 20_000 },
     ts: { type: "integer" },
     meta: { type: "object" },
   },
 } as const;
+
+const REVIEW_INPUT = { type: "object", required: ["confirmed"], additionalProperties: false, properties: { confirmed: { type: "boolean" } } } as const;
 
 const PLAYBOOK_IDS: PlaybookId[] = ["pause", "resume", "rollback", "handoff", "notify_owner", "autonomy0", "economy", "raise_budget"];
 
@@ -138,8 +146,8 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false }: App
       const list = "events" in req.body ? req.body.events : [req.body];
       const t = now();
       const stmt = db.prepare(
-        `INSERT INTO events (agent_id, ts, kind, action, target, success, cost_cents, duration_ms, language, error_code, error_message, meta)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO events (agent_id, ts, kind, action, target, success, cost_cents, duration_ms, language, error_code, error_message, meta, input, output, review_state)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       );
       tx(db, () => {
         for (const e of list) {
@@ -148,7 +156,8 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false }: App
           stmt.run(
             agent.id, ts, e.kind, e.action ?? null, e.target ?? null, success ? 1 : 0, e.cost_cents ?? 0,
             e.duration_ms ?? null, e.language ?? null, e.error_code ?? null, e.error_message ?? null,
-            e.meta ? JSON.stringify(e.meta) : null,
+            e.meta ? JSON.stringify(e.meta) : null, e.input ?? null, e.output ?? null,
+            shouldSample(agent, !!e.output) ? "pending" : null,
           );
         }
         evaluateAgent(db, agent.id, t);
@@ -206,6 +215,51 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false }: App
     admin.get("/api/approvals", async () => approvalsView(db));
     admin.get("/api/rules", async () => rulesView(db));
     admin.get("/api/activity", async () => activity(db, 80));
+    admin.get("/api/quality", async () => qualityView(db, now()));
+
+    admin.post<{ Params: { id: string }; Body: { description: string; event_id?: number } }>(
+      "/api/agents/:id/reports",
+      {
+        schema: {
+          body: {
+            type: "object",
+            required: ["description"],
+            additionalProperties: false,
+            properties: { description: { type: "string", minLength: 3, maxLength: 2000 }, event_id: { type: "integer" } },
+          },
+        },
+      },
+      async (req, reply) => {
+        const agent = getAgent(db, req.params.id);
+        if (!agent) throw notFound("Agent");
+        const { description, event_id } = req.body;
+        if (event_id !== undefined && !get(db, "SELECT 1 FROM events WHERE id = ? AND agent_id = ?", event_id, agent.id)) throw notFound("Échange");
+        const t = now();
+        const author = actorOf(req);
+        tx(db, () => {
+          run(db, "INSERT INTO reports (agent_id, event_id, author, description, created_at) VALUES (?, ?, ?, ?, ?)", agent.id, event_id ?? null, author, description.trim(), t);
+          if (event_id !== undefined) run(db, "UPDATE reviews SET human_verdict = 'confirmed' WHERE event_id = ?", event_id);
+          logActivity(db, author, `Erreur signalée sur ${agent.name} : ${description.trim()}`, agent.id, t);
+          evaluateReports(db, agent.id, t);
+        });
+        notify(`${author} a signalé une erreur de l'agent « ${agent.name} » : ${description.trim()}`, agent.owner_email);
+        notifyChange();
+        return reply.code(201).send({ message: `Merci, c'est noté. ${agent.owner_name || "Le responsable"} est prévenu.` });
+      },
+    );
+
+    admin.post<{ Params: { id: string }; Body: { confirmed: boolean } }>("/api/reviews/:id/verdict", { schema: { body: REVIEW_INPUT } }, async (req) => {
+      const review = get<{ id: number; agent_id: string; summary: string }>(db, "SELECT id, agent_id, summary FROM reviews WHERE id = ?", Number(req.params.id));
+      if (!review) throw notFound("Relecture");
+      const t = now();
+      tx(db, () => {
+        run(db, "UPDATE reviews SET human_verdict = ? WHERE id = ?", req.body.confirmed ? "confirmed" : "dismissed", review.id);
+        logActivity(db, actorOf(req), req.body.confirmed ? `Erreur confirmée : ${review.summary}` : `Fausse alerte de la relecture : ${review.summary}`, review.agent_id, t);
+        evaluateAgent(db, review.agent_id, t);
+      });
+      notifyChange();
+      return { message: req.body.confirmed ? "Erreur confirmée. Elle compte dans la qualité de l'agent." : "Noté : fausse alerte, elle ne compte plus." };
+    });
 
     admin.get<{ Params: { id: string } }>("/api/agents/:id", async (req) => {
       const d = agentDetail(db, req.params.id, now());
@@ -227,13 +281,14 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false }: App
         expected_language: { type: ["string", "null"], maxLength: 10 },
         access: { type: "array", maxItems: 30, items: { type: "string", maxLength: 80 } },
         minutes_per_task: { type: "number", minimum: 0, maximum: 600 },
+        review_rate: { type: "number", minimum: 0, maximum: 1 },
         prompt: { type: "string", maxLength: 50_000 },
       },
     } as const;
 
     type AgentBody = Partial<{
       name: string; mission: string; owner_name: string; owner_email: string; platform: string; autonomy: number;
-      budget_cents: number; expected_language: string | null; access: string[]; minutes_per_task: number; prompt: string;
+      budget_cents: number; expected_language: string | null; access: string[]; minutes_per_task: number; prompt: string; review_rate: number;
     }>;
 
     admin.post<{ Body: AgentBody }>("/api/agents", { schema: { body: { ...agentBody, required: ["name"] } } }, async (req, reply) => {

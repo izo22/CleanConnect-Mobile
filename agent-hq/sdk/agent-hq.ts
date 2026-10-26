@@ -6,7 +6,8 @@
  *   const hq = new AgentHQ({ url: "https://hq.example.com", key: process.env.AGENT_HQ_KEY! });
  *   await hq.guard({ action: "stripe.refund", amount_cents: 34000, summary: "Rembourser 340 €" },
  *                  () => stripe.refunds.create(...));
- *   await hq.report({ kind: "task", action: "zendesk.reply", cost_cents: 3, language: "fr" });
+ *   await hq.report({ kind: "task", action: "zendesk.reply", cost_cents: 3, language: "fr",
+ *                     input: ticket.body, output: answer });   // input/output enable AI review
  */
 
 export interface AgentEvent {
@@ -19,6 +20,10 @@ export interface AgentEvent {
   language?: string;
   error_code?: string;
   error_message?: string;
+  /** What the agent received (the customer's message, the request…). Used for AI review. */
+  input?: string;
+  /** What the agent answered or did. A sample is re-read by the AI reviewer. */
+  output?: string;
   ts?: number;
   meta?: Record<string, unknown>;
 }

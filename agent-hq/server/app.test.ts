@@ -5,6 +5,7 @@ import { evaluateAgent } from "./engine.ts";
 import { check, inQuietHours } from "./guard.ts";
 import { HOUR, MINUTE, getAgent, newApiKey, type AgentRow } from "./model.ts";
 import { classifyError } from "./translate.ts";
+import { reviewPending, shouldSample, type Judge } from "./reviewer.ts";
 
 process.env.NODE_ENV = "test";
 
@@ -191,5 +192,58 @@ describe("HTTP API", () => {
     const a = addAgent(db, "a");
     const bad = await app.inject({ method: "POST", url: "/api/v1/events", headers: { authorization: `Bearer ${a.api_key}` }, payload: { kind: "nope" } });
     expect(bad.statusCode).toBe(400);
+  });
+});
+
+describe("human reports and AI review", () => {
+  it("turns a reported error into an alert, and closes the report when handled", async () => {
+    const app = buildApp({ db, now: () => NOW });
+    addAgent(db, "a");
+    const res = await app.inject({ method: "POST", url: "/api/agents/a/reports", headers: { "x-user-name": "Karim" }, payload: { description: "TVA à 10 % au lieu de 20 %" } });
+    expect(res.statusCode).toBe(201);
+    const open = (await app.inject({ url: "/api/alerts" })).json().open;
+    expect(open).toHaveLength(1);
+    expect(open[0].title).toBe("Erreur signalée par Karim");
+    expect(open[0].actions.map((x: { id: string }) => x.id)).toContain("dismiss");
+
+    await app.inject({ method: "POST", url: `/api/alerts/${open[0].id}/actions/autonomy0` });
+    expect(getAgent(db, "a")!.autonomy).toBe(0);
+    expect(get<{ status: string }>(db, "SELECT status FROM reports")!.status).toBe("closed");
+    evaluateAgent(db, "a", NOW + MINUTE);
+    expect(openAlertKinds(db, "a")).toEqual([]);
+  });
+
+  it("samples answers at ingest, reviews them and raises a quality alert", async () => {
+    const app = buildApp({ db, now: () => NOW });
+    const a = addAgent(db, "a");
+    run(db, "UPDATE agents SET review_rate = 1 WHERE id = 'a'");
+    const events = Array.from({ length: 8 }, (_, i) => ({ kind: "task", input: `question ${i}`, output: `réponse ${i}`, ts: NOW - HOUR + i }));
+    await app.inject({ method: "POST", url: "/api/v1/events", headers: { authorization: `Bearer ${a.api_key}` }, payload: { events } });
+    expect(get<{ n: number }>(db, "SELECT COUNT(*) n FROM events WHERE review_state = 'pending'")!.n).toBe(8);
+
+    // A fake judge: every answer mentioning an odd number is wrong.
+    const seen: string[] = [];
+    const judge: Judge = async (r) => {
+      seen.push(r.output);
+      const bad = Number(r.output.split(" ")[1]) % 2 === 1;
+      return { verdict: bad ? "error" : "ok", score: bad ? 10 : 90, summary: bad ? "Réponse fausse." : "Correct.", issues: [] };
+    };
+    let total = 0;
+    for (let i = 0; i < 3; i++) total += await reviewPending(db, judge, { limit: 4, reviewer: "test", now: () => NOW });
+    expect(total).toBe(8);
+    expect(seen).toHaveLength(8);
+    expect(openAlertKinds(db, "a")).toEqual(["quality"]);
+
+    // Humans can overrule the reviewer: dismissing false alarms clears the alert.
+    const quality = (await app.inject({ url: "/api/quality" })).json();
+    expect(quality.flagged).toHaveLength(4);
+    for (const f of quality.flagged) await app.inject({ method: "POST", url: `/api/reviews/${f.review_id}/verdict`, payload: { confirmed: false } });
+    expect(openAlertKinds(db, "a")).toEqual([]);
+  });
+
+  it("always reviews level-0 agents, never answers without output", () => {
+    const trainee = addAgent(db, "t", { autonomy: 0 });
+    expect(shouldSample(trainee, true, 0.99)).toBe(true);
+    expect(shouldSample(trainee, false, 0)).toBe(false);
   });
 });

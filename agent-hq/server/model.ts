@@ -22,6 +22,7 @@ export interface AgentRow {
   access: string;
   minutes_per_task: number;
   api_key: string;
+  review_rate: number;
   created_at: number;
 }
 
@@ -66,6 +67,31 @@ export interface RuleRow {
 }
 
 export type RuleKind = "approval_amount" | "quiet_hours" | "global_budget" | "repeat_pause";
+
+export type Verdict = "ok" | "doubt" | "error";
+
+export interface ReviewRow {
+  id: number;
+  event_id: number;
+  agent_id: string;
+  verdict: Verdict;
+  score: number;
+  summary: string;
+  issues: string;
+  reviewer: string;
+  human_verdict: "confirmed" | "dismissed" | null;
+  created_at: number;
+}
+
+export interface ReportRow {
+  id: number;
+  agent_id: string;
+  event_id: number | null;
+  author: string;
+  description: string;
+  status: "open" | "closed";
+  created_at: number;
+}
 
 export interface PromptVersionRow {
   id: number;

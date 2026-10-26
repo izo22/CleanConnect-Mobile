@@ -8,7 +8,7 @@ import { resolveAlert } from "./engine.ts";
 import { euros, firstName, getAgent, logActivity, type AgentRow, type AlertRow } from "./model.ts";
 import { notify } from "./notify.ts";
 
-export type PlaybookId = "pause" | "resume" | "rollback" | "handoff" | "notify_owner" | "autonomy0" | "economy" | "raise_budget";
+export type PlaybookId = "pause" | "resume" | "rollback" | "handoff" | "notify_owner" | "autonomy0" | "economy" | "raise_budget" | "dismiss";
 
 export interface PlaybookAction { id: PlaybookId; label: string }
 
@@ -20,6 +20,8 @@ const PLAYBOOKS: Record<string, PlaybookId[]> = {
   language: ["autonomy0", "rollback", "pause"],
   cost: ["economy", "pause"],
   budget: ["raise_budget", "economy", "pause"],
+  quality: ["autonomy0", "rollback", "pause", "dismiss"],
+  human_report: ["autonomy0", "rollback", "pause", "dismiss"],
 };
 
 export class PlaybookError extends Error {}
@@ -44,6 +46,7 @@ export function label(id: PlaybookId, agent: AgentRow): string {
     case "autonomy0": return "Tout faire valider";
     case "economy": return "Passer au modèle économique";
     case "raise_budget": return `Budget +${euros(raiseAmount(agent))}`;
+    case "dismiss": return "C'est réglé";
   }
 }
 
@@ -99,6 +102,9 @@ export function applyToAgent(db: DB, agent: AgentRow, id: PlaybookId, actor: str
       run(db, "UPDATE agents SET model_tier = 'economy' WHERE id = ?", agent.id);
       message = `${agent.name} utilise désormais le modèle économique.`;
       break;
+    case "dismiss":
+      message = `Problème marqué comme réglé pour ${agent.name}.`;
+      break;
     case "raise_budget": {
       const next = agent.budget_cents + raiseAmount(agent);
       run(db, "UPDATE agents SET budget_cents = ? WHERE id = ?", next, agent.id);
@@ -123,6 +129,8 @@ export function runPlaybook(db: DB, alertId: number, id: PlaybookId, actor: stri
       run(db, "UPDATE alerts SET resolution = ?, updated_at = ? WHERE id = ?", `En attente de ${agent.owner_name}.`, now, alert.id);
     } else {
       resolveAlert(db, alert.id, message, now);
+      // Whatever was done, the reports behind this alert have been dealt with.
+      if (alert.kind === "human_report") run(db, "UPDATE reports SET status = 'closed' WHERE agent_id = ? AND status = 'open'", agent.id);
     }
     return message;
   });

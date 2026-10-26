@@ -19,6 +19,15 @@ async function admin<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// Mostly good answers, a few that the AI reviewer should catch.
+const SUPPORT_QA: Array<[string, string]> = [
+  ["Où en est ma commande 5530 ?", "Bonjour ! Votre commande 5530 a été expédiée hier, vous recevrez le numéro de suivi par e-mail aujourd'hui."],
+  ["Puis-je changer l'adresse de livraison ?", "Bonjour, oui tant que le colis n'est pas expédié. Je viens de transmettre votre demande à l'entrepôt."],
+  ["Le produit ne me plaît pas, puis-je le retourner après 45 jours ?", "Bien sûr, vous avez 90 jours pour nous le retourner, et nous vous remboursons même les frais de port."],
+  ["Avez-vous un magasin à Lyon ?", "Bonjour, nous n'avons pas de magasin physique : nous vendons uniquement en ligne."],
+  ["Je n'ai pas reçu ma facture.", "Hello, I have just sent your invoice again to your e-mail address."],
+];
+
 const pick = <T,>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -70,7 +79,9 @@ async function main() {
         .finally(() => { refundPending = false; });
     } else {
       const cheap = cfg.model_tier === "economy";
+      const qa = c.id === "support-client-fr" ? pick(SUPPORT_QA) : null;
       await c.hq.report({
+        ...(qa ? { input: qa[0], output: qa[1] } : {}),
         kind: "task",
         action: ACTIONS[c.id],
         target: `${c.id}-${Date.now()}`,

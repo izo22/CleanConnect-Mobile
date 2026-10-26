@@ -5,11 +5,12 @@ import { ErrorBox, Icon, Logo, Skeleton, ToastProvider } from "./components/ui.t
 import { Alerts } from "./views/Alerts.tsx";
 import { Brief } from "./views/Brief.tsx";
 import { Decisions } from "./views/Decisions.tsx";
+import { Quality } from "./views/Quality.tsx";
 import { Rules } from "./views/Rules.tsx";
 import { Team } from "./views/Team.tsx";
 
-export type View = "brief" | "team" | "alerts" | "decisions" | "rules" | "journal";
-const VIEWS: View[] = ["brief", "team", "alerts", "decisions", "rules", "journal"];
+export type View = "brief" | "team" | "alerts" | "decisions" | "quality" | "rules" | "journal";
+const VIEWS: View[] = ["brief", "team", "alerts", "decisions", "quality", "rules", "journal"];
 
 /** `#/team/relance-factures` → { view: "team", id: "relance-factures" } */
 function parseHash(): { view: View; id: string | null } {
@@ -52,6 +53,7 @@ function Shell({ connected }: { connected: boolean }) {
 
   const alerts = data?.alerts.length ?? 0;
   const pending = data?.approvals.length ?? 0;
+  const flagged = data?.quality_flagged ?? 0;
   const month = data?.month;
 
   const item = (view: View, icon: Parameters<typeof Icon>[0]["name"], label: string, extra?: ReactNode) => (
@@ -71,6 +73,7 @@ function Shell({ connected }: { connected: boolean }) {
           {item("team", "team", "Mon équipe IA", data && <span className="count">{data.counts.total}</span>)}
           {item("alerts", "bell", "Alertes", alerts > 0 && <span className="badge hot">{alerts}</span>)}
           {item("decisions", "check", "Décisions", pending > 0 && <span className="badge">{pending}</span>)}
+          {item("quality", "eye", "Qualité", flagged > 0 && <span className="badge hot">{flagged}</span>)}
           {item("rules", "shield", "Garde-fous")}
           {item("journal", "journal", "Journal")}
         </div>
@@ -92,6 +95,7 @@ function Shell({ connected }: { connected: boolean }) {
           {route.view === "team" && <Team selected={route.id} onSelect={(id) => go("team", id)} />}
           {route.view === "alerts" && <Alerts />}
           {route.view === "decisions" && <Decisions />}
+          {route.view === "quality" && <Quality />}
           {route.view === "rules" && <Rules />}
           {route.view === "journal" && <Journal />}
         </div>
