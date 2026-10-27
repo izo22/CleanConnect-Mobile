@@ -1,5 +1,7 @@
 # Brancher Zapier sur Agent HQ
 
+> English version for US clients: [en/connect-zapier.md](en/connect-zapier.md).
+
 L'application **Agent HQ pour Zapier** est une intégration **privée** : elle ne passe pas par la validation de Zapier et se partage par lien d'invitation avec vos clients pilotes.
 
 ## Ce qu'elle permet

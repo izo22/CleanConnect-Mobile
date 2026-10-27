@@ -1,5 +1,7 @@
 # Brancher n8n sur Agent HQ
 
+> English version for US clients: [en/connect-n8n.md](en/connect-n8n.md).
+
 Ce guide s'adresse à la personne qui construit et maintient les workflows n8n (agence ou équipe interne). Comptez 5 minutes pour les niveaux 1 et 2, puis 2 minutes par workflow sensible pour le niveau 3.
 
 ## Ce qu'Agent HQ peut faire, et ce qu'il ne peut pas faire

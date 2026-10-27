@@ -84,11 +84,11 @@ L'interface se met à jour en direct (Server-Sent Events).
 
 **Connexions → Connecter un serveur n8n** : avec une clé API n8n aux droits limités, Agent HQ lit lui-même vos workflows et leurs exécutions (niveau 1 : voir), et « Mettre en pause » désactive réellement le workflow dans n8n (niveau 2 : arrêter). Pour qu'un workflow attende votre feu vert avant une étape sensible (niveau 3 : contrôler), collez le bloc « Demander l'autorisation » fourni dans la fiche de l'agent.
 
-Mode d'emploi complet, limites et résultats des tests contre un vrai n8n : [docs/INTEGRATION-N8N.md](docs/INTEGRATION-N8N.md).
+Mode d'emploi complet, limites et résultats des tests contre un vrai n8n : [docs/INTEGRATION-N8N.md](docs/INTEGRATION-N8N.md). Version anglaise pour les clients américains : [docs/en/connect-n8n.md](docs/en/connect-n8n.md).
 
 ## Connecter Zapier
 
-Application **Agent HQ pour Zapier** (privée, partagée par lien d'invitation) dans `zapier/` : actions « Ask Permission » et « Report Activity », déclencheurs « Decision Made » et « Agent Paused or Resumed ». Mode d'emploi et recettes : [docs/INTEGRATION-ZAPIER.md](docs/INTEGRATION-ZAPIER.md).
+Application **Agent HQ pour Zapier** (privée, partagée par lien d'invitation) dans `zapier/` : actions « Ask Permission » et « Report Activity », déclencheurs « Decision Made » et « Agent Paused or Resumed ». Mode d'emploi et recettes : [docs/INTEGRATION-ZAPIER.md](docs/INTEGRATION-ZAPIER.md). En anglais : [docs/en/connect-zapier.md](docs/en/connect-zapier.md).
 
 ## Mettre en ligne
 
@@ -99,7 +99,7 @@ cp .env.example .env        # DOMAIN, ADMIN_TOKEN, ANTHROPIC_API_KEY…
 docker compose up -d --build
 ```
 
-Guide pas à pas (serveur, domaine, sauvegardes, restauration) : [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md).
+Guide pas à pas (serveur, domaine, sauvegardes, restauration, et une variante gratuite sur Google Cloud) : [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md).
 
 ## Connecter un agent
 
