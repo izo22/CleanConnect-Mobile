@@ -30,11 +30,12 @@
         <a href="#how">How it works</a>
         <a href="#product">Product</a>
         <a href="#integrations">Integrations</a>
+        <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
       </nav>
       <div class="top-cta">
-        <a class="btn ghost" data-app-link href="https://app.orvantahq.io">Sign in</a>
-        <a class="btn primary" data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Get started free</a>
+        <a class="btn ghost" data-app-link href="https://app.orvantahq.io">Log in</a>
+        <a class="btn primary" data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Sign up</a>
       </div>
     </div>
   </header>
@@ -49,9 +50,10 @@
         See what they do, stop them in one click, and approve risky actions before they happen. No AI degree required.
       </p>
       <div class="hero-cta">
-        <a class="btn primary big" data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Get started free</a>
-        <a class="btn white big" href="#how">See how it works</a>
+        <a class="btn primary big" data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Sign up free</a>
+        <a class="btn white big google" data-app-link="/api/auth/google/start" href="https://app.orvantahq.io/api/auth/google/start"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Continue with Google</a>
       </div>
+      <p class="fine">Free during the beta · No credit card · Set up in 5 minutes</p>
       <p class="works-with">Works with <b>n8n</b> · <b>Zapier</b> · <b>Make</b> · <b>Claude Agent SDK</b> · <b>OpenAI Agents</b> · <b>any HTTP client</b></p>
 
       <div class="shot-stage">
@@ -225,6 +227,39 @@
       </div>
     </section>
 
+    <!-- Pricing -->
+    <section id="pricing" class="wrap section">
+      <div class="section-head">
+        <span class="kicker">Pricing</span>
+        <h2>Free while we're in beta.</h2>
+        <p>Everything is included during the beta. We'll announce pricing well before it applies.</p>
+      </div>
+      <div class="plans">
+        <div class="plan featured">
+          <span class="plan-name">Beta</span>
+          <div class="price"><b>$0</b><span>/ month</span></div>
+          <ul class="ticks">
+            <li>Unlimited agents and workflows</li>
+            <li>n8n, Zapier, Make and API connections</li>
+            <li>Approvals, guardrails and one-click pause</li>
+            <li>Your whole team, with their own logins</li>
+            <li>One workspace per client, kept apart</li>
+          </ul>
+          <a class="btn primary big" data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Sign up free</a>
+        </div>
+        <div class="plan">
+          <span class="plan-name">Setup with us</span>
+          <div class="price"><b>$0</b><span>/ 30-minute call</span></div>
+          <ul class="ticks">
+            <li>We connect your n8n or Zaps with you</li>
+            <li>We set your first approval rules together</li>
+            <li>A direct line to the team building Orvanta</li>
+          </ul>
+          <a class="btn white big" href="#early-access">Book a setup call</a>
+        </div>
+      </div>
+    </section>
+
     <!-- FAQ -->
     <section id="faq" class="wrap section">
       <div class="section-head"><span class="kicker">FAQ</span><h2>Questions, answered.</h2></div>
@@ -243,8 +278,8 @@
     <section id="early-access" class="wrap section">
       <div class="dark form-card">
         <div class="form-intro">
-          <h2>Want a hand getting set up?</h2>
-          <p>Tell us a bit about your agents. We'll connect them with you on a short call, for free.</p>
+          <h2>Book a free setup call</h2>
+          <p>Tell us a bit about your agents. We'll connect them with you on a 30-minute call, at no cost.</p>
         </div>
         <form id="ea-form" novalidate>
           <div class="row">
@@ -273,10 +308,22 @@
           </label>
           <label><span>Anything we should know? <span class="opt">(optional)</span></span><textarea name="message" rows="3" maxlength="2000"></textarea></label>
           <label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off" /></label>
-          <button class="btn primary big" type="submit">Ask for help</button>
+          <button class="btn primary big" type="submit">Book my setup call</button>
           <p class="status" role="status" aria-live="polite"></p>
           <p class="privacy">We only use your details to talk to you about Orvanta. No spam, never sold.</p>
         </form>
+      </div>
+    </section>
+
+    <!-- Last call to action -->
+    <section class="wrap section">
+      <div class="final-cta">
+        <h2>Know what every agent is doing.<br />Starting today.</h2>
+        <p>Create your account, connect n8n or Zapier, and see your agents in minutes.</p>
+        <div class="hero-cta">
+          <a class="btn primary big" data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Sign up free</a>
+          <a class="btn white big google" data-app-link="/api/auth/google/start" href="https://app.orvantahq.io/api/auth/google/start"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Continue with Google</a>
+        </div>
       </div>
     </section>
   </main>
@@ -284,7 +331,7 @@
   <footer class="wrap foot">
     <a class="brand" href="/"><img src="/img/icon.svg" width="28" height="28" alt="" /><span>Orvanta</span></a>
     <span>© 2026 Orvanta</span>
-    <nav aria-label="Footer"><a data-app-link href="https://app.orvantahq.io">Sign in</a><a data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Get started free</a><a href="#early-access">Get help</a></nav>
+    <nav aria-label="Footer"><a href="#pricing">Pricing</a><a href="#early-access">Get help</a><a data-app-link href="https://app.orvantahq.io">Log in</a><a data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Sign up</a></nav>
   </footer>
 
   <script src="/site.js" defer></script>

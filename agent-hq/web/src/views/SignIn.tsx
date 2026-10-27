@@ -33,6 +33,40 @@ function Field({ id, label, hint, ...input }: { id: string; label: string; hint?
   );
 }
 
+/** Google's own "G", as its sign-in button guidelines ask. */
+function GoogleG() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
+}
+
+/** Full-page navigation: Google sends the person back to the server, which signs them in. */
+function GoogleButton() {
+  return (
+    <>
+      <a className="btn-google" href="/api/auth/google/start"><GoogleG /> {tr("Continue with Google", "Continuer avec Google")}</a>
+      <div className="or" role="separator"><span>{tr("or with your email", "ou avec votre e-mail")}</span></div>
+    </>
+  );
+}
+
+/** Why a Google sign-in came back without signing in (#/auth-error/<code>). */
+export function authErrorMessage(code: string) {
+  switch (code) {
+    case "cancelled": return tr("Google sign-in was cancelled.", "La connexion avec Google a été annulée.");
+    case "expired": return tr("The Google sign-in took too long or came from another browser. Please try again.", "La connexion avec Google a pris trop de temps ou vient d'un autre navigateur. Réessayez.");
+    case "unverified": return tr("Google hasn't verified this email address yet.", "Google n'a pas encore vérifié cette adresse e-mail.");
+    case "no-account": return tr("No Orvanta account uses this Google email. Ask for an invitation.", "Aucun compte Orvanta n'utilise cet e-mail Google. Demandez une invitation.");
+    case "busy": return tr("Too many sign-ups right now. Please try again in an hour.", "Trop d'inscriptions pour le moment. Réessayez dans une heure.");
+    default: return tr("Google didn't answer. Please try again.", "Google n'a pas répondu. Réessayez.");
+  }
+}
+
 const passwordHint = () => tr(`At least ${MIN_PASSWORD} characters. A short sentence is easy to remember.`, `Au moins ${MIN_PASSWORD} caractères. Une petite phrase se retient facilement.`);
 
 /** Runs a form submission and keeps the server's error message on screen. */
@@ -80,15 +114,16 @@ export function Setup({ onDone }: { onDone: (me: Me) => void }) {
   );
 }
 
-export function Login({ onDone, signup }: { onDone: (me: Me) => void; signup: boolean }) {
+export function Login({ onDone, signup, google, notice }: { onDone: (me: Me) => void; signup: boolean; google: boolean; notice?: string }) {
   const [f, setF] = useState({ email: "", password: "" });
   const { busy, error, submit } = useSubmit(() => api<Me>("/api/auth/login", { method: "POST", body: f }), onDone);
   return (
-    <AuthCard title={tr("Sign in", "Connexion")} error={error} onSubmit={submit}>
+    <AuthCard title={tr("Log in", "Connexion")} error={error || notice} onSubmit={submit}>
+      {google && <GoogleButton />}
       <Field id="login-email" label={tr("Email", "E-mail")} type="email" required autoComplete="username" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
       <Field id="login-password" label={tr("Password", "Mot de passe")} type="password" required autoComplete="current-password" value={f.password}
         onChange={(e) => setF({ ...f, password: e.target.value })} />
-      <button type="submit" className="btn primary big" disabled={busy}>{busy ? "…" : tr("Sign in", "Se connecter")}</button>
+      <button type="submit" className="btn primary big" disabled={busy}>{busy ? "…" : tr("Log in", "Se connecter")}</button>
       {signup && (
         <span style={{ fontSize: 14 }}>
           {tr("New to Orvanta? ", "Nouveau sur Orvanta ? ")}<a href="#/signup">{tr("Create your account", "Créez votre compte")}</a>
@@ -105,7 +140,7 @@ export function Login({ onDone, signup }: { onDone: (me: Me) => void; signup: bo
 }
 
 /** Self sign-up: the person gets their own empty workspace and lands in it. */
-export function Signup({ onDone }: { onDone: (me: Me) => void }) {
+export function Signup({ onDone, google }: { onDone: (me: Me) => void; google: boolean }) {
   const [f, setF] = useState({ name: "", company: "", email: "", password: "", website: "" });
   const { busy, error, submit } = useSubmit(() => api<Me>("/api/auth/signup", { method: "POST", body: f }), onDone);
   return (
@@ -118,6 +153,7 @@ export function Signup({ onDone }: { onDone: (me: Me) => void }) {
       error={error}
       onSubmit={submit}
     >
+      {google && <GoogleButton />}
       <Field id="su-name" label={tr("Your name", "Votre nom")} required autoComplete="name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
       <Field id="su-company" label={tr("Company (optional)", "Société (facultatif)")} autoComplete="organization" maxLength={80} value={f.company}
         onChange={(e) => setF({ ...f, company: e.target.value })} hint={tr("It names your workspace. You can change it later.", "Elle donne son nom à votre espace. Modifiable ensuite.")} />
@@ -128,7 +164,7 @@ export function Signup({ onDone }: { onDone: (me: Me) => void }) {
       <input className="hp" tabIndex={-1} aria-hidden="true" autoComplete="off" value={f.website} onChange={(e) => setF({ ...f, website: e.target.value })} />
       <button type="submit" className="btn primary big" disabled={busy}>{busy ? "…" : tr("Create my account", "Créer mon compte")}</button>
       <span style={{ fontSize: 14 }}>
-        {tr("Already have an account? ", "Déjà un compte ? ")}<a href="#/">{tr("Sign in", "Connectez-vous")}</a>
+        {tr("Already have an account? ", "Déjà un compte ? ")}<a href="#/">{tr("Log in", "Connectez-vous")}</a>
       </span>
     </AuthCard>
   );
@@ -141,6 +177,7 @@ interface LinkInfo {
   workspace_id: string | null;
   workspace: string | null;
   account_exists: boolean;
+  signed_in: boolean;
 }
 
 /** Opened from an invitation or a password reset link: #/link/<token>. */
@@ -151,7 +188,7 @@ export function LinkPage({ token, onDone }: { token: string; onDone: (me: Me, wo
   useEffect(() => {
     api<LinkInfo>(`/api/auth/link/${encodeURIComponent(token)}`).then(setInfo).catch((e) => setBroken((e as Error).message));
   }, [token]);
-  const body = info?.kind === "invite" && info.account_exists ? { password: f.password } : info?.kind === "reset" ? { password: f.password } : f;
+  const body = info?.kind === "invite" && info.signed_in ? {} : info?.kind === "invite" && info.account_exists ? { password: f.password } : info?.kind === "reset" ? { password: f.password } : f;
   const { busy, error, submit } = useSubmit(
     () => api<Me>(`/api/auth/link/${encodeURIComponent(token)}`, { method: "POST", body }),
     (me) => onDone(me, info?.workspace_id ?? null),
@@ -187,12 +224,18 @@ export function LinkPage({ token, onDone }: { token: string; onDone: (me: Me, wo
   );
   return (
     <AuthCard title={tr(`Join ${info.workspace ?? "the workspace"}`, `Rejoindre ${info.workspace ?? "l'espace"}`)} intro={intro} error={error} onSubmit={submit}>
-      {info.account_exists ? (
+      {info.signed_in ? (
+        <>
+          <span className="explain">{tr(`You're signed in as ${info.email}.`, `Vous êtes connecté en tant que ${info.email}.`)}</span>
+          <button type="submit" className="btn primary big" disabled={busy}>{busy ? "…" : tr("Join", "Rejoindre")}</button>
+        </>
+      ) : info.account_exists ? (
         <>
           <span className="explain">{tr(`You already have an account with ${info.email}. Enter its password to add this workspace to it.`, `Vous avez déjà un compte avec ${info.email}. Entrez son mot de passe pour y ajouter cet espace.`)}</span>
           <input type="email" hidden readOnly autoComplete="username" value={info.email} />
           <Field id="join-password" label={tr("Your password", "Votre mot de passe")} type="password" required autoComplete="current-password"
-            value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+            value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })}
+            hint={tr("You signed up with Google? Log in with Google first, then open this link again.", "Inscrit avec Google ? Connectez-vous d'abord avec Google, puis rouvrez ce lien.")} />
           <button type="submit" className="btn primary big" disabled={busy}>{busy ? "…" : tr("Join", "Rejoindre")}</button>
         </>
       ) : (

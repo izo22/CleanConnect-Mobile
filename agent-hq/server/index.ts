@@ -47,6 +47,9 @@ const app = buildApp({
   logger: production,
   trustProxy: process.env.TRUST_PROXY === "true",
   signup: env("SIGNUP", "open") !== "closed",
+  google: process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET }
+    : undefined,
 });
 
 const dist = join(root, "web", "dist");

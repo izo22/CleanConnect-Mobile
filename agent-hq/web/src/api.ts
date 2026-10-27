@@ -35,7 +35,7 @@ export type Role = "owner" | "member" | "viewer";
 export interface WorkspaceRef { id: string; name: string; role: Role }
 export interface Me {
   mode: "accounts" | "open";
-  user: { id: number; name: string; email: string; is_admin: boolean };
+  user: { id: number; name: string; email: string; is_admin: boolean; has_password: boolean };
   workspaces: WorkspaceRef[];
   early_access: number;
 }

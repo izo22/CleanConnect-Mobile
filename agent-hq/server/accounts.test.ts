@@ -53,7 +53,7 @@ function addAgent(db: DB, id: string, ws: string) {
 describe("first account", () => {
   it("is created once, with the setup code, and becomes the platform administrator", async () => {
     const app = buildApp({ db: openDb(":memory:"), adminToken: CODE, now: () => NOW });
-    expect((await app.inject({ url: "/api/auth/state" })).json()).toEqual({ mode: "accounts", setup_needed: true, signup: false });
+    expect((await app.inject({ url: "/api/auth/state" })).json()).toEqual({ mode: "accounts", setup_needed: true, signup: false, google: false });
     expect((await app.inject({ url: "/api/overview" })).statusCode).toBe(401);
 
     const attempt = (setup_code: string, password = PASSWORD) =>
@@ -321,7 +321,7 @@ describe("platform administrator", () => {
 describe("without accounts (local trial)", () => {
   it("opens everything to whoever runs the server", async () => {
     const app = buildApp({ db: openDb(":memory:"), now: () => NOW });
-    expect((await app.inject({ url: "/api/auth/state" })).json()).toEqual({ mode: "open", setup_needed: false, signup: false });
+    expect((await app.inject({ url: "/api/auth/state" })).json()).toEqual({ mode: "open", setup_needed: false, signup: false, google: false });
     const me = (await app.inject({ url: "/api/me", headers: { "x-user-name": "Sam" } })).json();
     expect(me).toMatchObject({ mode: "open", user: { name: "Sam", is_admin: true }, workspaces: [{ id: "main" }] });
     expect((await app.inject({ url: "/api/overview" })).statusCode).toBe(200);
@@ -383,5 +383,120 @@ describe("self sign-up", () => {
     for (let i = 0; i < 5; i++) expect((await from(i)).statusCode).toBe(201);
     expect((await from(5)).statusCode).toBe(429);
     expect((await from(6, "198.51.100.4")).statusCode).toBe(201);
+  });
+});
+
+describe("continue with Google", () => {
+  const google = { clientId: "client-123.apps.googleusercontent.com", clientSecret: "secret-xyz" };
+
+  /** Stands in for Google: any code becomes this profile. */
+  function fakeGoogle(profile: { email: string; email_verified: boolean; name?: string }) {
+    const calls: string[] = [];
+    const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
+      calls.push(String(url));
+      if (String(url).startsWith("https://oauth2.googleapis.com/token")) {
+        const body = new URLSearchParams(String(init?.body));
+        if (body.get("client_secret") !== google.clientSecret || body.get("code") !== "good-code") return new Response("{}", { status: 400 });
+        return Response.json({ access_token: "at-1" });
+      }
+      if (String(url).startsWith("https://openidconnect.googleapis.com/v1/userinfo")) return Response.json(profile);
+      return new Response("", { status: 404 });
+    }) as typeof fetch;
+    return { fetchImpl, calls };
+  }
+
+  async function server(profile: { email: string; email_verified: boolean; name?: string }, signup = true) {
+    const db = openDb(":memory:");
+    const { fetchImpl, calls } = fakeGoogle(profile);
+    const app = buildApp({ db, adminToken: CODE, now: () => NOW, signup, google, fetchImpl });
+    await app.inject({ method: "POST", url: "/api/auth/setup", payload: { setup_code: CODE, name: "Alice", email: "alice@agency.io", password: PASSWORD } });
+    return { app, db, calls };
+  }
+
+  /** Clicks "Continue with Google", then comes back from Google with `code`. */
+  async function roundTrip(app: App, code = "good-code") {
+    const start = await app.inject({ url: "/api/auth/google/start" });
+    expect(start.statusCode).toBe(302);
+    const to = new URL(String(start.headers.location));
+    expect(to.origin + to.pathname).toBe("https://accounts.google.com/o/oauth2/v2/auth");
+    expect(to.searchParams.get("client_id")).toBe(google.clientId);
+    expect(to.searchParams.get("redirect_uri")).toBe("http://localhost:80/api/auth/google/callback");
+    const state = to.searchParams.get("state")!;
+    const back = await app.inject({ url: `/api/auth/google/callback?code=${code}&state=${state}`, headers: { cookie: cookieOf(start) } });
+    const cookies = ([] as string[]).concat(back.headers["set-cookie"] as string | string[] ?? []);
+    const session = cookies.find((c) => c.startsWith("orvanta_session="))?.split(";")[0] ?? "";
+    return { back, session };
+  }
+
+  it("signs up a new person with their Google account and opens their own workspace", async () => {
+    const { app, db } = await server({ email: "Sam@Gmail.com", email_verified: true, name: "Sam Rivera" });
+    expect((await app.inject({ url: "/api/auth/state" })).json().google).toBe(true);
+    const { back, session } = await roundTrip(app);
+    expect(back.headers.location).toBe("/#/brief");
+    const me = (await app.inject({ url: "/api/me", headers: { cookie: session } })).json();
+    expect(me).toMatchObject({ user: { name: "Sam Rivera", email: "sam@gmail.com", is_admin: false, has_password: false }, workspaces: [{ name: "Sam Rivera's workspace", role: "owner" }] });
+    // No password was set: the password form can't be used to get in.
+    expect(get(db, "SELECT password_hash FROM users WHERE email = 'sam@gmail.com'")).toEqual({ password_hash: "" });
+    expect((await app.inject({ method: "POST", url: "/api/auth/login", payload: { email: "sam@gmail.com", password: "" } })).statusCode).toBe(400);
+  });
+
+  it("signs in an existing account, even when sign-up is closed", async () => {
+    const { app } = await server({ email: "alice@agency.io", email_verified: true }, false);
+    const { back, session } = await roundTrip(app);
+    expect(back.headers.location).toBe("/#/brief");
+    expect((await app.inject({ url: "/api/me", headers: { cookie: session } })).json().user).toMatchObject({ name: "Alice", is_admin: true, has_password: true });
+  });
+
+  it("refuses unknown people when sign-up is closed, unverified emails, and forged or replayed answers", async () => {
+    const closed = await server({ email: "new@gmail.com", email_verified: true }, false);
+    expect((await roundTrip(closed.app)).back.headers.location).toBe("/#/auth-error/no-account");
+
+    const unverified = await server({ email: "x@gmail.com", email_verified: false });
+    expect((await roundTrip(unverified.app)).back.headers.location).toBe("/#/auth-error/unverified");
+
+    const { app, db } = await server({ email: "y@gmail.com", email_verified: true });
+    expect((await roundTrip(app, "bad-code")).back.headers.location).toBe("/#/auth-error/google");
+    // No state cookie (another browser started it): refused before Google is even asked.
+    const forged = await app.inject({ url: "/api/auth/google/callback?code=good-code&state=abc" });
+    expect(forged.headers.location).toBe("/#/auth-error/expired");
+    expect(get(db, "SELECT COUNT(*) n FROM users")).toEqual({ n: 1 });
+  });
+
+  it("takes an account back from someone who signed up with an email they don't own", async () => {
+    const { app, db } = await server({ email: "boss@acme.com", email_verified: true, name: "Real Boss" });
+    const squatter = await app.inject({ method: "POST", url: "/api/auth/signup", payload: { name: "Squatter", email: "boss@acme.com", password: PASSWORD } });
+    expect(squatter.statusCode).toBe(201);
+    const squatterCookie = cookieOf(squatter);
+
+    const { session } = await roundTrip(app);
+    expect((await app.inject({ url: "/api/me", headers: { cookie: session } })).statusCode).toBe(200);
+    // The squatter's session and password no longer work.
+    expect((await app.inject({ url: "/api/me", headers: { cookie: squatterCookie } })).statusCode).toBe(401);
+    expect((await app.inject({ method: "POST", url: "/api/auth/login", payload: { email: "boss@acme.com", password: PASSWORD } })).statusCode).toBe(401);
+    expect(get(db, "SELECT email_verified FROM users WHERE email = 'boss@acme.com'")).toEqual({ email_verified: 1 });
+  });
+
+  it("lets a person signed in with Google accept an invitation in one click", async () => {
+    const { app, db } = await server({ email: "sam@gmail.com", email_verified: true, name: "Sam" });
+    const { session } = await roundTrip(app);
+    const admin = await app.inject({ method: "POST", url: "/api/auth/login", payload: { email: "alice@agency.io", password: PASSWORD } });
+    const alice = browser(app, cookieOf(admin));
+    const link = (await alice.send("POST", "/api/workspace/invites", { email: "sam@gmail.com", role: "viewer" })).json().link;
+    const token = link.split("/#/link/")[1];
+
+    expect((await app.inject({ url: `/api/auth/link/${token}` })).json().signed_in).toBe(false);
+    expect((await app.inject({ url: `/api/auth/link/${token}`, headers: { cookie: session } })).json()).toMatchObject({ account_exists: true, signed_in: true });
+    // Without the session, an empty password is refused.
+    expect((await app.inject({ method: "POST", url: `/api/auth/link/${token}`, payload: {} })).statusCode).toBe(401);
+    const joined = await app.inject({ method: "POST", url: `/api/auth/link/${token}`, headers: { cookie: session }, payload: {} });
+    expect(joined.statusCode).toBe(200);
+    expect(joined.json().workspaces.map((w: { role: string }) => w.role).sort()).toEqual(["owner", "viewer"]);
+    expect(get(db, "SELECT COUNT(*) n FROM memberships WHERE role = 'viewer'")).toEqual({ n: 1 });
+  });
+
+  it("sends visitors to the sign-up page when Google isn't set up", async () => {
+    const app = buildApp({ db: openDb(":memory:"), adminToken: CODE, now: () => NOW, signup: true });
+    expect((await app.inject({ url: "/api/auth/state" })).json().google).toBe(false);
+    expect((await app.inject({ url: "/api/auth/google/start" })).headers.location).toBe("/#/signup");
   });
 });

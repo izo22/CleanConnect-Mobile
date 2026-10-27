@@ -226,6 +226,9 @@ export const MAIN_WORKSPACE = "main";
 
 /** Columns added after the first release; ALTER them into older databases. */
 const ADDED_COLUMNS: Array<[table: string, column: string, ddl: string]> = [
+  // 0 = created by self sign-up with a password, email never proven. Google
+  // sign-in proves it (and then takes the account back from whoever typed it).
+  ["users", "email_verified", "INTEGER NOT NULL DEFAULT 1"],
   ["events", "input", "TEXT"],
   ["events", "output", "TEXT"],
   // NULL = not sampled, 'pending' = waiting for the AI reviewer, 'done' = reviewed.

@@ -118,6 +118,14 @@ Pour la mettre en ligne sur le domaine principal (par exemple `orvantahq.io`, l'
 
 **Inscription libre.** Le bouton « Get started free » du site mène à `https://app.votre-domaine/#/signup`. La personne entre son nom, sa société, son e-mail et un mot de passe : elle obtient **son propre espace vide**, dont elle est propriétaire, avec un écran de démarrage (connecter n8n, ajouter un agent, inviter son équipe). Vous la voyez apparaître dans **Administration**, et le webhook `NOTIFY_WEBHOOK_URL` vous prévient. Protections : 5 inscriptions par heure et par adresse IP, 100 par jour au total, champ piège pour les robots. Pour revenir à l'invitation seule, mettez `SIGNUP=closed` dans `.env`, puis `sudo docker compose up -d`.
 
+**Inscription avec Google.** Pour afficher « Continue with Google » sur le site et dans l'application :
+
+1. Console Google Cloud → **API et services → Écran de consentement OAuth** : type **Externe**, nom de l'application `Orvanta`, votre e-mail d'assistance, domaine autorisé `orvantahq.io`. Ajoutez les champs d'application `email`, `profile` et `openid`, puis **Publier l'application** (sinon seuls les testeurs que vous listez peuvent se connecter).
+2. **API et services → Identifiants → Créer des identifiants → ID client OAuth** : type **Application Web**, URI de redirection autorisé `https://app.orvantahq.io/api/auth/google/callback`.
+3. Copiez l'ID client et le code secret dans `.env` (`GOOGLE_CLIENT_ID=` et `GOOGLE_CLIENT_SECRET=`), puis `sudo docker compose up -d`.
+
+Une personne qui s'inscrit avec Google n'a pas de mot de passe : elle se reconnecte toujours avec Google. Si quelqu'un s'était inscrit avec une adresse qui n'était pas la sienne, la première connexion Google du vrai propriétaire reprend le compte et déconnecte l'autre personne. Sans ces deux lignes, le bouton Google renvoie simplement vers l'inscription par e-mail.
+
 **Un espace par client.** Dans la barre de gauche, le menu **Espace** liste vos espaces. Choisissez « + Nouvel espace… », donnez le nom du client : l'espace est créé avec les garde-fous habituels, et vous arrivez sur **Membres** pour inviter le client.
 
 **Inviter quelqu'un.** Dans **Membres**, entrez son e-mail et son rôle, puis « Créer le lien ». Orvanta n'envoie pas d'e-mail : copiez le lien et envoyez-le vous-même (e-mail, WhatsApp…). La personne l'ouvre, choisit son nom et son mot de passe, et arrive dans l'espace. Le lien sert **une fois** et expire après **7 jours**. Une personne qui a déjà un compte (par exemple un collègue de l'agence) entre simplement son mot de passe : l'espace s'ajoute à son menu.

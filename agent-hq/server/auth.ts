@@ -13,7 +13,7 @@ export type Role = "owner" | "member" | "viewer";
 export const ROLES: Role[] = ["owner", "member", "viewer"];
 export const ROLE_RANK: Record<Role, number> = { viewer: 0, member: 1, owner: 2 };
 
-export interface UserRow { id: number; email: string; name: string; password_hash: string; is_admin: number; created_at: number }
+export interface UserRow { id: number; email: string; name: string; password_hash: string; is_admin: number; email_verified: number; created_at: number }
 export interface WorkspaceRow { id: string; name: string; created_at: number }
 export interface LinkRow {
   id: number; kind: "invite" | "reset"; email: string; workspace_id: string | null; role: Role | null;
@@ -96,11 +96,12 @@ export const getUser = (db: DB, id: number) => get<UserRow>(db, "SELECT * FROM u
 export const getUserByEmail = (db: DB, email: string) => get<UserRow>(db, "SELECT * FROM users WHERE email = ?", normalizeEmail(email));
 export const getWorkspace = (db: DB, id: string) => get<WorkspaceRow>(db, "SELECT * FROM workspaces WHERE id = ?", id);
 
-export function createUser(db: DB, u: { email: string; name: string; passwordHash: string; isAdmin?: boolean }, now: number): number {
+/** passwordHash "" = no password (signs in with Google only). */
+export function createUser(db: DB, u: { email: string; name: string; passwordHash: string; isAdmin?: boolean; verified?: boolean }, now: number): number {
   const res = run(
     db,
-    "INSERT INTO users (email, name, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?)",
-    normalizeEmail(u.email), u.name.trim(), u.passwordHash, u.isAdmin ? 1 : 0, now,
+    "INSERT INTO users (email, name, password_hash, is_admin, email_verified, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+    normalizeEmail(u.email), u.name.trim(), u.passwordHash, u.isAdmin ? 1 : 0, u.verified === false ? 0 : 1, now,
   );
   return Number(res.lastInsertRowid);
 }

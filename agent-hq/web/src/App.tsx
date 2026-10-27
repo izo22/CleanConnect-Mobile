@@ -13,7 +13,7 @@ import { Connections } from "./views/Connections.tsx";
 import { EarlyAccess } from "./views/EarlyAccess.tsx";
 import { Members } from "./views/Members.tsx";
 import { Rules } from "./views/Rules.tsx";
-import { LinkPage, Login, Setup, Signup } from "./views/SignIn.tsx";
+import { LinkPage, Login, Setup, Signup, authErrorMessage } from "./views/SignIn.tsx";
 import { Team } from "./views/Team.tsx";
 import { PRODUCT_NAME } from "../../server/brand.ts";
 
@@ -29,32 +29,39 @@ function parseHash(): { view: View; id: string | null } {
 /** `#/signup`: the sign-up page, linked from the public site. */
 const isSignup = () => window.location.hash === "#/signup";
 
+/** `#/auth-error/<code>`: Google sent the person back without signing them in. */
+const googleError = () => {
+  const [, v, code] = window.location.hash.split("/");
+  return v === "auth-error" && code ? code : null;
+};
+
 /** `#/link/<token>`: an invitation or a password reset link. */
 const linkToken = () => {
   const [, v, token] = window.location.hash.split("/");
   return v === "link" && token ? token : null;
 };
 
-type Gate = { kind: "checking" } | { kind: "setup" } | { kind: "login"; signup: boolean } | { kind: "in"; me: Me } | { kind: "down"; message: string };
+type Gate = { kind: "checking" } | { kind: "setup" } | { kind: "login"; signup: boolean; google: boolean } | { kind: "in"; me: Me } | { kind: "down"; message: string };
 
 export function App() {
   const [gate, setGate] = useState<Gate>({ kind: "checking" });
   const [link, setLink] = useState(linkToken);
   const [wantsSignup, setWantsSignup] = useState(isSignup);
+  const [authError, setAuthError] = useState(googleError);
 
   const load = useCallback(async () => {
     try {
       setGate({ kind: "in", me: await api<Me>("/api/me") });
     } catch (e) {
       if ((e as ApiError).status !== 401) return setGate({ kind: "down", message: (e as Error).message });
-      const state = await api<{ setup_needed: boolean; signup: boolean }>("/api/auth/state").catch(() => ({ setup_needed: false, signup: false }));
-      setGate(state.setup_needed ? { kind: "setup" } : { kind: "login", signup: state.signup });
+      const state = await api<{ setup_needed: boolean; signup: boolean; google: boolean }>("/api/auth/state").catch(() => ({ setup_needed: false, signup: false, google: false }));
+      setGate(state.setup_needed ? { kind: "setup" } : { kind: "login", signup: state.signup, google: state.google });
     }
   }, []);
 
   useEffect(() => {
     void load();
-    const onHash = () => { setLink(linkToken()); setWantsSignup(isSignup()); };
+    const onHash = () => { setLink(linkToken()); setWantsSignup(isSignup()); setAuthError(googleError()); };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, [load]);
@@ -75,8 +82,10 @@ export function App() {
   else if (gate.kind === "down") screen = <div className="main"><div className="container"><ErrorBox message={gate.message} /></div></div>;
   else if (gate.kind === "setup") screen = <Setup onDone={signedIn} />;
   else if (gate.kind === "login" && gate.signup && wantsSignup) {
-    screen = <Signup onDone={(me) => { window.location.hash = "#/brief"; signedIn(me); }} />;
-  } else if (gate.kind === "login") screen = <Login onDone={signedIn} signup={gate.signup} />;
+    screen = <Signup google={gate.google} onDone={(me) => { window.location.hash = "#/brief"; signedIn(me); }} />;
+  } else if (gate.kind === "login") {
+    screen = <Login onDone={signedIn} signup={gate.signup} google={gate.google} notice={authError ? authErrorMessage(authError) : undefined} />;
+  }
   else screen = <Signed me={gate.me} reload={load} onSignOut={() => void load()} />;
   return <ToastProvider>{screen}</ToastProvider>;
 }
@@ -257,6 +266,7 @@ function WorkspaceSwitcher({ canCreate, onNew }: { canCreate: boolean; onNew: ()
 function AccountBox({ onPassword }: { onPassword: () => void }) {
   const { me, signOut } = useAccount();
   if (me.mode === "open") return null;
+  // Accounts created with Google have no password to change.
   return (
     <div className="account-box">
       <div className="who-am-i">
@@ -264,7 +274,7 @@ function AccountBox({ onPassword }: { onPassword: () => void }) {
         <span>{me.user.email}</span>
       </div>
       <div className="actions">
-        <button type="button" className="btn small" onClick={onPassword}>{tr("Password", "Mot de passe")}</button>
+        {me.user.has_password && <button type="button" className="btn small" onClick={onPassword}>{tr("Password", "Mot de passe")}</button>}
         <button type="button" className="btn small" onClick={() => void signOut()}>{tr("Sign out", "Se déconnecter")}</button>
       </div>
     </div>

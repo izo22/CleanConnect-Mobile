@@ -53,6 +53,7 @@ Les agents simulés passent par le vrai SDK. Ils s'arrêtent quand vous les mett
 | `DATABASE_PATH` | `data/agent-hq.db` | fichier SQLite |
 | `ADMIN_TOKEN` | — | code d'installation : crée le premier compte (administrateur), et sert aux scripts via `x-admin-token` ; **obligatoire en production** (16 caractères minimum). Sans lui, en local, tout le monde a accès sans compte |
 | `SIGNUP` | `open` | `open` : les visiteurs créent eux-mêmes leur compte et un espace vide ; `closed` : sur invitation uniquement |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | — | active « Continue with Google » (identifiants OAuth Google, voir DEPLOIEMENT) |
 | `NOTIFY_WEBHOOK_URL` | — | webhook Slack/Teams pour prévenir les responsables |
 | `SEED_DEMO` | `true` en local, `false` en production | crée la démonstration de 100 agents si la base est vide |
 | `ANTHROPIC_API_KEY` | — | active la relecture par IA (Claude) |

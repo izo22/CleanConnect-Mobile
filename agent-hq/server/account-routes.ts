@@ -2,6 +2,7 @@
  * Accounts API: first-account setup, sign in and out, invitation and reset
  * links, workspaces and their members, and the platform administrator's view.
  */
+import { randomBytes } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
   MIN_PASSWORD,
@@ -50,7 +51,11 @@ interface Deps {
   guards: ReturnType<typeof makeGuards>;
   /** Visitors may create their own account and workspace. */
   signup?: boolean;
+  google?: { clientId: string; clientSecret: string };
+  fetchImpl?: typeof fetch;
 }
+
+interface GoogleProfile { email?: string; email_verified?: boolean; name?: string }
 
 const EMAIL = { type: "string", minLength: 3, maxLength: 200, pattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$" } as const;
 const PASSWORD = { type: "string", minLength: 1, maxLength: 200 } as const;
@@ -58,8 +63,8 @@ const NAME = { type: "string", minLength: 1, maxLength: 80 } as const;
 const ROLE = { enum: ROLES } as const;
 const body = (properties: Record<string, unknown>, required: string[]) => ({ schema: { body: { type: "object", additionalProperties: false, required, properties } } });
 
-export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, now, guards, signup = false }: Deps) {
-  const { accounts, requireUser, requireAdmin, requireWorkspace, need } = guards;
+export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, now, guards, signup = false, google, fetchImpl = fetch }: Deps) {
+  const { accounts, caller, requireUser, requireAdmin, requireWorkspace, need } = guards;
 
   const startSession = (req: FastifyRequest, reply: FastifyReply, userId: number) => {
     const token = createSession(db, userId, now());
@@ -74,7 +79,7 @@ export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, no
 
   const me = (user: Caller) => ({
     mode: accounts ? "accounts" : "open",
-    user: { id: user.id, name: user.name, email: user.email, is_admin: user.isAdmin },
+    user: { id: user.id, name: user.name, email: user.email, is_admin: user.isAdmin, has_password: user.id ? !!getUser(db, user.id)?.password_hash : false },
     workspaces: user.id === 0 ? allWorkspaces(db).map((w) => ({ id: w.id, name: w.name, role: "owner" as Role })) : workspacesOf(db, user.id),
     early_access: user.isAdmin ? get<{ n: number }>(db, "SELECT COUNT(*) n FROM early_access")?.n ?? 0 : 0,
   });
@@ -84,7 +89,7 @@ export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, no
   // Sign-up opens once the administrator's account exists.
   const signupOpen = () => signup && accounts && countUsers(db) > 0;
 
-  app.get("/api/auth/state", async () => ({ mode: accounts ? "accounts" : "open", setup_needed: accounts && countUsers(db) === 0, signup: signupOpen() }));
+  app.get("/api/auth/state", async () => ({ mode: accounts ? "accounts" : "open", setup_needed: accounts && countUsers(db) === 0, signup: signupOpen(), google: accounts && !!google }));
 
   // The very first account: proven by the setup code written in the server's settings (ADMIN_TOKEN).
   app.post<{ Body: { setup_code: string; name: string; email: string; password: string } }>(
@@ -130,7 +135,7 @@ export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, no
       const company = req.body.company?.trim();
       const t = now();
       const userId = tx(db, () => {
-        const id = createUser(db, { email: req.body.email, name, passwordHash: hash }, t);
+        const id = createUser(db, { email: req.body.email, name, passwordHash: hash, verified: false }, t);
         const w = createWorkspace(db, company || tr(`${name}'s workspace`, `Espace de ${name}`), t);
         addMember(db, id, w.id, "owner", t);
         logActivity(db, name, tr(`${name} created the workspace.`, `${name} a créé l'espace.`), null, t, w.id);
@@ -162,6 +167,89 @@ export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, no
     },
   );
 
+  // ---------- Continue with Google ----------
+
+  const OAUTH_COOKIE = "orvanta_oauth";
+  const appBase = (req: FastifyRequest) => (process.env.PUBLIC_URL ?? `${req.protocol}://${req.headers.host}`).replace(/\/+$/, "");
+  const googleRedirect = (req: FastifyRequest) => `${appBase(req)}/api/auth/google/callback`;
+  const oauthCookie = (req: FastifyRequest, value: string, maxAge: number) =>
+    `${OAUTH_COOKIE}=${value}; Path=/api/auth/google; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${req.protocol === "https" ? "; Secure" : ""}`;
+
+  /** Server to server: the code becomes a profile only Google can vouch for. */
+  async function googleProfile(code: string, redirectUri: string): Promise<GoogleProfile> {
+    const signal = AbortSignal.timeout(10_000);
+    const token = await fetchImpl("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ code, client_id: google!.clientId, client_secret: google!.clientSecret, redirect_uri: redirectUri, grant_type: "authorization_code" }).toString(),
+      signal,
+    });
+    if (!token.ok) throw new Error(`token ${token.status}`);
+    const { access_token } = (await token.json()) as { access_token?: string };
+    const info = await fetchImpl("https://openidconnect.googleapis.com/v1/userinfo", { headers: { authorization: `Bearer ${access_token}` }, signal });
+    if (!info.ok) throw new Error(`userinfo ${info.status}`);
+    return (await info.json()) as GoogleProfile;
+  }
+
+  app.get("/api/auth/google/start", async (req, reply) => {
+    if (!accounts || !google) return reply.redirect("/#/signup");
+    const state = randomBytes(24).toString("base64url");
+    reply.header("set-cookie", oauthCookie(req, state, 600));
+    const q = new URLSearchParams({
+      client_id: google.clientId, redirect_uri: googleRedirect(req), response_type: "code", scope: "openid email profile", state, prompt: "select_account",
+    });
+    return reply.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${q}`);
+  });
+
+  app.get<{ Querystring: { code?: string; state?: string; error?: string } }>("/api/auth/google/callback", async (req, reply) => {
+    if (!accounts || !google) return reply.redirect("/#/signup");
+    const expected = readCookie(req.headers.cookie, OAUTH_COOKIE);
+    reply.header("set-cookie", oauthCookie(req, "", 0));
+    const fail = (code: string) => reply.redirect(`/#/auth-error/${code}`);
+    if (req.query.error) return fail("cancelled");
+    // The state proves this answer belongs to a sign-in started from this browser.
+    if (!expected || !req.query.code || !sameSecret(req.query.state, expected)) return fail("expired");
+
+    let profile: GoogleProfile;
+    try {
+      profile = await googleProfile(req.query.code, googleRedirect(req));
+    } catch (err) {
+      req.log.warn({ err: (err as Error).message }, "Google sign-in failed");
+      return fail("google");
+    }
+    if (!profile.email || profile.email_verified !== true) return fail("unverified");
+
+    const email = normalizeEmail(profile.email);
+    const existing = getUserByEmail(db, email);
+    const t = now();
+    let userId: number;
+    if (existing) {
+      if (!existing.email_verified) {
+        // Someone signed up with this address without owning it: its real owner takes the account back.
+        tx(db, () => {
+          run(db, "UPDATE users SET password_hash = '', email_verified = 1 WHERE id = ?", existing.id);
+          endAllSessions(db, existing.id);
+        });
+      }
+      userId = existing.id;
+    } else {
+      if (!signupOpen()) return fail("no-account");
+      if (!signupByIp(req.ip, t) || !signupsPerDay("all", t)) return fail("busy");
+      const name = (profile.name?.trim() || email.split("@")[0]).slice(0, 80);
+      userId = tx(db, () => {
+        const id = createUser(db, { email, name, passwordHash: "" }, t);
+        const w = createWorkspace(db, tr(`${name}'s workspace`, `Espace de ${name}`), t);
+        addMember(db, id, w.id, "owner", t);
+        logActivity(db, name, tr(`${name} created the workspace.`, `${name} a créé l'espace.`), null, t, w.id);
+        return id;
+      });
+      notify(tr(`New sign-up with Google: ${name}, ${email}`, `Nouvelle inscription avec Google : ${name}, ${email}`));
+    }
+    startSession(req, reply, userId);
+    notifyChange();
+    return reply.redirect("/#/brief");
+  });
+
   app.post("/api/auth/logout", async (req, reply) => {
     const token = readCookie(req.headers.cookie, SESSION_COOKIE);
     if (token) endSession(db, token);
@@ -186,13 +274,15 @@ export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, no
       workspace_id: link.workspace_id,
       workspace: link.workspace_id ? getWorkspace(db, link.workspace_id)?.name ?? null : null,
       account_exists: !!getUserByEmail(db, link.email),
+      // Already signed in as the invited person (e.g. with Google): one click joins.
+      signed_in: !!link.email && caller(req)?.email === link.email && caller(req)!.id > 0,
       min_password: MIN_PASSWORD,
     };
   });
 
-  app.post<{ Params: { token: string }; Body: { name?: string; password: string } }>(
+  app.post<{ Params: { token: string }; Body: { name?: string; password?: string } }>(
     "/api/auth/link/:token",
-    body({ name: NAME, password: PASSWORD }, ["password"]),
+    body({ name: NAME, password: PASSWORD }, []),
     async (req, reply) => {
       const link = linkOr404(req.params.token);
       const existing = getUserByEmail(db, link.email);
@@ -201,9 +291,9 @@ export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, no
 
       if (link.kind === "reset") {
         if (!existing) throw httpError(404, tr("No account uses this email.", "Aucun compte n'utilise cet e-mail."));
-        const problem = passwordProblem(req.body.password);
+        const problem = passwordProblem(req.body.password ?? "");
         if (problem) throw httpError(400, problem);
-        const hash = await hashPassword(req.body.password);
+        const hash = await hashPassword(req.body.password!);
         tx(db, () => {
           run(db, "UPDATE users SET password_hash = ? WHERE id = ?", hash, existing.id);
           endAllSessions(db, existing.id);
@@ -212,7 +302,8 @@ export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, no
         userId = existing.id;
       } else if (existing) {
         // Already has an account (e.g. an agency member invited to one more client): prove it's them.
-        if (!(await verifyPassword(req.body.password, existing.password_hash))) {
+        const signedIn = caller(req)?.id === existing.id;
+        if (!signedIn && !(req.body.password && (await verifyPassword(req.body.password, existing.password_hash)))) {
           throw httpError(401, tr("Wrong password for this account.", "Mot de passe incorrect pour ce compte."));
         }
         tx(db, () => {
@@ -224,9 +315,9 @@ export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, no
       } else {
         const name = req.body.name?.trim();
         if (!name) throw httpError(400, tr("Please enter your name.", "Indiquez votre nom."));
-        const problem = passwordProblem(req.body.password);
+        const problem = passwordProblem(req.body.password ?? "");
         if (problem) throw httpError(400, problem);
-        const hash = await hashPassword(req.body.password);
+        const hash = await hashPassword(req.body.password!);
         userId = tx(db, () => {
           const id = createUser(db, { email: link.email, name, passwordHash: hash }, t);
           addMember(db, id, link.workspace_id!, link.role ?? "member", t);

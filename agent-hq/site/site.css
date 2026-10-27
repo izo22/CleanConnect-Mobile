@@ -228,3 +228,22 @@ form .btn { align-self: flex-start; }
   html { scroll-behavior: auto; }
   .btn { transition: none; }
 }
+
+/* ---------- Sign-up, pricing, last call ---------- */
+.btn.google { gap: 10px; }
+.btn.google svg { flex: none; }
+.fine { margin-top: 16px; font-size: 14px; color: var(--muted); }
+.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 420px)); justify-content: center; gap: 20px; }
+.plan { display: flex; flex-direction: column; gap: 18px; padding: 32px; border-radius: 28px; background: var(--surface); box-shadow: var(--shadow); }
+.plan.featured { box-shadow: 0 0 0 2px var(--accent), var(--shadow-lg); }
+.plan-name { font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+.price { display: flex; align-items: baseline; gap: 8px; }
+.price b { font-family: var(--display); font-size: 52px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.price span { color: var(--muted); font-size: 15px; }
+.plan .btn { margin-top: auto; }
+.final-cta { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: clamp(36px, 6vw, 72px) 24px; border-radius: 32px; background: var(--accent-soft); }
+.final-cta p { color: var(--ink-2); font-size: 17px; max-width: 560px; }
+.final-cta .hero-cta { margin-top: 12px; }
+@media (max-width: 860px) {
+  .plans { grid-template-columns: 1fr; }
+}
