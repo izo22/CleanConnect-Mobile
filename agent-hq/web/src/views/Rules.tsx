@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { api, useData, type RuleView } from "../api.ts";
 import { ErrorBox, Skeleton, useToast } from "../components/ui.tsx";
+import { currencyAffix, parseNumber } from "../format.ts";
+import { lang, tr } from "../i18n.ts";
 
 /** Editable number shown inline in the rule's sentence; saves on blur. */
 function NumberInput({ value, onSave, label, scale = 1 }: { value: number; onSave: (v: number) => void; label: string; scale?: number }) {
   const [text, setText] = useState(String(value / scale));
   useEffect(() => setText(String(value / scale)), [value, scale]);
   const commit = () => {
-    const v = Number(text.replace(",", "."));
+    const v = parseNumber(text);
     if (!Number.isFinite(v) || v < 0) { setText(String(value / scale)); return; }
     if (Math.round(v * scale) !== value) onSave(Math.round(v * scale));
   };
@@ -19,15 +21,34 @@ function NumberInput({ value, onSave, label, scale = 1 }: { value: number; onSav
 
 function Sentence({ rule, save }: { rule: RuleView; save: (params: object) => void }) {
   const p = rule.params as Record<string, number>;
+  const { before, after } = currencyAffix();
+  const amount = (label: string) => (
+    <>{before}<NumberInput label={label} value={p.max_cents} scale={100} onSave={(v) => save({ max_cents: v })} />{after}</>
+  );
+  const hour = (key: "start_hour" | "end_hour", label: string) => (
+    <><NumberInput label={label} value={p[key]} onSave={(v) => save({ [key]: v % 24 })} />{lang() === "fr" ? " h" : ":00"}</>
+  );
+  const fr = lang() === "fr";
   switch (rule.kind) {
     case "approval_amount":
-      return <>Validation humaine pour tout {rule.label} au-dessus de <NumberInput label="Montant maximum en euros" value={p.max_cents} scale={100} onSave={(v) => save({ max_cents: v })} /> €</>;
+      return fr
+        ? <>Validation humaine pour tout {rule.label} au-dessus de {amount("Montant maximum")}</>
+        : <>Human approval for any {rule.label} over {amount("Maximum amount")}</>;
     case "quiet_hours":
-      return <>Aucun {rule.label} entre <NumberInput label="Heure de début" value={p.start_hour} onSave={(v) => save({ start_hour: v % 24 })} /> h et <NumberInput label="Heure de fin" value={p.end_hour} onSave={(v) => save({ end_hour: v % 24 })} /> h</>;
+      return fr
+        ? <>Aucun {rule.label} entre {hour("start_hour", "Heure de début")} et {hour("end_hour", "Heure de fin")}</>
+        : <>No {rule.label} between {hour("start_hour", "Start hour")} and {hour("end_hour", "End hour")}</>;
     case "global_budget":
-      return <>Dépense IA totale plafonnée à <NumberInput label="Plafond mensuel en euros" value={p.max_cents} scale={100} onSave={(v) => save({ max_cents: v })} /> € par mois</>;
-    case "repeat_pause":
-      return <>Pause automatique si un agent fait plus de <NumberInput label="Nombre d'actions en double" value={p.count} onSave={(v) => save({ count: Math.max(1, v) })} /> actions en double en <NumberInput label="Durée en minutes" value={p.window_min} onSave={(v) => save({ window_min: Math.max(1, v) })} /> minutes</>;
+      return fr
+        ? <>Dépense IA totale plafonnée à {amount("Plafond mensuel")} par mois</>
+        : <>Total AI spend capped at {amount("Monthly cap")} per month</>;
+    case "repeat_pause": {
+      const count = <NumberInput label={tr("Number of repeated actions", "Nombre d'actions en double")} value={p.count} onSave={(v) => save({ count: Math.max(1, v) })} />;
+      const minutes = <NumberInput label={tr("Duration in minutes", "Durée en minutes")} value={p.window_min} onSave={(v) => save({ window_min: Math.max(1, v) })} />;
+      return fr
+        ? <>Pause automatique si un agent fait plus de {count} actions en double en {minutes} minutes</>
+        : <>Automatic pause if an agent repeats more than {count} actions in {minutes} minutes</>;
+    }
   }
 }
 
@@ -48,8 +69,8 @@ export function Rules() {
     <>
       <header className="page-head">
         <div className="titles">
-          <h1 className="h1">Garde-fous</h1>
-          <span className="sub">Des règles en français qui s'appliquent à toute votre équipe IA. Cliquez sur un chiffre pour le changer.</span>
+          <h1 className="h1">{tr("Guardrails", "Garde-fous")}</h1>
+          <span className="sub">{tr("Plain-English rules that apply to your whole AI team. Click a number to change it.", "Des règles en français qui s'appliquent à toute votre équipe IA. Cliquez sur un chiffre pour le changer.")}</span>
         </div>
       </header>
       {error && <ErrorBox message={error.message} />}
@@ -61,17 +82,17 @@ export function Rules() {
             return (
               <div key={r.id} className={"rule" + (hot ? " hot" : "")}>
                 <div className="body">
-                  <span className="sentence"><Sentence rule={r} save={(params) => update(r, { params }, "Règle mise à jour.")} /></span>
+                  <span className="sentence"><Sentence rule={r} save={(params) => update(r, { params }, tr("Rule updated.", "Règle mise à jour."))} /></span>
                   <span className="stat">
                     {hot
-                      ? "Recommandé : arrête un agent qui part en boucle avant qu'il n'écrive à vos clients."
+                      ? tr("Recommended: stops an agent stuck in a loop before it writes to your customers.", "Recommandé : arrête un agent qui part en boucle avant qu'il n'écrive à vos clients.")
                       : r.trigger_count
-                        ? `Déclenchée ${r.trigger_count} fois`
-                        : "Jamais déclenchée pour l'instant"}
+                        ? tr(`Triggered ${r.trigger_count} time${r.trigger_count === 1 ? "" : "s"}`, `Déclenchée ${r.trigger_count} fois`)
+                        : tr("Never triggered so far", "Jamais déclenchée pour l'instant")}
                   </span>
                 </div>
-                <input className="switch" type="checkbox" role="switch" aria-label={`${r.enabled ? "Désactiver" : "Activer"} : ${r.sentence}`} checked={r.enabled}
-                  onChange={() => update(r, { enabled: !r.enabled }, r.enabled ? "Règle désactivée." : "Règle activée.")} />
+                <input className="switch" type="checkbox" role="switch" aria-label={r.enabled ? tr(`Turn off: ${r.sentence}`, `Désactiver : ${r.sentence}`) : tr(`Turn on: ${r.sentence}`, `Activer : ${r.sentence}`)}
+                  checked={r.enabled} onChange={() => update(r, { enabled: !r.enabled }, r.enabled ? tr("Rule turned off.", "Règle désactivée.") : tr("Rule turned on.", "Règle activée."))} />
               </div>
             );
           })}

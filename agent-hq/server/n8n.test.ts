@@ -68,7 +68,7 @@ describe("n8n integration", () => {
     expect(get<{ n: number }>(db, "SELECT COUNT(*) n FROM integrations")!.n).toBe(0);
   });
 
-  it("imports workflows as agents and failed executions as a plain-French alert, once", async () => {
+  it("imports workflows as agents and failed executions as a plain-language alert, once", async () => {
     const now = Date.now();
     for (let i = 1; i <= 6; i++) {
       fake.state.executions.push({
@@ -82,7 +82,7 @@ describe("n8n integration", () => {
     expect(getAgent(db, agentId("wf1"))!.source).toBe("n8n");
 
     const alert = get<{ kind: string; title: string }>(db, "SELECT kind, title FROM alerts WHERE agent_id = ?", agentId("wf2"));
-    expect(alert).toEqual({ kind: "auth", title: "N'arrive plus à se connecter à HubSpot · contact" });
+    expect(alert).toEqual({ kind: "auth", title: "Can no longer connect to HubSpot · contact" });
 
     const again = await app.inject({ method: "POST", url: "/api/integrations/1/sync" });
     expect(again.json().sync.imported).toBe(0);
@@ -113,7 +113,7 @@ describe("n8n integration", () => {
     await connect();
     fake.state.workflows[1].active = false;
     await app.inject({ method: "POST", url: "/api/integrations/1/sync" });
-    expect(getAgent(db, agentId("wf2"))).toMatchObject({ paused: 1, pause_reason: "désactivé dans n8n" });
+    expect(getAgent(db, agentId("wf2"))).toMatchObject({ paused: 1, pause_reason: "switched off in n8n" });
   });
 
   it("wakes the waiting workflow with the human decision", async () => {
@@ -145,7 +145,7 @@ describe("control level shown to the user", () => {
 
   it("produces a pasteable n8n block that stops on errors and waits for the decision", () => {
     const s = n8nSnippet("https://hq.example.fr/", "ahq_key");
-    const ask = s.nodes.find((n) => n.name === "Agent HQ · Demander l'autorisation")!;
+    const ask = s.nodes.find((n) => n.name === "Agent HQ · Ask for permission")!;
     expect(ask.parameters).toMatchObject({ url: "https://hq.example.fr/api/v1/check" });
     expect(JSON.stringify(ask.parameters)).toContain("$execution.resumeUrl");
     expect(s.nodes.find((n) => n.type === "n8n-nodes-base.wait")!.parameters).toMatchObject({ resume: "webhook", httpMethod: "POST" });

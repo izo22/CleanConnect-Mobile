@@ -5,7 +5,8 @@
  */
 import { get, run, tx, type DB } from "./db.ts";
 import { resolveAlert } from "./engine.ts";
-import { euros, firstName, getAgent, logActivity, type AgentRow, type AlertRow } from "./model.ts";
+import { money, tr } from "./i18n.ts";
+import { firstName, getAgent, logActivity, type AgentRow, type AlertRow } from "./model.ts";
 import { notify } from "./notify.ts";
 
 export type PlaybookId = "pause" | "resume" | "rollback" | "handoff" | "notify_owner" | "autonomy0" | "economy" | "raise_budget" | "dismiss";
@@ -37,16 +38,17 @@ function previousPrompt(db: DB, agentId: string) {
 }
 
 export function label(id: PlaybookId, agent: AgentRow): string {
+  const owner = firstName(agent.owner_name) || tr("the owner", "le responsable");
   switch (id) {
-    case "pause": return agent.paused ? "Reprendre" : "Mettre en pause";
-    case "resume": return "Reprendre";
-    case "rollback": return "Revenir à la version d'avant";
-    case "handoff": return `Confier à ${firstName(agent.owner_name)}`;
-    case "notify_owner": return `Prévenir ${firstName(agent.owner_name)}`;
-    case "autonomy0": return "Tout faire valider";
-    case "economy": return "Passer au modèle économique";
-    case "raise_budget": return `Budget +${euros(raiseAmount(agent))}`;
-    case "dismiss": return "C'est réglé";
+    case "pause": return agent.paused ? tr("Resume", "Reprendre") : tr("Pause", "Mettre en pause");
+    case "resume": return tr("Resume", "Reprendre");
+    case "rollback": return tr("Go back to the previous version", "Revenir à la version d'avant");
+    case "handoff": return tr(`Hand over to ${owner}`, `Confier à ${owner}`);
+    case "notify_owner": return tr(`Alert ${owner}`, `Prévenir ${owner}`);
+    case "autonomy0": return tr("Approve everything", "Tout faire valider");
+    case "economy": return tr("Switch to the budget model", "Passer au modèle économique");
+    case "raise_budget": return `Budget +${money(raiseAmount(agent))}`;
+    case "dismiss": return tr("It's fixed", "C'est réglé");
   }
 }
 
@@ -69,46 +71,46 @@ export function applyToAgent(db: DB, agent: AgentRow, id: PlaybookId, actor: str
   switch (id) {
     case "pause":
       if (agent.paused) return applyToAgent(db, agent, "resume", actor, now);
-      run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", `mis en pause par ${actor}`, agent.id);
-      message = `${agent.name} est en pause. Ses prochaines actions seront refusées.`;
+      run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", tr(`paused by ${actor}`, `mis en pause par ${actor}`), agent.id);
+      message = tr(`${agent.name} is paused. Its next actions will be refused.`, `${agent.name} est en pause. Ses prochaines actions seront refusées.`);
       break;
     case "resume":
       run(db, "UPDATE agents SET paused = 0, pause_reason = NULL WHERE id = ?", agent.id);
-      message = `${agent.name} a repris le travail.`;
+      message = tr(`${agent.name} is back at work.`, `${agent.name} a repris le travail.`);
       break;
     case "rollback": {
       const prev = previousPrompt(db, agent.id);
-      if (!prev) throw new PlaybookError("Aucune version précédente des consignes.");
+      if (!prev) throw new PlaybookError(tr("No previous version of the instructions.", "Aucune version précédente des consignes."));
       run(db, "UPDATE prompt_versions SET active = 0 WHERE agent_id = ?", agent.id);
       run(db, "UPDATE prompt_versions SET active = 1 WHERE id = ?", prev.id);
       run(db, "UPDATE agents SET paused = 0, pause_reason = NULL WHERE id = ?", agent.id);
-      message = `Consignes de la version ${prev.version} restaurées, ${agent.name} reprend avec.`;
+      message = tr(`Instructions from version ${prev.version} restored; ${agent.name} resumes with them.`, `Consignes de la version ${prev.version} restaurées, ${agent.name} reprend avec.`);
       break;
     }
     case "handoff":
-      run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", `tâches confiées à ${agent.owner_name}`, agent.id);
-      notify(`${actor} vous confie les tâches en cours de l'agent « ${agent.name} ».`, agent.owner_email);
-      message = `Tâches de ${agent.name} confiées à ${agent.owner_name}. L'agent est en pause.`;
+      run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", tr(`tasks handed over to ${agent.owner_name}`, `tâches confiées à ${agent.owner_name}`), agent.id);
+      notify(tr(`${actor} is handing you the ongoing tasks of the agent “${agent.name}”.`, `${actor} vous confie les tâches en cours de l'agent « ${agent.name} ».`), agent.owner_email);
+      message = tr(`${agent.name}'s tasks handed over to ${agent.owner_name}. The agent is paused.`, `Tâches de ${agent.name} confiées à ${agent.owner_name}. L'agent est en pause.`);
       break;
     case "notify_owner":
-      notify(`L'agent « ${agent.name} » a besoin de vous : ${actor} vous demande d'intervenir.`, agent.owner_email);
-      message = `Demande envoyée à ${agent.owner_name}.`;
+      notify(tr(`The agent “${agent.name}” needs you: ${actor} is asking you to step in.`, `L'agent « ${agent.name} » a besoin de vous : ${actor} vous demande d'intervenir.`), agent.owner_email);
+      message = tr(`Request sent to ${agent.owner_name}.`, `Demande envoyée à ${agent.owner_name}.`);
       break;
     case "autonomy0":
       run(db, "UPDATE agents SET autonomy = 0 WHERE id = ?", agent.id);
-      message = `${agent.name} passe au niveau 0 : chaque action sera validée par un humain.`;
+      message = tr(`${agent.name} moves to level 0: every action will be approved by a human.`, `${agent.name} passe au niveau 0 : chaque action sera validée par un humain.`);
       break;
     case "economy":
       run(db, "UPDATE agents SET model_tier = 'economy' WHERE id = ?", agent.id);
-      message = `${agent.name} utilise désormais le modèle économique.`;
+      message = tr(`${agent.name} now uses the budget model.`, `${agent.name} utilise désormais le modèle économique.`);
       break;
     case "dismiss":
-      message = `Problème marqué comme réglé pour ${agent.name}.`;
+      message = tr(`Problem marked as fixed for ${agent.name}.`, `Problème marqué comme réglé pour ${agent.name}.`);
       break;
     case "raise_budget": {
       const next = agent.budget_cents + raiseAmount(agent);
       run(db, "UPDATE agents SET budget_cents = ? WHERE id = ?", next, agent.id);
-      message = `Budget de ${agent.name} relevé à ${euros(next)} pour le mois.`;
+      message = tr(`${agent.name}'s budget raised to ${money(next)} for the month.`, `Budget de ${agent.name} relevé à ${money(next)} pour le mois.`);
       break;
     }
   }
@@ -119,14 +121,14 @@ export function applyToAgent(db: DB, agent: AgentRow, id: PlaybookId, actor: str
 export function runPlaybook(db: DB, alertId: number, id: PlaybookId, actor: string, now = Date.now()): string {
   return tx(db, () => {
     const alert = get<AlertRow>(db, "SELECT * FROM alerts WHERE id = ?", alertId);
-    if (!alert) throw new PlaybookError("Alerte introuvable.");
-    if (alert.status !== "open") throw new PlaybookError("Cette alerte est déjà réglée.");
-    if (!actionsFor(db, alert).some((a) => a.id === id)) throw new PlaybookError("Action non disponible pour cette alerte.");
+    if (!alert) throw new PlaybookError(tr("Alert not found.", "Alerte introuvable."));
+    if (alert.status !== "open") throw new PlaybookError(tr("This alert is already resolved.", "Cette alerte est déjà réglée."));
+    if (!actionsFor(db, alert).some((a) => a.id === id)) throw new PlaybookError(tr("Action not available for this alert.", "Action non disponible pour cette alerte."));
     const agent = getAgent(db, alert.agent_id)!;
     const message = applyToAgent(db, agent, id, actor, now);
     if (id === "notify_owner") {
       // The problem is not fixed yet: keep the alert open, note who is on it.
-      run(db, "UPDATE alerts SET resolution = ?, updated_at = ? WHERE id = ?", `En attente de ${agent.owner_name}.`, now, alert.id);
+      run(db, "UPDATE alerts SET resolution = ?, updated_at = ? WHERE id = ?", tr(`Waiting for ${agent.owner_name}.`, `En attente de ${agent.owner_name}.`), now, alert.id);
     } else {
       resolveAlert(db, alert.id, message, now);
       // Whatever was done, the reports behind this alert have been dealt with.

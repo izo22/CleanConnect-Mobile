@@ -12,6 +12,7 @@
 import { all, get, run, tx, type DB } from "./db.ts";
 import { evaluateAgent } from "./engine.ts";
 import { DAY, HOUR, logActivity, newApiKey, notifyChange, type AgentRow } from "./model.ts";
+import { tr } from "./i18n.ts";
 
 export interface N8nWorkflow { id: string; name: string; active: boolean; isArchived?: boolean; nodes?: Array<{ type: string; name: string }> }
 
@@ -63,11 +64,11 @@ export class N8nClient {
         signal: AbortSignal.timeout(15_000),
       });
     } catch (err) {
-      throw new N8nError(`n8n ne répond pas à l'adresse ${this.base} (${(err as Error).message}).`);
+      throw new N8nError(tr(`n8n is not responding at ${this.base} (${(err as Error).message}).`, `n8n ne répond pas à l'adresse ${this.base} (${(err as Error).message}).`));
     }
     const body = (await res.json().catch(() => ({}))) as T & { message?: string };
-    if (res.status === 401 || res.status === 403) throw new N8nError("n8n refuse la clé API (clé invalide ou expirée).", res.status);
-    if (!res.ok) throw new N8nError(`n8n a répondu ${res.status}${body.message ? " : " + body.message : ""}.`, res.status);
+    if (res.status === 401 || res.status === 403) throw new N8nError(tr("n8n refuses the API key (invalid or expired key).", "n8n refuse la clé API (clé invalide ou expirée)."), res.status);
+    if (!res.ok) throw new N8nError(tr(`n8n answered ${res.status}${body.message ? ": " + body.message : ""}.`, `n8n a répondu ${res.status}${body.message ? " : " + body.message : ""}.`), res.status);
     return body;
   }
 
@@ -116,16 +117,16 @@ export function getIntegration(db: DB, id: number) {
   return get<IntegrationRow>(db, "SELECT * FROM integrations WHERE id = ?", id);
 }
 
-/** Pause reason written when someone switched the workflow off inside n8n. */
-export const OFF_IN_N8N = "désactivé dans n8n";
-export const DELETED_IN_N8N = "supprimé dans n8n";
+/** Pause reasons written when someone switched the workflow off (or deleted it) inside n8n. */
+const OFF_IN_N8N = ["switched off in n8n", "désactivé dans n8n"] as const;
+const DELETED_IN_N8N = ["deleted in n8n", "supprimé dans n8n"] as const;
 
 // Nodes that say nothing about the tool behind them: use the node's name instead.
 const GENERIC_NODES = new Set(["httprequest", "code", "function", "functionitem", "executeworkflow", "set", "if", "switch"]);
 
 /**
  * "n8n-nodes-base.hubspot" → "hubspot.run"; a generic HTTP node named
- * "HubSpot · mise à jour" → "HubSpot · mise à jour.run", so alerts name the tool.
+ * "HubSpot · update" → "HubSpot · update.run", so alerts name the tool.
  */
 function actionOf(node: { type?: string; name?: string } | undefined): string | null {
   if (!node?.type) return null;
@@ -151,10 +152,10 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
     tx(db, () => {
       // Workflows deleted in n8n: keep the agent and its history, show why it stopped.
       const present = new Set(workflows.map((w) => w.id));
-      for (const gone of all<AgentRow>(db, "SELECT * FROM agents WHERE integration_id = ? AND COALESCE(pause_reason, '') != ?", integration.id, DELETED_IN_N8N)) {
+      for (const gone of all<AgentRow>(db, "SELECT * FROM agents WHERE integration_id = ? AND COALESCE(pause_reason, '') NOT IN (?, ?)", integration.id, ...DELETED_IN_N8N)) {
         if (gone.external_id && !present.has(gone.external_id)) {
-          run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", DELETED_IN_N8N, gone.id);
-          logActivity(db, "n8n", `${gone.name} a été supprimé dans n8n.`, gone.id, now);
+          run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", tr(...DELETED_IN_N8N), gone.id);
+          logActivity(db, "n8n", tr(`${gone.name} was deleted in n8n.`, `${gone.name} a été supprimé dans n8n.`), gone.id, now);
         }
       }
       for (const wf of workflows) {
@@ -165,20 +166,20 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
             db,
             `INSERT INTO agents (id, name, mission, owner_name, owner_email, platform, autonomy, paused, pause_reason, budget_cents, access, api_key, source, integration_id, external_id, created_at)
              VALUES (?, ?, ?, '', '', 'n8n', 2, ?, ?, 10000, '[]', ?, 'n8n', ?, ?, ?)`,
-            id, wf.name, `Workflow n8n « ${wf.name} »`, wf.active ? 0 : 1, wf.active ? null : OFF_IN_N8N, newApiKey(), integration.id, wf.id, now,
+            id, wf.name, tr(`n8n workflow “${wf.name}”`, `Workflow n8n « ${wf.name} »`), wf.active ? 0 : 1, wf.active ? null : tr(...OFF_IN_N8N), newApiKey(), integration.id, wf.id, now,
           );
-          logActivity(db, "Agent HQ", `Workflow n8n importé : ${wf.name}`, id, now);
+          logActivity(db, "Agent HQ", tr(`n8n workflow imported: ${wf.name}`, `Workflow n8n importé : ${wf.name}`), id, now);
           created++;
           continue;
         }
         if (existing.name !== wf.name) run(db, "UPDATE agents SET name = ? WHERE id = ?", wf.name, existing.id);
         if (!existing.paused && !wf.active) {
           // Switched off in n8n by someone: respect it and show it.
-          run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", OFF_IN_N8N, existing.id);
-          logActivity(db, "n8n", `${existing.name} a été désactivé dans n8n.`, existing.id, now);
-        } else if (existing.paused && existing.pause_reason === OFF_IN_N8N && wf.active) {
+          run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", tr(...OFF_IN_N8N), existing.id);
+          logActivity(db, "n8n", tr(`${existing.name} was switched off in n8n.`, `${existing.name} a été désactivé dans n8n.`), existing.id, now);
+        } else if (existing.paused && (OFF_IN_N8N as readonly string[]).includes(existing.pause_reason ?? "") && wf.active) {
           run(db, "UPDATE agents SET paused = 0, pause_reason = NULL WHERE id = ?", existing.id);
-          logActivity(db, "n8n", `${existing.name} a été réactivé dans n8n.`, existing.id, now);
+          logActivity(db, "n8n", tr(`${existing.name} was switched back on in n8n.`, `${existing.name} a été réactivé dans n8n.`), existing.id, now);
         } else if (existing.paused && wf.active) {
           // Paused by Agent HQ (a person or a guardrail) but running in n8n: enforce.
           toEnforce.push({ agent: existing, wf });
@@ -188,7 +189,7 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
 
     for (const { agent } of toEnforce) {
       await client.deactivate(agent.external_id!);
-      logActivity(db, "Agent HQ", `${agent.name} désactivé dans n8n (pause décidée dans Agent HQ).`, agent.id, now);
+      logActivity(db, "Agent HQ", tr(`${agent.name} switched off in n8n (paused in Agent HQ).`, `${agent.name} désactivé dans n8n (pause décidée dans Agent HQ).`), agent.id, now);
     }
 
     // Executions: newest first back to the cursor. Unfinished ones are kept
@@ -224,7 +225,7 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
         const res = insert.run(
           agentId, end, actionOf(err?.node) ?? "workflow.run", `execution-${e.id}`, ok ? 1 : 0, Math.max(0, end - start),
           ok ? null : String(err?.httpCode ?? err?.name ?? e.status ?? "error"),
-          ok ? null : [err?.message, err?.description].filter(Boolean).join(" — ").slice(0, 2000) || "Échec de l'exécution n8n",
+          ok ? null : [err?.message, err?.description].filter(Boolean).join(" — ").slice(0, 2000) || tr("n8n execution failed", "Échec de l'exécution n8n"),
           `n8n:${e.id}`,
         );
         if (res.changes) { imported++; touched.add(agentId); }
@@ -252,7 +253,7 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
 export async function setWorkflowActive(db: DB, agent: AgentRow, active: boolean, fetchImpl?: Fetch) {
   if (agent.source !== "n8n" || !agent.integration_id || !agent.external_id) return;
   const integration = getIntegration(db, agent.integration_id);
-  if (!integration) throw new N8nError("La connexion n8n de cet agent a été supprimée.");
+  if (!integration) throw new N8nError(tr("This agent's n8n connection was deleted.", "La connexion n8n de cet agent a été supprimée."));
   const client = clientFor(integration, fetchImpl);
   if (active) await client.activate(agent.external_id);
   else await client.deactivate(agent.external_id);
@@ -260,7 +261,7 @@ export async function setWorkflowActive(db: DB, agent: AgentRow, active: boolean
 
 export async function syncAll(db: DB, fetchImpl?: Fetch) {
   for (const i of all<IntegrationRow>(db, "SELECT * FROM integrations")) {
-    await syncIntegration(db, i, clientFor(i, fetchImpl)).catch((err) => console.error(`[n8n] ${i.name} : ${(err as Error).message}`));
+    await syncIntegration(db, i, clientFor(i, fetchImpl)).catch((err) => console.error(`[n8n] ${i.name}: ${(err as Error).message}`));
   }
 }
 
@@ -268,7 +269,29 @@ export async function syncAll(db: DB, fetchImpl?: Fetch) {
 export function controlLevel(agent: Pick<AgentRow, "source" | "last_check_at">, now = Date.now()) {
   const checks = agent.last_check_at !== null && agent.last_check_at !== undefined;
   const recent = checks && now - (agent.last_check_at ?? 0) < 30 * 24 * HOUR;
-  if (recent) return { level: "control" as const, label: "Contrôle avant action", detail: "Il demande la permission avant ses actions sensibles : Agent HQ peut les bloquer." };
-  if (agent.source === "n8n") return { level: "stop" as const, label: "Supervision + arrêt d'urgence", detail: "Agent HQ lit ses exécutions et peut désactiver le workflow dans n8n, mais il ne demande pas encore la permission avant d'agir." };
-  return { level: "watch" as const, label: "Supervision", detail: "Agent HQ voit ce qu'il déclare. La pause n'agit que s'il consulte Agent HQ avant d'agir." };
+  if (recent) {
+    return {
+      level: "control" as const,
+      label: tr("Checked before acting", "Contrôle avant action"),
+      detail: tr("It asks for permission before its sensitive actions: Agent HQ can block them.", "Il demande la permission avant ses actions sensibles : Agent HQ peut les bloquer."),
+    };
+  }
+  if (agent.source === "n8n") {
+    return {
+      level: "stop" as const,
+      label: tr("Monitoring + emergency stop", "Supervision + arrêt d'urgence"),
+      detail: tr(
+        "Agent HQ reads its executions and can switch the workflow off in n8n, but it does not ask for permission before acting yet.",
+        "Agent HQ lit ses exécutions et peut désactiver le workflow dans n8n, mais il ne demande pas encore la permission avant d'agir.",
+      ),
+    };
+  }
+  return {
+    level: "watch" as const,
+    label: tr("Monitoring", "Supervision"),
+    detail: tr(
+      "Agent HQ sees what it reports. Pausing only works if it checks with Agent HQ before acting.",
+      "Agent HQ voit ce qu'il déclare. La pause n'agit que s'il consulte Agent HQ avant d'agir.",
+    ),
+  };
 }

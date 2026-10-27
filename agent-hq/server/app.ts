@@ -23,6 +23,7 @@ import { notify } from "./notify.ts";
 import { describeRule } from "./rules.ts";
 import { shouldSample } from "./reviewer.ts";
 import { deliverDecision, validCallbackUrl } from "./callbacks.ts";
+import { currency, lang, tr } from "./i18n.ts";
 import { N8nClient, N8nError, getIntegration, setWorkflowActive, syncIntegration, type IntegrationRow } from "./n8n.ts";
 import { n8nSnippet } from "./n8n-template.ts";
 import { agentStatePayload, decisionPayload, fireAgentState, fireDecision, safeOutboundUrl, subscribe, unsubscribe } from "./hooks.ts";
@@ -132,10 +133,10 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
   app.setErrorHandler((err: Error & { statusCode?: number; validation?: unknown }, _req, reply) => {
     if (err instanceof PlaybookError) return reply.code(409).send({ error: err.message });
     if (err instanceof N8nError) return reply.code(502).send({ error: err.message });
-    if (err.validation) return reply.code(400).send({ error: "Requête invalide : " + err.message });
+    if (err.validation) return reply.code(400).send({ error: tr("Invalid request: ", "Requête invalide : ") + err.message });
     const code = err.statusCode && err.statusCode >= 400 ? err.statusCode : 500;
     if (code === 500) app.log.error(err);
-    return reply.code(code).send({ error: code === 500 ? "Erreur interne." : err.message });
+    return reply.code(code).send({ error: code === 500 ? tr("Internal error.", "Erreur interne.") : err.message });
   });
 
   // ---------- Authentication ----------
@@ -143,14 +144,14 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
   const actorOf = (req: FastifyRequest) => {
     const raw = req.headers["x-user-name"];
     const name = typeof raw === "string" ? decodeURIComponent(raw).trim().slice(0, 60) : "";
-    return name || "Vous";
+    return name || tr("You", "Vous");
   };
 
   const requireAdmin = async (req: FastifyRequest, reply: FastifyReply) => {
     if (!adminToken) return;
     const q = (req.query as Record<string, string> | undefined)?.token;
     if (!sameSecret(req.headers["x-admin-token"], adminToken) && !sameSecret(q, adminToken)) {
-      return reply.code(401).send({ error: "Jeton d'accès requis." });
+      return reply.code(401).send({ error: tr("Access code required.", "Code d'accès requis.") });
     }
   };
 
@@ -158,11 +159,11 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     const auth = req.headers.authorization ?? "";
     const key = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
     const agent = key ? getAgentByKey(db, key) : undefined;
-    if (!agent) throw Object.assign(new Error("Clé d'agent invalide."), { statusCode: 401 });
+    if (!agent) throw Object.assign(new Error(tr("Invalid agent key.", "Clé d'agent invalide.")), { statusCode: 401 });
     return agent;
   };
 
-  const notFound = (what: string) => Object.assign(new Error(`${what} introuvable.`), { statusCode: 404 });
+  const notFound = (en: string, fr: string) => Object.assign(new Error(tr(`${en} not found.`, `${fr} introuvable.`)), { statusCode: 404 });
 
   const control = (agent: AgentRow) => {
     const fresh = getAgent(db, agent.id)!;
@@ -187,6 +188,9 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       return reply.code(503).send({ ok: false });
     }
   });
+
+  // Language and currency of this instance, needed before signing in.
+  app.get("/api/locale", async () => ({ language: lang(), currency: currency() }));
 
   // ---------- Agent-facing API (used by the SDK) ----------
 
@@ -256,13 +260,13 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       const agent = agentOf(req);
       const cb = req.body.callback_url;
       if (cb !== undefined) {
-        if (!validCallbackUrl(cb)) throw Object.assign(new Error("callback_url doit être une adresse http(s)."), { statusCode: 400 });
+        if (!validCallbackUrl(cb)) throw Object.assign(new Error(tr("callback_url must be an http(s) address.", "callback_url doit être une adresse http(s).")), { statusCode: 400 });
         // An n8n agent may only be called back on its own n8n server.
         const integration = agent.integration_id ? getIntegration(db, agent.integration_id) : undefined;
         if (integration && new URL(cb).hostname !== new URL(integration.base_url).hostname) {
-          throw Object.assign(new Error("callback_url doit pointer vers le serveur n8n connecté."), { statusCode: 400 });
+          throw Object.assign(new Error(tr("callback_url must point to the connected n8n server.", "callback_url doit pointer vers le serveur n8n connecté.")), { statusCode: 400 });
         }
-        if (!integration && !safeOutboundUrl(cb)) throw Object.assign(new Error("callback_url doit être une adresse https publique."), { statusCode: 400 });
+        if (!integration && !safeOutboundUrl(cb)) throw Object.assign(new Error(tr("callback_url must be a public https address.", "callback_url doit être une adresse https publique.")), { statusCode: 400 });
       }
       const result = tx(db, () => check(db, agent, req.body, now()));
       if (result.decision !== "allow") notifyChange();
@@ -274,7 +278,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
   app.get<{ Params: { id: string } }>("/api/v1/approvals/:id", async (req) => {
     const agent = agentOf(req);
     const a = get<ApprovalRow>(db, "SELECT * FROM approvals WHERE id = ? AND agent_id = ?", Number(req.params.id), agent.id);
-    if (!a) throw notFound("Demande");
+    if (!a) throw notFound("Request", "Demande");
     return { id: a.id, status: a.status, decided_by: a.decided_by, decided_at: a.decided_at };
   });
 
@@ -300,7 +304,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     },
     async (req, reply) => {
       const agent = agentOf(req);
-      if (!safeOutboundUrl(req.body.target_url)) throw Object.assign(new Error("target_url doit être une adresse https publique."), { statusCode: 400 });
+      if (!safeOutboundUrl(req.body.target_url)) throw Object.assign(new Error(tr("target_url must be a public https address.", "target_url doit être une adresse https publique.")), { statusCode: 400 });
       const id = subscribe(db, agent.id, req.body.event, req.body.target_url, req.body.filter ?? null, now());
       return reply.code(201).send({ id });
     },
@@ -308,7 +312,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
 
   app.delete<{ Params: { id: string } }>("/api/v1/hooks/:id", async (req) => {
     const agent = agentOf(req);
-    if (!unsubscribe(db, agent.id, Number(req.params.id))) throw notFound("Abonnement");
+    if (!unsubscribe(db, agent.id, Number(req.params.id))) throw notFound("Subscription", "Abonnement");
     return { ok: true };
   });
 
@@ -351,39 +355,52 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       },
       async (req, reply) => {
         const agent = getAgent(db, req.params.id);
-        if (!agent) throw notFound("Agent");
+        if (!agent) throw notFound("Agent", "Agent");
         const { description, event_id } = req.body;
-        if (event_id !== undefined && !get(db, "SELECT 1 FROM events WHERE id = ? AND agent_id = ?", event_id, agent.id)) throw notFound("Échange");
+        if (event_id !== undefined && !get(db, "SELECT 1 FROM events WHERE id = ? AND agent_id = ?", event_id, agent.id)) throw notFound("Exchange", "Échange");
         const t = now();
         const author = actorOf(req);
         tx(db, () => {
           run(db, "INSERT INTO reports (agent_id, event_id, author, description, created_at) VALUES (?, ?, ?, ?, ?)", agent.id, event_id ?? null, author, description.trim(), t);
           if (event_id !== undefined) run(db, "UPDATE reviews SET human_verdict = 'confirmed' WHERE event_id = ?", event_id);
-          logActivity(db, author, `Erreur signalée sur ${agent.name} : ${description.trim()}`, agent.id, t);
+          logActivity(db, author, tr(`Mistake reported on ${agent.name}: ${description.trim()}`, `Erreur signalée sur ${agent.name} : ${description.trim()}`), agent.id, t);
           evaluateReports(db, agent.id, t);
         });
-        notify(`${author} a signalé une erreur de l'agent « ${agent.name} » : ${description.trim()}`, agent.owner_email);
+        notify(tr(`${author} reported a mistake by the agent “${agent.name}”: ${description.trim()}`, `${author} a signalé une erreur de l'agent « ${agent.name} » : ${description.trim()}`), agent.owner_email);
         notifyChange();
-        return reply.code(201).send({ message: `Merci, c'est noté. ${agent.owner_name || "Le responsable"} est prévenu.` });
+        const owner = agent.owner_name || tr("The owner", "Le responsable");
+        return reply.code(201).send({ message: tr(`Thanks, noted. ${owner} has been alerted.`, `Merci, c'est noté. ${owner} est prévenu.`) });
       },
     );
 
     admin.post<{ Params: { id: string }; Body: { confirmed: boolean } }>("/api/reviews/:id/verdict", { schema: { body: REVIEW_INPUT } }, async (req) => {
       const review = get<{ id: number; agent_id: string; summary: string }>(db, "SELECT id, agent_id, summary FROM reviews WHERE id = ?", Number(req.params.id));
-      if (!review) throw notFound("Relecture");
+      if (!review) throw notFound("Review", "Relecture");
       const t = now();
       tx(db, () => {
         run(db, "UPDATE reviews SET human_verdict = ? WHERE id = ?", req.body.confirmed ? "confirmed" : "dismissed", review.id);
-        logActivity(db, actorOf(req), req.body.confirmed ? `Erreur confirmée : ${review.summary}` : `Fausse alerte de la relecture : ${review.summary}`, review.agent_id, t);
+        logActivity(
+          db,
+          actorOf(req),
+          req.body.confirmed
+            ? tr(`Mistake confirmed: ${review.summary}`, `Erreur confirmée : ${review.summary}`)
+            : tr(`False alarm from the review: ${review.summary}`, `Fausse alerte de la relecture : ${review.summary}`),
+          review.agent_id,
+          t,
+        );
         evaluateAgent(db, review.agent_id, t);
       });
       notifyChange();
-      return { message: req.body.confirmed ? "Erreur confirmée. Elle compte dans la qualité de l'agent." : "Noté : fausse alerte, elle ne compte plus." };
+      return {
+        message: req.body.confirmed
+          ? tr("Mistake confirmed. It counts toward the agent's quality.", "Erreur confirmée. Elle compte dans la qualité de l'agent.")
+          : tr("Noted: false alarm, it no longer counts.", "Noté : fausse alerte, elle ne compte plus."),
+      };
     });
 
     admin.get<{ Params: { id: string } }>("/api/agents/:id", async (req) => {
       const d = agentDetail(db, req.params.id, now());
-      if (!d) throw notFound("Agent");
+      if (!d) throw notFound("Agent", "Agent");
       return d;
     });
 
@@ -424,8 +441,8 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
           id, b.name!, b.mission ?? "", b.owner_name ?? "", b.owner_email ?? "", b.platform ?? "custom", b.autonomy ?? 0,
           b.budget_cents ?? 10_000, b.expected_language ?? null, JSON.stringify(b.access ?? []), b.minutes_per_task ?? 3, newApiKey(), t,
         );
-        if (b.prompt) run(db, "INSERT INTO prompt_versions (agent_id, version, content, note, active, created_at) VALUES (?, 1, ?, ?, 1, ?)", id, b.prompt, "Version initiale", t);
-        logActivity(db, actorOf(req), `Nouvel agent dans l'équipe : ${b.name}`, id, t);
+        if (b.prompt) run(db, "INSERT INTO prompt_versions (agent_id, version, content, note, active, created_at) VALUES (?, 1, ?, ?, 1, ?)", id, b.prompt, tr("First version", "Version initiale"), t);
+        logActivity(db, actorOf(req), tr(`New agent on the team: ${b.name}`, `Nouvel agent dans l'équipe : ${b.name}`), id, t);
       });
       notifyChange();
       return reply.code(201).send(agentDetail(db, id, t));
@@ -433,7 +450,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
 
     admin.patch<{ Params: { id: string }; Body: AgentBody }>("/api/agents/:id", { schema: { body: agentBody } }, async (req) => {
       const agent = getAgent(db, req.params.id);
-      if (!agent) throw notFound("Agent");
+      if (!agent) throw notFound("Agent", "Agent");
       const { prompt, access, ...rest } = req.body;
       const t = now();
       tx(db, () => {
@@ -444,16 +461,16 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
           run(db, `UPDATE agents SET ${keys.map((k) => `${k} = ?`).join(", ")} WHERE id = ?`, ...keys.map((k) => fields[k]), agent.id);
         }
         if (rest.autonomy !== undefined && rest.autonomy !== agent.autonomy) {
-          logActivity(db, actorOf(req), `${agent.name} passe au niveau de confiance ${rest.autonomy}.`, agent.id, t);
+          logActivity(db, actorOf(req), tr(`${agent.name} moves to trust level ${rest.autonomy}.`, `${agent.name} passe au niveau de confiance ${rest.autonomy}.`), agent.id, t);
         }
         if (rest.budget_cents !== undefined && rest.budget_cents !== agent.budget_cents) {
-          logActivity(db, actorOf(req), `Budget de ${agent.name} modifié.`, agent.id, t);
+          logActivity(db, actorOf(req), tr(`${agent.name}'s budget changed.`, `Budget de ${agent.name} modifié.`), agent.id, t);
         }
         if (prompt !== undefined) {
           const last = get<{ v: number | null }>(db, "SELECT MAX(version) v FROM prompt_versions WHERE agent_id = ?", agent.id)?.v ?? 0;
           run(db, "UPDATE prompt_versions SET active = 0 WHERE agent_id = ?", agent.id);
-          run(db, "INSERT INTO prompt_versions (agent_id, version, content, note, active, created_at) VALUES (?, ?, ?, ?, 1, ?)", agent.id, last + 1, prompt, `Modifiée par ${actorOf(req)}`, t);
-          logActivity(db, actorOf(req), `Nouvelles consignes pour ${agent.name} (version ${last + 1}).`, agent.id, t);
+          run(db, "INSERT INTO prompt_versions (agent_id, version, content, note, active, created_at) VALUES (?, ?, ?, ?, 1, ?)", agent.id, last + 1, prompt, tr(`Changed by ${actorOf(req)}`, `Modifiée par ${actorOf(req)}`), t);
+          logActivity(db, actorOf(req), tr(`New instructions for ${agent.name} (version ${last + 1}).`, `Nouvelles consignes pour ${agent.name} (version ${last + 1}).`), agent.id, t);
         }
         evaluateAgent(db, agent.id, t);
       });
@@ -463,9 +480,9 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
 
     admin.post<{ Params: { id: string; action: string } }>("/api/agents/:id/actions/:action", async (req) => {
       const agent = getAgent(db, req.params.id);
-      if (!agent) throw notFound("Agent");
+      if (!agent) throw notFound("Agent", "Agent");
       let action = req.params.action as PlaybookId;
-      if (!PLAYBOOK_IDS.includes(action)) throw notFound("Action");
+      if (!PLAYBOOK_IDS.includes(action)) throw notFound("Action", "Action");
       if (action === "pause" && agent.paused) action = "resume";
       // Act on the real workflow first: the screen must never say "paused" while n8n runs.
       if (REMOTE_STATE[action] !== undefined) await setWorkflowActive(db, agent, REMOTE_STATE[action]!, fetchImpl);
@@ -477,10 +494,10 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
 
     admin.post<{ Params: { id: string } }>("/api/agents/:id/rotate-key", async (req) => {
       const agent = getAgent(db, req.params.id);
-      if (!agent) throw notFound("Agent");
+      if (!agent) throw notFound("Agent", "Agent");
       const key = newApiKey();
       run(db, "UPDATE agents SET api_key = ? WHERE id = ?", key, agent.id);
-      logActivity(db, actorOf(req), `Nouvelle clé de connexion pour ${agent.name}.`, agent.id, now());
+      logActivity(db, actorOf(req), tr(`New connection key for ${agent.name}.`, `Nouvelle clé de connexion pour ${agent.name}.`), agent.id, now());
       return { api_key: key };
     });
 
@@ -505,11 +522,11 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         const t = now();
         const message = tx(db, () => {
           const a = get<ApprovalRow>(db, "SELECT * FROM approvals WHERE id = ?", Number(req.params.id));
-          if (!a) throw notFound("Demande");
-          if (a.status !== "pending") throw new PlaybookError("Cette demande a déjà été traitée.");
+          if (!a) throw notFound("Request", "Demande");
+          if (a.status !== "pending") throw new PlaybookError(tr("This request has already been handled.", "Cette demande a déjà été traitée."));
           const status = req.body.approve ? "approved" : "rejected";
           run(db, "UPDATE approvals SET status = ?, decided_at = ?, decided_by = ? WHERE id = ?", status, t, actorOf(req), a.id);
-          const msg = `${req.body.approve ? "Approuvé" : "Refusé"} : ${a.title}`;
+          const msg = req.body.approve ? tr(`Approved: ${a.title}`, `Approuvé : ${a.title}`) : tr(`Declined: ${a.title}`, `Refusé : ${a.title}`);
           logActivity(db, actorOf(req), msg, a.agent_id, t);
           return msg;
         });
@@ -534,18 +551,19 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       },
       async (req) => {
         const rule = get<RuleRow>(db, "SELECT * FROM rules WHERE id = ?", req.params.id);
-        if (!rule) throw notFound("Règle");
+        if (!rule) throw notFound("Rule", "Règle");
         const b = req.body;
         const params = b.params ? { ...JSON.parse(rule.params), ...b.params } : JSON.parse(rule.params);
         for (const v of Object.values(params)) {
-          if (typeof v === "number" && (!Number.isFinite(v) || v < 0)) throw Object.assign(new Error("Valeur invalide."), { statusCode: 400 });
+          if (typeof v === "number" && (!Number.isFinite(v) || v < 0)) throw Object.assign(new Error(tr("Invalid value.", "Valeur invalide.")), { statusCode: 400 });
         }
         const enabled = b.enabled ?? !!rule.enabled;
         const label = b.label ?? rule.label;
         run(db, "UPDATE rules SET enabled = ?, params = ?, label = ? WHERE id = ?", enabled ? 1 : 0, JSON.stringify(params), label, rule.id);
         const sentence = describeRule(rule.kind, label, params);
-        if (enabled !== !!rule.enabled) logActivity(db, actorOf(req), `${enabled ? "Règle activée" : "Règle désactivée"} : ${sentence}`, null, now());
-        else if (b.params) logActivity(db, actorOf(req), `Règle modifiée : ${sentence}`, null, now());
+        if (enabled !== !!rule.enabled) {
+          logActivity(db, actorOf(req), enabled ? tr(`Rule turned on: ${sentence}`, `Règle activée : ${sentence}`) : tr(`Rule turned off: ${sentence}`, `Règle désactivée : ${sentence}`), null, now());
+        } else if (b.params) logActivity(db, actorOf(req), tr(`Rule changed: ${sentence}`, `Règle modifiée : ${sentence}`), null, now());
         notifyChange();
         return rulesView(db).find((r) => r.id === rule.id);
       },
@@ -575,7 +593,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       },
       async (req, reply) => {
         const { base_url, api_key } = req.body;
-        if (!validCallbackUrl(base_url)) throw Object.assign(new Error("L'adresse de n8n doit commencer par http:// ou https://"), { statusCode: 400 });
+        if (!validCallbackUrl(base_url)) throw Object.assign(new Error(tr("The n8n address must start with http:// or https://", "L'adresse de n8n doit commencer par http:// ou https://")), { statusCode: 400 });
         // Test the connection before saving anything.
         const workflows = await new N8nClient(base_url, api_key, fetchImpl).listWorkflows();
         const name = req.body.name?.trim() || new URL(base_url).hostname;
@@ -583,33 +601,42 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         const res = run(db, "INSERT INTO integrations (kind, name, base_url, api_key, created_at) VALUES ('n8n', ?, ?, ?, ?)", name, base_url.replace(/\/+$/, ""), api_key, t);
         const integration = getIntegration(db, Number(res.lastInsertRowid))!;
         const result = await syncIntegration(db, integration, new N8nClient(integration.base_url, api_key, fetchImpl), t);
-        logActivity(db, actorOf(req), `Connexion à n8n « ${name} » : ${workflows.length} workflow(s) importé(s).`, null, t);
+        logActivity(db, actorOf(req), tr(`Connected to n8n “${name}”: ${workflows.length} workflow(s) imported.`, `Connexion à n8n « ${name} » : ${workflows.length} workflow(s) importé(s).`), null, t);
         return reply.code(201).send({ ...integrationView(getIntegration(db, integration.id)!), sync: result });
       },
     );
 
     admin.post<{ Params: { id: string } }>("/api/integrations/:id/sync", async (req) => {
       const integration = getIntegration(db, Number(req.params.id));
-      if (!integration) throw notFound("Connexion");
+      if (!integration) throw notFound("Connection", "Connexion");
       const result = await syncIntegration(db, integration, new N8nClient(integration.base_url, integration.api_key, fetchImpl), now());
-      return { ...integrationView(getIntegration(db, integration.id)!), sync: result, message: `Synchronisé : ${result.workflows} workflow(s), ${result.imported} nouvelle(s) exécution(s).` };
+      const message = tr(
+        `Synced: ${result.workflows} workflow(s), ${result.imported} new execution(s).`,
+        `Synchronisé : ${result.workflows} workflow(s), ${result.imported} nouvelle(s) exécution(s).`,
+      );
+      return { ...integrationView(getIntegration(db, integration.id)!), sync: result, message };
     });
 
     admin.delete<{ Params: { id: string } }>("/api/integrations/:id", async (req) => {
       const integration = getIntegration(db, Number(req.params.id));
-      if (!integration) throw notFound("Connexion");
+      if (!integration) throw notFound("Connection", "Connexion");
       tx(db, () => {
         // The agents and their history stay; they are just no longer synchronised.
         run(db, "UPDATE agents SET integration_id = NULL WHERE integration_id = ?", integration.id);
         run(db, "DELETE FROM integrations WHERE id = ?", integration.id);
       });
       notifyChange();
-      return { message: `Connexion « ${integration.name} » supprimée. Les agents et leur historique sont conservés.` };
+      return {
+        message: tr(
+          `Connection “${integration.name}” removed. The agents and their history are kept.`,
+          `Connexion « ${integration.name} » supprimée. Les agents et leur historique sont conservés.`,
+        ),
+      };
     });
 
     admin.get<{ Params: { id: string } }>("/api/agents/:id/n8n-snippet", async (req) => {
       const agent = getAgent(db, req.params.id);
-      if (!agent) throw notFound("Agent");
+      if (!agent) throw notFound("Agent", "Agent");
       const host = `${req.protocol}://${req.headers.host}`;
       return n8nSnippet(process.env.PUBLIC_URL ?? host, agent.api_key);
     });

@@ -6,7 +6,7 @@ Ce guide s'adresse à la personne qui construit et maintient les workflows n8n (
 
 | Niveau | Ce qu'il faut faire | Ce que vous obtenez | Limite |
 |---|---|---|---|
-| **1. Voir** | Donner une clé API n8n à Agent HQ | Chaque workflow devient un agent. Ses réussites, ses échecs et le message d'erreur remontent toutes les 30 secondes. Les incidents sont expliqués en français. | n8n ne transmet pas le coût des appels d'IA. |
+| **1. Voir** | Donner une clé API n8n à Agent HQ | Chaque workflow devient un agent. Ses réussites, ses échecs et le message d'erreur remontent toutes les 30 secondes. Les incidents sont expliqués en langage courant (anglais ou français selon l'instance). | n8n ne transmet pas le coût des appels d'IA. |
 | **2. Arrêter** | Rien de plus | « Mettre en pause » **désactive vraiment le workflow** dans n8n (mesuré : moins de 0,3 s). « Reprendre » le réactive. Si quelqu'un le réactive dans n8n alors qu'il est en pause dans Agent HQ, Agent HQ le coupe à nouveau. | Une exécution **déjà en cours** au moment de la pause va jusqu'au bout. |
 | **3. Contrôler** | Coller le bloc « Demander l'autorisation » avant l'étape sensible | Le workflow **s'arrête et attend** votre feu vert dans Agent HQ avant de rembourser, payer ou envoyer. Approuvé : il continue. Refusé : il s'arrête. | Seules les étapes protégées par le bloc sont contrôlées. |
 
@@ -25,6 +25,7 @@ Les workflows apparaissent dans **Mon équipe IA**. Renseignez le responsable et
 ## Niveau 3 : faire attendre le feu vert
 
 1. Dans Agent HQ, ouvrez la fiche de l'agent (le workflow), puis cliquez sur **Copier le bloc « Demander l'autorisation » pour n8n**.
+   *Sur une instance en anglais, le bouton et les étapes s'appellent « Copy the “Ask for permission” block for n8n », « Allowed? », « Wait for the green light »… Le fonctionnement est identique.*
 2. Dans n8n, ouvrez le workflow et collez le bloc (Ctrl+V ou Cmd+V). Il contient 7 nœuds :
 
 ```
@@ -61,7 +62,7 @@ Demander l'autorisation → Autorisé ? ──oui──────────�
 
 Le script `npm run verify:n8n` rejoue tout le parcours contre un **vrai n8n** (version 2.44 lors du dernier passage). Il crée trois workflows de test, connecte Agent HQ, puis vérifie 16 points, dont :
 
-- les échecs d'un workflow deviennent une alerte en français ;
+- les échecs d'un workflow deviennent une alerte en langage courant ;
 - la pause coupe réellement le workflow, et la reprise le relance ;
 - une réactivation sauvage dans n8n est annulée par Agent HQ ;
 - un remboursement de 340 € attend l'accord et n'est payé qu'après « Approuver » ;

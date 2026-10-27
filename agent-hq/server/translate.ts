@@ -1,14 +1,16 @@
 /**
- * Turns raw technical errors into plain French a manager can act on.
+ * Turns raw technical errors into plain words a manager can act on.
  * Matching is done on the error code first, then on the message text,
  * so agents built on any platform get a sensible translation.
  */
+
+import { tr } from "./i18n.ts";
 
 export type ErrorFamily = "auth" | "rate_limit" | "timeout" | "not_found" | "invalid_input" | "model" | "unknown";
 
 export interface Translation {
   family: ErrorFamily;
-  /** Short French phrase, e.g. "son accès à HubSpot a expiré". */
+  /** Short phrase, e.g. "its access to HubSpot has expired". */
   cause: string;
   /** Whether the agent cannot work at all until a human fixes it. */
   blocking: boolean;
@@ -30,35 +32,67 @@ export function classifyError(code: string | null | undefined, message: string |
 }
 
 export function translateError(family: ErrorFamily, tool: string | null): Translation {
-  const on = tool ? ` à ${toolLabel(tool)}` : "";
-  const of = tool ? ` de ${toolLabel(tool)}` : "";
+  const name = tool ? toolLabel(tool) : null;
+  const on = name ? tr(` to ${name}`, ` à ${name}`) : "";
   switch (family) {
     case "auth":
-      return { family, blocking: true, cause: `son accès${on} a expiré ou a été retiré.` };
+      return { family, blocking: true, cause: tr(`its access${on} has expired or was revoked.`, `son accès${on} a expiré ou a été retiré.`) };
     case "rate_limit":
-      return { family, blocking: true, cause: `le service${of || " du fournisseur"} le bloque temporairement : il envoie trop de demandes.` };
+      return {
+        family,
+        blocking: true,
+        cause: tr(
+          `${name ?? "the provider"} is temporarily blocking it: it sends too many requests.`,
+          `le service${name ? " de " + name : " du fournisseur"} le bloque temporairement : il envoie trop de demandes.`,
+        ),
+      };
     case "timeout":
-      return { family, blocking: false, cause: `le service${of || " qu'il utilise"} ne répond pas ou répond trop lentement.` };
+      return {
+        family,
+        blocking: false,
+        cause: tr(
+          `${name ?? "a service it uses"} is not responding, or too slowly.`,
+          `le service${name ? " de " + name : " qu'il utilise"} ne répond pas ou répond trop lentement.`,
+        ),
+      };
     case "not_found":
-      return { family, blocking: false, cause: `il cherche des éléments qui n'existent plus${tool ? " dans " + toolLabel(tool) : ""}.` };
+      return {
+        family,
+        blocking: false,
+        cause: tr(
+          `it is looking for items that no longer exist${name ? " in " + name : ""}.`,
+          `il cherche des éléments qui n'existent plus${name ? " dans " + name : ""}.`,
+        ),
+      };
     case "invalid_input":
-      return { family, blocking: false, cause: `il envoie des informations mal remplies${on}.` };
+      return { family, blocking: false, cause: tr(`it sends badly filled-in information${on}.`, `il envoie des informations mal remplies${on}.`) };
     case "model":
-      return { family, blocking: false, cause: "le modèle d'IA refuse ou n'arrive pas à traiter certaines demandes (trop longues ou filtrées)." };
+      return {
+        family,
+        blocking: false,
+        cause: tr(
+          "the AI model refuses or fails to handle some requests (too long or filtered).",
+          "le modèle d'IA refuse ou n'arrive pas à traiter certaines demandes (trop longues ou filtrées).",
+        ),
+      };
     default:
-      return { family, blocking: false, cause: "il rencontre des erreurs répétées que nous n'avons pas pu identifier précisément." };
+      return {
+        family,
+        blocking: false,
+        cause: tr("it keeps hitting errors we could not pin down.", "il rencontre des erreurs répétées que nous n'avons pas pu identifier précisément."),
+      };
   }
 }
 
 const TOOL_NAMES: Record<string, string> = {
   hubspot: "HubSpot",
   gmail: "Gmail",
-  email: "la messagerie",
   stripe: "Stripe",
   zendesk: "Zendesk",
   slack: "Slack",
   notion: "Notion",
   pennylane: "Pennylane",
+  quickbooks: "QuickBooks",
   qonto: "Qonto",
   shopify: "Shopify",
   openai: "OpenAI",
@@ -70,10 +104,21 @@ const TOOL_NAMES: Record<string, string> = {
 export function toolLabel(actionOrTool: string): string {
   const raw = actionOrTool.split(/[.:/]/)[0].trim();
   const key = raw.toLowerCase();
+  if (key === "email") return tr("email", "la messagerie");
   return TOOL_NAMES[key] ?? raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
-const ACTION_VERBS: Record<string, string> = {
+const ENGLISH_NOUNS: Record<string, string> = {
+  send: "sends",
+  reply: "replies",
+  update: "updates",
+  create: "entries",
+  refund: "refunds",
+  delete: "deletions",
+  post: "posts",
+};
+
+const FRENCH_VERBS: Record<string, string> = {
   send: "envoi",
   reply: "réponse",
   update: "mise à jour",
@@ -83,14 +128,24 @@ const ACTION_VERBS: Record<string, string> = {
   post: "publication",
 };
 
-/** "email.send" → "envoi (la messagerie)" — used in alert titles. */
+/** "stripe.refund" → "Stripe refunds" / "remboursement via Stripe" — used in alert titles. */
 export function actionLabel(action: string): string {
   const [tool, verb] = action.split(".");
-  const v = verb ? ACTION_VERBS[verb] ?? verb : action;
-  return verb ? `${v} via ${toolLabel(tool)}` : v;
+  if (!verb) return action;
+  return tr(`${toolLabel(tool)} ${ENGLISH_NOUNS[verb] ?? verb}`, `${FRENCH_VERBS[verb] ?? verb} via ${toolLabel(tool)}`);
 }
 
+const LANGUAGES: Record<string, [string, string]> = {
+  fr: ["French", "français"],
+  en: ["English", "anglais"],
+  es: ["Spanish", "espagnol"],
+  de: ["German", "allemand"],
+  it: ["Italian", "italien"],
+  pt: ["Portuguese", "portugais"],
+  nl: ["Dutch", "néerlandais"],
+};
+
 export function languageName(code: string): string {
-  const names: Record<string, string> = { fr: "français", en: "anglais", es: "espagnol", de: "allemand", it: "italien", pt: "portugais", nl: "néerlandais" };
-  return names[code.toLowerCase()] ?? code;
+  const names = LANGUAGES[code.toLowerCase()];
+  return names ? tr(...names) : code;
 }

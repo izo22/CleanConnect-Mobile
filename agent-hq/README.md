@@ -2,7 +2,7 @@
 
 **Gérer 100 agents IA sans devenir ingénieur en IA.**
 
-Agent HQ est le poste de pilotage d'une équipe d'agents IA. On y voit chaque matin ce qui a besoin de vous, on règle un incident en un clic, on valide les décisions sensibles, et on fixe des garde-fous écrits en français. Tout ça fonctionne quelle que soit la plateforme utilisée pour construire les agents (n8n, Make, Zapier, Claude Agent SDK, OpenAI Agents, script maison).
+Agent HQ est le poste de pilotage d'une équipe d'agents IA. On y voit chaque matin ce qui a besoin de vous, on règle un incident en un clic, on valide les décisions sensibles, et on fixe des garde-fous écrits en langage courant. Tout ça fonctionne quelle que soit la plateforme utilisée pour construire les agents (n8n, Make, Zapier, Claude Agent SDK, OpenAI Agents, script maison).
 
 ![Brief du matin](docs/captures/1-brief-du-matin.png)
 
@@ -17,7 +17,11 @@ npm start          # http://localhost:8787
 
 Pour le mettre sur Internet (serveur, https, sauvegardes) : [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md).
 
-Au premier lancement, une base de démonstration est créée : 100 agents, 8 jours d'historique et de vrais incidents détectés par le moteur (relances en double, réponses en anglais, coûts en hausse, accès HubSpot expiré, erreurs de jugement repérées par la relecture IA, erreur signalée par un collègue).
+Au premier lancement, une base de démonstration est créée : 100 agents, 8 jours d'historique et de vrais incidents détectés par le moteur (relances en double, réponses dans la mauvaise langue, coûts en hausse, accès HubSpot expiré, erreurs de jugement repérées par la relecture IA, erreur signalée par un collègue).
+
+**Langue.** Le produit est en **anglais (dollars)** par défaut, pour le marché américain : interface, alertes, messages, bloc n8n et démonstration (une entreprise américaine). Pour une instance en **français (euros)**, lancez-la avec `APP_LANGUAGE=fr`, par exemple `APP_LANGUAGE=fr npm start`. La langue est réglée par serveur : chaque client a la sienne.
+
+![Morning brief, in English](docs/captures/en-1-morning-brief.png)
 
 Pour voir des agents travailler en direct, dans un second terminal :
 
@@ -40,6 +44,9 @@ Les agents simulés passent par le vrai SDK. Ils s'arrêtent quand vous les mett
 
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
+| `APP_LANGUAGE` | `en` | langue de l'instance : `en` (anglais) ou `fr` (français) |
+| `CURRENCY` | `USD` en anglais, `EUR` en français | devise affichée (`USD`, `EUR`, `GBP`, `CAD`…) |
+| `TIMEZONE` | `America/New_York` en anglais, `Europe/Paris` en français | fuseau des heures écrites dans les alertes |
 | `PORT` | `8787` | port HTTP |
 | `DATABASE_PATH` | `data/agent-hq.db` | fichier SQLite |
 | `ADMIN_TOKEN` | — | code d'accès de l'interface ; **obligatoire en production** (16 caractères minimum) |
@@ -63,7 +70,7 @@ Node.js 22.5 ou plus récent est requis (la base utilise `node:sqlite`, sans dé
 
 - **Brief du matin** : santé de la flotte, tâches, temps gagné, coût, incidents prioritaires et décisions en attente.
 - **Mon équipe IA** : une fiche par agent (mission, responsable, budget, accès, niveau de confiance 0/1/2, consignes versionnées, journal, clé de connexion).
-- **Alertes en français** : le moteur détecte les actions en double, les échecs répétés (accès expiré, limite de débit, panne), les réponses dans la mauvaise langue, les hausses de coût et les budgets presque épuisés. Chaque alerte dit *ce qui se passe, pourquoi et l'impact*, et se ferme seule quand le problème disparaît.
+- **Alertes en langage courant** (anglais ou français) : le moteur détecte les actions en double, les échecs répétés (accès expiré, limite de débit, panne), les réponses dans la mauvaise langue, les hausses de coût et les budgets presque épuisés. Chaque alerte dit *ce qui se passe, pourquoi et l'impact*, et se ferme seule quand le problème disparaît.
 - **Actions en un clic** : mettre en pause, revenir à la version d'avant des consignes, confier à un humain, tout faire valider, passer au modèle économique, relever le budget, prévenir le responsable.
 - **Qualité — relecture par IA** : une part des réponses de chaque agent (10 % par défaut, 100 % au niveau 0, réglable par agent) est relue par Claude, qui la compare aux consignes de l'agent et signale les réponses fausses, inventées, hors consignes ou dans la mauvaise langue. Un humain tranche (« Oui, c'est une erreur » / « Fausse alerte »). Au-delà de 15 % d'erreurs sur 24 h, une alerte s'ouvre.
 - **Signaler une erreur** : n'importe qui dans l'équipe peut signaler une bêtise d'un agent, sur une réponse précise ou en général. Le responsable est prévenu et une alerte s'ouvre, avec les actions habituelles.
@@ -143,7 +150,8 @@ agent-hq/
     maintenance.ts sauvegardes quotidiennes et effacement des vieilles données
     n8n-template.ts bloc « Demander l'autorisation » à coller dans n8n
     callbacks.ts renvoi de la décision humaine au workflow en attente
-    translate.ts erreurs techniques → français
+    translate.ts erreurs techniques → phrases simples
+    i18n.ts      langue, devise et fuseau de l'instance (APP_LANGUAGE)
     queries.ts   modèles de lecture pour l'interface
   web/           interface React (Vite)
   sdk/           SDK sans dépendance pour les agents

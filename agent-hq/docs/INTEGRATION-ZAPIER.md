@@ -7,7 +7,7 @@ L'application **Agent HQ pour Zapier** est une intégration **privée** : elle n
 | Niveau | Comment | Résultat |
 |---|---|---|
 | **Contrôler** (le plus important) | Étape **Agent HQ · Ask Permission** juste avant l'action sensible, puis un 2e Zap qui part de **Agent HQ · Decision Made** | L'action ne s'exécute **jamais** sans être autorisée. Sous vos seuils, elle passe tout de suite. Au-dessus, elle attend votre « Approuver » dans Agent HQ. Si Agent HQ est injoignable, l'étape échoue et rien ne part. |
-| **Voir** | Étape **Agent HQ · Report Activity** à la fin du Zap (et en cas d'échec) | Tâches, échecs, coût, alertes en français, relecture IA si vous envoyez la question et la réponse. |
+| **Voir** | Étape **Agent HQ · Report Activity** à la fin du Zap (et en cas d'échec) | Tâches, échecs, coût, alertes en langage courant, relecture IA si vous envoyez la question et la réponse. |
 | **Arrêter** | Un petit Zap : **Agent HQ · Agent Paused or Resumed** → **Zapier Manager · Turn Zap On/Off** | « Mettre en pause » dans Agent HQ coupe le Zap concerné. Une pause est aussi refusée directement par « Ask Permission ». |
 
 **Différence avec n8n :** Zapier ne laisse pas Agent HQ lire vos Zaps de lui-même (il faut l'accès partenaire, plus tard). La supervision passe donc par l'étape « Report Activity » que vous ajoutez, et l'arrêt d'urgence par le petit Zap ci-dessus.
@@ -57,4 +57,4 @@ Voir [zapier/README.md](../zapier/README.md) : `zapier login`, `zapier register 
   - désabonnement.
 - ✅ Structure de l'application validée par l'outil officiel `zapier validate`.
 - ❌ **Pas encore testée dans Zapier lui-même** : il faut un compte Zapier et Agent HQ en ligne. Le premier pilote servira de test réel.
-- ⚠️ L'interface d'Agent HQ affiche encore les montants en euros et en français.
+- ✅ Agent HQ est en anglais et en dollars par défaut (`APP_LANGUAGE=fr` pour une instance en français et en euros).

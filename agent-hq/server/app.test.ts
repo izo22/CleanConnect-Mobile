@@ -101,7 +101,7 @@ describe("alert engine", () => {
     for (let i = 0; i < 6; i++) addEvent(db, "a", NOW - 10 * MINUTE + i, { success: false, action: "hubspot.update", code: "401", message: "token expired" });
     evaluateAgent(db, "a", NOW);
     const alert = get<{ kind: string; severity: string; title: string }>(db, "SELECT kind, severity, title FROM alerts");
-    expect(alert).toEqual({ kind: "auth", severity: "blocked", title: "N'arrive plus à se connecter à HubSpot" });
+    expect(alert).toEqual({ kind: "auth", severity: "blocked", title: "Can no longer connect to HubSpot" });
 
     const later = NOW + 40 * MINUTE;
     for (let i = 0; i < 8; i++) addEvent(db, "a", later - 5 * MINUTE + i, { action: "hubspot.update" });
@@ -203,7 +203,7 @@ describe("human reports and AI review", () => {
     expect(res.statusCode).toBe(201);
     const open = (await app.inject({ url: "/api/alerts" })).json().open;
     expect(open).toHaveLength(1);
-    expect(open[0].title).toBe("Erreur signalée par Karim");
+    expect(open[0].title).toBe("Mistake reported by Karim");
     expect(open[0].actions.map((x: { id: string }) => x.id)).toContain("dismiss");
 
     await app.inject({ method: "POST", url: `/api/alerts/${open[0].id}/actions/autonomy0` });

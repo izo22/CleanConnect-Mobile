@@ -70,7 +70,7 @@ test('connection: the test call returns the agent and labels the connection', as
 });
 
 test('connection: a wrong key is refused with a clear message', async () => {
-  await assert.rejects(appTester(App.authentication.test, { authData: { base_url: HQ, api_key: 'wrong-key' } }), /Clé d'agent invalide/);
+  await assert.rejects(appTester(App.authentication.test, { authData: { base_url: HQ, api_key: 'wrong-key' } }), /Invalid agent key/);
 });
 
 test('Ask Permission: a small refund is allowed and the Zap continues', async () => {
@@ -159,7 +159,7 @@ test('Ask Permission: a paused agent is refused', async () => {
   await admin(`/api/agents/${agentId}/actions/pause`, { method: 'POST', body: {} });
   await assert.rejects(
     appTester(App.creates.ask_permission.operation.perform, { authData, inputData: { action: 'stripe.refund', amount: '10', summary: 'Refund $10' } }),
-    /Refused by Agent HQ: Agent en pause/,
+    /Refused by Agent HQ: Agent paused/,
   );
   await admin(`/api/agents/${agentId}/actions/resume`, { method: 'POST', body: {} });
 });
@@ -193,5 +193,5 @@ test('Report Activity: successes and failures reach Agent HQ and its alerts', as
 
 test('Unsubscribing removes the hook: no more pushes', async () => {
   await appTester(App.triggers.decision_made.operation.performUnsubscribe, { authData, subscribeData: decisionHook });
-  await assert.rejects(appTester(App.triggers.decision_made.operation.performUnsubscribe, { authData, subscribeData: decisionHook }), /introuvable/);
+  await assert.rejects(appTester(App.triggers.decision_made.operation.performUnsubscribe, { authData, subscribeData: decisionHook }), /not found/);
 });

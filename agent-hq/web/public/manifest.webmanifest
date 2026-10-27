@@ -1,8 +1,8 @@
 {
   "name": "Agent HQ",
   "short_name": "Agent HQ",
-  "description": "Le poste de pilotage de vos agents IA",
-  "lang": "fr",
+  "description": "Mission control for your AI agents",
+  "lang": "en",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F6F3EE",

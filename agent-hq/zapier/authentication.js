@@ -19,7 +19,7 @@ module.exports = {
       required: true,
       type: 'password',
       helpText:
-        'In Agent HQ, open the agent that this Zap represents, then **Connexion → Afficher la clé de connexion**. Each agent has its own key.',
+        'In Agent HQ, open the agent that this Zap represents, then **Connection → Show the connection key**. Each agent has its own key.',
     },
   ],
   test: async (z, bundle) => {

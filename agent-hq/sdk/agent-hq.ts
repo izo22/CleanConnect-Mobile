@@ -55,7 +55,7 @@ export interface Control {
 
 export class ActionRefused extends Error {
   constructor(public reason: string) {
-    super(`Agent HQ a refusé l'action : ${reason}`);
+    super(`Agent HQ refused the action: ${reason}`);
   }
 }
 
@@ -75,7 +75,7 @@ export class AgentHQ {
       body: init?.body ? JSON.stringify(init.body) : undefined,
     });
     const data = (await res.json().catch(() => ({}))) as { error?: string };
-    if (!res.ok) throw new Error(`Agent HQ ${res.status} : ${data.error ?? res.statusText}`);
+    if (!res.ok) throw new Error(`Agent HQ ${res.status}: ${data.error ?? res.statusText}`);
     return data as T;
   }
 
@@ -115,7 +115,7 @@ export class AgentHQ {
     if (res.decision === "deny") throw new ActionRefused(res.reason);
     if (res.decision === "needs_approval") {
       const ok = await this.waitForApproval(res.approval_id, { timeoutMs: opts?.waitMs });
-      if (!ok) throw new ActionRefused("refusée ou restée sans réponse");
+      if (!ok) throw new ActionRefused("refused, or no answer in time");
     }
     const started = Date.now();
     try {

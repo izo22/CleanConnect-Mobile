@@ -145,7 +145,7 @@ await step("Supervision : chaque workflow devient un agent, sans le modifier", a
   return `« ${a.name} » · niveau : ${a.control.label}`;
 });
 
-await step("Supervision : des exécutions en échec dans n8n deviennent une alerte en français", async () => {
+await step("Supervision : des exécutions en échec dans n8n deviennent une alerte en clair", async () => {
   for (let i = 0; i < 6; i++) await fetch(`${N8N}/webhook/hubspot-${suffix}`, { method: "POST" });
   await sleep(3000);
   await sync();
@@ -189,24 +189,29 @@ await step("Désactivé à la main dans n8n : Agent HQ l'affiche en pause, avec 
   await n8n(`/workflows/${wfRelance}/deactivate`, { method: "POST" });
   await sync();
   const a = await agentOf(wfRelance);
-  assert(a.paused && a.pause_reason === "désactivé dans n8n", `${a.paused} ${a.pause_reason}`);
+  assert(a.paused && ["switched off in n8n", "désactivé dans n8n"].includes(a.pause_reason), `${a.paused} ${a.pause_reason}`);
   await n8n(`/workflows/${wfRelance}/activate`, { method: "POST" });
   await sync();
 });
 
 // ---------- Level 3: control before acting ----------
+/** The block's request node and the placeholder to replace, whatever the instance language. */
+const roles = (snippet: any) => ({
+  ask: snippet.nodes.find((n: any) => n.type === "n8n-nodes-base.httpRequest"),
+  placeholder: snippet.nodes.find((n: any) => n.type === "n8n-nodes-base.noOp" && n.position[1] < 0),
+});
 let refundAgent: any;
 await step("Contrôle : le bloc « Demander l'autorisation » s'insère dans le workflow", async () => {
   refundAgent = await agentOf(wfRefund);
   const snippet = (await hq(`/api/agents/${refundAgent.id}/n8n-snippet`)).json;
-  const ask = snippet.nodes.find((n: any) => n.name === "Agent HQ · Demander l'autorisation");
+  const { ask, placeholder } = roles(snippet);
   // The agency adapts the request to its data: amount and sentence shown to the human.
   ask.parameters.jsonBody = "={{ JSON.stringify({ action: 'stripe.refund', amount_cents: Math.round($json.body.amount * 100), summary: 'Rembourser ' + $json.body.amount + ' € à ' + $json.body.customer, callback_url: $execution.resumeUrl }) }}";
   const action = httpNode("Rembourser (paiement simulé)", "POST", `${FAKE}/refund`,
     "={{ JSON.stringify({ amount: $('Webhook').item.json.body.amount, customer: $('Webhook').item.json.body.customer }) }}");
-  const nodes = [webhook(`remboursement-${suffix}`), ...snippet.nodes.filter((n: any) => n.name !== "Votre action sensible (à remplacer)"), action];
-  const rename = (c: any) => JSON.parse(JSON.stringify(c).replaceAll("Votre action sensible (à remplacer)", "Rembourser (paiement simulé)"));
-  const connections = { Webhook: { main: [[{ node: "Agent HQ · Demander l'autorisation", type: "main", index: 0 }]] }, ...rename(snippet.connections) };
+  const nodes = [webhook(`remboursement-${suffix}`), ...snippet.nodes.filter((n: any) => n !== placeholder), action];
+  const rename = (c: any) => JSON.parse(JSON.stringify(c).replaceAll(placeholder.name, "Rembourser (paiement simulé)"));
+  const connections = { Webhook: { main: [[{ node: ask.name, type: "main", index: 0 }]] }, ...rename(snippet.connections) };
   await n8n(`/workflows/${wfRefund}/deactivate`, { method: "POST" });
   const res = await n8n(`/workflows/${wfRefund}`, { method: "PUT", body: { name: `Remboursements clients ${suffix}`, nodes, connections, settings } });
   assert(res.status === 200, `${res.status} ${JSON.stringify(res.json).slice(0, 300)}`);
@@ -266,12 +271,12 @@ await step("Contrôle : agent en pause dans Agent HQ → l'action est refusée m
 
 await step("Sécurité : si Agent HQ est injoignable, le remboursement n'est PAS exécuté", async () => {
   const snippet = (await hq(`/api/agents/${refundAgent.id}/n8n-snippet`)).json;
-  const ask = snippet.nodes.find((n: any) => n.name === "Agent HQ · Demander l'autorisation");
+  const { ask, placeholder } = roles(snippet);
   ask.parameters.url = "http://localhost:1/api/v1/check"; // nobody listens there
   ask.parameters.jsonBody = "={{ JSON.stringify({ action: 'stripe.refund', amount_cents: Math.round($json.body.amount * 100), callback_url: $execution.resumeUrl }) }}";
   const action = httpNode("Rembourser (paiement simulé)", "POST", `${FAKE}/refund`, "={{ JSON.stringify({ amount: $('Webhook').item.json.body.amount, customer: 'injoignable' }) }}");
-  const nodes = [webhook(`injoignable-${suffix}`), ...snippet.nodes.filter((n: any) => n.name !== "Votre action sensible (à remplacer)"), action];
-  const connections = { Webhook: { main: [[{ node: "Agent HQ · Demander l'autorisation", type: "main", index: 0 }]] }, ...JSON.parse(JSON.stringify(snippet.connections).replaceAll("Votre action sensible (à remplacer)", "Rembourser (paiement simulé)")) };
+  const nodes = [webhook(`injoignable-${suffix}`), ...snippet.nodes.filter((n: any) => n !== placeholder), action];
+  const connections = { Webhook: { main: [[{ node: ask.name, type: "main", index: 0 }]] }, ...JSON.parse(JSON.stringify(snippet.connections).replaceAll(placeholder.name, "Rembourser (paiement simulé)")) };
   const id = await createWorkflow(`Remboursements (Agent HQ injoignable) ${suffix}`, nodes, connections);
   await n8n(`/workflows/${id}/activate`, { method: "POST" });
   await sleep(1000);

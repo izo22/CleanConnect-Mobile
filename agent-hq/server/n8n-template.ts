@@ -2,14 +2,15 @@
  * The "ask before acting" block for n8n, ready to paste into a workflow
  * (n8n accepts nodes pasted as JSON). It goes right before the sensitive step:
  *
- *   Demander l'autorisation → Autorisé ? ──oui──────────────────────────→ [votre action]
- *                                  └─non→ Validation demandée ? ─oui→ Attendre le feu vert → Feu vert ? ─oui→ [votre action]
- *                                              └─non (refusé) → Refusé          └─non (refusé ou délai dépassé) → Refusé
+ *   Ask for permission → Allowed? ──yes─────────────────────────────→ [your action]
+ *                           └─no→ Approval requested? ─yes→ Wait for the green light → Green light? ─yes→ [your action]
+ *                                      └─no (refused) → Declined            └─no (declined or timed out) → Declined
  *
  * If Agent HQ cannot be reached, the HTTP node fails and the workflow stops:
  * the sensitive action is NOT executed (fail closed).
  */
 import { randomUUID } from "node:crypto";
+import { tr } from "./i18n.ts";
 
 const condition = (left: string, right: string) => ({
   conditions: {
@@ -21,7 +22,7 @@ const condition = (left: string, right: string) => ({
 });
 
 export interface SnippetOptions {
-  /** Expression giving the action name, e.g. "stripe.refund". */
+  /** Action name, e.g. "stripe.refund". */
   action?: string;
   /** n8n expression (without "={{ }}") for the amount in cents, or null. */
   amountCents?: string | null;
@@ -30,20 +31,30 @@ export interface SnippetOptions {
 }
 
 export function n8nSnippet(agentHqUrl: string, agentKey: string, opts: SnippetOptions = {}) {
-  const action = opts.action ?? "action.sensible";
-  const summary = opts.summary ?? "'Action sensible demandée par le workflow ' + $workflow.name";
+  const action = opts.action ?? tr("sensitive.action", "action.sensible");
+  const summary = opts.summary ?? tr("'Sensitive action requested by the workflow ' + $workflow.name", "'Action sensible demandée par le workflow ' + $workflow.name");
   const amount = opts.amountCents === undefined ? null : opts.amountCents;
   const body = [
     `action: '${action}'`,
     amount ? `amount_cents: ${amount}` : null,
     `summary: ${summary}`,
-    `context: 'Exécution n8n ' + $execution.id`,
+    `context: ${tr("'n8n execution '", "'Exécution n8n '")} + $execution.id`,
     `callback_url: $execution.resumeUrl`,
   ].filter(Boolean).join(", ");
 
+  const N = {
+    ask: tr("Agent HQ · Ask for permission", "Agent HQ · Demander l'autorisation"),
+    allowed: tr("Agent HQ · Allowed?", "Agent HQ · Autorisé ?"),
+    requested: tr("Agent HQ · Approval requested?", "Agent HQ · Validation demandée ?"),
+    wait: tr("Agent HQ · Wait for the green light", "Agent HQ · Attendre le feu vert"),
+    green: tr("Agent HQ · Green light?", "Agent HQ · Feu vert ?"),
+    action: tr("Your sensitive action (replace me)", "Votre action sensible (à remplacer)"),
+    refused: tr("Agent HQ · Declined", "Agent HQ · Refusé"),
+  };
+
   const nodes = [
     {
-      name: "Agent HQ · Demander l'autorisation",
+      name: N.ask,
       type: "n8n-nodes-base.httpRequest",
       typeVersion: 4.2,
       position: [0, 0],
@@ -58,28 +69,28 @@ export function n8nSnippet(agentHqUrl: string, agentKey: string, opts: SnippetOp
         options: { timeout: 15000 },
       },
     },
-    { name: "Agent HQ · Autorisé ?", type: "n8n-nodes-base.if", typeVersion: 2.2, position: [240, 0], parameters: condition("={{ $json.decision }}", "allow") },
-    { name: "Agent HQ · Validation demandée ?", type: "n8n-nodes-base.if", typeVersion: 2.2, position: [480, 140], parameters: condition("={{ $json.decision }}", "needs_approval") },
+    { name: N.allowed, type: "n8n-nodes-base.if", typeVersion: 2.2, position: [240, 0], parameters: condition("={{ $json.decision }}", "allow") },
+    { name: N.requested, type: "n8n-nodes-base.if", typeVersion: 2.2, position: [480, 140], parameters: condition("={{ $json.decision }}", "needs_approval") },
     {
-      name: "Agent HQ · Attendre le feu vert",
+      name: N.wait,
       type: "n8n-nodes-base.wait",
       typeVersion: 1.1,
       position: [720, 60],
       webhookId: randomUUID(),
       parameters: { resume: "webhook", httpMethod: "POST", limitWaitTime: true, limitType: "afterTimeInterval", resumeAmount: 24, resumeUnit: "hours", options: {} },
     },
-    { name: "Agent HQ · Feu vert ?", type: "n8n-nodes-base.if", typeVersion: 2.2, position: [960, 60], parameters: condition("={{ String($json.body?.approved === true) }}", "true") },
-    { name: "Votre action sensible (à remplacer)", type: "n8n-nodes-base.noOp", typeVersion: 1, position: [1200, -40], parameters: {} },
-    { name: "Agent HQ · Refusé", type: "n8n-nodes-base.noOp", typeVersion: 1, position: [1200, 240], parameters: {} },
+    { name: N.green, type: "n8n-nodes-base.if", typeVersion: 2.2, position: [960, 60], parameters: condition("={{ String($json.body?.approved === true) }}", "true") },
+    { name: N.action, type: "n8n-nodes-base.noOp", typeVersion: 1, position: [1200, -40], parameters: {} },
+    { name: N.refused, type: "n8n-nodes-base.noOp", typeVersion: 1, position: [1200, 240], parameters: {} },
   ];
 
   const go = (node: string) => [{ node, type: "main", index: 0 }];
   const connections = {
-    "Agent HQ · Demander l'autorisation": { main: [go("Agent HQ · Autorisé ?")] },
-    "Agent HQ · Autorisé ?": { main: [go("Votre action sensible (à remplacer)"), go("Agent HQ · Validation demandée ?")] },
-    "Agent HQ · Validation demandée ?": { main: [go("Agent HQ · Attendre le feu vert"), go("Agent HQ · Refusé")] },
-    "Agent HQ · Attendre le feu vert": { main: [go("Agent HQ · Feu vert ?")] },
-    "Agent HQ · Feu vert ?": { main: [go("Votre action sensible (à remplacer)"), go("Agent HQ · Refusé")] },
+    [N.ask]: { main: [go(N.allowed)] },
+    [N.allowed]: { main: [go(N.action), go(N.requested)] },
+    [N.requested]: { main: [go(N.wait), go(N.refused)] },
+    [N.wait]: { main: [go(N.green)] },
+    [N.green]: { main: [go(N.action), go(N.refused)] },
   };
 
   return { nodes, connections };

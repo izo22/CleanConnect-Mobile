@@ -1,6 +1,6 @@
 /**
  * The alert engine. It watches each agent's recent events and opens,
- * updates or closes alerts written in plain French. Every detector only
+ * updates or closes alerts written in plain words. Every detector only
  * looks at events newer than the last time the same kind of alert was
  * resolved, so fixing a problem does not immediately re-open it.
  */
@@ -10,7 +10,6 @@ import {
   HOUR,
   MINUTE,
   activePrompt,
-  euros,
   getAgent,
   getRules,
   logActivity,
@@ -20,6 +19,7 @@ import {
   type AlertRow,
   type Severity,
 } from "./model.ts";
+import { lang, locale, many, money, num, timezone, tr } from "./i18n.ts";
 import { describeRule } from "./rules.ts";
 import { actionLabel, classifyError, languageName, toolLabel, translateError } from "./translate.ts";
 
@@ -49,7 +49,7 @@ export function upsertAlert(db: DB, agentId: string, f: Finding, now: number): {
     "INSERT INTO alerts (agent_id, kind, severity, title, cause, impact, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     agentId, f.kind, f.severity, f.title, f.cause, f.impact, Math.min(now, f.since ?? now), now,
   );
-  logActivity(db, "Agent HQ", `Nouvelle alerte : ${f.title}`, agentId, now);
+  logActivity(db, "Agent HQ", tr(`New alert: ${f.title}`, `Nouvelle alerte : ${f.title}`), agentId, now);
   return { id: Number(res.lastInsertRowid), created: true };
 }
 
@@ -62,7 +62,7 @@ function autoResolve(db: DB, agentId: string, kinds: string[], resolution: strin
     const open = get<AlertRow>(db, "SELECT * FROM alerts WHERE agent_id = ? AND kind = ? AND status = 'open'", agentId, kind);
     if (open) {
       resolveAlert(db, open.id, resolution, now);
-      logActivity(db, "Agent HQ", `Alerte close automatiquement : ${open.title}`, agentId, now);
+      logActivity(db, "Agent HQ", tr(`Alert closed automatically: ${open.title}`, `Alerte close automatiquement : ${open.title}`), agentId, now);
     }
   }
 }
@@ -81,9 +81,10 @@ function since(db: DB, agentId: string, kinds: string[], windowStart: number): n
 function recentPromptChange(db: DB, agentId: string, now: number): string | null {
   const p = activePrompt(db, agentId);
   if (!p || p.version <= 1 || now - p.created_at > DAY) return null;
-  const d = new Date(p.created_at);
-  const when = d.toLocaleString("fr-FR", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
-  return `ses consignes ont été modifiées ${when} (version ${p.version})`;
+  const at = new Date(p.created_at);
+  const day = at.toLocaleDateString(locale(), { weekday: "long", timeZone: timezone() });
+  const time = at.toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit", timeZone: timezone() });
+  return tr(`its instructions were changed on ${day} at ${time} (version ${p.version})`, `ses consignes ont été modifiées ${day} ${time} (version ${p.version})`);
 }
 
 function detectDuplicates(db: DB, agent: AgentRow, now: number): Finding | null {
@@ -103,15 +104,22 @@ function detectDuplicates(db: DB, agent: AgentRow, now: number): Finding | null 
   for (const r of rows) byAction.set(r.action, (byAction.get(r.action) ?? 0) + r.n - 1);
   const main = [...byAction.entries()].sort((a, b) => b[1] - a[1])[0][0];
   const change = recentPromptChange(db, agent.id, now);
+  const people = /^(e-?mail|gmail|sms)/i.test(main);
+  const n = rows.length;
   return {
     kind: "duplicates",
     severity: "critical",
-    title: `A fait ${dupes} fois la même action en double (${actionLabel(main)})`,
+    title: tr(`Repeated ${dupes} actions it had already done (${actionLabel(main)})`, `A fait ${dupes} fois la même action en double (${actionLabel(main)})`),
     cause: change
-      ? `${change}, et depuis il répète des actions déjà faites.`
-      : "il répète des actions déjà faites sur les mêmes destinataires, sans vérifier ce qui a déjà été traité.",
+      ? tr(`${change}, and since then it has been repeating actions already done.`, `${change}, et depuis il répète des actions déjà faites.`)
+      : tr(
+          "it repeats actions already done for the same recipients, without checking what was already handled.",
+          "il répète des actions déjà faites sur les mêmes destinataires, sans vérifier ce qui a déjà été traité.",
+        ),
     since: Math.min(...rows.map((r) => r.first)),
-    impact: `${rows.length} ${/^(e-?mail|gmail|sms)/i.test(main) ? "destinataire" : "élément"}${rows.length > 1 ? "s" : ""} concerné${rows.length > 1 ? "s" : ""}.`,
+    impact: lang() === "fr"
+      ? `${n} ${people ? "destinataire" : "élément"}${many(n) ? "s" : ""} concerné${many(n) ? "s" : ""}.`
+      : `${n} ${people ? "recipient" : "item"}${many(n) ? "s" : ""} affected.`,
   };
 }
 
@@ -133,15 +141,39 @@ function detectErrors(db: DB, agent: AgentRow, now: number): Finding | "healthy"
   );
   const family = classifyError(top?.error_code, top?.error_message);
   const t = translateError(family, top?.action ?? null);
-  const tool = top?.action ? toolLabel(top.action) : "un de ses outils";
+  const tool = top?.action ? toolLabel(top.action) : tr("one of its tools", "un de ses outils");
   const pct = Math.round(rate * 100);
   if (family === "auth") {
-    return { kind: "auth", severity: "blocked", title: `N'arrive plus à se connecter à ${tool}`, since: top?.first, cause: t.cause, impact: `${f} tâches échouées ces 30 dernières minutes. Rien n'avance tant que l'accès n'est pas rétabli.` };
+    return {
+      kind: "auth",
+      severity: "blocked",
+      title: tr(`Can no longer connect to ${tool}`, `N'arrive plus à se connecter à ${tool}`),
+      since: top?.first,
+      cause: t.cause,
+      impact: tr(
+        `${f} failed tasks in the last 30 minutes. Nothing moves until access is restored.`,
+        `${f} tâches échouées ces 30 dernières minutes. Rien n'avance tant que l'accès n'est pas rétabli.`,
+      ),
+    };
   }
   if (family === "rate_limit") {
-    return { kind: "rate_limit", severity: "blocked", title: `Bloqué par ${tool}`, since: top?.first, cause: t.cause, impact: `${f} tâches en attente ces 30 dernières minutes.` };
+    return {
+      kind: "rate_limit",
+      severity: "blocked",
+      title: tr(`Blocked by ${tool}`, `Bloqué par ${tool}`),
+      since: top?.first,
+      cause: t.cause,
+      impact: tr(`${f} tasks held up in the last 30 minutes.`, `${f} tâches en attente ces 30 dernières minutes.`),
+    };
   }
-  return { kind: "errors", severity: "warning", title: `${pct} % de ses tâches échouent`, since: top?.first, cause: t.cause, impact: `${f} tâches échouées sur ${n} ces 30 dernières minutes.` };
+  return {
+    kind: "errors",
+    severity: "warning",
+    title: tr(`${pct}% of its tasks are failing`, `${pct} % de ses tâches échouent`),
+    since: top?.first,
+    cause: t.cause,
+    impact: tr(`${f} of ${n} tasks failed in the last 30 minutes.`, `${f} tâches échouées sur ${n} ces 30 dernières minutes.`),
+  };
 }
 
 function detectLanguage(db: DB, agent: AgentRow, now: number): Finding | "healthy" | null {
@@ -158,17 +190,20 @@ function detectLanguage(db: DB, agent: AgentRow, now: number): Finding | "health
   const wrong = wrongRows.reduce((s, r) => s + r.n, 0);
   if (total >= 10 && wrong / total < 0.05) return "healthy";
   if (wrong < 5 || wrong / total < 0.3) return null;
-  const lang = languageName(wrongRows[0].language);
+  const used = languageName(wrongRows[0].language);
   const change = recentPromptChange(db, agent.id, now);
   return {
     kind: "language",
     severity: "warning",
-    title: `Répond en ${lang} au lieu du ${languageName(expected)}`,
+    title: tr(`Answers in ${used} instead of ${languageName(expected)}`, `Répond en ${used} au lieu du ${languageName(expected)}`),
     since: Math.min(...wrongRows.map((r) => r.first)),
     cause: change
       ? `${change}.`
-      : "le modèle d'IA a probablement changé de comportement (mise à jour chez le fournisseur ou consigne ambiguë).",
-    impact: `${wrong} réponses sur ${total} en ${lang} ces dernières heures.`,
+      : tr(
+          "the AI model has probably changed behavior (an update at the provider, or an ambiguous instruction).",
+          "le modèle d'IA a probablement changé de comportement (mise à jour chez le fournisseur ou consigne ambiguë).",
+        ),
+    impact: tr(`${wrong} of ${total} answers in ${used} in the last few hours.`, `${wrong} réponses sur ${total} en ${used} ces dernières heures.`),
   };
 }
 
@@ -184,15 +219,20 @@ function detectCost(db: DB, agent: AgentRow, now: number): Finding | "healthy" |
   const perTaskNow = last24 / Math.max(1, cur?.n ?? 0);
   const perTaskBefore = (prev?.c ?? 0) / Math.max(1, prev?.n ?? 0);
   const perTaskRatio = perTaskNow / Math.max(perTaskBefore, 0.0001);
-  const fmt = (x: number) => x.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+  const x = (r: number) => num(r, 1);
+  const spent = money(Math.round(last24));
+  const usual = money(Math.round(baseline));
   return {
     kind: "cost",
     severity: "warning",
-    title: `Coûte ${fmt(ratio)} fois plus que d'habitude`,
+    title: tr(`Costs ${x(ratio)} times more than usual`, `Coûte ${x(ratio)} fois plus que d'habitude`),
     cause: perTaskRatio >= 1.5
-      ? `chaque tâche lui coûte ${fmt(perTaskRatio)} fois plus cher qu'avant (échanges plus longs ou modèle plus cher).`
-      : "il traite beaucoup plus de tâches que d'habitude.",
-    impact: `${euros(Math.round(last24))} dépensés en 24 h, contre ${euros(Math.round(baseline))} en moyenne.`,
+      ? tr(
+          `each task costs ${x(perTaskRatio)} times more than before (longer exchanges or a pricier model).`,
+          `chaque tâche lui coûte ${x(perTaskRatio)} fois plus cher qu'avant (échanges plus longs ou modèle plus cher).`,
+        )
+      : tr("it is handling many more tasks than usual.", "il traite beaucoup plus de tâches que d'habitude."),
+    impact: tr(`${spent} spent in 24 hours, versus ${usual} on average.`, `${spent} dépensés en 24 h, contre ${usual} en moyenne.`),
   };
 }
 
@@ -202,14 +242,18 @@ function detectBudget(db: DB, agent: AgentRow, now: number): Finding | "healthy"
   if (ratio < 0.9) return "healthy";
   const d = new Date(now);
   const daysLeft = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate() - d.getDate();
+  const pct = Math.round(ratio * 100);
+  const days = `${daysLeft} ${tr("day", "jour")}${many(daysLeft) ? "s" : ""}`;
   return {
     kind: "budget",
     severity: ratio >= 1 ? "critical" : "warning",
-    title: ratio >= 1 ? "A épuisé son budget du mois" : `A consommé ${Math.round(ratio * 100)} % de son budget du mois`,
+    title: ratio >= 1
+      ? tr("Has used up its monthly budget", "A épuisé son budget du mois")
+      : tr(`Has used ${pct}% of its monthly budget`, `A consommé ${pct} % de son budget du mois`),
     cause: ratio >= 1
-      ? "ses nouvelles actions sont refusées jusqu'à ce que le budget soit relevé."
-      : `il reste ${daysLeft} jour${daysLeft > 1 ? "s" : ""} avant la fin du mois.`,
-    impact: `${euros(Math.round(spend))} dépensés sur ${euros(agent.budget_cents)}.`,
+      ? tr("its new actions are refused until the budget is raised.", "ses nouvelles actions sont refusées jusqu'à ce que le budget soit relevé.")
+      : tr(`${days} left before the end of the month.`, `il reste ${days} avant la fin du mois.`),
+    impact: tr(`${money(Math.round(spend))} spent of ${money(agent.budget_cents)}.`, `${money(Math.round(spend))} dépensés sur ${money(agent.budget_cents)}.`),
   };
 }
 
@@ -228,12 +272,16 @@ function detectQuality(db: DB, agent: AgentRow, now: number): Finding | "healthy
   const rate = rows.length ? errors.length / rows.length : 0;
   if (errors.length === 0 || (rows.length >= 5 && rate < 0.05)) return "healthy";
   if (rows.length < 5 || errors.length < 3 || rate < 0.15) return null;
+  const pct = Math.round(rate * 100);
   return {
     kind: "quality",
     severity: rate >= 0.3 ? "critical" : "warning",
-    title: `${errors.length} réponses sur ${rows.length} relues contiennent des erreurs`,
-    cause: `la relecture par IA a trouvé des réponses fausses ou hors consignes. Dernier exemple : « ${errors[0].summary} »`,
-    impact: `environ ${Math.round(rate * 100)} % de ses réponses relues sont à corriger.`,
+    title: tr(`${errors.length} of ${rows.length} reviewed answers contain mistakes`, `${errors.length} réponses sur ${rows.length} relues contiennent des erreurs`),
+    cause: tr(
+      `the AI review found wrong or off-instructions answers. Latest example: “${errors[0].summary}”`,
+      `la relecture par IA a trouvé des réponses fausses ou hors consignes. Dernier exemple : « ${errors[0].summary} »`,
+    ),
+    impact: tr(`about ${pct}% of its reviewed answers need fixing.`, `environ ${pct} % de ses réponses relues sont à corriger.`),
     since: Math.min(...errors.map((e) => e.created_at)),
   };
 }
@@ -249,9 +297,13 @@ function detectReports(db: DB, agent: AgentRow): Finding | "healthy" {
   return {
     kind: "human_report",
     severity: open.length >= 2 ? "critical" : "warning",
-    title: open.length > 1 ? `${open.length} erreurs signalées par votre équipe` : `Erreur signalée par ${open[0].author}`,
-    cause: `« ${open[0].description} »`,
-    impact: open.length > 1 ? `signalé par ${authors.join(", ")}.` : "à vérifier avant que cela se reproduise.",
+    title: open.length > 1
+      ? tr(`${open.length} mistakes reported by your team`, `${open.length} erreurs signalées par votre équipe`)
+      : tr(`Mistake reported by ${open[0].author}`, `Erreur signalée par ${open[0].author}`),
+    cause: tr(`“${open[0].description}”`, `« ${open[0].description} »`),
+    impact: open.length > 1
+      ? tr(`reported by ${authors.join(", ")}.`, `signalé par ${authors.join(", ")}.`)
+      : tr("to check before it happens again.", "à vérifier avant que cela se reproduise."),
     since: open[open.length - 1].created_at,
   };
 }
@@ -268,27 +320,28 @@ export function evaluateAgent(db: DB, agentId: string, now = Date.now()): void {
     upsertAlert(db, agent.id, dup, now);
     const rule = getRules(db).find((r) => r.kind === "repeat_pause" && r.enabled);
     if (rule && !agent.paused) {
-      run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", "Mis en pause automatiquement : actions en double", agent.id);
+      run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", tr("Paused automatically: repeated actions", "Mis en pause automatiquement : actions en double"), agent.id);
       run(db, "UPDATE rules SET trigger_count = trigger_count + 1 WHERE id = ?", rule.id);
-      run(db, "UPDATE alerts SET resolution = ? WHERE agent_id = ? AND kind = 'duplicates' AND status = 'open'", "Agent HQ l'a mis en pause automatiquement.", agent.id);
-      logActivity(db, "Agent HQ", `${agent.name} mis en pause automatiquement (règle : ${describeRule(rule.kind, rule.label, ruleParams(rule))})`, agent.id, now);
+      run(db, "UPDATE alerts SET resolution = ? WHERE agent_id = ? AND kind = 'duplicates' AND status = 'open'", tr("Agent HQ paused it automatically.", "Agent HQ l'a mis en pause automatiquement."), agent.id);
+      const sentence = describeRule(rule.kind, rule.label, ruleParams(rule));
+      logActivity(db, "Agent HQ", tr(`${agent.name} paused automatically (rule: ${sentence})`, `${agent.name} mis en pause automatiquement (règle : ${sentence})`), agent.id, now);
     }
   }
 
   const err = detectErrors(db, agent, now);
-  if (err === "healthy") autoResolve(db, agent.id, ERROR_FAMILY_KINDS, "Rétabli tout seul.", now);
+  if (err === "healthy") autoResolve(db, agent.id, ERROR_FAMILY_KINDS, tr("Recovered on its own.", "Rétabli tout seul."), now);
   else if (err) {
     upsertAlert(db, agent.id, err, now);
     // Only one error-family alert at a time: the most recent diagnosis wins.
     for (const k of ERROR_FAMILY_KINDS.filter((k) => k !== err.kind)) {
       const other = get<AlertRow>(db, "SELECT * FROM alerts WHERE agent_id = ? AND kind = ? AND status = 'open'", agent.id, k);
-      if (other) resolveAlert(db, other.id, "Remplacée par un diagnostic plus récent.", now);
+      if (other) resolveAlert(db, other.id, tr("Replaced by a more recent diagnosis.", "Remplacée par un diagnostic plus récent."), now);
     }
   }
 
   for (const [detector, kind] of [[detectLanguage, "language"], [detectCost, "cost"], [detectBudget, "budget"], [detectQuality, "quality"]] as const) {
     const found = detector(db, agent, now);
-    if (found === "healthy") autoResolve(db, agent.id, [kind], "Revenu à la normale.", now);
+    if (found === "healthy") autoResolve(db, agent.id, [kind], tr("Back to normal.", "Revenu à la normale."), now);
     else if (found) upsertAlert(db, agent.id, found, now);
   }
 }

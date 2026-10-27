@@ -1,16 +1,17 @@
 /**
  * The guard answers the question every agent asks before acting:
  * "may I do this?". Agents call it through the API (or the SDK) and get
- * back allow / deny / needs_approval, with a reason in plain French.
+ * back allow / deny / needs_approval, with a reason in plain words.
  */
 import { run, type DB } from "./db.ts";
-import { euros, getRules, logActivity, monthSpendCents, ruleParams, type AgentRow, type RuleRow } from "./model.ts";
+import { hourLabel, money, tr } from "./i18n.ts";
+import { getRules, logActivity, monthSpendCents, ruleParams, type AgentRow, type RuleRow } from "./model.ts";
 
 export interface CheckRequest {
   action: string;
   amount_cents?: number;
   target?: string;
-  /** Short human sentence, e.g. "Rembourser 340 € à Brasserie du Port". */
+  /** Short human sentence, e.g. "Refund $340 to Harbor Grill". */
   summary?: string;
   /** Extra details shown to the human who approves. */
   context?: string;
@@ -50,7 +51,7 @@ function bump(db: DB, rule: RuleRow) {
 }
 
 function requestApproval(db: DB, agent: AgentRow, req: CheckRequest, reason: string, now: number): number {
-  const title = req.summary?.trim() || `${req.action}${req.amount_cents ? " · " + euros(req.amount_cents) : ""}`;
+  const title = req.summary?.trim() || `${req.action}${req.amount_cents ? " · " + money(req.amount_cents) : ""}`;
   const res = run(
     db,
     `INSERT INTO approvals (agent_id, action, title, context, reason, amount_cents, payload, callback_url, created_at)
@@ -58,14 +59,15 @@ function requestApproval(db: DB, agent: AgentRow, req: CheckRequest, reason: str
     agent.id, req.action, title, req.context ?? "", reason, req.amount_cents ?? null,
     req.payload === undefined ? null : JSON.stringify(req.payload), req.callback_url ?? null, now,
   );
-  logActivity(db, agent.name, `Demande de validation : ${title}`, agent.id, now);
+  logActivity(db, agent.name, tr(`Approval requested: ${title}`, `Demande de validation : ${title}`), agent.id, now);
   return Number(res.lastInsertRowid);
 }
 
 export function check(db: DB, agent: AgentRow, req: CheckRequest, now = Date.now()): CheckResult {
   run(db, "UPDATE agents SET last_check_at = ? WHERE id = ?", now, agent.id);
   if (agent.paused) {
-    return { decision: "deny", reason: agent.pause_reason ? `Agent en pause (${agent.pause_reason}).` : "Agent en pause." };
+    const reason = agent.pause_reason ? ` (${agent.pause_reason})` : "";
+    return { decision: "deny", reason: tr(`Agent paused${reason}.`, `Agent en pause${reason}.`) };
   }
 
   const rules = getRules(db).filter((r) => r.enabled);
@@ -74,39 +76,43 @@ export function check(db: DB, agent: AgentRow, req: CheckRequest, now = Date.now
     const p = ruleParams<GlobalBudgetParams>(rule);
     if (monthSpendCents(db, now) >= p.max_cents) {
       bump(db, rule);
-      return { decision: "deny", reason: `Le budget IA total du mois (${euros(p.max_cents)}) est atteint.`, rule_id: rule.id };
+      return { decision: "deny", reason: tr(`This month's total AI budget (${money(p.max_cents)}) has been reached.`, `Le budget IA total du mois (${money(p.max_cents)}) est atteint.`), rule_id: rule.id };
     }
   }
 
   if (monthSpendCents(db, now, agent.id) >= agent.budget_cents) {
-    return { decision: "deny", reason: `Le budget de cet agent pour le mois (${euros(agent.budget_cents)}) est épuisé.` };
+    return { decision: "deny", reason: tr(`This agent's monthly budget (${money(agent.budget_cents)}) is used up.`, `Le budget de cet agent pour le mois (${money(agent.budget_cents)}) est épuisé.`) };
   }
 
   for (const rule of rules.filter((r) => r.kind === "quiet_hours")) {
     const p = ruleParams<QuietHoursParams>(rule);
     if (matches(req.action, p.action_prefix) && inQuietHours(p, now)) {
       bump(db, rule);
-      return { decision: "deny", reason: `Pas d'envoi entre ${p.start_hour} h et ${p.end_hour} h. Réessayez plus tard.`, rule_id: rule.id };
+      return { decision: "deny", reason: tr(
+          `Nothing goes out between ${hourLabel(p.start_hour)} and ${hourLabel(p.end_hour)}. Try again later.`,
+          `Pas d'envoi entre ${hourLabel(p.start_hour)} et ${hourLabel(p.end_hour)}. Réessayez plus tard.`,
+        ), rule_id: rule.id };
     }
   }
 
   if (agent.autonomy === 0) {
-    const id = requestApproval(db, agent, req, "cet agent est au niveau 0 (en formation) : chaque action est validée.", now);
-    return { decision: "needs_approval", reason: "Niveau 0 : validation humaine requise.", approval_id: id };
+    const id = requestApproval(db, agent, req, tr("this agent is at level 0 (in training): every action is approved.", "cet agent est au niveau 0 (en formation) : chaque action est validée."), now);
+    return { decision: "needs_approval", reason: tr("Level 0: human approval required.", "Niveau 0 : validation humaine requise."), approval_id: id };
   }
 
   for (const rule of rules.filter((r) => r.kind === "approval_amount")) {
     const p = ruleParams<ApprovalAmountParams>(rule);
     if (req.amount_cents !== undefined && matches(req.action, p.action_prefix) && req.amount_cents > p.max_cents) {
       bump(db, rule);
-      const id = requestApproval(db, agent, req, `le montant dépasse votre seuil de ${euros(p.max_cents)}.`, now);
-      return { decision: "needs_approval", reason: `Au-dessus de ${euros(p.max_cents)} : validation requise.`, approval_id: id, rule_id: rule.id };
+      const limit = money(p.max_cents);
+      const id = requestApproval(db, agent, req, tr(`the amount is over your ${limit} threshold.`, `le montant dépasse votre seuil de ${limit}.`), now);
+      return { decision: "needs_approval", reason: tr(`Over ${limit}: approval required.`, `Au-dessus de ${limit} : validation requise.`), approval_id: id, rule_id: rule.id };
     }
   }
 
   if (agent.autonomy === 1 && req.sensitive) {
-    const id = requestApproval(db, agent, req, "cet agent est au niveau 1 : les actions sensibles sont validées.", now);
-    return { decision: "needs_approval", reason: "Action sensible : validation requise au niveau 1.", approval_id: id };
+    const id = requestApproval(db, agent, req, tr("this agent is at level 1: sensitive actions are approved.", "cet agent est au niveau 1 : les actions sensibles sont validées."), now);
+    return { decision: "needs_approval", reason: tr("Sensitive action: approval required at level 1.", "Action sensible : validation requise au niveau 1."), approval_id: id };
   }
 
   return { decision: "allow" };

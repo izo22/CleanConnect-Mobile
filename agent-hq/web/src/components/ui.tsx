@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { api, type AlertView, type ApprovalView } from "../api.ts";
 import { ago, avatarColors, initials } from "../format.ts";
+import { tr } from "../i18n.ts";
 
 // ---------- Icons (stroke, currentColor) ----------
 
@@ -50,11 +51,12 @@ export function Avatar({ id, name, size = 42 }: { id: string; name: string; size
   );
 }
 
+// Labels are getters: the language is only known once the app has started.
 export const STATUS = {
-  ok: { label: "En forme", fg: "#0E6B3F", bg: "#DDF7E9", dot: "#12B76A" },
-  attention: { label: "À surveiller", fg: "#9A3412", bg: "#FFE9DF", dot: "#FF7A45" },
-  blocked: { label: "Bloqué", fg: "#4A3AA8", bg: "#EDE8FF", dot: "#7C5CFF" },
-  paused: { label: "En pause", fg: "#45424C", bg: "#F1EDE7", dot: "#9C97A3" },
+  ok: { get label() { return tr("Healthy", "En forme"); }, fg: "#0E6B3F", bg: "#DDF7E9", dot: "#12B76A" },
+  attention: { get label() { return tr("Needs a look", "À surveiller"); }, fg: "#9A3412", bg: "#FFE9DF", dot: "#FF7A45" },
+  blocked: { get label() { return tr("Blocked", "Bloqué"); }, fg: "#4A3AA8", bg: "#EDE8FF", dot: "#7C5CFF" },
+  paused: { get label() { return tr("Paused", "En pause"); }, fg: "#45424C", bg: "#F1EDE7", dot: "#9C97A3" },
 } as const;
 
 export function StatusPill({ status }: { status: keyof typeof STATUS }) {
@@ -68,9 +70,9 @@ export function StatusPill({ status }: { status: keyof typeof STATUS }) {
 }
 
 const SEVERITY = {
-  critical: { label: "Urgent", fg: "#FFFFFF", bg: "#E5413A" },
-  blocked: { label: "Bloqué", fg: "#4A3AA8", bg: "#EDE8FF" },
-  warning: { label: "À surveiller", fg: "#9A3412", bg: "#FFE9DF" },
+  critical: { get label() { return tr("Urgent", "Urgent"); }, fg: "#FFFFFF", bg: "#E5413A" },
+  blocked: { get label() { return tr("Blocked", "Bloqué"); }, fg: "#4A3AA8", bg: "#EDE8FF" },
+  warning: { get label() { return tr("Needs a look", "À surveiller"); }, fg: "#9A3412", bg: "#FFE9DF" },
 } as const;
 
 export function SeverityPill({ severity }: { severity: keyof typeof SEVERITY }) {
@@ -80,8 +82,8 @@ export function SeverityPill({ severity }: { severity: keyof typeof SEVERITY }) 
 
 export function Trust({ level }: { level: number }) {
   return (
-    <span className="trust" title={`Niveau de confiance ${level} sur 2`}>
-      Confiance <i className={level >= 0 ? "on" : ""} /><i className={level >= 1 ? "on" : ""} /><i className={level >= 2 ? "on" : ""} />
+    <span className="trust" title={tr(`Trust level ${level} of 2`, `Niveau de confiance ${level} sur 2`)}>
+      {tr("Trust", "Confiance")} <i className={level >= 0 ? "on" : ""} /><i className={level >= 1 ? "on" : ""} /><i className={level >= 2 ? "on" : ""} />
     </span>
   );
 }
@@ -91,7 +93,7 @@ export function Sparkline({ values, width = 120, height = 28, color = "#5B3DF5" 
   const step = width / Math.max(1, values.length - 1);
   const pts = values.map((v, i) => `${(i * step).toFixed(1)},${(height - 2 - (v / max) * (height - 4)).toFixed(1)}`);
   return (
-    <svg className="spark" width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="Activité des dernières 24 heures">
+    <svg className="spark" width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label={tr("Activity over the last 24 hours", "Activité des dernières 24 heures")}>
       <polyline points={`0,${height} ${pts.join(" ")} ${width},${height}`} fill={color} opacity="0.1" stroke="none" />
       <polyline points={pts.join(" ")} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
     </svg>
@@ -104,7 +106,7 @@ export function Ring({ value, total, label }: { value: number; total: number; la
   const dash = total ? (c * value) / total : 0;
   return (
     <div className="ring">
-      <svg width="132" height="132" viewBox="0 0 132 132" role="img" aria-label={`${value} agents sur ${total} ${label}`}>
+      <svg width="132" height="132" viewBox="0 0 132 132" role="img" aria-label={tr(`${value} of ${total} agents ${label}`, `${value} agents sur ${total} ${label}`)}>
         <circle cx="66" cy="66" r={r} fill="none" stroke="#34323A" strokeWidth="14" />
         <circle className="val" cx="66" cy="66" r={r} fill="none" stroke="#2BD483" strokeWidth="14" strokeLinecap="round" strokeDasharray={`${dash} ${c}`} transform="rotate(-90 66 66)" />
       </svg>
@@ -190,8 +192,8 @@ export function AlertCard({ alert, wide = false }: { alert: AlertView; wide?: bo
   );
   const explain = (
     <div className="explain">
-      <span><strong>Pourquoi :</strong> {alert.cause}</span>
-      <span><strong>Impact :</strong> {alert.impact}</span>
+      <span><strong>{tr("Why:", "Pourquoi :")}</strong> {alert.cause}</span>
+      <span><strong>{tr("Impact:", "Impact :")}</strong> {alert.impact}</span>
     </div>
   );
   const buttons = alert.actions.map((a, i) => (
@@ -228,8 +230,8 @@ export function DecisionButtons({ approval, big = false }: { approval: ApprovalV
   const decide = (approve: boolean) => run(approve ? "y" : "n", `/api/approvals/${approval.id}/decision`, { approve });
   return (
     <>
-      <button type="button" className={"btn" + (big ? " big" : "")} disabled={busy !== null} onClick={() => decide(false)}>Refuser</button>
-      <button type="button" className={"btn primary" + (big ? " big" : "")} disabled={busy !== null} onClick={() => decide(true)}>Approuver</button>
+      <button type="button" className={"btn" + (big ? " big" : "")} disabled={busy !== null} onClick={() => decide(false)}>{tr("Decline", "Refuser")}</button>
+      <button type="button" className={"btn primary" + (big ? " big" : "")} disabled={busy !== null} onClick={() => decide(true)}>{tr("Approve", "Approuver")}</button>
     </>
   );
 }

@@ -63,6 +63,7 @@ Remplissez au minimum :
 | Ligne | Quoi mettre |
 |---|---|
 | `DOMAIN=` | votre adresse, **sans** `https://` (ex. `hq.votre-agence.com`) |
+| `APP_LANGUAGE=` | `en` pour un client américain (anglais, dollars), `fr` pour un client français (français, euros) |
 | `ADMIN_TOKEN=` | le code généré juste avant (16 caractères minimum, sinon Agent HQ refuse de démarrer) |
 | `ANTHROPIC_API_KEY=` | votre clé Claude (facultatif : sans clé, la relecture IA est coupée) |
 | `NOTIFY_WEBHOOK_URL=` | un webhook Slack ou Teams pour être prévenu (facultatif) |

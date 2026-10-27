@@ -1,16 +1,21 @@
+import { hourLabel, money, tr } from "./i18n.ts";
 import type { RuleKind } from "./model.ts";
 
-/** One French sentence per guardrail, rebuilt from its parameters. */
+/** One sentence per guardrail, rebuilt from its parameters. */
 export function describeRule(kind: RuleKind, subject: string, p: Record<string, number | string>): string {
-  const eur = (c: unknown) => (Number(c) / 100).toLocaleString("fr-FR") + " €";
   switch (kind) {
     case "approval_amount":
-      return `Validation humaine pour tout ${subject} au-dessus de ${eur(p.max_cents)}`;
-    case "quiet_hours":
-      return `Aucun ${subject} entre ${p.start_hour} h et ${p.end_hour} h`;
+      return tr(`Human approval for any ${subject} over ${money(Number(p.max_cents))}`, `Validation humaine pour tout ${subject} au-dessus de ${money(Number(p.max_cents))}`);
+    case "quiet_hours": {
+      const [from, to] = [hourLabel(Number(p.start_hour)), hourLabel(Number(p.end_hour))];
+      return tr(`No ${subject} between ${from} and ${to}`, `Aucun ${subject} entre ${from} et ${to}`);
+    }
     case "global_budget":
-      return `Dépense IA totale plafonnée à ${eur(p.max_cents)} par mois`;
+      return tr(`Total AI spend capped at ${money(Number(p.max_cents))} per month`, `Dépense IA totale plafonnée à ${money(Number(p.max_cents))} par mois`);
     case "repeat_pause":
-      return `Pause automatique si un agent fait plus de ${p.count} actions en double en ${p.window_min} minutes`;
+      return tr(
+        `Automatic pause if an agent repeats more than ${p.count} actions in ${p.window_min} minutes`,
+        `Pause automatique si un agent fait plus de ${p.count} actions en double en ${p.window_min} minutes`,
+      );
   }
 }

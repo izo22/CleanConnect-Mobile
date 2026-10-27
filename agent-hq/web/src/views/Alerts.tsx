@@ -1,5 +1,6 @@
 import { useData, type AlertsView } from "../api.ts";
 import { ago } from "../format.ts";
+import { tr } from "../i18n.ts";
 import { AlertCard, ErrorBox, Skeleton } from "../components/ui.tsx";
 
 export function Alerts() {
@@ -8,8 +9,8 @@ export function Alerts() {
     <>
       <header className="page-head">
         <div className="titles">
-          <h1 className="h1">Alertes</h1>
-          <span className="sub">Ce qui se passe, pourquoi, et quoi faire. Sans jargon.</span>
+          <h1 className="h1">{tr("Alerts", "Alertes")}</h1>
+          <span className="sub">{tr("What's happening, why, and what to do. No jargon.", "Ce qui se passe, pourquoi, et quoi faire. Sans jargon.")}</span>
         </div>
       </header>
       {error && <ErrorBox message={error.message} />}
@@ -17,7 +18,7 @@ export function Alerts() {
       {data && (
         <>
           {data.open.length === 0 ? (
-            <p className="empty">Aucune alerte ouverte. Tout roule.</p>
+            <p className="empty">{tr("No open alerts. All good.", "Aucune alerte ouverte. Tout roule.")}</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {data.open.map((a) => <AlertCard key={a.id} alert={a} wide />)}
@@ -25,7 +26,7 @@ export function Alerts() {
           )}
           {data.resolved.length > 0 && (
             <section className="section" aria-labelledby="res-h">
-              <h2 id="res-h" className="h2" style={{ fontSize: 22 }}>Réglées récemment</h2>
+              <h2 id="res-h" className="h2" style={{ fontSize: 22 }}>{tr("Recently resolved", "Réglées récemment")}</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {data.resolved.map((a) => (
                   <div key={a.id} className="resolved-row">

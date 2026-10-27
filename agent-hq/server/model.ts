@@ -171,7 +171,4 @@ export function activePrompt(db: DB, agentId: string) {
   return get<PromptVersionRow>(db, "SELECT * FROM prompt_versions WHERE agent_id = ? AND active = 1", agentId);
 }
 
-export const euros = (cents: number) =>
-  (cents / 100).toLocaleString("fr-FR", { maximumFractionDigits: cents % 100 === 0 ? 0 : 2 }) + " €";
-
 export const firstName = (full: string) => full.split(" ")[0] || full;

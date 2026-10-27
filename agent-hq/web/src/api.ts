@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { tr } from "./i18n.ts";
 
 export type {
   ActivityRow,
@@ -42,7 +43,7 @@ export async function api<T>(path: string, init?: { method?: string; body?: unkn
   if (session.name) headers["x-user-name"] = encodeURIComponent(session.name);
   const res = await fetch(path, { method: init?.method ?? "GET", headers, body: init?.body !== undefined ? JSON.stringify(init.body) : undefined });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, (data as { error?: string }).error ?? "Le serveur ne répond pas.");
+  if (!res.ok) throw new ApiError(res.status, (data as { error?: string }).error ?? tr("The server is not responding.", "Le serveur ne répond pas."));
   return data as T;
 }
 
