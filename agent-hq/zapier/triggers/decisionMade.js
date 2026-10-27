@@ -21,7 +21,7 @@ const performUnsubscribe = async (z, bundle) => {
   return response.data;
 };
 
-// Orbyn pushed the decision: hand it to the next steps as-is.
+// Orvanta pushed the decision: hand it to the next steps as-is.
 const perform = async (z, bundle) => [bundle.cleanedRequest];
 
 // Used by Zapier for samples while building the Zap.
@@ -40,7 +40,7 @@ module.exports = {
   display: {
     label: 'Decision Made',
     description:
-      'Triggers when someone approves (or refuses) in Orbyn a request made with **Ask Permission**. Use it to perform the approved action.',
+      'Triggers when someone approves (or refuses) in Orvanta a request made with **Ask Permission**. Use it to perform the approved action.',
   },
   operation: {
     type: 'hook',

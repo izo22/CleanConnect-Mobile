@@ -31,7 +31,7 @@ module.exports = {
   display: {
     label: 'Agent Paused or Resumed',
     description:
-      'Triggers when the agent is paused or resumed in Orbyn (by a person or a guardrail). Pair it with **Zapier Manager → Turn Zap On/Off** to stop the real Zap.',
+      'Triggers when the agent is paused or resumed in Orvanta (by a person or a guardrail). Pair it with **Zapier Manager → Turn Zap On/Off** to stop the real Zap.',
   },
   operation: {
     type: 'hook',

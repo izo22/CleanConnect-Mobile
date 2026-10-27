@@ -2,7 +2,7 @@
 
 const baseUrl = (bundle) => String(bundle.authData.base_url || '').trim().replace(/\/+$/, '');
 
-/** Every request to Orbyn carries the agent key. */
+/** Every request to Orvanta carries the agent key. */
 const addAuth = (request, z, bundle) => {
   if (bundle.authData && bundle.authData.api_key) {
     request.headers = request.headers || {};
@@ -11,13 +11,13 @@ const addAuth = (request, z, bundle) => {
   return request;
 };
 
-/** Orbyn answers errors as { error: "message in plain words" }: show that message in Zapier. */
+/** Orvanta answers errors as { error: "message in plain words" }: show that message in Zapier. */
 const handleErrors = (response, z) => {
   if (response.status >= 400) {
-    let message = `Orbyn answered ${response.status}`;
+    let message = `Orvanta answered ${response.status}`;
     try {
       const body = typeof response.json === 'object' && response.json ? response.json : JSON.parse(response.content);
-      if (body && body.error) message = `Orbyn: ${body.error}`;
+      if (body && body.error) message = `Orvanta: ${body.error}`;
     } catch (e) {
       // not JSON: keep the generic message
     }

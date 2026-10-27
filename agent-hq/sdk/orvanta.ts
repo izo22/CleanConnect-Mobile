@@ -1,9 +1,9 @@
 /**
- * Orbyn SDK — connects any agent (n8n code node, Claude Agent SDK,
- * OpenAI Agents, a cron script…) to Orbyn. No dependencies, works in
+ * Orvanta SDK — connects any agent (n8n code node, Claude Agent SDK,
+ * OpenAI Agents, a cron script…) to Orvanta. No dependencies, works in
  * Node 18+, Deno, Bun and edge runtimes.
  *
- *   const hq = new Orbyn({ url: "https://hq.example.com", key: process.env.ORBYN_KEY! });
+ *   const hq = new Orvanta({ url: "https://hq.example.com", key: process.env.ORVANTA_KEY! });
  *   await hq.guard({ action: "stripe.refund", amount_cents: 34000, summary: "Rembourser 340 €" },
  *                  () => stripe.refunds.create(...));
  *   await hq.report({ kind: "task", action: "zendesk.reply", cost_cents: 3, language: "fr",
@@ -55,11 +55,11 @@ export interface Control {
 
 export class ActionRefused extends Error {
   constructor(public reason: string) {
-    super(`Orbyn refused the action: ${reason}`);
+    super(`Orvanta refused the action: ${reason}`);
   }
 }
 
-export class Orbyn {
+export class Orvanta {
   private url: string;
   private key: string;
 
@@ -75,7 +75,7 @@ export class Orbyn {
       body: init?.body ? JSON.stringify(init.body) : undefined,
     });
     const data = (await res.json().catch(() => ({}))) as { error?: string };
-    if (!res.ok) throw new Error(`Orbyn ${res.status}: ${data.error ?? res.statusText}`);
+    if (!res.ok) throw new Error(`Orvanta ${res.status}: ${data.error ?? res.statusText}`);
     return data as T;
   }
 
@@ -107,7 +107,7 @@ export class Orbyn {
   }
 
   /**
-   * Runs `fn` only if Orbyn allows it (waiting for a human when needed),
+   * Runs `fn` only if Orvanta allows it (waiting for a human when needed),
    * then reports the outcome. Throws ActionRefused when refused.
    */
   async guard<T>(req: CheckRequest, fn: () => Promise<T> | T, opts?: { cost_cents?: number; waitMs?: number }): Promise<T> {

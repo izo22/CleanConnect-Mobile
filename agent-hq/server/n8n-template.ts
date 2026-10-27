@@ -6,7 +6,7 @@
  *                           └─no→ Approval requested? ─yes→ Wait for the green light → Green light? ─yes→ [your action]
  *                                      └─no (refused) → Declined            └─no (declined or timed out) → Declined
  *
- * If Orbyn cannot be reached, the HTTP node fails and the workflow stops:
+ * If Orvanta cannot be reached, the HTTP node fails and the workflow stops:
  * the sensitive action is NOT executed (fail closed).
  */
 import { randomUUID } from "node:crypto";

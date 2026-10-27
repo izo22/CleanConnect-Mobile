@@ -2,13 +2,13 @@
 
 /**
  * Runs the Zapier app with Zapier's own test runtime (appTester) against a
- * live Orbyn server:
+ * live Orvanta server:
  *
  *   ALLOW_PRIVATE_HOOKS=true npm start          (in agent-hq/)
  *   AGENT_HQ_URL=http://localhost:8787 npm test (in agent-hq/zapier/)
  *
  * A small local server stands in for Zapier's webhook receiver, so the
- * REST-hook flow (subscribe → Orbyn pushes → trigger runs) is exercised
+ * REST-hook flow (subscribe → Orvanta pushes → trigger runs) is exercised
  * for real, end to end.
  */
 const { test, before, after } = require('node:test');
@@ -82,7 +82,7 @@ test('Ask Permission: a small refund is allowed and the Zap continues', async ()
 });
 
 let approvalId;
-test('Ask Permission: above the threshold, the Zap is halted (nothing runs) and a request waits in Orbyn', async () => {
+test('Ask Permission: above the threshold, the Zap is halted (nothing runs) and a request waits in Orvanta', async () => {
   await assert.rejects(
     appTester(App.creates.ask_permission.operation.perform, {
       authData,
@@ -92,7 +92,7 @@ test('Ask Permission: above the threshold, the Zap is halted (nothing runs) and 
   );
   const approvals = await admin('/api/approvals');
   const pending = approvals.pending.find((p) => p.title === 'Refund $340 to Harbor Café');
-  assert.ok(pending, 'request visible in Orbyn');
+  assert.ok(pending, 'request visible in Orvanta');
   assert.deepStrictEqual(pending.payload, { order_id: '8812', email: 'owner@harbor.cafe' });
   approvalId = pending.id;
 });
@@ -135,7 +135,7 @@ test('Decision Made: sample data comes from the latest real decisions', async ()
   assert.ok(items.every((i) => i.approved === true));
 });
 
-test('Agent Paused or Resumed: pausing in Orbyn notifies the Zap (emergency stop)', async () => {
+test('Agent Paused or Resumed: pausing in Orvanta notifies the Zap (emergency stop)', async () => {
   const hook = await appTester(App.triggers.agent_state_changed.operation.performSubscribe, {
     authData,
     inputData: { state: 'paused' },
@@ -159,12 +159,12 @@ test('Ask Permission: a paused agent is refused', async () => {
   await admin(`/api/agents/${agentId}/actions/pause`, { method: 'POST', body: {} });
   await assert.rejects(
     appTester(App.creates.ask_permission.operation.perform, { authData, inputData: { action: 'stripe.refund', amount: '10', summary: 'Refund $10' } }),
-    /Refused by Orbyn: Agent paused/,
+    /Refused by Orvanta: Agent paused/,
   );
   await admin(`/api/agents/${agentId}/actions/resume`, { method: 'POST', body: {} });
 });
 
-test('Ask Permission: if Orbyn cannot be reached, the step fails so the action never runs', async () => {
+test('Ask Permission: if Orvanta cannot be reached, the step fails so the action never runs', async () => {
   await assert.rejects(
     appTester(App.creates.ask_permission.operation.perform, {
       authData: { base_url: 'http://localhost:1', api_key: authData.api_key },
@@ -173,7 +173,7 @@ test('Ask Permission: if Orbyn cannot be reached, the step fails so the action n
   );
 });
 
-test('Report Activity: successes and failures reach Orbyn and its alerts', async () => {
+test('Report Activity: successes and failures reach Orvanta and its alerts', async () => {
   const ok = await appTester(App.creates.report_activity.operation.perform, {
     authData,
     inputData: { action: 'zendesk.reply', status: 'success', input: 'Where is my order?', output: 'It shipped yesterday.', cost: '0.03', language: 'en' },

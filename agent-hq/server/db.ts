@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS reports (
   created_at INTEGER NOT NULL
 );
 
--- Connections to automation platforms (n8n today). Orbyn reads their
+-- Connections to automation platforms (n8n today). Orvanta reads their
 -- workflows and executions itself, so supervision needs no change in them.
 CREATE TABLE IF NOT EXISTS integrations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS integrations (
   created_at INTEGER NOT NULL
 );
 
--- Subscriptions from automation platforms (Zapier REST hooks): Orbyn
+-- Subscriptions from automation platforms (Zapier REST hooks): Orvanta
 -- POSTs to target_url when a decision is taken or an agent is paused/resumed.
 CREATE TABLE IF NOT EXISTS hooks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

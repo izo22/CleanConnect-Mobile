@@ -14,7 +14,7 @@ const perform = async (z, bundle) => {
       context: input.context || undefined,
       target: input.target || undefined,
       sensitive: isTrue(input.sensitive, false),
-      // Kept by Orbyn and handed back with the decision, so the
+      // Kept by Orvanta and handed back with the decision, so the
       // "Decision Made" Zap can perform the action without looking anything up.
       payload: input.data || undefined,
     },
@@ -25,8 +25,8 @@ const perform = async (z, bundle) => {
   // A request waiting for approval continues in the "Decision Made" Zap.
   if (!result.allowed && isTrue(input.stop_unless_allowed, true)) {
     const why = result.decision === 'needs_approval'
-      ? `Waiting for approval in Orbyn (request #${result.approval_id}): ${result.reason}`
-      : `Refused by Orbyn: ${result.reason}`;
+      ? `Waiting for approval in Orvanta (request #${result.approval_id}): ${result.reason}`
+      : `Refused by Orvanta: ${result.reason}`;
     throw new z.errors.HaltedError(why);
   }
   return result;
@@ -38,7 +38,7 @@ module.exports = {
   display: {
     label: 'Ask Permission',
     description:
-      'Asks Orbyn whether a sensitive action may run now. Following steps run only if it is allowed; otherwise the request waits for a human decision in Orbyn.',
+      'Asks Orvanta whether a sensitive action may run now. Following steps run only if it is allowed; otherwise the request waits for a human decision in Orvanta.',
   },
   operation: {
     perform,
@@ -47,7 +47,7 @@ module.exports = {
         key: 'action',
         label: 'Action',
         required: true,
-        helpText: 'What the Zap is about to do, e.g. `stripe.refund`, `email.send`, `quote.send`. Your Orbyn guardrails match on this name.',
+        helpText: 'What the Zap is about to do, e.g. `stripe.refund`, `email.send`, `quote.send`. Your Orvanta guardrails match on this name.',
       },
       {
         key: 'summary',

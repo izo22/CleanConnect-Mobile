@@ -30,7 +30,7 @@ module.exports = {
   display: {
     label: 'Report Activity',
     description:
-      'Tells Orbyn what the agent just did (success or failure, cost, answer). Feeds the dashboard, the incident alerts and the AI review.',
+      'Tells Orvanta what the agent just did (success or failure, cost, answer). Feeds the dashboard, the incident alerts and the AI review.',
   },
   operation: {
     perform,

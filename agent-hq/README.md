@@ -1,10 +1,10 @@
-# Orbyn
+# Orvanta
 
 **Gérer 100 agents IA sans devenir ingénieur en IA.**
 
-> Nom du produit : **Orbyn** (appelé « Agent HQ » pendant la conception). Il est écrit une seule fois dans le code, dans `server/brand.ts`. Les noms techniques (dossier `agent-hq`, base `agent-hq.db`, image Docker) restent inchangés pour ne pas casser les installations existantes.
+> Nom du produit : **Orvanta** (appelé « Agent HQ » pendant la conception). Il est écrit une seule fois dans le code, dans `server/brand.ts`. Les noms techniques (dossier `agent-hq`, base `agent-hq.db`, image Docker) restent inchangés pour ne pas casser les installations existantes.
 
-Orbyn est le poste de pilotage d'une équipe d'agents IA. On y voit chaque matin ce qui a besoin de vous, on règle un incident en un clic, on valide les décisions sensibles, et on fixe des garde-fous écrits en langage courant. Tout ça fonctionne quelle que soit la plateforme utilisée pour construire les agents (n8n, Make, Zapier, Claude Agent SDK, OpenAI Agents, script maison).
+Orvanta est le poste de pilotage d'une équipe d'agents IA. On y voit chaque matin ce qui a besoin de vous, on règle un incident en un clic, on valide les décisions sensibles, et on fixe des garde-fous écrits en langage courant. Tout ça fonctionne quelle que soit la plateforme utilisée pour construire les agents (n8n, Make, Zapier, Claude Agent SDK, OpenAI Agents, script maison).
 
 ![Brief du matin](docs/captures/1-brief-du-matin.png)
 
@@ -59,7 +59,7 @@ Les agents simulés passent par le vrai SDK. Ils s'arrêtent quand vous les mett
 | `REVIEW_ENABLED` | auto | `false` pour couper la relecture même avec une clé |
 | `N8N_SYNC_SECONDS` | `30` | fréquence de lecture des workflows et exécutions n8n |
 | `ALLOW_PRIVATE_HOOKS` | `false` | `true` en développement seulement : autorise les abonnements vers des adresses locales |
-| `PUBLIC_URL` | adresse de la requête | adresse d'Orbyn écrite dans le bloc n8n à copier |
+| `PUBLIC_URL` | adresse de la requête | adresse d'Orvanta écrite dans le bloc n8n à copier |
 | `NODE_ENV` | — | `production` en ligne (fixé par l'image Docker) : code d'accès exigé, journaux des requêtes |
 | `TRUST_PROXY` | `false` | `true` derrière un proxy https (Caddy) |
 | `BACKUP_DIR` | `<dossier de la base>/backups` | dossier des sauvegardes quotidiennes |
@@ -84,17 +84,17 @@ L'interface se met à jour en direct (Server-Sent Events).
 
 ## Connecter n8n
 
-**Connexions → Connecter un serveur n8n** : avec une clé API n8n aux droits limités, Orbyn lit lui-même vos workflows et leurs exécutions (niveau 1 : voir), et « Mettre en pause » désactive réellement le workflow dans n8n (niveau 2 : arrêter). Pour qu'un workflow attende votre feu vert avant une étape sensible (niveau 3 : contrôler), collez le bloc « Demander l'autorisation » fourni dans la fiche de l'agent.
+**Connexions → Connecter un serveur n8n** : avec une clé API n8n aux droits limités, Orvanta lit lui-même vos workflows et leurs exécutions (niveau 1 : voir), et « Mettre en pause » désactive réellement le workflow dans n8n (niveau 2 : arrêter). Pour qu'un workflow attende votre feu vert avant une étape sensible (niveau 3 : contrôler), collez le bloc « Demander l'autorisation » fourni dans la fiche de l'agent.
 
 Mode d'emploi complet, limites et résultats des tests contre un vrai n8n : [docs/INTEGRATION-N8N.md](docs/INTEGRATION-N8N.md). Version anglaise pour les clients américains : [docs/en/connect-n8n.md](docs/en/connect-n8n.md).
 
 ## Connecter Zapier
 
-Application **Orbyn pour Zapier** (privée, partagée par lien d'invitation) dans `zapier/` : actions « Ask Permission » et « Report Activity », déclencheurs « Decision Made » et « Agent Paused or Resumed ». Mode d'emploi et recettes : [docs/INTEGRATION-ZAPIER.md](docs/INTEGRATION-ZAPIER.md). En anglais : [docs/en/connect-zapier.md](docs/en/connect-zapier.md).
+Application **Orvanta pour Zapier** (privée, partagée par lien d'invitation) dans `zapier/` : actions « Ask Permission » et « Report Activity », déclencheurs « Decision Made » et « Agent Paused or Resumed ». Mode d'emploi et recettes : [docs/INTEGRATION-ZAPIER.md](docs/INTEGRATION-ZAPIER.md). En anglais : [docs/en/connect-zapier.md](docs/en/connect-zapier.md).
 
 ## Mettre en ligne
 
-`Dockerfile` + `docker-compose.yml` (Orbyn + Caddy pour le https automatique). Sur un serveur avec Docker :
+`Dockerfile` + `docker-compose.yml` (Orvanta + Caddy pour le https automatique). Sur un serveur avec Docker :
 
 ```bash
 cp .env.example .env        # DOMAIN, ADMIN_TOKEN, ANTHROPIC_API_KEY…
@@ -108,9 +108,9 @@ Guide pas à pas (serveur, domaine, sauvegardes, restauration, et une variante g
 Chaque agent a une clé (visible dans sa fiche → « Connexion »). Trois appels suffisent :
 
 ```ts
-import { Orbyn } from "./sdk/orbyn.ts";
+import { Orvanta } from "./sdk/orvanta.ts";
 
-const hq = new Orbyn({ url: "https://votre-hq.exemple.fr", key: process.env.ORBYN_KEY! });
+const hq = new Orvanta({ url: "https://votre-hq.exemple.fr", key: process.env.ORVANTA_KEY! });
 
 // 1. Lire les consignes et l'état décidés par les humains (pause, niveau, modèle).
 const { paused, prompt, model_tier } = await hq.config();

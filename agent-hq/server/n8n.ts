@@ -1,7 +1,7 @@
 /**
  * n8n integration. Three levels, from the least to the most intrusive:
  *
- * 1. Supervision — with an n8n API key, Orbyn lists the workflows (one
+ * 1. Supervision — with an n8n API key, Orvanta lists the workflows (one
  *    agent each) and imports every finished execution as an event, error
  *    message included. Nothing changes in the workflows.
  * 2. Emergency stop — pausing the agent deactivates the workflow in n8n;
@@ -142,7 +142,7 @@ export interface SyncResult { workflows: number; created: number; imported: numb
 
 /**
  * Brings one n8n instance up to date: workflows become agents, finished
- * executions become events, and pauses decided in Orbyn are enforced.
+ * executions become events, and pauses decided in Orvanta are enforced.
  */
 export async function syncIntegration(db: DB, integration: IntegrationRow, client = clientFor(integration), now = Date.now()): Promise<SyncResult> {
   try {
@@ -182,7 +182,7 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
           run(db, "UPDATE agents SET paused = 0, pause_reason = NULL WHERE id = ?", existing.id);
           logActivity(db, "n8n", tr(`${existing.name} was switched back on in n8n.`, `${existing.name} a été réactivé dans n8n.`), existing.id, now);
         } else if (existing.paused && wf.active) {
-          // Paused by Orbyn (a person or a guardrail) but running in n8n: enforce.
+          // Paused by Orvanta (a person or a guardrail) but running in n8n: enforce.
           toEnforce.push({ agent: existing, wf });
         }
       }
@@ -248,7 +248,7 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
 }
 
 /**
- * Applies a pause or a resume to the real workflow before Orbyn records
+ * Applies a pause or a resume to the real workflow before Orvanta records
  * it, so the screen never says "paused" while n8n keeps running.
  */
 export async function setWorkflowActive(db: DB, agent: AgentRow, active: boolean, fetchImpl?: Fetch) {
@@ -266,7 +266,7 @@ export async function syncAll(db: DB, fetchImpl?: Fetch) {
   }
 }
 
-/** How much Orbyn can really do on this agent, in words a manager understands. */
+/** How much Orvanta can really do on this agent, in words a manager understands. */
 export function controlLevel(agent: Pick<AgentRow, "source" | "last_check_at">, now = Date.now()) {
   const checks = agent.last_check_at !== null && agent.last_check_at !== undefined;
   const recent = checks && now - (agent.last_check_at ?? 0) < 30 * 24 * HOUR;

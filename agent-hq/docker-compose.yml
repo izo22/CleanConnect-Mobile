@@ -1,4 +1,4 @@
-# Orbyn online: the app + Caddy, which gets and renews the HTTPS certificate.
+# Orvanta online: the app + Caddy, which gets and renews the HTTPS certificate.
 # Fill in .env (copy .env.example), point the domain to this server, then:
 #   docker compose up -d --build
 services:

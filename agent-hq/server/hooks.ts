@@ -1,10 +1,10 @@
 /**
  * REST hooks: automation platforms (Zapier) subscribe to an agent's events
- * and Orbyn pushes them as they happen.
+ * and Orvanta pushes them as they happen.
  *
  * - "decision": a human approved or refused a request this agent made.
  *   A second Zap starts from it and performs the approved action.
- * - "agent_state": the agent was paused or resumed in Orbyn. A Zap can
+ * - "agent_state": the agent was paused or resumed in Orvanta. A Zap can
  *   switch the matching Zap off (Zapier Manager) — the emergency stop.
  */
 import { all, run, type DB } from "./db.ts";
@@ -18,7 +18,7 @@ export interface HookRow { id: number; agent_id: string; event: HookEvent; targe
 const PRIVATE_HOST = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0|\[?::1\]?$|\[?f[cd][0-9a-f]{2}:)/i;
 
 /**
- * Orbyn only calls out to public https addresses, so a leaked agent key
+ * Orvanta only calls out to public https addresses, so a leaked agent key
  * cannot make it reach internal services. ALLOW_PRIVATE_HOOKS=true lifts
  * this for local development and tests.
  */

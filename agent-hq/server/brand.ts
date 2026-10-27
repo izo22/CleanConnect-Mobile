@@ -3,4 +3,4 @@
  * n8n block all use it. Technical names (database file, Docker image,
  * folder) stay "agent-hq" so existing installations keep working.
  */
-export const PRODUCT_NAME = "Orbyn";
+export const PRODUCT_NAME = "Orvanta";

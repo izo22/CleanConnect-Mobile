@@ -1,4 +1,4 @@
-# Orbyn: one image with the API and the interface.
+# Orvanta: one image with the API and the interface.
 # Build: docker build -t agent-hq .   (or: docker compose up -d --build)
 
 FROM node:22-bookworm-slim AS build

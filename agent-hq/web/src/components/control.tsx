@@ -12,7 +12,7 @@ const TONE: Record<Control["level"], { bg: string; fg: string }> = {
   watch: { bg: "#F1EDE7", fg: "#45424C" },
 };
 
-/** What Orbyn can really do on this agent: shown, never implied. */
+/** What Orvanta can really do on this agent: shown, never implied. */
 export function ControlChip({ control }: { control: Control }) {
   const t = TONE[control.level];
   return (
