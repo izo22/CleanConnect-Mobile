@@ -43,6 +43,8 @@ export interface AppOptions {
   fetchImpl?: typeof fetch;
   /** Behind a reverse proxy (Caddy): trust X-Forwarded-* for protocol, host and client IP. */
   trustProxy?: boolean;
+  /** Lets visitors create their own account and workspace (SIGNUP=open). */
+  signup?: boolean;
 }
 
 
@@ -115,7 +117,7 @@ const slug = (s: string) =>
 /** Which state the real workflow must be in after a playbook action. */
 const REMOTE_STATE: Partial<Record<PlaybookId, boolean>> = { pause: false, handoff: false, resume: true, rollback: true };
 
-export function buildApp({ db, adminToken, now = Date.now, logger = false, fetchImpl = fetch, trustProxy = false }: AppOptions) {
+export function buildApp({ db, adminToken, now = Date.now, logger = false, fetchImpl = fetch, trustProxy = false, signup = false }: AppOptions) {
   const app = Fastify({ logger: logOptions(logger), bodyLimit: 2 * 1024 * 1024, trustProxy, ajv: { customOptions: { allowUnionTypes: true } } });
 
   app.addHook("onSend", async (req, reply) => {
@@ -345,7 +347,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
 
   // ---------- Accounts, workspaces, members ----------
 
-  registerAccountRoutes(app, { db, adminToken, now, guards });
+  registerAccountRoutes(app, { db, adminToken, now, guards, signup });
 
   app.register(async (platform) => {
     platform.addHook("onRequest", requireAdmin);

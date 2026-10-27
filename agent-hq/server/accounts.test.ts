@@ -53,7 +53,7 @@ function addAgent(db: DB, id: string, ws: string) {
 describe("first account", () => {
   it("is created once, with the setup code, and becomes the platform administrator", async () => {
     const app = buildApp({ db: openDb(":memory:"), adminToken: CODE, now: () => NOW });
-    expect((await app.inject({ url: "/api/auth/state" })).json()).toEqual({ mode: "accounts", setup_needed: true });
+    expect((await app.inject({ url: "/api/auth/state" })).json()).toEqual({ mode: "accounts", setup_needed: true, signup: false });
     expect((await app.inject({ url: "/api/overview" })).statusCode).toBe(401);
 
     const attempt = (setup_code: string, password = PASSWORD) =>
@@ -321,9 +321,67 @@ describe("platform administrator", () => {
 describe("without accounts (local trial)", () => {
   it("opens everything to whoever runs the server", async () => {
     const app = buildApp({ db: openDb(":memory:"), now: () => NOW });
-    expect((await app.inject({ url: "/api/auth/state" })).json()).toEqual({ mode: "open", setup_needed: false });
+    expect((await app.inject({ url: "/api/auth/state" })).json()).toEqual({ mode: "open", setup_needed: false, signup: false });
     const me = (await app.inject({ url: "/api/me", headers: { "x-user-name": "Sam" } })).json();
     expect(me).toMatchObject({ mode: "open", user: { name: "Sam", is_admin: true }, workspaces: [{ id: "main" }] });
     expect((await app.inject({ url: "/api/overview" })).statusCode).toBe(200);
+  });
+});
+
+describe("self sign-up", () => {
+  const visitor = { name: "Dana Brooks", company: "Brightline", email: "Dana@Brightline.co", password: PASSWORD };
+
+  async function openServer() {
+    const db = openDb(":memory:");
+    const app = buildApp({ db, adminToken: CODE, now: () => NOW, signup: true });
+    expect((await app.inject({ url: "/api/auth/state" })).json().signup).toBe(false);
+    const admin = await app.inject({ method: "POST", url: "/api/auth/setup", payload: { setup_code: CODE, name: "Alice", email: "alice@agency.io", password: PASSWORD } });
+    return { app, db, alice: browser(app, cookieOf(admin)) };
+  }
+
+  it("gives a new person their own empty workspace, as its owner", async () => {
+    const { app, db, alice } = await openServer();
+    addAgent(db, "demo-bot", "main");
+    expect((await app.inject({ url: "/api/auth/state" })).json().signup).toBe(true);
+
+    const res = await app.inject({ method: "POST", url: "/api/auth/signup", payload: visitor });
+    expect(res.statusCode).toBe(201);
+    const me = res.json();
+    expect(me).toMatchObject({ user: { name: "Dana Brooks", email: "dana@brightline.co", is_admin: false }, workspaces: [{ name: "Brightline", role: "owner" }] });
+
+    const dana = browser(app, cookieOf(res), me.workspaces[0].id);
+    expect((await dana.get("/api/agents")).json()).toEqual([]);
+    expect((await dana.get("/api/rules")).json()).toHaveLength(4);
+    expect((await dana.in("main").get("/api/agents")).statusCode).toBe(403);
+    expect((await dana.get("/api/admin/workspaces")).statusCode).toBe(403);
+    // The administrator sees the new client in the list.
+    expect((await alice.get("/api/admin/workspaces")).json().map((w: { name: string }) => w.name)).toContain("Brightline");
+  });
+
+  it("refuses a second account with the same email, a short password, and before the first account exists", async () => {
+    const before = buildApp({ db: openDb(":memory:"), adminToken: CODE, now: () => NOW, signup: true });
+    expect((await before.inject({ method: "POST", url: "/api/auth/signup", payload: visitor })).statusCode).toBe(403);
+
+    const { app } = await openServer();
+    expect((await app.inject({ method: "POST", url: "/api/auth/signup", payload: { ...visitor, password: "short" } })).statusCode).toBe(400);
+    expect((await app.inject({ method: "POST", url: "/api/auth/signup", payload: visitor })).statusCode).toBe(201);
+    expect((await app.inject({ method: "POST", url: "/api/auth/signup", payload: { ...visitor, email: "dana@brightline.co" } })).statusCode).toBe(409);
+  });
+
+  it("can be closed, ignores bots and limits sign-ups per visitor", async () => {
+    const closed = buildApp({ db: openDb(":memory:"), adminToken: CODE, now: () => NOW });
+    await closed.inject({ method: "POST", url: "/api/auth/setup", payload: { setup_code: CODE, name: "Alice", email: "alice@agency.io", password: PASSWORD } });
+    expect((await closed.inject({ url: "/api/auth/state" })).json().signup).toBe(false);
+    expect((await closed.inject({ method: "POST", url: "/api/auth/signup", payload: visitor })).statusCode).toBe(403);
+
+    const { app, db } = await openServer();
+    expect((await app.inject({ method: "POST", url: "/api/auth/signup", payload: { ...visitor, website: "http://spam.example" } })).statusCode).toBe(201);
+    expect(get(db, "SELECT COUNT(*) n FROM users")).toEqual({ n: 1 });
+
+    const from = (i: number, ip = "203.0.113.7") =>
+      app.inject({ method: "POST", url: "/api/auth/signup", remoteAddress: ip, payload: { ...visitor, email: `p${i}@example.com` } });
+    for (let i = 0; i < 5; i++) expect((await from(i)).statusCode).toBe(201);
+    expect((await from(5)).statusCode).toBe(429);
+    expect((await from(6, "198.51.100.4")).statusCode).toBe(201);
   });
 });

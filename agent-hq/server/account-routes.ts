@@ -40,13 +40,16 @@ import { httpError, sameSecret, type Caller, type makeGuards } from "./context.t
 import { MAIN_WORKSPACE, all, get, run, tx, type DB } from "./db.ts";
 import { rateLimiter } from "./early-access.ts";
 import { tr } from "./i18n.ts";
-import { MINUTE, logActivity, notifyChange } from "./model.ts";
+import { DAY, HOUR, MINUTE, logActivity, notifyChange } from "./model.ts";
+import { notify } from "./notify.ts";
 
 interface Deps {
   db: DB;
   adminToken?: string;
   now: () => number;
   guards: ReturnType<typeof makeGuards>;
+  /** Visitors may create their own account and workspace. */
+  signup?: boolean;
 }
 
 const EMAIL = { type: "string", minLength: 3, maxLength: 200, pattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$" } as const;
@@ -55,7 +58,7 @@ const NAME = { type: "string", minLength: 1, maxLength: 80 } as const;
 const ROLE = { enum: ROLES } as const;
 const body = (properties: Record<string, unknown>, required: string[]) => ({ schema: { body: { type: "object", additionalProperties: false, required, properties } } });
 
-export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, now, guards }: Deps) {
+export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, now, guards, signup = false }: Deps) {
   const { accounts, requireUser, requireAdmin, requireWorkspace, need } = guards;
 
   const startSession = (req: FastifyRequest, reply: FastifyReply, userId: number) => {
@@ -78,7 +81,10 @@ export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, no
 
   // ---------- Signing in ----------
 
-  app.get("/api/auth/state", async () => ({ mode: accounts ? "accounts" : "open", setup_needed: accounts && countUsers(db) === 0 }));
+  // Sign-up opens once the administrator's account exists.
+  const signupOpen = () => signup && accounts && countUsers(db) > 0;
+
+  app.get("/api/auth/state", async () => ({ mode: accounts ? "accounts" : "open", setup_needed: accounts && countUsers(db) === 0, signup: signupOpen() }));
 
   // The very first account: proven by the setup code written in the server's settings (ADMIN_TOKEN).
   app.post<{ Body: { setup_code: string; name: string; email: string; password: string } }>(
@@ -98,6 +104,43 @@ export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, no
       });
       startSession(req, reply, userId);
       return reply.code(201).send(me({ id: userId, name: req.body.name.trim(), email: normalizeEmail(req.body.email), isAdmin: true }));
+    },
+  );
+
+  // Self sign-up: a new person gets their own empty workspace, as its owner.
+  const signupByIp = rateLimiter(5, HOUR);
+  const signupsPerDay = rateLimiter(100, DAY);
+  app.post<{ Body: { name: string; company?: string; email: string; password: string; website?: string } }>(
+    "/api/auth/signup",
+    body({ name: NAME, company: { type: "string", maxLength: 80 }, email: EMAIL, password: PASSWORD, website: { type: "string", maxLength: 200 } }, ["name", "email", "password"]),
+    async (req, reply) => {
+      if (!signupOpen()) throw httpError(403, tr("Sign-up is closed on this server. Ask for an invitation.", "L'inscription est fermée sur ce serveur. Demandez une invitation."));
+      // Bots fill in the field hidden from people: pretend it worked.
+      if (req.body.website) return reply.code(201).send({});
+      if (!signupByIp(req.ip, now()) || !signupsPerDay("all", now())) {
+        throw httpError(429, tr("Too many sign-ups right now. Please try again in an hour.", "Trop d'inscriptions pour le moment. Réessayez dans une heure."));
+      }
+      if (getUserByEmail(db, req.body.email)) {
+        throw httpError(409, tr("An account already uses this email. Sign in instead.", "Un compte utilise déjà cet e-mail. Connectez-vous plutôt."));
+      }
+      const problem = passwordProblem(req.body.password);
+      if (problem) throw httpError(400, problem);
+      const hash = await hashPassword(req.body.password);
+      const name = req.body.name.trim();
+      const company = req.body.company?.trim();
+      const t = now();
+      const userId = tx(db, () => {
+        const id = createUser(db, { email: req.body.email, name, passwordHash: hash }, t);
+        const w = createWorkspace(db, company || tr(`${name}'s workspace`, `Espace de ${name}`), t);
+        addMember(db, id, w.id, "owner", t);
+        logActivity(db, name, tr(`${name} created the workspace.`, `${name} a créé l'espace.`), null, t, w.id);
+        return id;
+      });
+      startSession(req, reply, userId);
+      const who = `${name}${company ? ` (${company})` : ""}, ${normalizeEmail(req.body.email)}`;
+      notify(tr(`New sign-up: ${who}`, `Nouvelle inscription : ${who}`));
+      notifyChange();
+      return reply.code(201).send(me({ id: userId, name, email: normalizeEmail(req.body.email), isAdmin: false }));
     },
   );
 

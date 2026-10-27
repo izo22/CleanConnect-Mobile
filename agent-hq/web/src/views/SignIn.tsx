@@ -80,7 +80,7 @@ export function Setup({ onDone }: { onDone: (me: Me) => void }) {
   );
 }
 
-export function Login({ onDone }: { onDone: (me: Me) => void }) {
+export function Login({ onDone, signup }: { onDone: (me: Me) => void; signup: boolean }) {
   const [f, setF] = useState({ email: "", password: "" });
   const { busy, error, submit } = useSubmit(() => api<Me>("/api/auth/login", { method: "POST", body: f }), onDone);
   return (
@@ -89,11 +89,46 @@ export function Login({ onDone }: { onDone: (me: Me) => void }) {
       <Field id="login-password" label={tr("Password", "Mot de passe")} type="password" required autoComplete="current-password" value={f.password}
         onChange={(e) => setF({ ...f, password: e.target.value })} />
       <button type="submit" className="btn primary big" disabled={busy}>{busy ? "…" : tr("Sign in", "Se connecter")}</button>
+      {signup && (
+        <span style={{ fontSize: 14 }}>
+          {tr("New to Orvanta? ", "Nouveau sur Orvanta ? ")}<a href="#/signup">{tr("Create your account", "Créez votre compte")}</a>
+        </span>
+      )}
       <span className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>
         {tr(
-          "Forgot your password? Ask the person who invited you for a reset link.",
-          "Mot de passe oublié ? Demandez un lien de réinitialisation à la personne qui vous a invité.",
+          "Forgot your password? Ask the person who invited you, or the Orvanta team, for a reset link.",
+          "Mot de passe oublié ? Demandez un lien de réinitialisation à la personne qui vous a invité, ou à l'équipe Orvanta.",
         )}
+      </span>
+    </AuthCard>
+  );
+}
+
+/** Self sign-up: the person gets their own empty workspace and lands in it. */
+export function Signup({ onDone }: { onDone: (me: Me) => void }) {
+  const [f, setF] = useState({ name: "", company: "", email: "", password: "", website: "" });
+  const { busy, error, submit } = useSubmit(() => api<Me>("/api/auth/signup", { method: "POST", body: f }), onDone);
+  return (
+    <AuthCard
+      title={tr("Create your account", "Créez votre compte")}
+      intro={tr(
+        "Free during the beta. You get your own workspace: connect n8n or Zapier, then invite your team.",
+        "Gratuit pendant la bêta. Vous obtenez votre propre espace : branchez n8n ou Zapier, puis invitez votre équipe.",
+      )}
+      error={error}
+      onSubmit={submit}
+    >
+      <Field id="su-name" label={tr("Your name", "Votre nom")} required autoComplete="name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+      <Field id="su-company" label={tr("Company (optional)", "Société (facultatif)")} autoComplete="organization" maxLength={80} value={f.company}
+        onChange={(e) => setF({ ...f, company: e.target.value })} hint={tr("It names your workspace. You can change it later.", "Elle donne son nom à votre espace. Modifiable ensuite.")} />
+      <Field id="su-email" label={tr("Work email", "E-mail professionnel")} type="email" required autoComplete="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
+      <Field id="su-password" label={tr("Password", "Mot de passe")} type="password" required minLength={MIN_PASSWORD} autoComplete="new-password" value={f.password}
+        onChange={(e) => setF({ ...f, password: e.target.value })} hint={passwordHint()} />
+      {/* Hidden from people; bots fill it in. */}
+      <input className="hp" tabIndex={-1} aria-hidden="true" autoComplete="off" value={f.website} onChange={(e) => setF({ ...f, website: e.target.value })} />
+      <button type="submit" className="btn primary big" disabled={busy}>{busy ? "…" : tr("Create my account", "Créer mon compte")}</button>
+      <span style={{ fontSize: 14 }}>
+        {tr("Already have an account? ", "Déjà un compte ? ")}<a href="#/">{tr("Sign in", "Connectez-vous")}</a>
       </span>
     </AuthCard>
   );

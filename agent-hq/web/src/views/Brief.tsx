@@ -3,6 +3,8 @@ import { many, money, num, plural } from "../format.ts";
 import { locale, tr } from "../i18n.ts";
 import { AlertCard, Avatar, DecisionButtons, ErrorBox, Icon, Ring, Skeleton } from "../components/ui.tsx";
 import type { View } from "../App.tsx";
+import { useAccount } from "../account.tsx";
+import { PRODUCT_NAME } from "../../../server/brand.ts";
 
 export function Brief({ go }: { go: (v: View) => void }) {
   const { data, error } = useData<Overview>("/api/overview");
@@ -10,6 +12,7 @@ export function Brief({ go }: { go: (v: View) => void }) {
   if (!data) return <Skeleton />;
 
   const { counts, alerts, approvals } = data;
+  if (counts.total === 0) return <GettingStarted go={go} />;
   const todo = alerts.length + approvals.length;
   const hours = data.minutes_saved_24h / 60;
   const delta = data.cost_avg_day_cents ? (data.cost_24h_cents - data.cost_avg_day_cents) / data.cost_avg_day_cents : 0;
@@ -112,6 +115,60 @@ export function Brief({ go }: { go: (v: View) => void }) {
           </span>
         </div>
       )}
+    </>
+  );
+}
+
+/** A new workspace has no agents yet: show the three ways to bring them in. */
+function GettingStarted({ go }: { go: (v: View) => void }) {
+  const { me, ws, can } = useAccount();
+  const steps: Array<{ title: string; text: string; action: string; view: View }> = [
+    {
+      title: tr("Connect n8n", "Connecter n8n"),
+      text: tr("Paste your n8n address and an API key: every workflow shows up as an agent, and “Pause” really switches it off.", "Collez l'adresse de votre n8n et une clé API : chaque workflow devient un agent, et « Pause » le coupe vraiment."),
+      action: tr("Connect n8n", "Connecter n8n"),
+      view: "connections",
+    },
+    {
+      title: tr("Add Zapier or your own code", "Ajouter Zapier ou votre code"),
+      text: tr("Create an agent, copy its key, and add the Orvanta steps to your Zaps or a few lines to your code.", "Créez un agent, copiez sa clé, puis ajoutez les étapes Orvanta à vos Zaps ou quelques lignes à votre code."),
+      action: tr("Add an agent", "Ajouter un agent"),
+      view: "team",
+    },
+    {
+      title: tr("Invite your team", "Inviter votre équipe"),
+      text: tr("Colleagues or clients get their own sign-in. Viewers can approve decisions without touching settings.", "Collègues ou clients ont leur propre connexion. Les lecteurs approuvent les décisions sans toucher aux réglages."),
+      action: tr("Invite people", "Inviter"),
+      view: "members",
+    },
+  ];
+  return (
+    <>
+      <header className="page-head">
+        <div className="titles">
+          <h1 className="h1">{tr(`Welcome, ${me.user.name.split(" ")[0]}`, `Bienvenue, ${me.user.name.split(" ")[0]}`)}</h1>
+          <span className="sub">
+            {tr(
+              `“${ws.name}” has no agents yet. Bring them in and ${PRODUCT_NAME} starts watching right away.`,
+              `« ${ws.name} » n'a pas encore d'agents. Ajoutez-les et ${PRODUCT_NAME} commence à les surveiller tout de suite.`,
+            )}
+          </span>
+        </div>
+      </header>
+      <div className="grid-cards">
+        {steps.map((s, i) => (
+          <article key={s.view} className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <span className="step-num">{i + 1}</span>
+            <h2 className="h2" style={{ fontSize: 20 }}>{s.title}</h2>
+            <p className="sub" style={{ fontSize: 14, lineHeight: 1.5 }}>{s.text}</p>
+            {(s.view === "members" ? can("owner") : can("member")) && (
+              <button type="button" className={"btn" + (i === 0 ? " primary" : "")} style={{ alignSelf: "flex-start", marginTop: "auto" }} onClick={() => go(s.view)}>
+                {s.action}
+              </button>
+            )}
+          </article>
+        ))}
+      </div>
     </>
   );
 }

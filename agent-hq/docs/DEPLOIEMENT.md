@@ -116,6 +116,8 @@ Pour la mettre en ligne sur le domaine principal (par exemple `orvantahq.io`, l'
 
 ## Comptes et clients
 
+**Inscription libre.** Le bouton « Get started free » du site mène à `https://app.votre-domaine/#/signup`. La personne entre son nom, sa société, son e-mail et un mot de passe : elle obtient **son propre espace vide**, dont elle est propriétaire, avec un écran de démarrage (connecter n8n, ajouter un agent, inviter son équipe). Vous la voyez apparaître dans **Administration**, et le webhook `NOTIFY_WEBHOOK_URL` vous prévient. Protections : 5 inscriptions par heure et par adresse IP, 100 par jour au total, champ piège pour les robots. Pour revenir à l'invitation seule, mettez `SIGNUP=closed` dans `.env`, puis `sudo docker compose up -d`.
+
 **Un espace par client.** Dans la barre de gauche, le menu **Espace** liste vos espaces. Choisissez « + Nouvel espace… », donnez le nom du client : l'espace est créé avec les garde-fous habituels, et vous arrivez sur **Membres** pour inviter le client.
 
 **Inviter quelqu'un.** Dans **Membres**, entrez son e-mail et son rôle, puis « Créer le lien ». Orvanta n'envoie pas d'e-mail : copiez le lien et envoyez-le vous-même (e-mail, WhatsApp…). La personne l'ouvre, choisit son nom et son mot de passe, et arrive dans l'espace. Le lien sert **une fois** et expire après **7 jours**. Une personne qui a déjà un compte (par exemple un collègue de l'agence) entre simplement son mot de passe : l'espace s'ajoute à son menu.

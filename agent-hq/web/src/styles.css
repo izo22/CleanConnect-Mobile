@@ -330,3 +330,5 @@ details.more-ex summary { cursor: pointer; font-size: 13px; font-weight: 600; co
 }
 fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
 fieldset.plain:disabled input { opacity: 0.6; cursor: not-allowed; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.step-num { width: 34px; height: 34px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }

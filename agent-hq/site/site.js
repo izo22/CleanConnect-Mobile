@@ -1,8 +1,8 @@
-// Sign-in links point to the app on the same domain: example.com → app.example.com.
+// Sign-in and sign-up links point to the app on the same domain: example.com → app.example.com.
 (() => {
   const host = location.hostname.replace(/^www\./, "");
   if (host.includes(".") && !host.endsWith("localhost")) {
-    for (const a of document.querySelectorAll("[data-app-link]")) a.href = `https://app.${host}`;
+    for (const a of document.querySelectorAll("[data-app-link]")) a.href = `https://app.${host}${a.dataset.appLink || ""}`;
   }
 })();
 

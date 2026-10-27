@@ -34,7 +34,7 @@
       </nav>
       <div class="top-cta">
         <a class="btn ghost" data-app-link href="https://app.orvantahq.io">Sign in</a>
-        <a class="btn primary" href="#early-access">Request early access</a>
+        <a class="btn primary" data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Get started free</a>
       </div>
     </div>
   </header>
@@ -42,14 +42,14 @@
   <main id="main">
     <!-- Hero -->
     <section class="hero wrap">
-      <span class="eyebrow"><span class="dot"></span>Now onboarding pilot agencies in the US</span>
+      <span class="eyebrow"><span class="dot"></span>Free during the beta</span>
       <h1>Run your AI agents<br />like a team.</h1>
       <p class="lead">
         Orvanta is the control room for every AI agent your business runs, on n8n, Zapier, Make or your own code.
         See what they do, stop them in one click, and approve risky actions before they happen. No AI degree required.
       </p>
       <div class="hero-cta">
-        <a class="btn primary big" href="#early-access">Request early access</a>
+        <a class="btn primary big" data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Get started free</a>
         <a class="btn white big" href="#how">See how it works</a>
       </div>
       <p class="works-with">Works with <b>n8n</b> · <b>Zapier</b> · <b>Make</b> · <b>Claude Agent SDK</b> · <b>OpenAI Agents</b> · <b>any HTTP client</b></p>
@@ -234,6 +234,7 @@
         <details><summary>What happens if Orvanta is unreachable?</summary><p>Sensitive steps fail closed: the workflow stops instead of running the action. When in doubt, nothing gets paid or sent.</p></details>
         <details><summary>How long does setup take?</summary><p>About 5 minutes to connect n8n, and about 2 minutes per sensitive workflow to add approvals.</p></details>
         <details><summary>Do I need to be technical?</summary><p>No. The dashboard is written for business owners and operations leads. Whoever built your agents connects them once.</p></details>
+        <details><summary>How much does it cost?</summary><p>Orvanta is free during the beta. We'll announce pricing well before it applies.</p></details>
         <details><summary>Where is my data?</summary><p>On servers in the US, with daily backups. The AI review of answers is optional and can be turned off.</p></details>
       </div>
     </section>
@@ -242,8 +243,8 @@
     <section id="early-access" class="wrap section">
       <div class="dark form-card">
         <div class="form-intro">
-          <h2>Request early access</h2>
-          <p>Tell us a bit about your agents. We'll get back to you to set up a pilot.</p>
+          <h2>Want a hand getting set up?</h2>
+          <p>Tell us a bit about your agents. We'll connect them with you on a short call, for free.</p>
         </div>
         <form id="ea-form" novalidate>
           <div class="row">
@@ -272,7 +273,7 @@
           </label>
           <label><span>Anything we should know? <span class="opt">(optional)</span></span><textarea name="message" rows="3" maxlength="2000"></textarea></label>
           <label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off" /></label>
-          <button class="btn primary big" type="submit">Request early access</button>
+          <button class="btn primary big" type="submit">Ask for help</button>
           <p class="status" role="status" aria-live="polite"></p>
           <p class="privacy">We only use your details to talk to you about Orvanta. No spam, never sold.</p>
         </form>
@@ -283,7 +284,7 @@
   <footer class="wrap foot">
     <a class="brand" href="/"><img src="/img/icon.svg" width="28" height="28" alt="" /><span>Orvanta</span></a>
     <span>© 2026 Orvanta</span>
-    <nav aria-label="Footer"><a data-app-link href="https://app.orvantahq.io">Sign in</a><a href="#early-access">Early access</a></nav>
+    <nav aria-label="Footer"><a data-app-link href="https://app.orvantahq.io">Sign in</a><a data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Get started free</a><a href="#early-access">Get help</a></nav>
   </footer>
 
   <script src="/site.js" defer></script>

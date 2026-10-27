@@ -41,7 +41,13 @@ if (seedDemo && !get<{ n: number }>(db, "SELECT COUNT(*) n FROM agents WHERE wor
 }
 ensureMainRules(db, Date.now());
 
-const app = buildApp({ db, adminToken, logger: production, trustProxy: process.env.TRUST_PROXY === "true" });
+const app = buildApp({
+  db,
+  adminToken,
+  logger: production,
+  trustProxy: process.env.TRUST_PROXY === "true",
+  signup: env("SIGNUP", "open") !== "closed",
+});
 
 const dist = join(root, "web", "dist");
 if (existsSync(dist)) {
