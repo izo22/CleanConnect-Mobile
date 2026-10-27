@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import { all, get, run, tx, type DB } from "./db.ts";
 import { evaluateAgent, evaluateReports } from "./engine.ts";
@@ -32,10 +33,34 @@ export interface AppOptions {
   /** When set, the dashboard API requires this token (header x-admin-token or ?token=). */
   adminToken?: string;
   now?: () => number;
-  logger?: boolean;
+  /** true = request logs on stdout; tests pass a stream to read them. */
+  logger?: boolean | { stream: { write(line: string): void } };
   /** Injected in tests to fake n8n and callback endpoints. */
   fetchImpl?: typeof fetch;
+  /** Behind a reverse proxy (Caddy): trust X-Forwarded-* for protocol, host and client IP. */
+  trustProxy?: boolean;
 }
+
+/** Comparison that takes the same time whatever the input, so the code cannot be guessed char by char. */
+const sameSecret = (given: unknown, expected: string) => {
+  if (typeof given !== "string") return false;
+  const a = Buffer.from(given);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+};
+
+// Content-Security-Policy: only our own scripts; Google Fonts for typography.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ");
 
 interface EventIn {
   kind: "task" | "action" | "error";
@@ -78,14 +103,31 @@ const REVIEW_INPUT = { type: "object", required: ["confirmed"], additionalProper
 
 const PLAYBOOK_IDS: PlaybookId[] = ["pause", "resume", "rollback", "handoff", "notify_owner", "autonomy0", "economy", "raise_budget"];
 
+/** The dashboard code can travel in ?token= (live updates): never write it to the logs. */
+const hideSecrets = (url: string) => url.replace(/([?&]token=)[^&]*/g, "$1***");
+
+const logOptions = (logger: AppOptions["logger"]) =>
+  logger && {
+    ...(logger === true ? {} : logger),
+    serializers: { req: (req: { method: string; url: string; ip?: string }) => ({ method: req.method, url: hideSecrets(req.url), remoteAddress: req.ip }) },
+  };
+
 const slug = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "agent";
 
 /** Which state the real workflow must be in after a playbook action. */
 const REMOTE_STATE: Partial<Record<PlaybookId, boolean>> = { pause: false, handoff: false, resume: true, rollback: true };
 
-export function buildApp({ db, adminToken, now = Date.now, logger = false, fetchImpl = fetch }: AppOptions) {
-  const app = Fastify({ logger, bodyLimit: 2 * 1024 * 1024 });
+export function buildApp({ db, adminToken, now = Date.now, logger = false, fetchImpl = fetch, trustProxy = false }: AppOptions) {
+  const app = Fastify({ logger: logOptions(logger), bodyLimit: 2 * 1024 * 1024, trustProxy, ajv: { customOptions: { allowUnionTypes: true } } });
+
+  app.addHook("onSend", async (req, reply) => {
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("Referrer-Policy", "same-origin");
+    reply.header("X-Frame-Options", "DENY");
+    if (!req.url.startsWith("/api/")) reply.header("Content-Security-Policy", CSP);
+    if (req.protocol === "https") reply.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  });
 
   app.setErrorHandler((err: Error & { statusCode?: number; validation?: unknown }, _req, reply) => {
     if (err instanceof PlaybookError) return reply.code(409).send({ error: err.message });
@@ -107,7 +149,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
   const requireAdmin = async (req: FastifyRequest, reply: FastifyReply) => {
     if (!adminToken) return;
     const q = (req.query as Record<string, string> | undefined)?.token;
-    if (req.headers["x-admin-token"] !== adminToken && q !== adminToken) {
+    if (!sameSecret(req.headers["x-admin-token"], adminToken) && !sameSecret(q, adminToken)) {
       return reply.code(401).send({ error: "Jeton d'accès requis." });
     }
   };
@@ -136,7 +178,15 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     };
   };
 
-  app.get("/api/health", async () => ({ ok: true }));
+  // Used by Docker and the host to know the service is alive (database included).
+  app.get("/api/health", async (_req, reply) => {
+    try {
+      db.prepare("SELECT 1").get();
+      return { ok: true };
+    } catch {
+      return reply.code(503).send({ ok: false });
+    }
+  });
 
   // ---------- Agent-facing API (used by the SDK) ----------
 

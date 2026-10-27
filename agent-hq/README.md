@@ -15,6 +15,8 @@ npm run build      # construit l'interface
 npm start          # http://localhost:8787
 ```
 
+Pour le mettre sur Internet (serveur, https, sauvegardes) : [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md).
+
 Au premier lancement, une base de démonstration est créée : 100 agents, 8 jours d'historique et de vrais incidents détectés par le moteur (relances en double, réponses en anglais, coûts en hausse, accès HubSpot expiré, erreurs de jugement repérées par la relecture IA, erreur signalée par un collègue).
 
 Pour voir des agents travailler en direct, dans un second terminal :
@@ -40,15 +42,20 @@ Les agents simulés passent par le vrai SDK. Ils s'arrêtent quand vous les mett
 | --- | --- | --- |
 | `PORT` | `8787` | port HTTP |
 | `DATABASE_PATH` | `data/agent-hq.db` | fichier SQLite |
-| `ADMIN_TOKEN` | — | si défini, l'interface demande ce code d'accès |
+| `ADMIN_TOKEN` | — | code d'accès de l'interface ; **obligatoire en production** (16 caractères minimum) |
 | `NOTIFY_WEBHOOK_URL` | — | webhook Slack/Teams pour prévenir les responsables |
-| `SEED_DEMO` | `true` | `false` pour démarrer avec une base vide |
+| `SEED_DEMO` | `true` en local, `false` en production | crée la démonstration de 100 agents si la base est vide |
 | `ANTHROPIC_API_KEY` | — | active la relecture par IA (Claude) |
 | `REVIEW_MODEL` | `claude-opus-5-5` | modèle utilisé pour la relecture |
 | `REVIEW_ENABLED` | auto | `false` pour couper la relecture même avec une clé |
 | `N8N_SYNC_SECONDS` | `30` | fréquence de lecture des workflows et exécutions n8n |
 | `ALLOW_PRIVATE_HOOKS` | `false` | `true` en développement seulement : autorise les abonnements vers des adresses locales |
 | `PUBLIC_URL` | adresse de la requête | adresse d'Agent HQ écrite dans le bloc n8n à copier |
+| `NODE_ENV` | — | `production` en ligne (fixé par l'image Docker) : code d'accès exigé, journaux des requêtes |
+| `TRUST_PROXY` | `false` | `true` derrière un proxy https (Caddy) |
+| `BACKUP_DIR` | `<dossier de la base>/backups` | dossier des sauvegardes quotidiennes |
+| `BACKUP_KEEP_DAYS` | `30` | nombre de jours de sauvegardes gardés |
+| `RETENTION_DAYS` | `90` | l'activité détaillée des agents plus ancienne est effacée |
 
 Node.js 22.5 ou plus récent est requis (la base utilise `node:sqlite`, sans dépendance native).
 
@@ -75,6 +82,17 @@ Mode d'emploi complet, limites et résultats des tests contre un vrai n8n : [doc
 ## Connecter Zapier
 
 Application **Agent HQ pour Zapier** (privée, partagée par lien d'invitation) dans `zapier/` : actions « Ask Permission » et « Report Activity », déclencheurs « Decision Made » et « Agent Paused or Resumed ». Mode d'emploi et recettes : [docs/INTEGRATION-ZAPIER.md](docs/INTEGRATION-ZAPIER.md).
+
+## Mettre en ligne
+
+`Dockerfile` + `docker-compose.yml` (Agent HQ + Caddy pour le https automatique). Sur un serveur avec Docker :
+
+```bash
+cp .env.example .env        # DOMAIN, ADMIN_TOKEN, ANTHROPIC_API_KEY…
+docker compose up -d --build
+```
+
+Guide pas à pas (serveur, domaine, sauvegardes, restauration) : [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md).
 
 ## Connecter un agent
 
@@ -122,6 +140,7 @@ agent-hq/
     playbooks.ts actions en un clic
     reviewer.ts  relecture des réponses par Claude (sortie JSON contrainte)
     n8n.ts       intégration n8n (lecture, arrêt d'urgence)
+    maintenance.ts sauvegardes quotidiennes et effacement des vieilles données
     n8n-template.ts bloc « Demander l'autorisation » à coller dans n8n
     callbacks.ts renvoi de la décision humaine au workflow en attente
     translate.ts erreurs techniques → français
@@ -133,10 +152,10 @@ agent-hq/
 
 ## Limites connues de ce MVP
 
-- Un seul espace de travail, protégé par un code d'accès partagé (`ADMIN_TOKEN`), sans comptes utilisateurs.
+- Un seul espace de travail, protégé par un code d'accès partagé (`ADMIN_TOKEN`), sans comptes utilisateurs : en ligne, prévoir une instance par client.
 - Les notifications partent vers un webhook unique ; pas encore d'e-mail ni de notification mobile.
 - Relecture IA mesurée sur 20 cas écrits à la main (10 erreurs, 10 réponses justes, une tentative de manipulation) : 20/20, environ 0,4 centime et 4 secondes par relecture avec Claude Opus 5.5. C'est un petit échantillon aux erreurs nettes ; les cas réels seront plus ambigus.
 - La relecture IA ne voit que ce que l'agent transmet (`input` / `output`) ; elle juge par rapport aux consignes, pas par rapport à vos données réelles (stock, CRM…).
-- n8n est intégré (voir plus haut) ; Make et Zapier passent encore par l'API HTTP.
+- n8n est intégré (voir plus haut). Zapier a son application privée, avec une supervision partielle tant que l'accès partenaire n'est pas obtenu. Make passe encore par l'API HTTP.
 - Un agent qui ne passe ni par n8n connecté, ni par le SDK / `/api/v1/check` est seulement supervisé : la pause et les garde-fous ne peuvent pas l'arrêter. Chaque fiche agent affiche son niveau réel.
 - Les garde-fous existants se règlent depuis l'interface ; en créer de nouveaux types demande du code.

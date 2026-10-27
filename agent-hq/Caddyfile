@@ -1,0 +1,6 @@
+# Caddy obtains the HTTPS certificate for DOMAIN on its own (Let's Encrypt)
+# and renews it. Live updates (Server-Sent Events) are passed through as-is.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:8787
+}

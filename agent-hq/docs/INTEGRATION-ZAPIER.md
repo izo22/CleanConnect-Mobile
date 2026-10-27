@@ -42,7 +42,7 @@ Faites un 2e Zap identique avec *Resumed* → *On* si vous voulez que « Reprend
 
 Voir [zapier/README.md](../zapier/README.md) : `zapier login`, `zapier register "Agent HQ"`, `zapier push`, puis `zapier users:links` pour obtenir le lien d'invitation à envoyer aux pilotes.
 
-**Prérequis :** Agent HQ doit être accessible sur Internet en **https**. Les serveurs de Zapier l'appellent, et Agent HQ ne prévient que des adresses https publiques.
+**Prérequis :** Agent HQ doit être accessible sur Internet en **https** (voir [DEPLOIEMENT.md](DEPLOIEMENT.md)). Les serveurs de Zapier l'appellent, et Agent HQ ne prévient que des adresses https publiques.
 
 ## Ce qui a été vérifié, et ce qui ne l'a pas été
 

@@ -5,23 +5,36 @@ import fastifyStatic from "@fastify/static";
 import { buildApp } from "./app.ts";
 import { get, openDb } from "./db.ts";
 import { evaluateAll } from "./engine.ts";
-import { notifyChange } from "./model.ts";
+import { dailyMaintenance } from "./maintenance.ts";
+import { HOUR, notifyChange } from "./model.ts";
 import { syncAll } from "./n8n.ts";
 import { startReviewer } from "./reviewer.ts";
 import { seed } from "./seed.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const dbPath = process.env.DATABASE_PATH ?? join(root, "data", "agent-hq.db");
-const port = Number(process.env.PORT ?? 8787);
-const host = process.env.HOST ?? "0.0.0.0";
+const production = process.env.NODE_ENV === "production";
+const env = (key: string, fallback: string) => process.env[key] ?? fallback;
+
+const dbPath = env("DATABASE_PATH", join(root, "data", "agent-hq.db"));
+const port = Number(env("PORT", "8787"));
+const host = env("HOST", "0.0.0.0");
+const adminToken = process.env.ADMIN_TOKEN;
+
+// Online, the dashboard must never be open to anyone who finds the address.
+if (production && (!adminToken || adminToken.length < 16) && process.env.ALLOW_NO_AUTH !== "true") {
+  console.error("ADMIN_TOKEN manquant ou trop court (16 caractères minimum). Générez-en un avec : openssl rand -hex 24");
+  process.exit(1);
+}
 
 const db = openDb(dbPath);
-if (!get<{ n: number }>(db, "SELECT COUNT(*) n FROM agents")?.n && process.env.SEED_DEMO !== "false") {
+// The 100-agent demo is for local trials; a production instance starts empty unless asked.
+const seedDemo = process.env.SEED_DEMO ? process.env.SEED_DEMO === "true" : !production;
+if (seedDemo && !get<{ n: number }>(db, "SELECT COUNT(*) n FROM agents")?.n) {
   console.log("Base vide : création de l'espace de démonstration (100 agents)…");
   seed(db);
 }
 
-const app = buildApp({ db, adminToken: process.env.ADMIN_TOKEN, logger: process.env.NODE_ENV !== "production" ? false : true });
+const app = buildApp({ db, adminToken, logger: production, trustProxy: process.env.TRUST_PROXY === "true" });
 
 const dist = join(root, "web", "dist");
 if (existsSync(dist)) {
@@ -47,7 +60,36 @@ setInterval(async () => {
   if (syncing) return;
   syncing = true;
   try { await syncAll(db); } finally { syncing = false; }
-}, Number(process.env.N8N_SYNC_SECONDS ?? 30) * 1000).unref();
+}, Number(env("N8N_SYNC_SECONDS", "30")) * 1000).unref();
+
+// Backups and retention: at start-up, then checked every hour (runs once a day).
+const maintenance = {
+  backupDir: env("BACKUP_DIR", join(dirname(dbPath), "backups")),
+  keepDays: Number(env("BACKUP_KEEP_DAYS", "30")),
+  retentionDays: Number(env("RETENTION_DAYS", "90")),
+};
+const maintain = () => {
+  try {
+    const r = dailyMaintenance(db, maintenance);
+    if (r.backup || r.purged || r.pruned.length) {
+      console.log(`Maintenance : ${r.backup ? `sauvegarde ${r.backup}, ` : ""}${r.purged} événement(s) ancien(s) supprimé(s), ${r.pruned.length} vieille(s) sauvegarde(s) retirée(s).`);
+    }
+  } catch (err) {
+    console.error("Maintenance impossible :", (err as Error).message);
+  }
+};
+maintain();
+setInterval(maintain, HOUR).unref();
+
+// Stop cleanly when the host restarts the service: finish requests, close the database.
+const shutdown = async (signal: string) => {
+  console.log(`${signal} reçu : arrêt propre…`);
+  await app.close().catch(() => {});
+  db.close();
+  process.exit(0);
+};
+process.once("SIGTERM", () => void shutdown("SIGTERM"));
+process.once("SIGINT", () => void shutdown("SIGINT"));
 
 await app.listen({ port, host });
-console.log(`Agent HQ en ligne sur http://localhost:${port}`);
+console.log(`Agent HQ en ligne sur le port ${port}${production ? " (production)" : ""}`);

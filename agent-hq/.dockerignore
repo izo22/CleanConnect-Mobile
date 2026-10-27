@@ -1,0 +1,12 @@
+node_modules
+web/dist
+data
+*.db
+*.db-*
+.env
+.env.*
+docs
+zapier
+scripts
+Caddyfile
+docker-compose.yml
