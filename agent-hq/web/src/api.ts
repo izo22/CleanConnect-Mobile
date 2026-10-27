@@ -14,6 +14,7 @@ export type {
   QualityView,
   RuleView,
 } from "../../server/queries.ts";
+export type { EarlyAccessView } from "../../server/early-access.ts";
 
 const TOKEN_KEY = "agent-hq.token";
 const NAME_KEY = "agent-hq.name";

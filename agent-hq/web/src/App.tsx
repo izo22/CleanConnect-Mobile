@@ -8,12 +8,13 @@ import { Brief } from "./views/Brief.tsx";
 import { Decisions } from "./views/Decisions.tsx";
 import { Quality } from "./views/Quality.tsx";
 import { Connections } from "./views/Connections.tsx";
+import { EarlyAccess } from "./views/EarlyAccess.tsx";
 import { Rules } from "./views/Rules.tsx";
 import { Team } from "./views/Team.tsx";
 import { PRODUCT_NAME } from "../../server/brand.ts";
 
-export type View = "brief" | "team" | "alerts" | "decisions" | "quality" | "rules" | "connections" | "journal";
-const VIEWS: View[] = ["brief", "team", "alerts", "decisions", "quality", "rules", "connections", "journal"];
+export type View = "brief" | "team" | "alerts" | "decisions" | "quality" | "rules" | "connections" | "journal" | "early-access";
+const VIEWS: View[] = ["brief", "team", "alerts", "decisions", "quality", "rules", "connections", "journal", "early-access"];
 
 /** `#/team/invoice-reminders` → { view: "team", id: "invoice-reminders" } */
 function parseHash(): { view: View; id: string | null } {
@@ -80,6 +81,7 @@ function Shell({ connected }: { connected: boolean }) {
           {item("rules", "shield", tr("Guardrails", "Garde-fous"))}
           {item("connections", "plug", tr("Connections", "Connexions"))}
           {item("journal", "journal", tr("Log", "Journal"))}
+          {item("early-access", "inbox", tr("Early access", "Demandes d'accès"), data && data.early_access > 0 && <span className="count">{data.early_access}</span>)}
         </div>
         {month && (
           <div className="budget-card">
@@ -103,6 +105,7 @@ function Shell({ connected }: { connected: boolean }) {
           {route.view === "rules" && <Rules />}
           {route.view === "connections" && <Connections />}
           {route.view === "journal" && <Journal />}
+          {route.view === "early-access" && <EarlyAccess />}
         </div>
       </main>
     </div>

@@ -1,6 +1,30 @@
-# Caddy obtains the HTTPS certificate for DOMAIN on its own (Let's Encrypt)
-# and renews it. Live updates (Server-Sent Events) are passed through as-is.
+# Caddy obtains the HTTPS certificates on its own (Let's Encrypt) and renews
+# them. Live updates (Server-Sent Events) are passed through as-is.
+
+# The app, e.g. app.orvantahq.io
 {$DOMAIN} {
 	encode zstd gzip
 	reverse_proxy app:8787
+}
+
+# The public website, e.g. orvantahq.io. Its "Request early access" form is
+# answered by the app, under the same address.
+{$SITE_DOMAIN} {
+	encode zstd gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+	}
+	handle /api/public/* {
+		reverse_proxy app:8787
+	}
+	handle {
+		root * /srv/site
+		file_server
+	}
+}
+
+www.{$SITE_DOMAIN} {
+	redir https://{$SITE_DOMAIN}{uri} permanent
 }

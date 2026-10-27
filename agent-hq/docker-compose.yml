@@ -30,8 +30,11 @@ services:
       - "443:443/udp"
     environment:
       DOMAIN: ${DOMAIN}
+      # Public website (optional); a local name keeps Caddy quiet when unset.
+      SITE_DOMAIN: ${SITE_DOMAIN:-site.localhost}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./site:/srv/site:ro
       - caddy-data:/data
       - caddy-config:/config
 

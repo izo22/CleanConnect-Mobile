@@ -153,6 +153,7 @@ export function overview(db: DB, now = Date.now()) {
     alerts,
     approvals,
     quality_flagged: get<{ n: number }>(db, "SELECT COUNT(*) n FROM reviews WHERE verdict != 'ok' AND human_verdict IS NULL")?.n ?? 0,
+    early_access: get<{ n: number }>(db, "SELECT COUNT(*) n FROM early_access")?.n ?? 0,
   };
 }
 

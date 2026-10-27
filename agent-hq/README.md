@@ -103,6 +103,8 @@ docker compose up -d --build
 
 Guide pas à pas (serveur, domaine, sauvegardes, restauration, et une variante gratuite sur Google Cloud) : [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md).
 
+La page d'accueil publique (en anglais, avec le formulaire « Request early access ») est dans `site/`. Caddy la sert sur `SITE_DOMAIN` ; les demandes arrivent dans l'application, menu **Early access**.
+
 ## Connecter un agent
 
 Chaque agent a une clé (visible dans sa fiche → « Connexion »). Trois appels suffisent :

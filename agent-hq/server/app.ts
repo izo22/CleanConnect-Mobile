@@ -5,6 +5,7 @@ import { evaluateAgent, evaluateReports } from "./engine.ts";
 import { check, type CheckRequest } from "./guard.ts";
 import {
   DAY,
+  HOUR,
   MINUTE,
   activePrompt,
   bus,
@@ -28,6 +29,7 @@ import { N8nClient, N8nError, getIntegration, setWorkflowActive, syncIntegration
 import { n8nSnippet } from "./n8n-template.ts";
 import { agentStatePayload, decisionPayload, fireAgentState, fireDecision, safeOutboundUrl, subscribe, unsubscribe } from "./hooks.ts";
 import { activity, agentDetail, agentSummaries, alertsView, approvalsView, overview, qualityView, rulesView } from "./queries.ts";
+import { EARLY_ACCESS_INPUT, earlyAccessList, rateLimiter, saveEarlyAccess, type EarlyAccessIn } from "./early-access.ts";
 
 export interface AppOptions {
   db: DB;
@@ -192,6 +194,23 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
   // Language and currency of this instance, needed before signing in.
   app.get("/api/locale", async () => ({ language: lang(), currency: currency() }));
 
+  // ---------- Public site: "Request early access" form ----------
+
+  const earlyAccessAllowed = rateLimiter(5, HOUR);
+  app.post<{ Body: EarlyAccessIn }>("/api/public/early-access", { schema: { body: EARLY_ACCESS_INPUT } }, async (req, reply) => {
+    const b = req.body;
+    // Bots fill in every field, including the one hidden from people: pretend it worked.
+    if (b.website) return reply.code(201).send({ ok: true });
+    if (!earlyAccessAllowed(req.ip, now())) {
+      return reply.code(429).send({ error: tr("Too many requests. Please try again in an hour.", "Trop de demandes. Réessayez dans une heure.") });
+    }
+    saveEarlyAccess(db, b, now());
+    const who = `${b.name.trim()}${b.company?.trim() ? ` (${b.company.trim()})` : ""}, ${b.email.trim()}`;
+    notify(tr(`New early access request: ${who}`, `Nouvelle demande d'accès : ${who}`));
+    notifyChange();
+    return reply.code(201).send({ ok: true });
+  });
+
   // ---------- Agent-facing API (used by the SDK) ----------
 
   app.post<{ Body: EventIn | { events: EventIn[] } }>(
@@ -340,6 +359,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     admin.get("/api/rules", async () => rulesView(db));
     admin.get("/api/activity", async () => activity(db, 80));
     admin.get("/api/quality", async () => qualityView(db, now()));
+    admin.get("/api/early-access", async () => earlyAccessList(db));
 
     admin.post<{ Params: { id: string }; Body: { description: string; event_id?: number } }>(
       "/api/agents/:id/reports",

@@ -90,6 +90,30 @@ Ouvrez `https://hq.votre-agence.com` dans votre navigateur et entrez le code d'a
 
 Le certificat https est obtenu et renouvelé tout seul (Caddy et Let's Encrypt). Les visites en `http://` sont redirigées vers `https://`.
 
+## Le site public (page d'accueil)
+
+Le dossier `site/` contient la page d'accueil d'Orvanta (en anglais), avec un formulaire « Request early access ». Les demandes arrivent dans l'application, menu **Early access**.
+
+Pour la mettre en ligne sur le domaine principal (par exemple `orvantahq.io`, l'application restant sur `app.orvantahq.io`) :
+
+1. Chez votre registraire (Cloudflare…), ajoutez **deux** enregistrements DNS vers l'adresse IP du serveur, nuage **gris** :
+
+   | Type | Nom | Valeur |
+   |---|---|---|
+   | `A` | `@` (le domaine lui-même) | l'adresse IP du serveur |
+   | `A` | `www` | l'adresse IP du serveur |
+
+2. Sur le serveur :
+
+   ```bash
+   cd ~/CleanConnect-Mobile/agent-hq
+   git pull
+   grep -q '^SITE_DOMAIN=' .env || echo "SITE_DOMAIN=orvantahq.io" >> .env
+   sudo docker compose up -d --build
+   ```
+
+`www.orvantahq.io` redirige vers `orvantahq.io`. Pour modifier un texte de la page, éditez `site/index.html` : pas besoin de reconstruire, le changement est visible au rechargement.
+
 ## Au quotidien
 
 | Pour… | Commande (dans `CleanConnect-Mobile/agent-hq`) |

@@ -143,6 +143,18 @@ CREATE TABLE IF NOT EXISTS hooks (
   created_at INTEGER NOT NULL
 );
 
+-- Requests sent from the public site's "Request early access" form.
+CREATE TABLE IF NOT EXISTS early_access (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  company TEXT NOT NULL DEFAULT '',
+  tools TEXT NOT NULL DEFAULT '[]',
+  fleet TEXT NOT NULL DEFAULT '',
+  message TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS activity (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ts INTEGER NOT NULL,
