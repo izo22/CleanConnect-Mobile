@@ -89,7 +89,7 @@ function recentPromptChange(db: DB, agentId: string, now: number): string | null
 }
 
 function detectDuplicates(db: DB, agent: AgentRow, now: number): Finding | null {
-  const rule = getRules(db).find((r) => r.kind === "repeat_pause");
+  const rule = getRules(db, agent.workspace_id).find((r) => r.kind === "repeat_pause");
   const { count, window_min } = rule ? ruleParams<typeof DEFAULT_REPEAT>(rule) : DEFAULT_REPEAT;
   const from = since(db, agent.id, ["duplicates"], now - window_min * MINUTE);
   const rows = all<{ action: string; target: string; n: number; first: number }>(
@@ -238,7 +238,7 @@ function detectCost(db: DB, agent: AgentRow, now: number): Finding | "healthy" |
 }
 
 function detectBudget(db: DB, agent: AgentRow, now: number): Finding | "healthy" | null {
-  const spend = monthSpendCents(db, now, agent.id);
+  const spend = monthSpendCents(db, now, { agentId: agent.id });
   const ratio = spend / agent.budget_cents;
   if (ratio < 0.9) return "healthy";
   const d = new Date(now);
@@ -319,7 +319,7 @@ export function evaluateAgent(db: DB, agentId: string, now = Date.now()): void {
   const dup = detectDuplicates(db, agent, now);
   if (dup) {
     upsertAlert(db, agent.id, dup, now);
-    const rule = getRules(db).find((r) => r.kind === "repeat_pause" && r.enabled);
+    const rule = getRules(db, agent.workspace_id).find((r) => r.kind === "repeat_pause" && r.enabled);
     if (rule && !agent.paused) {
       run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", tr("Paused automatically: repeated actions", "Mis en pause automatiquement : actions en double"), agent.id);
       run(db, "UPDATE rules SET trigger_count = trigger_count + 1 WHERE id = ?", rule.id);

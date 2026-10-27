@@ -3,6 +3,7 @@ import { api, type ExchangeView } from "../api.ts";
 import { ago } from "../format.ts";
 import { tr } from "../i18n.ts";
 import { Avatar, Icon, useAction, useToast } from "./ui.tsx";
+import { useCan } from "../account.tsx";
 
 const VERDICT = {
   ok: { get label() { return tr("Correct", "Correct"); }, fg: "#0E6B3F", bg: "#DDF7E9" },
@@ -30,6 +31,7 @@ export function Exchange({ input, output }: { input: string | null; output: stri
 export function FlaggedCard({ x }: { x: ExchangeView }) {
   const { run, busy } = useAction();
   const decide = (confirmed: boolean) => run(confirmed ? "c" : "d", `/api/reviews/${x.review_id}/verdict`, { confirmed });
+  const operate = useCan()("member");
   return (
     <article className="card alert-card">
       <div className="who">
@@ -45,10 +47,10 @@ export function FlaggedCard({ x }: { x: ExchangeView }) {
       <h3>{x.summary}</h3>
       {x.issues.length > 0 && <ul className="issues">{x.issues.map((i, k) => <li key={k}>{i.detail}</li>)}</ul>}
       <details className="more-ex"><summary>{tr("See the exchange", "Voir l'échange")}</summary><Exchange input={x.input} output={x.output} /></details>
-      <div className="actions" style={{ marginTop: "auto" }}>
+      {operate && <div className="actions" style={{ marginTop: "auto" }}>
         <button type="button" className="btn primary" disabled={busy !== null} onClick={() => decide(true)}>{tr("Yes, it's a mistake", "Oui, c'est une erreur")}</button>
         <button type="button" className="btn" disabled={busy !== null} onClick={() => decide(false)}>{tr("False alarm", "Fausse alerte")}</button>
-      </div>
+      </div>}
     </article>
   );
 }

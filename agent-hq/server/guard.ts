@@ -70,17 +70,17 @@ export function check(db: DB, agent: AgentRow, req: CheckRequest, now = Date.now
     return { decision: "deny", reason: tr(`Agent paused${reason}.`, `Agent en pause${reason}.`) };
   }
 
-  const rules = getRules(db).filter((r) => r.enabled);
+  const rules = getRules(db, agent.workspace_id).filter((r) => r.enabled);
 
   for (const rule of rules.filter((r) => r.kind === "global_budget")) {
     const p = ruleParams<GlobalBudgetParams>(rule);
-    if (monthSpendCents(db, now) >= p.max_cents) {
+    if (monthSpendCents(db, now, { workspaceId: agent.workspace_id }) >= p.max_cents) {
       bump(db, rule);
       return { decision: "deny", reason: tr(`This month's total AI budget (${money(p.max_cents)}) has been reached.`, `Le budget IA total du mois (${money(p.max_cents)}) est atteint.`), rule_id: rule.id };
     }
   }
 
-  if (monthSpendCents(db, now, agent.id) >= agent.budget_cents) {
+  if (monthSpendCents(db, now, { agentId: agent.id }) >= agent.budget_cents) {
     return { decision: "deny", reason: tr(`This agent's monthly budget (${money(agent.budget_cents)}) is used up.`, `Le budget de cet agent pour le mois (${money(agent.budget_cents)}) est épuisé.`) };
   }
 

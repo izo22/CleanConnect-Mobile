@@ -18,8 +18,8 @@ describe("early access form", () => {
     expect(list).toEqual([
       expect.objectContaining({ name: "Dana Brooks", email: "dana@brightline.co", company: "Brightline Automations", tools: ["n8n", "Zapier"], fleet: "10-50", created_at: NOW }),
     ]);
-    const overview = (await app.inject({ url: "/api/overview", headers: { "x-admin-token": "a-very-long-secret-123" } })).json();
-    expect(overview.early_access).toBe(1);
+    const me = (await app.inject({ url: "/api/me", headers: { "x-admin-token": "a-very-long-secret-123" } })).json();
+    expect(me.early_access).toBe(1);
   });
 
   it("refuses an invalid email and silently drops bots that fill the hidden field", async () => {

@@ -3,6 +3,7 @@ import { api, useData } from "../api.ts";
 import { ago } from "../format.ts";
 import { lang, tr } from "../i18n.ts";
 import { ErrorBox, Skeleton, useAction, useToast } from "../components/ui.tsx";
+import { useCan } from "../account.tsx";
 import { PRODUCT_NAME } from "../../../server/brand.ts";
 
 interface Integration {
@@ -23,6 +24,7 @@ export function Connections() {
   const toast = useToast();
   const [form, setForm] = useState({ name: "", base_url: "", api_key: "" });
   const [saving, setSaving] = useState(false);
+  const operate = useCan()("member");
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -75,10 +77,10 @@ export function Connections() {
                   </span>
                 )}
               </div>
-              <div className="actions">
+              {operate && <div className="actions">
                 <button type="button" className="btn" disabled={busy !== null} onClick={() => run("s" + i.id, `/api/integrations/${i.id}/sync`).then(reload)}>{tr("Sync", "Synchroniser")}</button>
                 <button type="button" className="btn" disabled={busy !== null} onClick={() => run("d" + i.id, `/api/integrations/${i.id}`, undefined, "DELETE").then(reload)}>{tr("Disconnect", "Déconnecter")}</button>
-              </div>
+              </div>}
             </div>
           ))}
         </div>
@@ -116,7 +118,7 @@ export function Connections() {
         )}
       </section>
 
-      <section className="card" aria-labelledby="add-n8n" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {operate && <section className="card" aria-labelledby="add-n8n" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <h2 id="add-n8n" className="h2" style={{ fontSize: 22 }}>{tr("Connect an n8n server", "Connecter un serveur n8n")}</h2>
         <ol style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.7, color: "#45424C" }}>
           <li>{tr("In n8n: ", "Dans n8n : ")}<b>Settings → n8n API → Create an API key</b>.</li>
@@ -158,7 +160,7 @@ export function Connections() {
             <span><strong>Limit:</strong> n8n does not report the cost of AI calls; an execution already running when you pause goes to the end.</span>
           </div>
         )}
-      </section>
+      </section>}
     </>
   );
 }

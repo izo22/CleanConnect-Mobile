@@ -51,7 +51,7 @@ Les agents simulés passent par le vrai SDK. Ils s'arrêtent quand vous les mett
 | `TIMEZONE` | `America/New_York` en anglais, `Europe/Paris` en français | fuseau des heures écrites dans les alertes |
 | `PORT` | `8787` | port HTTP |
 | `DATABASE_PATH` | `data/agent-hq.db` | fichier SQLite |
-| `ADMIN_TOKEN` | — | code d'accès de l'interface ; **obligatoire en production** (16 caractères minimum) |
+| `ADMIN_TOKEN` | — | code d'installation : crée le premier compte (administrateur), et sert aux scripts via `x-admin-token` ; **obligatoire en production** (16 caractères minimum). Sans lui, en local, tout le monde a accès sans compte |
 | `NOTIFY_WEBHOOK_URL` | — | webhook Slack/Teams pour prévenir les responsables |
 | `SEED_DEMO` | `true` en local, `false` en production | crée la démonstration de 100 agents si la base est vide |
 | `ANTHROPIC_API_KEY` | — | active la relecture par IA (Claude) |
@@ -60,7 +60,7 @@ Les agents simulés passent par le vrai SDK. Ils s'arrêtent quand vous les mett
 | `N8N_SYNC_SECONDS` | `30` | fréquence de lecture des workflows et exécutions n8n |
 | `ALLOW_PRIVATE_HOOKS` | `false` | `true` en développement seulement : autorise les abonnements vers des adresses locales |
 | `PUBLIC_URL` | adresse de la requête | adresse d'Orvanta écrite dans le bloc n8n à copier |
-| `NODE_ENV` | — | `production` en ligne (fixé par l'image Docker) : code d'accès exigé, journaux des requêtes |
+| `NODE_ENV` | — | `production` en ligne (fixé par l'image Docker) : code d'installation exigé, journaux des requêtes |
 | `TRUST_PROXY` | `false` | `true` derrière un proxy https (Caddy) |
 | `BACKUP_DIR` | `<dossier de la base>/backups` | dossier des sauvegardes quotidiennes |
 | `BACKUP_KEEP_DAYS` | `30` | nombre de jours de sauvegardes gardés |
@@ -156,7 +156,10 @@ agent-hq/
     callbacks.ts renvoi de la décision humaine au workflow en attente
     translate.ts erreurs techniques → phrases simples
     i18n.ts      langue, devise et fuseau de l'instance (APP_LANGUAGE)
-    queries.ts   modèles de lecture pour l'interface
+    queries.ts   modèles de lecture pour l'interface (toujours limités à un espace)
+    auth.ts      comptes, mots de passe, sessions, liens d'invitation
+    context.ts   qui appelle, dans quel espace, avec quel rôle
+    account-routes.ts  connexion, invitations, membres, administration
   web/           interface React (Vite)
   sdk/           SDK sans dépendance pour les agents
   scripts/       simulateur
@@ -164,7 +167,7 @@ agent-hq/
 
 ## Limites connues de ce MVP
 
-- Un seul espace de travail, protégé par un code d'accès partagé (`ADMIN_TOKEN`), sans comptes utilisateurs : en ligne, prévoir une instance par client.
+- Comptes par e-mail et mot de passe, un espace par client, trois rôles (propriétaire, membre, lecteur). Orvanta n'envoie pas d'e-mails : les liens d'invitation et de réinitialisation se copient à la main. Pas encore de double authentification.
 - Les notifications partent vers un webhook unique ; pas encore d'e-mail ni de notification mobile.
 - Relecture IA mesurée sur 20 cas écrits à la main (10 erreurs, 10 réponses justes, une tentative de manipulation) : 20/20, environ 0,4 centime et 4 secondes par relecture avec Claude Opus 5.5. C'est un petit échantillon aux erreurs nettes ; les cas réels seront plus ambigus.
 - La relecture IA ne voit que ce que l'agent transmet (`input` / `output`) ; elle juge par rapport aux consignes, pas par rapport à vos données réelles (stock, CRM…).

@@ -190,6 +190,10 @@ export function startReviewer(db: DB, judge: Judge = claudeJudge) {
   }, 5_000).unref();
 }
 
-export function pendingCount(db: DB): number {
-  return get<{ n: number }>(db, "SELECT COUNT(*) n FROM events WHERE review_state = 'pending'")?.n ?? 0;
+export function pendingCount(db: DB, workspaceId: string): number {
+  return get<{ n: number }>(
+    db,
+    "SELECT COUNT(*) n FROM events e JOIN agents a ON a.id = e.agent_id WHERE a.workspace_id = ? AND e.review_state = 'pending'",
+    workspaceId,
+  )?.n ?? 0;
 }

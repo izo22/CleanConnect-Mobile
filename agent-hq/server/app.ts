@@ -1,5 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
-import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
+import Fastify, { type FastifyRequest } from "fastify";
 import { all, get, run, tx, type DB } from "./db.ts";
 import { evaluateAgent, evaluateReports } from "./engine.ts";
 import { check, type CheckRequest } from "./guard.ts";
@@ -30,10 +29,12 @@ import { n8nSnippet } from "./n8n-template.ts";
 import { agentStatePayload, decisionPayload, fireAgentState, fireDecision, safeOutboundUrl, subscribe, unsubscribe } from "./hooks.ts";
 import { activity, agentDetail, agentSummaries, alertsView, approvalsView, overview, qualityView, rulesView } from "./queries.ts";
 import { EARLY_ACCESS_INPUT, earlyAccessList, rateLimiter, saveEarlyAccess, type EarlyAccessIn } from "./early-access.ts";
+import { httpError, makeGuards, sameSecret } from "./context.ts";
+import { registerAccountRoutes } from "./account-routes.ts";
 
 export interface AppOptions {
   db: DB;
-  /** When set, the dashboard API requires this token (header x-admin-token or ?token=). */
+  /** When set, people sign in with accounts; this code creates the first one (and lets scripts in via x-admin-token). */
   adminToken?: string;
   now?: () => number;
   /** true = request logs on stdout; tests pass a stream to read them. */
@@ -44,13 +45,6 @@ export interface AppOptions {
   trustProxy?: boolean;
 }
 
-/** Comparison that takes the same time whatever the input, so the code cannot be guessed char by char. */
-const sameSecret = (given: unknown, expected: string) => {
-  if (typeof given !== "string") return false;
-  const a = Buffer.from(given);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
-};
 
 // Content-Security-Policy: only our own scripts; Google Fonts for typography.
 const CSP = [
@@ -106,8 +100,8 @@ const REVIEW_INPUT = { type: "object", required: ["confirmed"], additionalProper
 
 const PLAYBOOK_IDS: PlaybookId[] = ["pause", "resume", "rollback", "handoff", "notify_owner", "autonomy0", "economy", "raise_budget"];
 
-/** The dashboard code can travel in ?token= (live updates): never write it to the logs. */
-const hideSecrets = (url: string) => url.replace(/([?&]token=)[^&]*/g, "$1***");
+/** Invitation and reset links carry their secret in the path: never write it to the logs. */
+const hideSecrets = (url: string) => url.replace(/(\/api\/auth\/link\/)[^/?#]+/g, "$1***");
 
 const logOptions = (logger: AppOptions["logger"]) =>
   logger && {
@@ -143,19 +137,21 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
 
   // ---------- Authentication ----------
 
-  const actorOf = (req: FastifyRequest) => {
-    const raw = req.headers["x-user-name"];
-    const name = typeof raw === "string" ? decodeURIComponent(raw).trim().slice(0, 60) : "";
-    return name || tr("You", "Vous");
-  };
+  const guards = makeGuards({ db, adminToken, now });
+  const { requireUser, requireAdmin, requireWorkspace, need } = guards;
+  app.decorateRequest("ctx", null as unknown as FastifyRequest["ctx"]);
 
-  const requireAdmin = async (req: FastifyRequest, reply: FastifyReply) => {
-    if (!adminToken) return;
-    const q = (req.query as Record<string, string> | undefined)?.token;
-    if (!sameSecret(req.headers["x-admin-token"], adminToken) && !sameSecret(q, adminToken)) {
-      return reply.code(401).send({ error: tr("Access code required.", "Code d'accès requis.") });
-    }
-  };
+  // Forms posted from another site must not act with the visitor's session.
+  app.addHook("onRequest", async (req, reply) => {
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method) || !req.url.startsWith("/api/")) return;
+    if (req.url.startsWith("/api/v1/") || req.url.startsWith("/api/public/")) return;
+    const origin = req.headers.origin;
+    if (!origin) return;
+    let host = "";
+    try { host = new URL(origin).host; } catch { /* malformed: refused below */ }
+    const forwarded = req.headers["x-forwarded-host"];
+    if (host !== req.headers.host && host !== forwarded) return reply.code(403).send({ error: tr("Request refused.", "Requête refusée.") });
+  });
 
   const agentOf = (req: FastifyRequest): AgentRow => {
     const auth = req.headers.authorization ?? "";
@@ -347,19 +343,67 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
 
   app.get("/api/v1/agent-state", async (req) => [agentStatePayload(db, agentOf(req).id)]);
 
-  // ---------- Dashboard API ----------
+  // ---------- Accounts, workspaces, members ----------
+
+  registerAccountRoutes(app, { db, adminToken, now, guards });
+
+  app.register(async (platform) => {
+    platform.addHook("onRequest", requireAdmin);
+    platform.get("/api/early-access", async () => earlyAccessList(db));
+  });
+
+  // Server-sent events: the dashboard refetches when something changes.
+  app.register(async (live) => {
+    live.addHook("onRequest", requireUser);
+    live.get("/api/stream", (req, reply) => {
+      reply.hijack();
+      const res = reply.raw;
+      res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
+      res.write("retry: 3000\n\n");
+      let timer: NodeJS.Timeout | null = null;
+      const onChange = () => {
+        if (timer) return;
+        timer = setTimeout(() => {
+          timer = null;
+          res.write(`event: change\ndata: ${Date.now()}\n\n`);
+        }, 300);
+      };
+      const ping = setInterval(() => res.write(": ping\n\n"), 25_000);
+      bus.on("change", onChange);
+      req.raw.on("close", () => {
+        bus.off("change", onChange);
+        clearInterval(ping);
+        if (timer) clearTimeout(timer);
+      });
+    });
+  });
+
+  // ---------- Dashboard API: everything inside the caller's workspace ----------
 
   app.register(async (admin) => {
-    admin.addHook("onRequest", requireAdmin);
+    admin.addHook("onRequest", requireWorkspace);
 
-    admin.get("/api/overview", async () => overview(db, now()));
-    admin.get("/api/agents", async () => agentSummaries(db, now()));
-    admin.get("/api/alerts", async () => alertsView(db));
-    admin.get("/api/approvals", async () => approvalsView(db));
-    admin.get("/api/rules", async () => rulesView(db));
-    admin.get("/api/activity", async () => activity(db, 80));
-    admin.get("/api/quality", async () => qualityView(db, now()));
-    admin.get("/api/early-access", async () => earlyAccessList(db));
+    // Every id in a URL is checked against the workspace: another client's data reads as "not found".
+    const agentHere = (req: FastifyRequest, id: string) => {
+      const a = getAgent(db, id);
+      if (!a || a.workspace_id !== req.ctx.ws) throw notFound("Agent", "Agent");
+      return a;
+    };
+    const inWorkspace = <T>(req: FastifyRequest, table: "alerts" | "approvals" | "reviews", id: number) =>
+      get<T>(db, `SELECT t.* FROM ${table} t JOIN agents a ON a.id = t.agent_id WHERE t.id = ? AND a.workspace_id = ?`, id, req.ctx.ws);
+    const integrationHere = (req: FastifyRequest, id: number) => {
+      const i = getIntegration(db, id);
+      if (!i || i.workspace_id !== req.ctx.ws) throw notFound("Connection", "Connexion");
+      return i;
+    };
+
+    admin.get("/api/overview", async (req) => overview(db, req.ctx.ws, now()));
+    admin.get("/api/agents", async (req) => agentSummaries(db, req.ctx.ws, now()));
+    admin.get("/api/alerts", async (req) => alertsView(db, req.ctx.ws));
+    admin.get("/api/approvals", async (req) => approvalsView(db, req.ctx.ws));
+    admin.get("/api/rules", async (req) => rulesView(db, req.ctx.ws));
+    admin.get("/api/activity", async (req) => activity(db, req.ctx.ws, 80));
+    admin.get("/api/quality", async (req) => qualityView(db, req.ctx.ws, now()));
 
     admin.post<{ Params: { id: string }; Body: { description: string; event_id?: number } }>(
       "/api/agents/:id/reports",
@@ -374,12 +418,11 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         },
       },
       async (req, reply) => {
-        const agent = getAgent(db, req.params.id);
-        if (!agent) throw notFound("Agent", "Agent");
+        const agent = agentHere(req, req.params.id);
         const { description, event_id } = req.body;
         if (event_id !== undefined && !get(db, "SELECT 1 FROM events WHERE id = ? AND agent_id = ?", event_id, agent.id)) throw notFound("Exchange", "Échange");
         const t = now();
-        const author = actorOf(req);
+        const author = req.ctx.actor;
         tx(db, () => {
           run(db, "INSERT INTO reports (agent_id, event_id, author, description, created_at) VALUES (?, ?, ?, ?, ?)", agent.id, event_id ?? null, author, description.trim(), t);
           if (event_id !== undefined) run(db, "UPDATE reviews SET human_verdict = 'confirmed' WHERE event_id = ?", event_id);
@@ -394,14 +437,15 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     );
 
     admin.post<{ Params: { id: string }; Body: { confirmed: boolean } }>("/api/reviews/:id/verdict", { schema: { body: REVIEW_INPUT } }, async (req) => {
-      const review = get<{ id: number; agent_id: string; summary: string }>(db, "SELECT id, agent_id, summary FROM reviews WHERE id = ?", Number(req.params.id));
+      need(req, "member");
+      const review = inWorkspace<{ id: number; agent_id: string; summary: string }>(req, "reviews", Number(req.params.id));
       if (!review) throw notFound("Review", "Relecture");
       const t = now();
       tx(db, () => {
         run(db, "UPDATE reviews SET human_verdict = ? WHERE id = ?", req.body.confirmed ? "confirmed" : "dismissed", review.id);
         logActivity(
           db,
-          actorOf(req),
+          req.ctx.actor,
           req.body.confirmed
             ? tr(`Mistake confirmed: ${review.summary}`, `Erreur confirmée : ${review.summary}`)
             : tr(`False alarm from the review: ${review.summary}`, `Fausse alerte de la relecture : ${review.summary}`),
@@ -419,9 +463,10 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     });
 
     admin.get<{ Params: { id: string } }>("/api/agents/:id", async (req) => {
-      const d = agentDetail(db, req.params.id, now());
+      const d = agentDetail(db, req.ctx.ws, req.params.id, now());
       if (!d) throw notFound("Agent", "Agent");
-      return d;
+      // The connection key lets anyone report as this agent: viewers don't get it.
+      return req.ctx.role === "viewer" ? { ...d, api_key: null } : d;
     });
 
     const agentBody = {
@@ -449,6 +494,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     }>;
 
     admin.post<{ Body: AgentBody }>("/api/agents", { schema: { body: { ...agentBody, required: ["name"] } } }, async (req, reply) => {
+      need(req, "member");
       const b = req.body;
       const t = now();
       let id = slug(b.name!);
@@ -456,21 +502,21 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       tx(db, () => {
         run(
           db,
-          `INSERT INTO agents (id, name, mission, owner_name, owner_email, platform, autonomy, budget_cents, expected_language, access, minutes_per_task, api_key, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          id, b.name!, b.mission ?? "", b.owner_name ?? "", b.owner_email ?? "", b.platform ?? "custom", b.autonomy ?? 0,
+          `INSERT INTO agents (id, workspace_id, name, mission, owner_name, owner_email, platform, autonomy, budget_cents, expected_language, access, minutes_per_task, api_key, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          id, req.ctx.ws, b.name!, b.mission ?? "", b.owner_name ?? "", b.owner_email ?? "", b.platform ?? "custom", b.autonomy ?? 0,
           b.budget_cents ?? 10_000, b.expected_language ?? null, JSON.stringify(b.access ?? []), b.minutes_per_task ?? 3, newApiKey(), t,
         );
         if (b.prompt) run(db, "INSERT INTO prompt_versions (agent_id, version, content, note, active, created_at) VALUES (?, 1, ?, ?, 1, ?)", id, b.prompt, tr("First version", "Version initiale"), t);
-        logActivity(db, actorOf(req), tr(`New agent on the team: ${b.name}`, `Nouvel agent dans l'équipe : ${b.name}`), id, t);
+        logActivity(db, req.ctx.actor, tr(`New agent on the team: ${b.name}`, `Nouvel agent dans l'équipe : ${b.name}`), id, t);
       });
       notifyChange();
-      return reply.code(201).send(agentDetail(db, id, t));
+      return reply.code(201).send(agentDetail(db, req.ctx.ws, id, t));
     });
 
     admin.patch<{ Params: { id: string }; Body: AgentBody }>("/api/agents/:id", { schema: { body: agentBody } }, async (req) => {
-      const agent = getAgent(db, req.params.id);
-      if (!agent) throw notFound("Agent", "Agent");
+      need(req, "member");
+      const agent = agentHere(req, req.params.id);
       const { prompt, access, ...rest } = req.body;
       const t = now();
       tx(db, () => {
@@ -481,55 +527,57 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
           run(db, `UPDATE agents SET ${keys.map((k) => `${k} = ?`).join(", ")} WHERE id = ?`, ...keys.map((k) => fields[k]), agent.id);
         }
         if (rest.autonomy !== undefined && rest.autonomy !== agent.autonomy) {
-          logActivity(db, actorOf(req), tr(`${agent.name} moves to trust level ${rest.autonomy}.`, `${agent.name} passe au niveau de confiance ${rest.autonomy}.`), agent.id, t);
+          logActivity(db, req.ctx.actor, tr(`${agent.name} moves to trust level ${rest.autonomy}.`, `${agent.name} passe au niveau de confiance ${rest.autonomy}.`), agent.id, t);
         }
         if (rest.budget_cents !== undefined && rest.budget_cents !== agent.budget_cents) {
-          logActivity(db, actorOf(req), tr(`${agent.name}'s budget changed.`, `Budget de ${agent.name} modifié.`), agent.id, t);
+          logActivity(db, req.ctx.actor, tr(`${agent.name}'s budget changed.`, `Budget de ${agent.name} modifié.`), agent.id, t);
         }
         if (prompt !== undefined) {
           const last = get<{ v: number | null }>(db, "SELECT MAX(version) v FROM prompt_versions WHERE agent_id = ?", agent.id)?.v ?? 0;
           run(db, "UPDATE prompt_versions SET active = 0 WHERE agent_id = ?", agent.id);
-          run(db, "INSERT INTO prompt_versions (agent_id, version, content, note, active, created_at) VALUES (?, ?, ?, ?, 1, ?)", agent.id, last + 1, prompt, tr(`Changed by ${actorOf(req)}`, `Modifiée par ${actorOf(req)}`), t);
-          logActivity(db, actorOf(req), tr(`New instructions for ${agent.name} (version ${last + 1}).`, `Nouvelles consignes pour ${agent.name} (version ${last + 1}).`), agent.id, t);
+          run(db, "INSERT INTO prompt_versions (agent_id, version, content, note, active, created_at) VALUES (?, ?, ?, ?, 1, ?)", agent.id, last + 1, prompt, tr(`Changed by ${req.ctx.actor}`, `Modifiée par ${req.ctx.actor}`), t);
+          logActivity(db, req.ctx.actor, tr(`New instructions for ${agent.name} (version ${last + 1}).`, `Nouvelles consignes pour ${agent.name} (version ${last + 1}).`), agent.id, t);
         }
         evaluateAgent(db, agent.id, t);
       });
       notifyChange();
-      return agentDetail(db, agent.id, t);
+      return agentDetail(db, req.ctx.ws, agent.id, t);
     });
 
     admin.post<{ Params: { id: string; action: string } }>("/api/agents/:id/actions/:action", async (req) => {
-      const agent = getAgent(db, req.params.id);
-      if (!agent) throw notFound("Agent", "Agent");
+      need(req, "member");
+      const agent = agentHere(req, req.params.id);
       let action = req.params.action as PlaybookId;
       if (!PLAYBOOK_IDS.includes(action)) throw notFound("Action", "Action");
       if (action === "pause" && agent.paused) action = "resume";
       // Act on the real workflow first: the screen must never say "paused" while n8n runs.
       if (REMOTE_STATE[action] !== undefined) await setWorkflowActive(db, agent, REMOTE_STATE[action]!, fetchImpl);
-      const message = tx(db, () => applyToAgent(db, agent, action, actorOf(req), now()));
+      const message = tx(db, () => applyToAgent(db, agent, action, req.ctx.actor, now()));
       notifyChange();
       if (getAgent(db, agent.id)!.paused !== agent.paused) void fireAgentState(db, agent.id, fetchImpl);
       return { message };
     });
 
     admin.post<{ Params: { id: string } }>("/api/agents/:id/rotate-key", async (req) => {
-      const agent = getAgent(db, req.params.id);
-      if (!agent) throw notFound("Agent", "Agent");
+      need(req, "member");
+      const agent = agentHere(req, req.params.id);
       const key = newApiKey();
       run(db, "UPDATE agents SET api_key = ? WHERE id = ?", key, agent.id);
-      logActivity(db, actorOf(req), tr(`New connection key for ${agent.name}.`, `Nouvelle clé de connexion pour ${agent.name}.`), agent.id, now());
+      logActivity(db, req.ctx.actor, tr(`New connection key for ${agent.name}.`, `Nouvelle clé de connexion pour ${agent.name}.`), agent.id, now());
       return { api_key: key };
     });
 
     admin.post<{ Params: { id: string; action: string } }>("/api/alerts/:id/actions/:action", async (req) => {
+      need(req, "member");
       const action = req.params.action as PlaybookId;
-      const alert = get<AlertRow>(db, "SELECT * FROM alerts WHERE id = ?", Number(req.params.id));
+      const alert = inWorkspace<AlertRow>(req, "alerts", Number(req.params.id));
+      if (!alert) throw notFound("Alert", "Alerte");
       // Only touch the real workflow if Orvanta will accept the action too.
       if (alert?.status === "open" && actionsFor(db, alert).some((a) => a.id === action) && REMOTE_STATE[action] !== undefined) {
         await setWorkflowActive(db, getAgent(db, alert.agent_id)!, REMOTE_STATE[action]!, fetchImpl);
       }
       const pausedBefore = alert ? getAgent(db, alert.agent_id)?.paused : undefined;
-      const message = runPlaybook(db, Number(req.params.id), action, actorOf(req), now());
+      const message = runPlaybook(db, alert.id, action, req.ctx.actor, now());
       if (alert && getAgent(db, alert.agent_id)?.paused !== pausedBefore) void fireAgentState(db, alert.agent_id, fetchImpl);
       notifyChange();
       return { message };
@@ -541,13 +589,13 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       async (req) => {
         const t = now();
         const message = tx(db, () => {
-          const a = get<ApprovalRow>(db, "SELECT * FROM approvals WHERE id = ?", Number(req.params.id));
+          const a = inWorkspace<ApprovalRow>(req, "approvals", Number(req.params.id));
           if (!a) throw notFound("Request", "Demande");
           if (a.status !== "pending") throw new PlaybookError(tr("This request has already been handled.", "Cette demande a déjà été traitée."));
           const status = req.body.approve ? "approved" : "rejected";
-          run(db, "UPDATE approvals SET status = ?, decided_at = ?, decided_by = ? WHERE id = ?", status, t, actorOf(req), a.id);
+          run(db, "UPDATE approvals SET status = ?, decided_at = ?, decided_by = ? WHERE id = ?", status, t, req.ctx.actor, a.id);
           const msg = req.body.approve ? tr(`Approved: ${a.title}`, `Approuvé : ${a.title}`) : tr(`Declined: ${a.title}`, `Refusé : ${a.title}`);
-          logActivity(db, actorOf(req), msg, a.agent_id, t);
+          logActivity(db, req.ctx.actor, msg, a.agent_id, t);
           return msg;
         });
         // Wake up the waiting workflow (n8n "Wait" node) in the background.
@@ -570,7 +618,8 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         },
       },
       async (req) => {
-        const rule = get<RuleRow>(db, "SELECT * FROM rules WHERE id = ?", req.params.id);
+        need(req, "member");
+        const rule = get<RuleRow>(db, "SELECT * FROM rules WHERE id = ? AND workspace_id = ?", req.params.id, req.ctx.ws);
         if (!rule) throw notFound("Rule", "Règle");
         const b = req.body;
         const params = b.params ? { ...JSON.parse(rule.params), ...b.params } : JSON.parse(rule.params);
@@ -582,10 +631,10 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         run(db, "UPDATE rules SET enabled = ?, params = ?, label = ? WHERE id = ?", enabled ? 1 : 0, JSON.stringify(params), label, rule.id);
         const sentence = describeRule(rule.kind, label, params);
         if (enabled !== !!rule.enabled) {
-          logActivity(db, actorOf(req), enabled ? tr(`Rule turned on: ${sentence}`, `Règle activée : ${sentence}`) : tr(`Rule turned off: ${sentence}`, `Règle désactivée : ${sentence}`), null, now());
-        } else if (b.params) logActivity(db, actorOf(req), tr(`Rule changed: ${sentence}`, `Règle modifiée : ${sentence}`), null, now());
+          logActivity(db, req.ctx.actor, enabled ? tr(`Rule turned on: ${sentence}`, `Règle activée : ${sentence}`) : tr(`Rule turned off: ${sentence}`, `Règle désactivée : ${sentence}`), null, now(), req.ctx.ws);
+        } else if (b.params) logActivity(db, req.ctx.actor, tr(`Rule changed: ${sentence}`, `Règle modifiée : ${sentence}`), null, now(), req.ctx.ws);
         notifyChange();
-        return rulesView(db).find((r) => r.id === rule.id);
+        return rulesView(db, req.ctx.ws).find((r) => r.id === rule.id);
       },
     );
 
@@ -597,7 +646,9 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       agents: get<{ n: number }>(db, "SELECT COUNT(*) n FROM agents WHERE integration_id = ?", i.id)?.n ?? 0,
     });
 
-    admin.get("/api/integrations", async () => all<IntegrationRow>(db, "SELECT * FROM integrations ORDER BY created_at").map(integrationView));
+    admin.get("/api/integrations", async (req) =>
+      all<IntegrationRow>(db, "SELECT * FROM integrations WHERE workspace_id = ? ORDER BY created_at", req.ctx.ws).map(integrationView),
+    );
 
     admin.post<{ Body: { name?: string; base_url: string; api_key: string } }>(
       "/api/integrations",
@@ -612,23 +663,28 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         },
       },
       async (req, reply) => {
+        need(req, "member");
         const { base_url, api_key } = req.body;
         if (!validCallbackUrl(base_url)) throw Object.assign(new Error(tr("The n8n address must start with http:// or https://", "L'adresse de n8n doit commencer par http:// ou https://")), { statusCode: 400 });
         // Test the connection before saving anything.
         const workflows = await new N8nClient(base_url, api_key, fetchImpl).listWorkflows();
         const name = req.body.name?.trim() || new URL(base_url).hostname;
         const t = now();
-        const res = run(db, "INSERT INTO integrations (kind, name, base_url, api_key, created_at) VALUES ('n8n', ?, ?, ?, ?)", name, base_url.replace(/\/+$/, ""), api_key, t);
+        const res = run(
+          db,
+          "INSERT INTO integrations (kind, workspace_id, name, base_url, api_key, created_at) VALUES ('n8n', ?, ?, ?, ?, ?)",
+          req.ctx.ws, name, base_url.replace(/\/+$/, ""), api_key, t,
+        );
         const integration = getIntegration(db, Number(res.lastInsertRowid))!;
         const result = await syncIntegration(db, integration, new N8nClient(integration.base_url, api_key, fetchImpl), t);
-        logActivity(db, actorOf(req), tr(`Connected to n8n “${name}”: ${workflows.length} workflow(s) imported.`, `Connexion à n8n « ${name} » : ${workflows.length} workflow(s) importé(s).`), null, t);
+        logActivity(db, req.ctx.actor, tr(`Connected to n8n “${name}”: ${workflows.length} workflow(s) imported.`, `Connexion à n8n « ${name} » : ${workflows.length} workflow(s) importé(s).`), null, t, req.ctx.ws);
         return reply.code(201).send({ ...integrationView(getIntegration(db, integration.id)!), sync: result });
       },
     );
 
     admin.post<{ Params: { id: string } }>("/api/integrations/:id/sync", async (req) => {
-      const integration = getIntegration(db, Number(req.params.id));
-      if (!integration) throw notFound("Connection", "Connexion");
+      need(req, "member");
+      const integration = integrationHere(req, Number(req.params.id));
       const result = await syncIntegration(db, integration, new N8nClient(integration.base_url, integration.api_key, fetchImpl), now());
       const message = tr(
         `Synced: ${result.workflows} workflow(s), ${result.imported} new execution(s).`,
@@ -638,8 +694,8 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     });
 
     admin.delete<{ Params: { id: string } }>("/api/integrations/:id", async (req) => {
-      const integration = getIntegration(db, Number(req.params.id));
-      if (!integration) throw notFound("Connection", "Connexion");
+      need(req, "member");
+      const integration = integrationHere(req, Number(req.params.id));
       tx(db, () => {
         // The agents and their history stay; they are just no longer synchronised.
         run(db, "UPDATE agents SET integration_id = NULL WHERE integration_id = ?", integration.id);
@@ -655,33 +711,10 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     });
 
     admin.get<{ Params: { id: string } }>("/api/agents/:id/n8n-snippet", async (req) => {
-      const agent = getAgent(db, req.params.id);
-      if (!agent) throw notFound("Agent", "Agent");
+      need(req, "member");
+      const agent = agentHere(req, req.params.id);
       const host = `${req.protocol}://${req.headers.host}`;
       return n8nSnippet(process.env.PUBLIC_URL ?? host, agent.api_key);
-    });
-
-    // Server-sent events: the dashboard refetches when something changes.
-    admin.get("/api/stream", (req, reply) => {
-      reply.hijack();
-      const res = reply.raw;
-      res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
-      res.write("retry: 3000\n\n");
-      let timer: NodeJS.Timeout | null = null;
-      const onChange = () => {
-        if (timer) return;
-        timer = setTimeout(() => {
-          timer = null;
-          res.write(`event: change\ndata: ${Date.now()}\n\n`);
-        }, 300);
-      };
-      const ping = setInterval(() => res.write(": ping\n\n"), 25_000);
-      bus.on("change", onChange);
-      req.raw.on("close", () => {
-        bus.off("change", onChange);
-        clearInterval(ping);
-        if (timer) clearTimeout(timer);
-      });
     });
   });
 

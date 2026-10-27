@@ -42,7 +42,7 @@ describe("instance language", () => {
     expect((await app.inject({ url: "/api/locale" })).json()).toEqual({ language: "en", currency: "USD" });
     setLanguage("fr");
     expect((await app.inject({ url: "/api/locale" })).json()).toEqual({ language: "fr", currency: "EUR" });
-    expect((await app.inject({ url: "/api/overview" })).json()).toEqual({ error: "Code d'accès requis." });
+    expect((await app.inject({ url: "/api/overview" })).json()).toEqual({ error: "Veuillez vous connecter." });
   });
 });
 

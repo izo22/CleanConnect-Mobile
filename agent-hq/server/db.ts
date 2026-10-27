@@ -5,6 +5,54 @@ import { dirname } from "node:path";
 export type DB = DatabaseSync;
 
 const SCHEMA = `
+-- One workspace per client company. Everything an agent produces belongs to
+-- the workspace of that agent; agents, rules, connections and the journal
+-- carry the workspace id themselves.
+CREATE TABLE IF NOT EXISTS workspaces (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  -- Runs the platform: sees all workspaces and the early-access requests.
+  is_admin INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS memberships (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('owner', 'member', 'viewer')),
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, workspace_id)
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+
+-- Single-use links: an invitation to a workspace, or a password reset.
+CREATE TABLE IF NOT EXISTS invites (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  token_hash TEXT NOT NULL UNIQUE,
+  kind TEXT NOT NULL CHECK (kind IN ('invite', 'reset')),
+  email TEXT NOT NULL,
+  workspace_id TEXT REFERENCES workspaces(id) ON DELETE CASCADE,
+  role TEXT CHECK (role IN ('owner', 'member', 'viewer')),
+  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL,
+  used_at INTEGER
+);
+
 CREATE TABLE IF NOT EXISTS agents (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -173,6 +221,9 @@ export function openDb(path = ":memory:"): DB {
   return db;
 }
 
+/** The workspace that existed before accounts: it keeps all earlier data. */
+export const MAIN_WORKSPACE = "main";
+
 /** Columns added after the first release; ALTER them into older databases. */
 const ADDED_COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   ["events", "input", "TEXT"],
@@ -191,6 +242,11 @@ const ADDED_COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   // Where to send the human decision (an n8n "Wait" node resume URL).
   ["approvals", "callback_url", "TEXT"],
   ["approvals", "callback_status", "TEXT"],
+  // Accounts: data created before workspaces existed belongs to the first one.
+  ["agents", "workspace_id", `TEXT NOT NULL DEFAULT '${MAIN_WORKSPACE}'`],
+  ["rules", "workspace_id", `TEXT NOT NULL DEFAULT '${MAIN_WORKSPACE}'`],
+  ["integrations", "workspace_id", `TEXT NOT NULL DEFAULT '${MAIN_WORKSPACE}'`],
+  ["activity", "workspace_id", `TEXT NOT NULL DEFAULT '${MAIN_WORKSPACE}'`],
 ];
 
 function migrate(db: DB) {
@@ -201,6 +257,10 @@ function migrate(db: DB) {
   db.exec("CREATE INDEX IF NOT EXISTS events_review ON events (review_state) WHERE review_state = 'pending'");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS events_external ON events (agent_id, external_ref) WHERE external_ref IS NOT NULL");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS agents_external ON agents (integration_id, external_id) WHERE external_id IS NOT NULL");
+  db.exec("CREATE INDEX IF NOT EXISTS agents_workspace ON agents (workspace_id)");
+  db.exec("CREATE INDEX IF NOT EXISTS rules_workspace ON rules (workspace_id)");
+  db.exec("CREATE INDEX IF NOT EXISTS activity_workspace ON activity (workspace_id, ts)");
+  db.prepare("INSERT OR IGNORE INTO workspaces (id, name, created_at) VALUES (?, 'Main workspace', ?)").run(MAIN_WORKSPACE, Date.now());
 }
 
 export function tx<T>(db: DB, fn: () => T): T {

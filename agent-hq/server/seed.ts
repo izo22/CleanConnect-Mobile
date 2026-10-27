@@ -5,9 +5,9 @@
  * then detects them like it would in real life. The content follows the
  * instance language: a US company in English, a French one in French.
  */
-import { run, tx, type DB } from "./db.ts";
+import { MAIN_WORKSPACE, run, tx, type DB } from "./db.ts";
 import { evaluateAll } from "./engine.ts";
-import { lang } from "./i18n.ts";
+import { lang, tr } from "./i18n.ts";
 import { DAY, HOUR, MINUTE, logActivity, newApiKey, startOfMonth } from "./model.ts";
 
 interface SeedAgent {
@@ -285,7 +285,11 @@ export function seed(db: DB, now = Date.now()) {
     insertEvent.run(agentId, Math.round(ts), kind, action, target, ok ? 1 : 0, cost, Math.round(800 + rand() * 6000), language, code, msg);
 
   tx(db, () => {
-    for (const t of ["reviews", "reports", "events", "alerts", "approvals", "prompt_versions", "activity", "rules", "agents"]) db.exec(`DELETE FROM ${t}`);
+    // Only the first workspace holds the demo: client workspaces are never touched.
+    const demoAgents = "SELECT id FROM agents WHERE workspace_id = ?";
+    for (const t of ["reviews", "reports", "events", "alerts", "approvals", "prompt_versions", "hooks"]) run(db, `DELETE FROM ${t} WHERE agent_id IN (${demoAgents})`, MAIN_WORKSPACE);
+    for (const t of ["activity", "rules", "agents"]) run(db, `DELETE FROM ${t} WHERE workspace_id = ?`, MAIN_WORKSPACE);
+    run(db, "UPDATE workspaces SET name = ? WHERE id = ?", tr("Demo workspace", "Espace de démonstration"), MAIN_WORKSPACE);
 
     for (const a of agents) {
       const daily = (a.tasksPerDay * a.costCents) / 100;

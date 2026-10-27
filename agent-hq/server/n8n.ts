@@ -41,6 +41,7 @@ export interface IntegrationRow {
   cursor_execution_id: number;
   last_sync_at: number | null;
   last_error: string | null;
+  workspace_id: string;
   created_at: number;
 }
 
@@ -165,9 +166,9 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
           const id = `n8n-${integration.id}-${wf.id}`.toLowerCase().replace(/[^a-z0-9-]/g, "-");
           run(
             db,
-            `INSERT INTO agents (id, name, mission, owner_name, owner_email, platform, autonomy, paused, pause_reason, budget_cents, access, api_key, source, integration_id, external_id, created_at)
-             VALUES (?, ?, ?, '', '', 'n8n', 2, ?, ?, 10000, '[]', ?, 'n8n', ?, ?, ?)`,
-            id, wf.name, tr(`n8n workflow “${wf.name}”`, `Workflow n8n « ${wf.name} »`), wf.active ? 0 : 1, wf.active ? null : tr(...OFF_IN_N8N), newApiKey(), integration.id, wf.id, now,
+            `INSERT INTO agents (id, workspace_id, name, mission, owner_name, owner_email, platform, autonomy, paused, pause_reason, budget_cents, access, api_key, source, integration_id, external_id, created_at)
+             VALUES (?, ?, ?, ?, '', '', 'n8n', 2, ?, ?, 10000, '[]', ?, 'n8n', ?, ?, ?)`,
+            id, integration.workspace_id, wf.name, tr(`n8n workflow “${wf.name}”`, `Workflow n8n « ${wf.name} »`), wf.active ? 0 : 1, wf.active ? null : tr(...OFF_IN_N8N), newApiKey(), integration.id, wf.id, now,
           );
           logActivity(db, PRODUCT_NAME, tr(`n8n workflow imported: ${wf.name}`, `Workflow n8n importé : ${wf.name}`), id, now);
           created++;

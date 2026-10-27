@@ -27,23 +27,25 @@ const STATUS_ORDER: Record<AgentStatus, number> = { blocked: 0, attention: 1, pa
 
 interface Stats { agent_id: string; n: number; ok: number; tasks: number; cost: number }
 
-function statsByAgent(db: DB, from: number) {
+// Every read model takes the workspace it shows: nothing crosses from one client to another.
+
+function statsByAgent(db: DB, ws: string, from: number) {
   const rows = all<Stats>(
     db,
-    `SELECT agent_id, COUNT(*) n, SUM(success) ok, SUM(kind = 'task' AND success = 1) tasks, SUM(cost_cents) cost
-     FROM events WHERE ts >= ? GROUP BY agent_id`,
-    from,
+    `SELECT e.agent_id, COUNT(*) n, SUM(e.success) ok, SUM(e.kind = 'task' AND e.success = 1) tasks, SUM(e.cost_cents) cost
+     FROM events e JOIN agents a ON a.id = e.agent_id WHERE a.workspace_id = ? AND e.ts >= ? GROUP BY e.agent_id`,
+    ws, from,
   );
   return new Map(rows.map((r) => [r.agent_id, r]));
 }
 
-function sparklines(db: DB, now: number) {
+function sparklines(db: DB, ws: string, now: number) {
   const start = now - DAY;
   const rows = all<{ agent_id: string; b: number; c: number }>(
     db,
-    `SELECT agent_id, CAST((ts - ?) / ? AS INTEGER) b, COUNT(*) c FROM events
-     WHERE ts >= ? AND kind = 'task' GROUP BY agent_id, b`,
-    start, HOUR, start,
+    `SELECT e.agent_id, CAST((e.ts - ?) / ? AS INTEGER) b, COUNT(*) c FROM events e JOIN agents a ON a.id = e.agent_id
+     WHERE a.workspace_id = ? AND e.ts >= ? AND e.kind = 'task' GROUP BY e.agent_id, b`,
+    start, HOUR, ws, start,
   );
   const map = new Map<string, number[]>();
   for (const r of rows) {
@@ -54,17 +56,21 @@ function sparklines(db: DB, now: number) {
   return map;
 }
 
-function monthSpendByAgent(db: DB, now: number) {
-  const rows = all<{ agent_id: string; c: number }>(db, "SELECT agent_id, SUM(cost_cents) c FROM events WHERE ts >= ? GROUP BY agent_id", startOfMonth(now));
+function monthSpendByAgent(db: DB, ws: string, now: number) {
+  const rows = all<{ agent_id: string; c: number }>(
+    db,
+    "SELECT e.agent_id, SUM(e.cost_cents) c FROM events e JOIN agents a ON a.id = e.agent_id WHERE a.workspace_id = ? AND e.ts >= ? GROUP BY e.agent_id",
+    ws, startOfMonth(now),
+  );
   return new Map(rows.map((r) => [r.agent_id, r.c]));
 }
 
-export function agentSummaries(db: DB, now = Date.now()) {
-  const agents = all<AgentRow>(db, "SELECT * FROM agents");
-  const alerts = openAlerts(db);
-  const stats = statsByAgent(db, now - DAY);
-  const sparks = sparklines(db, now);
-  const spend = monthSpendByAgent(db, now);
+export function agentSummaries(db: DB, ws: string, now = Date.now()) {
+  const agents = all<AgentRow>(db, "SELECT * FROM agents WHERE workspace_id = ?", ws);
+  const alerts = openAlerts(db, ws);
+  const stats = statsByAgent(db, ws, now - DAY);
+  const sparks = sparklines(db, ws, now);
+  const spend = monthSpendByAgent(db, ws, now);
   return agents
     .map((a) => {
       const s = stats.get(a.id);
@@ -105,9 +111,14 @@ export function alertView(db: DB, alert: AlertRow) {
   };
 }
 
-export function alertsView(db: DB) {
-  const open = openAlerts(db).sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || b.created_at - a.created_at);
-  const resolved = all<AlertRow>(db, "SELECT * FROM alerts WHERE status = 'resolved' ORDER BY resolved_at DESC LIMIT 30");
+export function alertsView(db: DB, ws: string) {
+  const open = openAlerts(db, ws).sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || b.created_at - a.created_at);
+  const resolved = all<AlertRow>(
+    db,
+    `SELECT l.* FROM alerts l JOIN agents a ON a.id = l.agent_id
+     WHERE a.workspace_id = ? AND l.status = 'resolved' ORDER BY l.resolved_at DESC LIMIT 30`,
+    ws,
+  );
   return { open: open.map((a) => alertView(db, a)), resolved: resolved.map((a) => alertView(db, a)) };
 }
 
@@ -116,28 +127,42 @@ function approvalView(db: DB, a: ApprovalRow) {
   return { ...a, payload: a.payload ? JSON.parse(a.payload) : null, agent: agent ? { id: agent.id, name: agent.name } : null };
 }
 
-export function approvalsView(db: DB) {
-  const pending = all<ApprovalRow>(db, "SELECT * FROM approvals WHERE status = 'pending' ORDER BY created_at");
-  const decided = all<ApprovalRow>(db, "SELECT * FROM approvals WHERE status != 'pending' ORDER BY decided_at DESC LIMIT 30");
+export function approvalsView(db: DB, ws: string) {
+  const pending = all<ApprovalRow>(
+    db,
+    "SELECT p.* FROM approvals p JOIN agents a ON a.id = p.agent_id WHERE a.workspace_id = ? AND p.status = 'pending' ORDER BY p.created_at",
+    ws,
+  );
+  const decided = all<ApprovalRow>(
+    db,
+    "SELECT p.* FROM approvals p JOIN agents a ON a.id = p.agent_id WHERE a.workspace_id = ? AND p.status != 'pending' ORDER BY p.decided_at DESC LIMIT 30",
+    ws,
+  );
   return { pending: pending.map((a) => approvalView(db, a)), decided: decided.map((a) => approvalView(db, a)) };
 }
 
-export function globalBudgetCents(db: DB): number | null {
-  const rule = getRules(db).find((r) => r.kind === "global_budget" && r.enabled);
+export function globalBudgetCents(db: DB, ws: string): number | null {
+  const rule = getRules(db, ws).find((r) => r.kind === "global_budget" && r.enabled);
   return rule ? ruleParams<GlobalBudgetParams>(rule).max_cents : null;
 }
 
-export function overview(db: DB, now = Date.now()) {
-  const agents = agentSummaries(db, now);
+export function overview(db: DB, ws: string, now = Date.now()) {
+  const agents = agentSummaries(db, ws, now);
   const count = (s: AgentStatus) => agents.filter((a) => a.status === s).length;
-  const cost24 = get<{ c: number | null }>(db, "SELECT SUM(cost_cents) c FROM events WHERE ts >= ?", now - DAY)?.c ?? 0;
-  const costPrev = get<{ c: number | null }>(db, "SELECT SUM(cost_cents) c FROM events WHERE ts >= ? AND ts < ?", now - 8 * DAY, now - DAY)?.c ?? 0;
-  const spent = monthSpendCents(db, now);
+  const costBetween = (from: number, to: number) =>
+    get<{ c: number | null }>(
+      db,
+      "SELECT SUM(e.cost_cents) c FROM events e JOIN agents a ON a.id = e.agent_id WHERE a.workspace_id = ? AND e.ts >= ? AND e.ts < ?",
+      ws, from, to,
+    )?.c ?? 0;
+  const cost24 = costBetween(now - DAY, now + DAY);
+  const costPrev = costBetween(now - 8 * DAY, now - DAY);
+  const spent = monthSpendCents(db, now, { workspaceId: ws });
   const d = new Date(now);
   const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
   const elapsedDays = Math.max(1, (now - startOfMonth(now)) / DAY);
-  const alerts = alertsView(db).open;
-  const approvals = approvalsView(db).pending;
+  const alerts = alertsView(db, ws).open;
+  const approvals = approvalsView(db, ws).pending;
   return {
     now,
     counts: { total: agents.length, ok: count("ok"), attention: count("attention"), blocked: count("blocked"), paused: count("paused") },
@@ -147,20 +172,23 @@ export function overview(db: DB, now = Date.now()) {
     cost_avg_day_cents: Math.round(costPrev / 7),
     month: {
       spent_cents: Math.round(spent),
-      budget_cents: globalBudgetCents(db),
+      budget_cents: globalBudgetCents(db, ws),
       projection_cents: Math.round((spent / elapsedDays) * daysInMonth),
     },
     alerts,
     approvals,
-    quality_flagged: get<{ n: number }>(db, "SELECT COUNT(*) n FROM reviews WHERE verdict != 'ok' AND human_verdict IS NULL")?.n ?? 0,
-    early_access: get<{ n: number }>(db, "SELECT COUNT(*) n FROM early_access")?.n ?? 0,
+    quality_flagged: get<{ n: number }>(
+      db,
+      "SELECT COUNT(*) n FROM reviews r JOIN agents a ON a.id = r.agent_id WHERE a.workspace_id = ? AND r.verdict != 'ok' AND r.human_verdict IS NULL",
+      ws,
+    )?.n ?? 0,
   };
 }
 
-export function agentDetail(db: DB, id: string, now = Date.now()) {
+export function agentDetail(db: DB, ws: string, id: string, now = Date.now()) {
   const agent = getAgent(db, id);
-  if (!agent) return null;
-  const summary = agentSummaries(db, now).find((a) => a.id === id)!;
+  if (!agent || agent.workspace_id !== ws) return null;
+  const summary = agentSummaries(db, ws, now).find((a) => a.id === id)!;
   return {
     ...summary,
     owner_email: agent.owner_email,
@@ -175,21 +203,23 @@ export function agentDetail(db: DB, id: string, now = Date.now()) {
     alerts: all<AlertRow>(db, "SELECT * FROM alerts WHERE agent_id = ? ORDER BY created_at DESC LIMIT 10", id).map((a) => alertView(db, a)),
     review_rate: agent.review_rate,
     quality: agentQuality(db, id, now),
-    activity: activity(db, 15, id),
+    activity: activity(db, ws, 15, id),
   };
 }
 
-export function rulesView(db: DB) {
-  return getRules(db).map((r) => {
+export function rulesView(db: DB, ws: string) {
+  return getRules(db, ws).map((r) => {
     const params = JSON.parse(r.params);
     return { ...r, enabled: !!r.enabled, params, sentence: describeRule(r.kind, r.label, params) };
   });
 }
 
-export function activity(db: DB, limit = 50, agentId?: string) {
+type ActivityLine = { id: number; ts: number; actor: string; agent_id: string | null; message: string };
+
+export function activity(db: DB, ws: string, limit = 50, agentId?: string) {
   return agentId
-    ? all<{ id: number; ts: number; actor: string; agent_id: string | null; message: string }>(db, "SELECT * FROM activity WHERE agent_id = ? ORDER BY ts DESC, id DESC LIMIT ?", agentId, limit)
-    : all<{ id: number; ts: number; actor: string; agent_id: string | null; message: string }>(db, "SELECT * FROM activity ORDER BY ts DESC, id DESC LIMIT ?", limit);
+    ? all<ActivityLine>(db, "SELECT id, ts, actor, agent_id, message FROM activity WHERE workspace_id = ? AND agent_id = ? ORDER BY ts DESC, id DESC LIMIT ?", ws, agentId, limit)
+    : all<ActivityLine>(db, "SELECT id, ts, actor, agent_id, message FROM activity WHERE workspace_id = ? ORDER BY ts DESC, id DESC LIMIT ?", ws, limit);
 }
 
 export type Overview = ReturnType<typeof overview>;
@@ -225,32 +255,36 @@ const EXCHANGE_SQL = `
 
 const exchangeView = (x: ReviewedExchange) => ({ ...x, issues: JSON.parse(x.issues) as Array<{ type: string; detail: string }> });
 
-function qualityStats(db: DB, from: number, agentId?: string) {
+function qualityStats(db: DB, from: number, scope: { agentId: string } | { workspaceId: string }) {
+  const byAgent = "agentId" in scope;
   const row = get<{ n: number; errors: number | null; doubts: number | null }>(
     db,
     `SELECT COUNT(*) n,
-            SUM(verdict = 'error' AND COALESCE(human_verdict, '') != 'dismissed' OR human_verdict = 'confirmed') errors,
-            SUM(verdict = 'doubt' AND human_verdict IS NULL) doubts
-     FROM reviews WHERE created_at >= ?${agentId ? " AND agent_id = ?" : ""}`,
-    ...(agentId ? [from, agentId] : [from]),
+            SUM(r.verdict = 'error' AND COALESCE(r.human_verdict, '') != 'dismissed' OR r.human_verdict = 'confirmed') errors,
+            SUM(r.verdict = 'doubt' AND r.human_verdict IS NULL) doubts
+     FROM reviews r JOIN agents a ON a.id = r.agent_id
+     WHERE r.created_at >= ? AND ${byAgent ? "r.agent_id = ?" : "a.workspace_id = ?"}`,
+    from, byAgent ? scope.agentId : scope.workspaceId,
   );
   const n = row?.n ?? 0;
   const errors = row?.errors ?? 0;
   return { reviewed: n, errors, doubts: row?.doubts ?? 0, quality: n ? 1 - errors / n : null };
 }
 
-export function qualityView(db: DB, now = Date.now()) {
+export function qualityView(db: DB, ws: string, now = Date.now()) {
   const flagged = all<ReviewedExchange>(
     db,
-    `${EXCHANGE_SQL} WHERE r.verdict != 'ok' AND r.human_verdict IS NULL ORDER BY e.ts DESC LIMIT 50`,
+    `${EXCHANGE_SQL} WHERE a.workspace_id = ? AND r.verdict != 'ok' AND r.human_verdict IS NULL ORDER BY e.ts DESC LIMIT 50`,
+    ws,
   ).map(exchangeView);
   const reports = all<{ id: number; agent_id: string; agent_name: string; author: string; description: string; status: string; created_at: number }>(
     db,
-    "SELECT p.*, a.name agent_name FROM reports p JOIN agents a ON a.id = p.agent_id ORDER BY p.created_at DESC LIMIT 30",
+    "SELECT p.*, a.name agent_name FROM reports p JOIN agents a ON a.id = p.agent_id WHERE a.workspace_id = ? ORDER BY p.created_at DESC LIMIT 30",
+    ws,
   );
   return {
-    reviewer: { enabled: reviewerEnabled(), model: REVIEW_MODEL, pending: pendingCount(db) },
-    stats: qualityStats(db, now - 7 * DAY),
+    reviewer: { enabled: reviewerEnabled(), model: REVIEW_MODEL, pending: pendingCount(db, ws) },
+    stats: qualityStats(db, now - 7 * DAY, { workspaceId: ws }),
     flagged,
     reports,
   };
@@ -263,7 +297,7 @@ export function agentQuality(db: DB, agentId: string, now = Date.now()) {
     "SELECT id, ts, action, input, output FROM events WHERE agent_id = ? AND output IS NOT NULL ORDER BY ts DESC LIMIT 5",
     agentId,
   );
-  return { stats: qualityStats(db, now - 7 * DAY, agentId), recent, latest: unreviewed };
+  return { stats: qualityStats(db, now - 7 * DAY, { agentId }), recent, latest: unreviewed };
 }
 
 export type QualityView = ReturnType<typeof qualityView>;

@@ -69,19 +69,20 @@ describe("production hardening", () => {
     const app = buildApp({ db: openDb(":memory:"), adminToken: "a-very-long-secret-123" });
     expect((await app.inject({ url: "/api/overview", headers: { "x-admin-token": "a-very-long-secret-12" } })).statusCode).toBe(401);
     expect((await app.inject({ url: "/api/overview", headers: { "x-admin-token": "a-very-long-secret-123" } })).statusCode).toBe(200);
-    expect((await app.inject({ url: "/api/overview?token=a-very-long-secret-123" })).statusCode).toBe(200);
+    // the code no longer travels in the address
+    expect((await app.inject({ url: "/api/overview?token=a-very-long-secret-123" })).statusCode).toBe(401);
     // same number of characters, more bytes: refused, not a server error
-    expect((await app.inject({ url: `/api/overview?token=${encodeURIComponent("a-very-long-secret-12é")}` })).statusCode).toBe(401);
+    expect((await app.inject({ url: "/api/overview", headers: { "x-admin-token": "a-very-long-secret-12\u00e9" } })).statusCode).toBe(401);
   });
 });
 
 describe("logs", () => {
-  it("never contain the dashboard code passed in the address", async () => {
+  it("never contain the secret of an invitation or reset link", async () => {
     const lines: string[] = [];
     const app = buildApp({ db: openDb(":memory:"), adminToken: "a-very-long-secret-123", logger: { stream: { write: (l) => void lines.push(l) } } });
-    await app.inject({ url: "/api/overview?token=a-very-long-secret-123&x=1" });
+    await app.inject({ url: "/api/auth/link/secret-link-token-456?x=1" });
     const logged = lines.join("");
-    expect(logged).toContain("/api/overview?token=***&x=1");
-    expect(logged).not.toContain("a-very-long-secret-123");
+    expect(logged).toContain("/api/auth/link/***?x=1");
+    expect(logged).not.toContain("secret-link-token-456");
   });
 });

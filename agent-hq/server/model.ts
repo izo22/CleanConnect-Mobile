@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { randomBytes } from "node:crypto";
-import { all, get, run, type DB } from "./db.ts";
+import { MAIN_WORKSPACE, all, get, run, type DB } from "./db.ts";
 
 export type Autonomy = 0 | 1 | 2;
 export type Severity = "critical" | "warning" | "blocked";
@@ -27,6 +27,7 @@ export interface AgentRow {
   integration_id: number | null;
   external_id: string | null;
   last_check_at: number | null;
+  workspace_id: string;
   created_at: number;
 }
 
@@ -64,6 +65,7 @@ export interface ApprovalRow {
 
 export interface RuleRow {
   id: string;
+  workspace_id: string;
   kind: RuleKind;
   label: string;
   params: string;
@@ -128,10 +130,14 @@ export function getAgentByKey(db: DB, key: string) {
   return get<AgentRow>(db, "SELECT * FROM agents WHERE api_key = ?", key);
 }
 
-export function openAlerts(db: DB, agentId?: string) {
-  return agentId
-    ? all<AlertRow>(db, "SELECT * FROM alerts WHERE status = 'open' AND agent_id = ? ORDER BY created_at DESC", agentId)
-    : all<AlertRow>(db, "SELECT * FROM alerts WHERE status = 'open' ORDER BY created_at DESC");
+/** Open alerts of one workspace. */
+export function openAlerts(db: DB, workspaceId: string) {
+  return all<AlertRow>(
+    db,
+    `SELECT l.* FROM alerts l JOIN agents a ON a.id = l.agent_id
+     WHERE l.status = 'open' AND a.workspace_id = ? ORDER BY l.created_at DESC`,
+    workspaceId,
+  );
 }
 
 export function statusOf(agent: AgentRow, alerts: AlertRow[]): AgentStatus {
@@ -147,20 +153,34 @@ export function startOfMonth(now: number) {
   return new Date(d.getFullYear(), d.getMonth(), 1).getTime();
 }
 
-export function monthSpendCents(db: DB, now: number, agentId?: string): number {
+/** What one agent, or a whole workspace, has spent since the start of the month. */
+export function monthSpendCents(db: DB, now: number, scope: { agentId: string } | { workspaceId: string }): number {
   const from = startOfMonth(now);
-  const row = agentId
-    ? get<{ c: number | null }>(db, "SELECT SUM(cost_cents) c FROM events WHERE agent_id = ? AND ts >= ?", agentId, from)
-    : get<{ c: number | null }>(db, "SELECT SUM(cost_cents) c FROM events WHERE ts >= ?", from);
+  const row = "agentId" in scope
+    ? get<{ c: number | null }>(db, "SELECT SUM(cost_cents) c FROM events WHERE agent_id = ? AND ts >= ?", scope.agentId, from)
+    : get<{ c: number | null }>(
+        db,
+        "SELECT SUM(e.cost_cents) c FROM events e JOIN agents a ON a.id = e.agent_id WHERE a.workspace_id = ? AND e.ts >= ?",
+        scope.workspaceId, from,
+      );
   return row?.c ?? 0;
 }
 
-export function logActivity(db: DB, actor: string, message: string, agentId: string | null = null, now = Date.now()) {
-  run(db, "INSERT INTO activity (ts, actor, agent_id, message) VALUES (?, ?, ?, ?)", now, actor, agentId, message);
+/**
+ * Writes one line of the journal. It belongs to the agent's workspace, or to
+ * `workspaceId` for actions that concern no agent (rules, connections).
+ */
+export function logActivity(db: DB, actor: string, message: string, agentId: string | null = null, now = Date.now(), workspaceId?: string) {
+  run(
+    db,
+    `INSERT INTO activity (ts, actor, agent_id, message, workspace_id)
+     VALUES (?, ?, ?, ?, COALESCE(?, (SELECT workspace_id FROM agents WHERE id = ?), ?))`,
+    now, actor, agentId, message, workspaceId ?? null, agentId, MAIN_WORKSPACE,
+  );
 }
 
-export function getRules(db: DB) {
-  return all<RuleRow>(db, "SELECT * FROM rules ORDER BY created_at, id");
+export function getRules(db: DB, workspaceId: string) {
+  return all<RuleRow>(db, "SELECT * FROM rules WHERE workspace_id = ? ORDER BY created_at, id", workspaceId);
 }
 
 export function ruleParams<T>(rule: RuleRow): T {

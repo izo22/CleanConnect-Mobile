@@ -16,8 +16,7 @@ export type {
 } from "../../server/queries.ts";
 export type { EarlyAccessView } from "../../server/early-access.ts";
 
-const TOKEN_KEY = "agent-hq.token";
-const NAME_KEY = "agent-hq.name";
+const WORKSPACE_KEY = "agent-hq.workspace";
 
 const read = (k: string) => {
   try { return localStorage.getItem(k) ?? ""; } catch { return ""; }
@@ -26,12 +25,20 @@ const write = (k: string, v: string) => {
   try { localStorage.setItem(k, v); } catch { /* private mode */ }
 };
 
+/** The person signs in with a cookie; the browser remembers which workspace they were looking at. */
 export const session = {
-  get token() { return read(TOKEN_KEY); },
-  set token(v: string) { write(TOKEN_KEY, v); },
-  get name() { return read(NAME_KEY); },
-  set name(v: string) { write(NAME_KEY, v); },
+  get workspace() { return read(WORKSPACE_KEY); },
+  set workspace(v: string) { write(WORKSPACE_KEY, v); },
 };
+
+export type Role = "owner" | "member" | "viewer";
+export interface WorkspaceRef { id: string; name: string; role: Role }
+export interface Me {
+  mode: "accounts" | "open";
+  user: { id: number; name: string; email: string; is_admin: boolean };
+  workspaces: WorkspaceRef[];
+  early_access: number;
+}
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -40,8 +47,7 @@ export class ApiError extends Error {
 export async function api<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
   const headers: Record<string, string> = {};
   if (init?.body !== undefined) headers["content-type"] = "application/json";
-  if (session.token) headers["x-admin-token"] = session.token;
-  if (session.name) headers["x-user-name"] = encodeURIComponent(session.name);
+  if (session.workspace) headers["x-workspace"] = session.workspace;
   const res = await fetch(path, { method: init?.method ?? "GET", headers, body: init?.body !== undefined ? JSON.stringify(init.body) : undefined });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(res.status, (data as { error?: string }).error ?? tr("The server is not responding.", "Le serveur ne répond pas."));
@@ -56,8 +62,7 @@ export function useLiveUpdates(enabled: boolean) {
   const [connected, setConnected] = useState(false);
   useEffect(() => {
     if (!enabled) return;
-    const url = "/api/stream" + (session.token ? `?token=${encodeURIComponent(session.token)}` : "");
-    const es = new EventSource(url);
+    const es = new EventSource("/api/stream");
     es.onopen = () => setConnected(true);
     es.onerror = () => setConnected(false);
     es.addEventListener("change", () => setVersion((v) => v + 1));

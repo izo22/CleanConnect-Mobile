@@ -5,6 +5,7 @@ import { lang, tr } from "../i18n.ts";
 import { Avatar, ErrorBox, Icon, Skeleton, Sparkline, StatusPill, Trust, useAction, useToast } from "../components/ui.tsx";
 import { Exchange, ReportModal, VerdictPill } from "../components/quality.tsx";
 import { ControlBlock, ControlChip } from "../components/control.tsx";
+import { useCan, viewOnlyNote } from "../account.tsx";
 
 type Filter = "all" | "issues" | "paused";
 const filters = (): Array<{ id: Filter; label: string; test: (a: AgentSummary) => boolean }> => [
@@ -27,6 +28,7 @@ export function Team({ selected, onSelect }: { selected: string | null; onSelect
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(PAGE);
   const [creating, setCreating] = useState(false);
+  const can = useCan();
 
   const shown = useMemo(() => {
     if (!data) return [];
@@ -42,7 +44,7 @@ export function Team({ selected, onSelect }: { selected: string | null; onSelect
           <h1 className="h1">{tr("My AI team", "Mon équipe IA")}</h1>
           <span className="sub">{tr("Each agent has a mission, an owner, a budget and a trust level.", "Chaque agent a une mission, un responsable, un budget et un niveau de confiance.")}</span>
         </div>
-        <button type="button" className="btn dark big" onClick={() => setCreating(true)}><Icon name="plus" size={16} /> {tr("Add an agent", "Ajouter un agent")}</button>
+        {can("member") && <button type="button" className="btn dark big" onClick={() => setCreating(true)}><Icon name="plus" size={16} /> {tr("Add an agent", "Ajouter un agent")}</button>}
       </header>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
@@ -82,6 +84,7 @@ export function Team({ selected, onSelect }: { selected: string | null; onSelect
 
 function AgentCard({ agent: a, selected, onSelect }: { agent: AgentSummary; selected: boolean; onSelect: () => void }) {
   const { run, busy } = useAction();
+  const can = useCan();
   return (
     <article className={"agent-card" + (selected ? " selected" : "")}>
       <button type="button" className="head" onClick={onSelect} aria-label={tr(`Open ${a.name}'s page`, `Ouvrir la fiche de ${a.name}`)}>
@@ -103,9 +106,11 @@ function AgentCard({ agent: a, selected, onSelect }: { agent: AgentSummary; sele
           <b>{a.cost_per_task_cents == null || (a.source === "n8n" && !a.cost_per_task_cents) ? "—" : money(a.cost_per_task_cents, 2)}</b>
         </div>
       </div>
-      <button type="button" className="btn" disabled={busy !== null} onClick={() => run("p", `/api/agents/${a.id}/actions/${a.paused ? "resume" : "pause"}`)}>
-        {a.paused ? tr("Resume", "Reprendre") : tr("Pause", "Mettre en pause")}
-      </button>
+      {can("member") && (
+        <button type="button" className="btn" disabled={busy !== null} onClick={() => run("p", `/api/agents/${a.id}/actions/${a.paused ? "resume" : "pause"}`)}>
+          {a.paused ? tr("Resume", "Reprendre") : tr("Pause", "Mettre en pause")}
+        </button>
+      )}
     </article>
   );
 }
@@ -118,6 +123,7 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   const [prompt, setPrompt] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [reporting, setReporting] = useState<{ eventId?: number; excerpt?: string | null } | null>(null);
+  const operate = useCan()("member");
 
   useEffect(() => { setEditing(false); setShowKey(false); setReporting(null); }, [id]);
 
@@ -159,13 +165,13 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
       </div>
       {data.pause_reason && <span className="note">{tr("Paused: ", "En pause : ")}{data.pause_reason}</span>}
 
-      <ControlBlock agent={data} />
+      {operate && <ControlBlock agent={data} />}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <span className="block-title">{tr("Trust level", "Niveau de confiance")}</span>
         <div className="levels" role="group" aria-label={tr("Trust level", "Niveau de confiance")}>
           {levels().map((l, i) => (
-            <button key={i} type="button" className="level" aria-pressed={data.autonomy === i}
+            <button key={i} type="button" className="level" aria-pressed={data.autonomy === i} disabled={!operate}
               onClick={() => data.autonomy !== i && patch({ autonomy: i }, tr(`${data.name} moves to level ${i}.`, `${data.name} passe au niveau ${i}.`))}>
               <span className="radio" />
               <span><b>{l.label}</b><small>{l.desc}</small></span>
@@ -193,34 +199,37 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
       )}
 
       <div className="actions">
-        <button type="button" className="btn dark" disabled={busy !== null} onClick={() => run("p", `/api/agents/${id}/actions/${data.paused ? "resume" : "pause"}`).then(reload)}>
-          {data.paused ? tr("Resume", "Reprendre") : tr("Pause", "Mettre en pause")}
-        </button>
-        {canRollback && (
+        {operate && (
+          <button type="button" className="btn dark" disabled={busy !== null} onClick={() => run("p", `/api/agents/${id}/actions/${data.paused ? "resume" : "pause"}`).then(reload)}>
+            {data.paused ? tr("Resume", "Reprendre") : tr("Pause", "Mettre en pause")}
+          </button>
+        )}
+        {operate && canRollback && (
           <button type="button" className="btn" disabled={busy !== null} onClick={() => run("r", `/api/agents/${id}/actions/rollback`).then(reload)}>
             {tr("Go back to the previous version", "Revenir à la version d'avant")}
           </button>
         )}
-        {!data.paused && (
+        {operate && !data.paused && (
           <button type="button" className="btn" disabled={busy !== null} onClick={() => run("h", `/api/agents/${id}/actions/handoff`).then(reload)}>
             {tr(`Hand over to ${data.owner_name.split(" ")[0] || "a human"}`, `Confier à ${data.owner_name.split(" ")[0] || "un humain"}`)}
           </button>
         )}
         <button type="button" className="btn danger" onClick={() => setReporting({})}><Icon name="flag" size={15} /> {tr("Report a mistake", "Signaler une erreur")}</button>
       </div>
+      {!operate && <span className="view-only">{viewOnlyNote()}</span>}
 
-      <QualityBlock data={data} onReport={(eventId, excerpt) => setReporting({ eventId, excerpt })} onRate={(review_rate) =>
+      <QualityBlock data={data} onReport={(eventId, excerpt) => setReporting({ eventId, excerpt })} onRate={operate ? (review_rate) =>
         patch(
           { review_rate },
           review_rate
             ? tr(`The AI will review ${Math.round(review_rate * 100)}% of its answers.`, `L'IA relira ${Math.round(review_rate * 100)} % de ses réponses.`)
             : tr("Review turned off for this agent.", "Relecture désactivée pour cet agent."),
-        )} />
+        ) : undefined} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span className="block-title">{tr("Instructions", "Consignes")} {active ? `· version ${active.version}` : ""}</span>
-          {!editing && <button type="button" className="btn" onClick={() => { setPrompt(active?.content ?? ""); setEditing(true); }}>{tr("Edit", "Modifier")}</button>}
+          {operate && !editing && <button type="button" className="btn" onClick={() => { setPrompt(active?.content ?? ""); setEditing(true); }}>{tr("Edit", "Modifier")}</button>}
         </div>
         {editing ? (
           <form onSubmit={(e) => { e.preventDefault(); patch({ prompt }, tr("New instructions saved.", "Nouvelles consignes enregistrées.")).then(() => setEditing(false)); }} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -237,27 +246,29 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
         )}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <span className="block-title">{tr("Connection", "Connexion")}</span>
-        <span className="muted" style={{ fontSize: 13 }}>{tr("Give this to the person who built the agent (n8n, Make, SDK…).", "Donnez ces informations à la personne qui a construit l'agent (n8n, Make, SDK…).")}</span>
-        {showKey ? (
-          <>
-            <div className="code">{`curl -X POST ${origin}/api/v1/events \\
-  -H "Authorization: Bearer ${data.api_key}" \\
-  -H "Content-Type: application/json" \\
-  -d '{"kind":"task","action":"email.send","cost_cents":2}'`}</div>
-            <div className="actions">
-              <button type="button" className="btn" onClick={() => navigator.clipboard?.writeText(data.api_key).then(() => toast(tr("Key copied.", "Clé copiée.")))}>{tr("Copy the key", "Copier la clé")}</button>
-              <button type="button" className="btn"
-                onClick={() => run("k", `/api/agents/${id}/rotate-key`).then(() => { toast(tr("New key created. The old one no longer works.", "Nouvelle clé créée. L'ancienne ne fonctionne plus.")); reload(); })}>
-                {tr("Change the key", "Changer la clé")}
-              </button>
-            </div>
-          </>
-        ) : (
-          <button type="button" className="btn" style={{ alignSelf: "flex-start" }} onClick={() => setShowKey(true)}>{tr("Show the connection key", "Afficher la clé de connexion")}</button>
-        )}
-      </div>
+      {operate && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <span className="block-title">{tr("Connection", "Connexion")}</span>
+          <span className="muted" style={{ fontSize: 13 }}>{tr("Give this to the person who built the agent (n8n, Make, SDK…).", "Donnez ces informations à la personne qui a construit l'agent (n8n, Make, SDK…).")}</span>
+          {showKey ? (
+            <>
+              <div className="code">{`curl -X POST ${origin}/api/v1/events \\
+    -H "Authorization: Bearer ${data.api_key}" \\
+    -H "Content-Type: application/json" \\
+    -d '{"kind":"task","action":"email.send","cost_cents":2}'`}</div>
+              <div className="actions">
+                <button type="button" className="btn" onClick={() => navigator.clipboard?.writeText(data.api_key).then(() => toast(tr("Key copied.", "Clé copiée.")))}>{tr("Copy the key", "Copier la clé")}</button>
+                <button type="button" className="btn"
+                  onClick={() => run("k", `/api/agents/${id}/rotate-key`).then(() => { toast(tr("New key created. The old one no longer works.", "Nouvelle clé créée. L'ancienne ne fonctionne plus.")); reload(); })}>
+                  {tr("Change the key", "Changer la clé")}
+                </button>
+              </div>
+            </>
+          ) : (
+            <button type="button" className="btn" style={{ alignSelf: "flex-start" }} onClick={() => setShowKey(true)}>{tr("Show the connection key", "Afficher la clé de connexion")}</button>
+          )}
+        </div>
+      )}
 
       {data.activity.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -276,7 +287,7 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
 
 const RATES = [0, 0.05, 0.1, 0.25, 1];
 
-function QualityBlock({ data, onReport, onRate }: { data: AgentDetail; onReport: (eventId: number, excerpt: string | null) => void; onRate: (rate: number) => void }) {
+function QualityBlock({ data, onReport, onRate }: { data: AgentDetail; onReport: (eventId: number, excerpt: string | null) => void; onRate?: (rate: number) => void }) {
   const q = data.quality;
   const reviewedIds = new Set(q.recent.map((r) => r.event_id));
   const unreviewed = q.latest.filter((e) => !reviewedIds.has(e.id)).slice(0, 3);
@@ -292,7 +303,7 @@ function QualityBlock({ data, onReport, onRate }: { data: AgentDetail; onReport:
       </div>
       <div className="field">
         <label htmlFor="rate">{tr("Share of answers reviewed by the AI", "Part des réponses relues par l'IA")}</label>
-        <select id="rate" value={RATES.includes(data.review_rate) ? data.review_rate : 0.1} onChange={(e) => onRate(Number(e.target.value))} disabled={data.autonomy === 0}>
+        <select id="rate" value={RATES.includes(data.review_rate) ? data.review_rate : 0.1} onChange={(e) => onRate?.(Number(e.target.value))} disabled={data.autonomy === 0 || !onRate}>
           {RATES.map((r) => <option key={r} value={r}>{r === 0 ? tr("None", "Aucune") : r === 1 ? tr("All", "Toutes") : pct(r)}</option>)}
         </select>
         {data.autonomy === 0 && <span className="hint">{tr("At level 0, all its answers are reviewed.", "Au niveau 0, toutes ses réponses sont relues.")}</span>}

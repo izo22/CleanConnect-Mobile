@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useState, type ReactNode } from
 import { api, type AlertView, type ApprovalView } from "../api.ts";
 import { ago, avatarColors, initials } from "../format.ts";
 import { tr } from "../i18n.ts";
+import { useCan } from "../account.tsx";
 
 // ---------- Icons (stroke, currentColor) ----------
 
@@ -19,6 +20,8 @@ const paths = {
   eye: <><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></>,
   flag: <><path d="M5 21V4" /><path d="M5 4h11l-2 4 2 4H5" /></>,
   plug: <><path d="M9 3v5M15 3v5" /><path d="M6 8h12v3a6 6 0 0 1-12 0V8z" /><path d="M12 17v4" /></>,
+  members: <><circle cx="10" cy="8" r="3.5" /><path d="M3.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5" /><path d="M19 8v6M16 11h6" /></>,
+  grid: <><rect x="4" y="4" width="7" height="7" rx="2" /><rect x="13" y="4" width="7" height="7" rx="2" /><rect x="4" y="13" width="7" height="7" rx="2" /><rect x="13" y="13" width="7" height="7" rx="2" /></>,
 };
 
 export function Icon({ name, size = 19, stroke = 2 }: { name: keyof typeof paths; size?: number; stroke?: number }) {
@@ -181,6 +184,7 @@ export function useAction() {
 
 export function AlertCard({ alert, wide = false }: { alert: AlertView; wide?: boolean }) {
   const { run, busy } = useAction();
+  const operate = useCan()("member");
   const who = (
     <div className="who">
       <Avatar id={alert.agent_id} name={alert.agent?.name ?? "?"} />
@@ -197,7 +201,7 @@ export function AlertCard({ alert, wide = false }: { alert: AlertView; wide?: bo
       <span><strong>{tr("Impact:", "Impact :")}</strong> {alert.impact}</span>
     </div>
   );
-  const buttons = alert.actions.map((a, i) => (
+  const buttons = !operate ? null : alert.actions.map((a, i) => (
     <button key={a.id} type="button" className={"btn" + (i === 0 ? " primary" : "")} disabled={busy !== null} onClick={() => run(a.id, `/api/alerts/${alert.id}/actions/${a.id}`)}>
       {busy === a.id ? "…" : a.label}
     </button>
@@ -234,5 +238,24 @@ export function DecisionButtons({ approval, big = false }: { approval: ApprovalV
       <button type="button" className={"btn" + (big ? " big" : "")} disabled={busy !== null} onClick={() => decide(false)}>{tr("Decline", "Refuser")}</button>
       <button type="button" className={"btn primary" + (big ? " big" : "")} disabled={busy !== null} onClick={() => decide(true)}>{tr("Approve", "Approuver")}</button>
     </>
+  );
+}
+
+/** A single-use link to pass on by hand (no email is sent). */
+export function CopyLink({ link, intro }: { link: string; intro: ReactNode }) {
+  const toast = useToast();
+  const copy = () =>
+    navigator.clipboard?.writeText(link).then(
+      () => toast(tr("Link copied.", "Lien copié.")),
+      () => toast(tr("Copy failed: select the link and copy it by hand.", "Copie impossible : sélectionnez le lien et copiez-le à la main."), true),
+    );
+  return (
+    <div className="copy-link">
+      <span style={{ fontSize: 14, lineHeight: 1.5 }}>{intro}</span>
+      <div className="row">
+        <input readOnly value={link} aria-label={tr("Link", "Lien")} onFocus={(e) => e.currentTarget.select()} />
+        <button type="button" className="btn primary" onClick={copy}>{tr("Copy", "Copier")}</button>
+      </div>
+    </div>
   );
 }

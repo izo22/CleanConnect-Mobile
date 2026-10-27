@@ -3,7 +3,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import fastifyStatic from "@fastify/static";
 import { buildApp } from "./app.ts";
-import { get, openDb } from "./db.ts";
+import { MAIN_WORKSPACE, get, openDb } from "./db.ts";
+import { ensureMainRules, purgeExpiredSessions } from "./auth.ts";
 import { evaluateAll } from "./engine.ts";
 import { tr } from "./i18n.ts";
 import { dailyMaintenance } from "./maintenance.ts";
@@ -34,10 +35,11 @@ if (production && (!adminToken || adminToken.length < 16) && process.env.ALLOW_N
 const db = openDb(dbPath);
 // The 100-agent demo is for local trials; a production instance starts empty unless asked.
 const seedDemo = process.env.SEED_DEMO ? process.env.SEED_DEMO === "true" : !production;
-if (seedDemo && !get<{ n: number }>(db, "SELECT COUNT(*) n FROM agents")?.n) {
+if (seedDemo && !get<{ n: number }>(db, "SELECT COUNT(*) n FROM agents WHERE workspace_id = ?", MAIN_WORKSPACE)?.n) {
   console.log(tr("Empty database: creating the demo workspace (100 agents)…", "Base vide : création de l'espace de démonstration (100 agents)…"));
   seed(db);
 }
+ensureMainRules(db, Date.now());
 
 const app = buildApp({ db, adminToken, logger: production, trustProxy: process.env.TRUST_PROXY === "true" });
 
@@ -76,6 +78,7 @@ const maintenance = {
 const maintain = () => {
   try {
     const r = dailyMaintenance(db, maintenance);
+    purgeExpiredSessions(db, Date.now());
     if (r.backup || r.purged || r.pruned.length) {
       console.log(tr(
         `Maintenance: ${r.backup ? `backup ${r.backup}, ` : ""}${r.purged} old event(s) deleted, ${r.pruned.length} old backup(s) removed.`,

@@ -3,6 +3,7 @@ import { api, useData, type RuleView } from "../api.ts";
 import { ErrorBox, Skeleton, useToast } from "../components/ui.tsx";
 import { currencyAffix, parseNumber } from "../format.ts";
 import { lang, tr } from "../i18n.ts";
+import { useCan, viewOnlyNote } from "../account.tsx";
 
 /** Editable number shown inline in the rule's sentence; saves on blur. */
 function NumberInput({ value, onSave, label, scale = 1 }: { value: number; onSave: (v: number) => void; label: string; scale?: number }) {
@@ -55,6 +56,7 @@ function Sentence({ rule, save }: { rule: RuleView; save: (params: object) => vo
 export function Rules() {
   const { data, error, reload } = useData<RuleView[]>("/api/rules");
   const toast = useToast();
+  const operate = useCan()("member");
   const update = async (rule: RuleView, body: object, message: string) => {
     try {
       await api(`/api/rules/${rule.id}`, { method: "PATCH", body });
@@ -75,8 +77,10 @@ export function Rules() {
       </header>
       {error && <ErrorBox message={error.message} />}
       {!data && !error && <Skeleton count={2} />}
+      {data && !operate && <span className="view-only">{viewOnlyNote()}</span>}
       {data && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        // A disabled fieldset locks every number and switch for viewers.
+        <fieldset disabled={!operate} className="plain" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {data.map((r) => {
             const hot = r.kind === "repeat_pause" && !r.enabled;
             return (
@@ -96,7 +100,7 @@ export function Rules() {
               </div>
             );
           })}
-        </div>
+        </fieldset>
       )}
     </>
   );
