@@ -5,7 +5,7 @@
  *   npm run simulate              (server on http://localhost:8787)
  *   AGENT_HQ_URL=… ADMIN_TOKEN=… npm run simulate
  */
-import { AgentHQ, ActionRefused } from "../sdk/agent-hq.ts";
+import { ActionRefused, Orbyn } from "../sdk/orbyn.ts";
 
 const URL_ = process.env.AGENT_HQ_URL ?? "http://localhost:8787";
 const adminHeaders: Record<string, string> = process.env.ADMIN_TOKEN ? { "x-admin-token": process.env.ADMIN_TOKEN } : {};
@@ -100,7 +100,7 @@ async function main() {
   const clients = await Promise.all(
     chosen.map(async (a) => {
       const d = await admin<Detail>(`/api/agents/${a.id}`);
-      return { id: a.id, name: d.name, lang: d.expected_language, hq: new AgentHQ({ url: URL_, key: d.api_key }) };
+      return { id: a.id, name: d.name, lang: d.expected_language, hq: new Orbyn({ url: URL_, key: d.api_key }) };
     }),
   );
   console.log(S.log.start(clients.length));

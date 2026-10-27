@@ -1,15 +1,15 @@
-# Agent HQ for Zapier (private integration)
+# Orbyn for Zapier (private integration)
 
 Zapier app built with the Zapier Platform CLI (`zapier-platform-core` 19.2.1).
 
 | Type | Key | What it does |
 |---|---|---|
-| Action | `ask_permission` | Asks Agent HQ whether a sensitive action may run. Allowed → the Zap continues. Otherwise the Zap is halted and a request waits in Agent HQ. If Agent HQ cannot be reached the step fails, so the action never runs. |
+| Action | `ask_permission` | Asks Orbyn whether a sensitive action may run. Allowed → the Zap continues. Otherwise the Zap is halted and a request waits in Orbyn. If Orbyn cannot be reached the step fails, so the action never runs. |
 | Action | `report_activity` | Reports a success or failure (with cost, input/output for AI review). |
 | Trigger (REST hook) | `decision_made` | Fires when a human approves (or refuses) a request; carries the data kept by `ask_permission`. |
-| Trigger (REST hook) | `agent_state_changed` | Fires when the agent is paused/resumed in Agent HQ. Pair with Zapier Manager → Turn Zap On/Off. |
+| Trigger (REST hook) | `agent_state_changed` | Fires when the agent is paused/resumed in Orbyn. Pair with Zapier Manager → Turn Zap On/Off. |
 
-Authentication: Agent HQ address + the agent's connection key (one connection per agent).
+Authentication: Orbyn address + the agent's connection key (one connection per agent).
 
 ## Test locally
 
@@ -21,17 +21,17 @@ npm install
 AGENT_HQ_URL=http://localhost:8787 npm test
 ```
 
-The tests run the app with Zapier's own `appTester` against a live Agent HQ, and use a local server as the webhook receiver to exercise the REST hooks end to end.
+The tests run the app with Zapier's own `appTester` against a live Orbyn, and use a local server as the webhook receiver to exercise the REST hooks end to end.
 
 ## Publish privately and invite pilot users
 
-Agent HQ must be reachable from the internet over **https** (Zapier's servers call it, and Agent HQ only pushes hooks to public https addresses).
+Orbyn must be reachable from the internet over **https** (Zapier's servers call it, and Orbyn only pushes hooks to public https addresses).
 
 ```bash
 npm install -g zapier-platform-cli
 zapier login                    # your Zapier account
 cd agent-hq/zapier
-zapier register "Agent HQ"      # once: creates the private integration
+zapier register "Orbyn"      # once: creates the private integration
 zapier push                     # uploads version 1.0.0
 zapier users:links              # invite link to share with pilot users
 # or: zapier users:add someone@agency.com 1.0.0

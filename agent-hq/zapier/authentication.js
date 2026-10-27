@@ -2,16 +2,16 @@
 
 const { baseUrl } = require('./utils');
 
-// One Zapier connection = one Agent HQ agent (its connection key).
+// One Zapier connection = one Orbyn agent (its connection key).
 module.exports = {
   type: 'custom',
   fields: [
     {
       key: 'base_url',
-      label: 'Agent HQ Address',
+      label: 'Orbyn Address',
       required: true,
       type: 'string',
-      helpText: 'The address you use to open Agent HQ, for example `https://hq.your-company.com`.',
+      helpText: 'The address you use to open Orbyn, for example `https://hq.your-company.com`.',
     },
     {
       key: 'api_key',
@@ -19,7 +19,7 @@ module.exports = {
       required: true,
       type: 'password',
       helpText:
-        'In Agent HQ, open the agent that this Zap represents, then **Connection → Show the connection key**. Each agent has its own key.',
+        'In Orbyn, open the agent that this Zap represents, then **Connection → Show the connection key**. Each agent has its own key.',
     },
   ],
   test: async (z, bundle) => {

@@ -11,6 +11,7 @@ import { HOUR, notifyChange } from "./model.ts";
 import { syncAll } from "./n8n.ts";
 import { startReviewer } from "./reviewer.ts";
 import { seed } from "./seed.ts";
+import { PRODUCT_NAME } from "./brand.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const production = process.env.NODE_ENV === "production";
@@ -99,4 +100,4 @@ process.once("SIGTERM", () => void shutdown("SIGTERM"));
 process.once("SIGINT", () => void shutdown("SIGINT"));
 
 await app.listen({ port, host });
-console.log(tr(`Agent HQ listening on port ${port}`, `Agent HQ en ligne sur le port ${port}`) + (production ? " (production)" : ""));
+console.log(tr(`${PRODUCT_NAME} listening on port ${port}`, `${PRODUCT_NAME} en ligne sur le port ${port}`) + (production ? " (production)" : ""));

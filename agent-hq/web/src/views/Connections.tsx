@@ -3,6 +3,7 @@ import { api, useData } from "../api.ts";
 import { ago } from "../format.ts";
 import { lang, tr } from "../i18n.ts";
 import { ErrorBox, Skeleton, useAction, useToast } from "../components/ui.tsx";
+import { PRODUCT_NAME } from "../../../server/brand.ts";
 
 interface Integration {
   id: number;
@@ -48,8 +49,8 @@ export function Connections() {
           <h1 className="h1">{tr("Connections", "Connexions")}</h1>
           <span className="sub">
             {tr(
-              "Plug in your automation tools: Agent HQ reads your workflows itself, without you having to change them.",
-              "Branchez vos outils d'automatisation : Agent HQ lit vos workflows lui-même, sans que vous ayez à les modifier.",
+              `Plug in your automation tools: ${PRODUCT_NAME} reads your workflows itself, without you having to change them.`,
+              `Branchez vos outils d'automatisation : ${PRODUCT_NAME} lit vos workflows lui-même, sans que vous ayez à les modifier.`,
             )}
           </span>
         </div>
@@ -91,25 +92,25 @@ export function Connections() {
         {lang() === "fr" ? (
           <>
             <p className="sub" style={{ fontSize: 14 }}>
-              Ajoutez l'application <b>Agent HQ</b> dans vos Zaps (lien d'invitation fourni par votre administrateur), puis connectez-la avec la <b>clé de l'agent</b> (fiche de l'agent → Connexion).
+              Ajoutez l'application <b>{PRODUCT_NAME}</b> dans vos Zaps (lien d'invitation fourni par votre administrateur), puis connectez-la avec la <b>clé de l'agent</b> (fiche de l'agent → Connexion).
             </p>
             <div className="explain">
               <span><strong>Contrôler :</strong> étape « Ask Permission » avant l'action sensible + un Zap qui part de « Decision Made » pour l'exécuter après votre accord.</span>
               <span><strong>Voir :</strong> étape « Report Activity » en fin de Zap.</span>
               <span><strong>Arrêter :</strong> Zap « Agent Paused or Resumed » → Zapier Manager « Turn Zap On/Off ».</span>
-              <span><strong>Limite :</strong> Zapier ne laisse pas Agent HQ lire vos Zaps lui-même tant que nous ne sommes pas partenaire ; seules les étapes Agent HQ ajoutées remontent.</span>
+              <span><strong>Limite :</strong> Zapier ne laisse pas {PRODUCT_NAME} lire vos Zaps lui-même tant que nous ne sommes pas partenaire ; seules les étapes {PRODUCT_NAME} ajoutées remontent.</span>
             </div>
           </>
         ) : (
           <>
             <p className="sub" style={{ fontSize: 14 }}>
-              Add the <b>Agent HQ</b> app to your Zaps (invite link provided by your administrator), then connect it with the <b>agent's key</b> (agent page → Connection).
+              Add the <b>{PRODUCT_NAME}</b> app to your Zaps (invite link provided by your administrator), then connect it with the <b>agent's key</b> (agent page → Connection).
             </p>
             <div className="explain">
               <span><strong>Control:</strong> an “Ask Permission” step before the sensitive action, plus a Zap that starts from “Decision Made” to run it once you approve.</span>
               <span><strong>See:</strong> a “Report Activity” step at the end of the Zap.</span>
               <span><strong>Stop:</strong> an “Agent Paused or Resumed” Zap → Zapier Manager “Turn Zap On/Off”.</span>
-              <span><strong>Limit:</strong> Zapier doesn't let Agent HQ read your Zaps on its own until we are a partner; only the Agent HQ steps you add report back.</span>
+              <span><strong>Limit:</strong> Zapier doesn't let {PRODUCT_NAME} read your Zaps on its own until we are a partner; only the {PRODUCT_NAME} steps you add report back.</span>
             </div>
           </>
         )}

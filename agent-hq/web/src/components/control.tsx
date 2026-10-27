@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api, type AgentDetail, type AgentSummary } from "../api.ts";
 import { lang, tr } from "../i18n.ts";
 import { useToast } from "./ui.tsx";
+import { PRODUCT_NAME } from "../../../server/brand.ts";
 
 type Control = AgentSummary["control"];
 
@@ -11,7 +12,7 @@ const TONE: Record<Control["level"], { bg: string; fg: string }> = {
   watch: { bg: "#F1EDE7", fg: "#45424C" },
 };
 
-/** What Agent HQ can really do on this agent: shown, never implied. */
+/** What Orbyn can really do on this agent: shown, never implied. */
 export function ControlChip({ control }: { control: Control }) {
   const t = TONE[control.level];
   return (
@@ -22,7 +23,7 @@ export function ControlChip({ control }: { control: Control }) {
 }
 
 const levels = (): Array<{ id: Control["level"]; title: string; text: string }> => [
-  { id: "watch", title: tr("See", "Voir"), text: tr("Its tasks, failures and incidents show up in Agent HQ.", "Ses tâches, ses échecs et ses incidents remontent dans Agent HQ.") },
+  { id: "watch", title: tr("See", "Voir"), text: tr(`Its tasks, failures and incidents show up in ${PRODUCT_NAME}.`, `Ses tâches, ses échecs et ses incidents remontent dans ${PRODUCT_NAME}.`) },
   { id: "stop", title: tr("Stop", "Arrêter"), text: tr("“Pause” really stops it (for n8n: the workflow is switched off).", "« Mettre en pause » l'arrête réellement (pour n8n : le workflow est désactivé).") },
   { id: "control", title: tr("Control", "Contrôler"), text: tr("It asks for permission before its sensitive actions and waits for your go-ahead.", "Il demande la permission avant ses actions sensibles et attend votre feu vert.") },
 ];
@@ -48,7 +49,7 @@ export function ControlBlock({ agent }: { agent: AgentDetail }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <span className="block-title">{tr("What Agent HQ can do with this agent", "Ce qu'Agent HQ peut faire sur cet agent")}</span>
+      <span className="block-title">{tr(`What ${PRODUCT_NAME} can do with this agent`, `Ce qu'${PRODUCT_NAME} peut faire sur cet agent`)}</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {levels().map((l) => {
           const ok = has(l.id);
@@ -68,8 +69,8 @@ export function ControlBlock({ agent }: { agent: AgentDetail }) {
       {agent.source === "sdk" && rank < 2 && (
         <span className="muted" style={{ fontSize: 13 }}>
           {tr(
-            "Until this agent checks with Agent HQ before acting (SDK, a call to /api/v1/check, or the Zapier step “Agent HQ · Ask Permission”), pausing and guardrails cannot stop it.",
-            "Tant que cet agent ne consulte pas Agent HQ avant d'agir (SDK, appel à /api/v1/check, ou étape Zapier « Agent HQ · Ask Permission »), la pause et les garde-fous ne l'arrêtent pas.",
+            `Until this agent checks with ${PRODUCT_NAME} before acting (SDK, a call to /api/v1/check, or the Zapier step “${PRODUCT_NAME} · Ask Permission”), pausing and guardrails cannot stop it.`,
+            `Tant que cet agent ne consulte pas ${PRODUCT_NAME} avant d'agir (SDK, appel à /api/v1/check, ou étape Zapier « ${PRODUCT_NAME} · Ask Permission »), la pause et les garde-fous ne l'arrêtent pas.`,
           )}
         </span>
       )}
@@ -87,7 +88,7 @@ export function ControlBlock({ agent }: { agent: AgentDetail }) {
                 <>
                   <li>Ouvrez le workflow dans n8n et collez le bloc (Ctrl+V).</li>
                   <li>Branchez-le juste <b>avant</b> l'étape sensible (remboursement, envoi, paiement…), et branchez votre étape sur les deux sorties « oui ».</li>
-                  <li>Dans « Demander l'autorisation », adaptez <i>action</i>, <i>amount_cents</i> et la phrase <i>summary</i> que vous lirez dans Agent HQ.</li>
+                  <li>Dans « Demander l'autorisation », adaptez <i>action</i>, <i>amount_cents</i> et la phrase <i>summary</i> que vous lirez dans {PRODUCT_NAME}.</li>
                   <li>Dans votre étape sensible, reprenez les données d'origine avec <code>$('Nom du déclencheur').item.json</code>.</li>
                   <li>Enregistrez et activez : la prochaine demande au-dessus de vos seuils attendra votre feu vert.</li>
                 </>
@@ -95,7 +96,7 @@ export function ControlBlock({ agent }: { agent: AgentDetail }) {
                 <>
                   <li>Open the workflow in n8n and paste the block (Ctrl+V).</li>
                   <li>Connect it right <b>before</b> the sensitive step (refund, email, payment…), and connect your step to both “yes” outputs.</li>
-                  <li>In “Ask for permission”, adjust <i>action</i>, <i>amount_cents</i> and the <i>summary</i> sentence you will read in Agent HQ.</li>
+                  <li>In “Ask for permission”, adjust <i>action</i>, <i>amount_cents</i> and the <i>summary</i> sentence you will read in {PRODUCT_NAME}.</li>
                   <li>In your sensitive step, use the original data with <code>$('Trigger name').item.json</code>.</li>
                   <li>Save and activate: the next request above your thresholds will wait for your go-ahead.</li>
                 </>
@@ -103,7 +104,7 @@ export function ControlBlock({ agent }: { agent: AgentDetail }) {
             </ol>
           )}
           <span className="muted" style={{ fontSize: 12 }}>
-            {tr("If Agent HQ cannot be reached, the workflow stops without running the action (to be safe).", "Si Agent HQ est injoignable, le workflow s'arrête sans exécuter l'action (par sécurité).")}
+            {tr(`If ${PRODUCT_NAME} cannot be reached, the workflow stops without running the action (to be safe).`, `Si ${PRODUCT_NAME} est injoignable, le workflow s'arrête sans exécuter l'action (par sécurité).`)}
           </span>
         </>
       )}

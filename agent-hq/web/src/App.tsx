@@ -10,6 +10,7 @@ import { Quality } from "./views/Quality.tsx";
 import { Connections } from "./views/Connections.tsx";
 import { Rules } from "./views/Rules.tsx";
 import { Team } from "./views/Team.tsx";
+import { PRODUCT_NAME } from "../../server/brand.ts";
 
 export type View = "brief" | "team" | "alerts" | "decisions" | "quality" | "rules" | "connections" | "journal";
 const VIEWS: View[] = ["brief", "team", "alerts", "decisions", "quality", "rules", "connections", "journal"];
@@ -69,7 +70,7 @@ function Shell({ connected }: { connected: boolean }) {
   return (
     <div className="shell">
       <nav className="sidebar" aria-label={tr("Main navigation", "Navigation principale")}>
-        <div className="brand"><Logo /> Agent HQ</div>
+        <div className="brand"><Logo /> {PRODUCT_NAME}</div>
         <div className="nav">
           {item("brief", "sun", tr("Morning brief", "Brief du matin"))}
           {item("team", "team", tr("My AI team", "Mon équipe IA"), data && <span className="count">{data.counts.total}</span>)}
@@ -153,7 +154,7 @@ function Login({ onDone }: { onDone: () => void }) {
   return (
     <div className="modal-bg" style={{ background: "var(--ground)", backdropFilter: "none" }}>
       <form className="modal" onSubmit={submit} aria-labelledby="login-h">
-        <div className="brand" style={{ padding: 0 }}><Logo /> Agent HQ</div>
+        <div className="brand" style={{ padding: 0 }}><Logo /> {PRODUCT_NAME}</div>
         <h1 id="login-h" className="h2">{tr("Sign in", "Connexion")}</h1>
         <div className="field">
           <label htmlFor="name">{tr("Your first name", "Votre prénom")}</label>

@@ -101,7 +101,7 @@ describe("n8n integration", () => {
     expect(getAgent(db, agentId("wf1"))!.paused).toBe(1);
   });
 
-  it("re-enforces a pause decided in Agent HQ if someone reactivates the workflow in n8n", async () => {
+  it("re-enforces a pause decided in Orbyn if someone reactivates the workflow in n8n", async () => {
     await connect();
     await app.inject({ method: "POST", url: `/api/agents/${agentId("wf1")}/actions/pause` });
     fake.state.workflows[0].active = true;
@@ -145,7 +145,7 @@ describe("control level shown to the user", () => {
 
   it("produces a pasteable n8n block that stops on errors and waits for the decision", () => {
     const s = n8nSnippet("https://hq.example.fr/", "ahq_key");
-    const ask = s.nodes.find((n) => n.name === "Agent HQ · Ask for permission")!;
+    const ask = s.nodes.find((n) => n.name === "Orbyn · Ask for permission")!;
     expect(ask.parameters).toMatchObject({ url: "https://hq.example.fr/api/v1/check" });
     expect(JSON.stringify(ask.parameters)).toContain("$execution.resumeUrl");
     expect(s.nodes.find((n) => n.type === "n8n-nodes-base.wait")!.parameters).toMatchObject({ resume: "webhook", httpMethod: "POST" });

@@ -6,6 +6,7 @@
 import { all, run, type DB } from "./db.ts";
 import { tr } from "./i18n.ts";
 import { logActivity, type ApprovalRow } from "./model.ts";
+import { PRODUCT_NAME } from "./brand.ts";
 
 const RETRY_DELAYS = [0, 2_000, 10_000, 30_000, 120_000];
 
@@ -47,7 +48,7 @@ export async function deliverDecision(db: DB, approvalId: number, fetchImpl: typ
       // 404/409: the workflow is no longer waiting (cancelled, timed out). No point retrying.
       if (res.status === 404 || res.status === 409) {
         run(db, "UPDATE approvals SET callback_status = ? WHERE id = ?", `refused_${res.status}`, a.id);
-        logActivity(db, "Agent HQ", tr(`The workflow was no longer waiting for the decision “${a.title}” (it may have been stopped).`, `Le workflow n'attendait plus la décision « ${a.title} » (il a peut-être été arrêté).`), a.agent_id);
+        logActivity(db, PRODUCT_NAME, tr(`The workflow was no longer waiting for the decision “${a.title}” (it may have been stopped).`, `Le workflow n'attendait plus la décision « ${a.title} » (il a peut-être été arrêté).`), a.agent_id);
         return false;
       }
     } catch {
@@ -56,7 +57,7 @@ export async function deliverDecision(db: DB, approvalId: number, fetchImpl: typ
   }
   run(db, "UPDATE approvals SET callback_status = 'failed' WHERE id = ?", approvalId);
   const a = all<ApprovalRow>(db, "SELECT * FROM approvals WHERE id = ?", approvalId)[0];
-  if (a) logActivity(db, "Agent HQ", tr(`Could not deliver the decision “${a.title}” to the workflow.`, `Impossible de transmettre la décision « ${a.title} » au workflow.`), a.agent_id);
+  if (a) logActivity(db, PRODUCT_NAME, tr(`Could not deliver the decision “${a.title}” to the workflow.`, `Impossible de transmettre la décision « ${a.title} » au workflow.`), a.agent_id);
   return false;
 }
 

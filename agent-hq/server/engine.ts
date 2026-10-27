@@ -22,6 +22,7 @@ import {
 import { lang, locale, many, money, num, timezone, tr } from "./i18n.ts";
 import { describeRule } from "./rules.ts";
 import { actionLabel, classifyError, languageName, toolLabel, translateError } from "./translate.ts";
+import { PRODUCT_NAME } from "./brand.ts";
 
 interface Finding {
   kind: string;
@@ -49,7 +50,7 @@ export function upsertAlert(db: DB, agentId: string, f: Finding, now: number): {
     "INSERT INTO alerts (agent_id, kind, severity, title, cause, impact, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     agentId, f.kind, f.severity, f.title, f.cause, f.impact, Math.min(now, f.since ?? now), now,
   );
-  logActivity(db, "Agent HQ", tr(`New alert: ${f.title}`, `Nouvelle alerte : ${f.title}`), agentId, now);
+  logActivity(db, PRODUCT_NAME, tr(`New alert: ${f.title}`, `Nouvelle alerte : ${f.title}`), agentId, now);
   return { id: Number(res.lastInsertRowid), created: true };
 }
 
@@ -62,7 +63,7 @@ function autoResolve(db: DB, agentId: string, kinds: string[], resolution: strin
     const open = get<AlertRow>(db, "SELECT * FROM alerts WHERE agent_id = ? AND kind = ? AND status = 'open'", agentId, kind);
     if (open) {
       resolveAlert(db, open.id, resolution, now);
-      logActivity(db, "Agent HQ", tr(`Alert closed automatically: ${open.title}`, `Alerte close automatiquement : ${open.title}`), agentId, now);
+      logActivity(db, PRODUCT_NAME, tr(`Alert closed automatically: ${open.title}`, `Alerte close automatiquement : ${open.title}`), agentId, now);
     }
   }
 }
@@ -322,9 +323,9 @@ export function evaluateAgent(db: DB, agentId: string, now = Date.now()): void {
     if (rule && !agent.paused) {
       run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", tr("Paused automatically: repeated actions", "Mis en pause automatiquement : actions en double"), agent.id);
       run(db, "UPDATE rules SET trigger_count = trigger_count + 1 WHERE id = ?", rule.id);
-      run(db, "UPDATE alerts SET resolution = ? WHERE agent_id = ? AND kind = 'duplicates' AND status = 'open'", tr("Agent HQ paused it automatically.", "Agent HQ l'a mis en pause automatiquement."), agent.id);
+      run(db, "UPDATE alerts SET resolution = ? WHERE agent_id = ? AND kind = 'duplicates' AND status = 'open'", tr(`${PRODUCT_NAME} paused it automatically.`, `${PRODUCT_NAME} l'a mis en pause automatiquement.`), agent.id);
       const sentence = describeRule(rule.kind, rule.label, ruleParams(rule));
-      logActivity(db, "Agent HQ", tr(`${agent.name} paused automatically (rule: ${sentence})`, `${agent.name} mis en pause automatiquement (règle : ${sentence})`), agent.id, now);
+      logActivity(db, PRODUCT_NAME, tr(`${agent.name} paused automatically (rule: ${sentence})`, `${agent.name} mis en pause automatiquement (règle : ${sentence})`), agent.id, now);
     }
   }
 

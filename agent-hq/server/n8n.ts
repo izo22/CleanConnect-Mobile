@@ -1,7 +1,7 @@
 /**
  * n8n integration. Three levels, from the least to the most intrusive:
  *
- * 1. Supervision — with an n8n API key, Agent HQ lists the workflows (one
+ * 1. Supervision — with an n8n API key, Orbyn lists the workflows (one
  *    agent each) and imports every finished execution as an event, error
  *    message included. Nothing changes in the workflows.
  * 2. Emergency stop — pausing the agent deactivates the workflow in n8n;
@@ -13,6 +13,7 @@ import { all, get, run, tx, type DB } from "./db.ts";
 import { evaluateAgent } from "./engine.ts";
 import { DAY, HOUR, logActivity, newApiKey, notifyChange, type AgentRow } from "./model.ts";
 import { tr } from "./i18n.ts";
+import { PRODUCT_NAME } from "./brand.ts";
 
 export interface N8nWorkflow { id: string; name: string; active: boolean; isArchived?: boolean; nodes?: Array<{ type: string; name: string }> }
 
@@ -141,7 +142,7 @@ export interface SyncResult { workflows: number; created: number; imported: numb
 
 /**
  * Brings one n8n instance up to date: workflows become agents, finished
- * executions become events, and pauses decided in Agent HQ are enforced.
+ * executions become events, and pauses decided in Orbyn are enforced.
  */
 export async function syncIntegration(db: DB, integration: IntegrationRow, client = clientFor(integration), now = Date.now()): Promise<SyncResult> {
   try {
@@ -168,7 +169,7 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
              VALUES (?, ?, ?, '', '', 'n8n', 2, ?, ?, 10000, '[]', ?, 'n8n', ?, ?, ?)`,
             id, wf.name, tr(`n8n workflow “${wf.name}”`, `Workflow n8n « ${wf.name} »`), wf.active ? 0 : 1, wf.active ? null : tr(...OFF_IN_N8N), newApiKey(), integration.id, wf.id, now,
           );
-          logActivity(db, "Agent HQ", tr(`n8n workflow imported: ${wf.name}`, `Workflow n8n importé : ${wf.name}`), id, now);
+          logActivity(db, PRODUCT_NAME, tr(`n8n workflow imported: ${wf.name}`, `Workflow n8n importé : ${wf.name}`), id, now);
           created++;
           continue;
         }
@@ -181,7 +182,7 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
           run(db, "UPDATE agents SET paused = 0, pause_reason = NULL WHERE id = ?", existing.id);
           logActivity(db, "n8n", tr(`${existing.name} was switched back on in n8n.`, `${existing.name} a été réactivé dans n8n.`), existing.id, now);
         } else if (existing.paused && wf.active) {
-          // Paused by Agent HQ (a person or a guardrail) but running in n8n: enforce.
+          // Paused by Orbyn (a person or a guardrail) but running in n8n: enforce.
           toEnforce.push({ agent: existing, wf });
         }
       }
@@ -189,7 +190,7 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
 
     for (const { agent } of toEnforce) {
       await client.deactivate(agent.external_id!);
-      logActivity(db, "Agent HQ", tr(`${agent.name} switched off in n8n (paused in Agent HQ).`, `${agent.name} désactivé dans n8n (pause décidée dans Agent HQ).`), agent.id, now);
+      logActivity(db, PRODUCT_NAME, tr(`${agent.name} switched off in n8n (paused in ${PRODUCT_NAME}).`, `${agent.name} désactivé dans n8n (pause décidée dans ${PRODUCT_NAME}).`), agent.id, now);
     }
 
     // Executions: newest first back to the cursor. Unfinished ones are kept
@@ -247,7 +248,7 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
 }
 
 /**
- * Applies a pause or a resume to the real workflow before Agent HQ records
+ * Applies a pause or a resume to the real workflow before Orbyn records
  * it, so the screen never says "paused" while n8n keeps running.
  */
 export async function setWorkflowActive(db: DB, agent: AgentRow, active: boolean, fetchImpl?: Fetch) {
@@ -265,7 +266,7 @@ export async function syncAll(db: DB, fetchImpl?: Fetch) {
   }
 }
 
-/** How much Agent HQ can really do on this agent, in words a manager understands. */
+/** How much Orbyn can really do on this agent, in words a manager understands. */
 export function controlLevel(agent: Pick<AgentRow, "source" | "last_check_at">, now = Date.now()) {
   const checks = agent.last_check_at !== null && agent.last_check_at !== undefined;
   const recent = checks && now - (agent.last_check_at ?? 0) < 30 * 24 * HOUR;
@@ -273,7 +274,7 @@ export function controlLevel(agent: Pick<AgentRow, "source" | "last_check_at">, 
     return {
       level: "control" as const,
       label: tr("Checked before acting", "Contrôle avant action"),
-      detail: tr("It asks for permission before its sensitive actions: Agent HQ can block them.", "Il demande la permission avant ses actions sensibles : Agent HQ peut les bloquer."),
+      detail: tr(`It asks for permission before its sensitive actions: ${PRODUCT_NAME} can block them.`, `Il demande la permission avant ses actions sensibles : ${PRODUCT_NAME} peut les bloquer.`),
     };
   }
   if (agent.source === "n8n") {
@@ -281,8 +282,8 @@ export function controlLevel(agent: Pick<AgentRow, "source" | "last_check_at">, 
       level: "stop" as const,
       label: tr("Monitoring + emergency stop", "Supervision + arrêt d'urgence"),
       detail: tr(
-        "Agent HQ reads its executions and can switch the workflow off in n8n, but it does not ask for permission before acting yet.",
-        "Agent HQ lit ses exécutions et peut désactiver le workflow dans n8n, mais il ne demande pas encore la permission avant d'agir.",
+        `${PRODUCT_NAME} reads its executions and can switch the workflow off in n8n, but it does not ask for permission before acting yet.`,
+        `${PRODUCT_NAME} lit ses exécutions et peut désactiver le workflow dans n8n, mais il ne demande pas encore la permission avant d'agir.`,
       ),
     };
   }
@@ -290,8 +291,8 @@ export function controlLevel(agent: Pick<AgentRow, "source" | "last_check_at">, 
     level: "watch" as const,
     label: tr("Monitoring", "Supervision"),
     detail: tr(
-      "Agent HQ sees what it reports. Pausing only works if it checks with Agent HQ before acting.",
-      "Agent HQ voit ce qu'il déclare. La pause n'agit que s'il consulte Agent HQ avant d'agir.",
+      `${PRODUCT_NAME} sees what it reports. Pausing only works if it checks with ${PRODUCT_NAME} before acting.`,
+      `${PRODUCT_NAME} voit ce qu'il déclare. La pause n'agit que s'il consulte ${PRODUCT_NAME} avant d'agir.`,
     ),
   };
 }

@@ -7,9 +7,9 @@
  *   N8N_SETUP_KEY=<key that may also create/update/delete workflows> \
  *   npm run verify:n8n
  *
- * It creates three workflows in n8n, connects Agent HQ, and checks the three
+ * It creates three workflows in n8n, connects Orbyn, and checks the three
  * levels: supervision, emergency stop, and control before acting (approve,
- * refuse, allowed directly, Agent HQ unreachable). A fake payment service on
+ * refuse, allowed directly, Orbyn unreachable). A fake payment service on
  * port 9999 records which refunds really went out.
  */
 import { createServer } from "node:http";
@@ -104,7 +104,7 @@ async function createWorkflow(name: string, nodes: unknown[], connections: unkno
   return res.json.id as string;
 }
 
-console.log(`Agent HQ : ${HQ} · n8n : ${N8N}\n`);
+console.log(`Orbyn : ${HQ} · n8n : ${N8N}\n`);
 
 const wfSync = await createWorkflow(`Synchro HubSpot ${suffix}`,
   [webhook(`hubspot-${suffix}`), httpNode("HubSpot · mise à jour du contact", "GET", `${FAKE}/hubspot`, undefined, [0, 0])],
@@ -126,7 +126,7 @@ const agentOf = async (wfId: string) => {
 };
 const sync = () => hq(`/api/integrations/${integrationId}/sync`, { method: "POST", body: {} });
 
-await step("Connexion : Agent HQ se connecte à n8n avec une clé aux droits limités", async () => {
+await step("Connexion : Orbyn se connecte à n8n avec une clé aux droits limités", async () => {
   const res = await hq("/api/integrations", { method: "POST", body: { name: "n8n de test", base_url: N8N, api_key: HQ_KEY } });
   assert(res.status === 201, `${res.status} ${JSON.stringify(res.json)}`);
   integrationId = res.json.id;
@@ -170,7 +170,7 @@ await step("Arrêt d'urgence : « Mettre en pause » désactive vraiment le work
   return `plus aucun déclenchement ${after.ms} ms après le clic (n8n répond ${after.status})`;
 });
 
-await step("Arrêt d'urgence : si quelqu'un le réactive dans n8n, Agent HQ le coupe à nouveau", async () => {
+await step("Arrêt d'urgence : si quelqu'un le réactive dans n8n, Orbyn le coupe à nouveau", async () => {
   await n8n(`/workflows/${wfRelance}/activate`, { method: "POST" });
   await sync();
   const wf = (await n8n(`/workflows/${wfRelance}`)).json;
@@ -185,7 +185,7 @@ await step("« Reprendre » réactive le workflow", async () => {
   return `de nouveau actif après ${res.ms} ms`;
 });
 
-await step("Désactivé à la main dans n8n : Agent HQ l'affiche en pause, avec la raison", async () => {
+await step("Désactivé à la main dans n8n : Orbyn l'affiche en pause, avec la raison", async () => {
   await n8n(`/workflows/${wfRelance}/deactivate`, { method: "POST" });
   await sync();
   const a = await agentOf(wfRelance);
@@ -235,7 +235,7 @@ await step("Contrôle : remboursement de 340 € → le workflow s'arrête et at
   return `demande n° ${p.id} en attente, aucun paiement`;
 });
 
-await step("Contrôle : « Approuver » dans Agent HQ → n8n reprend et rembourse", async () => {
+await step("Contrôle : « Approuver » dans Orbyn → n8n reprend et rembourse", async () => {
   const p = await pendingFor("Rembourser 340 € à Brasserie du Port (n8n)");
   await hq(`/api/approvals/${p.id}/decision`, { method: "POST", body: { approve: true }, headers: { "x-user-name": "Julie" } });
   await until("remboursement de 340 €", async () => refunds.find((r) => r.amount === 340));
@@ -259,7 +259,7 @@ await step("Contrôle : petit montant (45 €) autorisé directement, sans atten
   assert(!pending, "une validation a été demandée pour 45 €");
 });
 
-await step("Contrôle : agent en pause dans Agent HQ → l'action est refusée même si le workflow tourne", async () => {
+await step("Contrôle : agent en pause dans Orbyn → l'action est refusée même si le workflow tourne", async () => {
   const res = await hq("/api/v1/check", { method: "POST", headers: { authorization: `Bearer ${refundAgent.api_key}` }, body: { action: "stripe.refund", amount_cents: 1000 } });
   assert(res.json.decision === "allow", "état initial inattendu");
   await hq(`/api/agents/${refundAgent.id}/actions/pause`, { method: "POST", body: {} });
@@ -269,7 +269,7 @@ await step("Contrôle : agent en pause dans Agent HQ → l'action est refusée m
   return denied.json.reason;
 });
 
-await step("Sécurité : si Agent HQ est injoignable, le remboursement n'est PAS exécuté", async () => {
+await step("Sécurité : si Orbyn est injoignable, le remboursement n'est PAS exécuté", async () => {
   const snippet = (await hq(`/api/agents/${refundAgent.id}/n8n-snippet`)).json;
   const { ask, placeholder } = roles(snippet);
   ask.parameters.url = "http://localhost:1/api/v1/check"; // nobody listens there
@@ -277,19 +277,19 @@ await step("Sécurité : si Agent HQ est injoignable, le remboursement n'est PAS
   const action = httpNode("Rembourser (paiement simulé)", "POST", `${FAKE}/refund`, "={{ JSON.stringify({ amount: $('Webhook').item.json.body.amount, customer: 'injoignable' }) }}");
   const nodes = [webhook(`injoignable-${suffix}`), ...snippet.nodes.filter((n: any) => n !== placeholder), action];
   const connections = { Webhook: { main: [[{ node: ask.name, type: "main", index: 0 }]] }, ...JSON.parse(JSON.stringify(snippet.connections).replaceAll(placeholder.name, "Rembourser (paiement simulé)")) };
-  const id = await createWorkflow(`Remboursements (Agent HQ injoignable) ${suffix}`, nodes, connections);
+  const id = await createWorkflow(`Remboursements (Orbyn injoignable) ${suffix}`, nodes, connections);
   await n8n(`/workflows/${id}/activate`, { method: "POST" });
   await sleep(1000);
   await fetch(`${N8N}/webhook/injoignable-${suffix}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ amount: 77 }) });
   await sleep(4000);
-  assert(!refunds.some((r) => r.customer === "injoignable"), "remboursé alors qu'Agent HQ était injoignable !");
+  assert(!refunds.some((r) => r.customer === "injoignable"), "remboursé alors qu'Orbyn était injoignable !");
   await n8n(`/workflows/${id}/deactivate`, { method: "POST" });
   await sleep(1000);
   await n8n(`/workflows/${id}`, { method: "DELETE" });
   return "le workflow s'arrête en erreur, aucun paiement";
 });
 
-await step("Les exécutions qui ont attendu une décision remontent aussi dans Agent HQ", async () => {
+await step("Les exécutions qui ont attendu une décision remontent aussi dans Orbyn", async () => {
   await sync();
   const a = await agentOf(wfRefund);
   assert(a.tasks_24h >= 3, `tâches = ${a.tasks_24h}`);

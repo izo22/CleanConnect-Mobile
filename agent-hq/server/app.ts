@@ -504,7 +504,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     admin.post<{ Params: { id: string; action: string } }>("/api/alerts/:id/actions/:action", async (req) => {
       const action = req.params.action as PlaybookId;
       const alert = get<AlertRow>(db, "SELECT * FROM alerts WHERE id = ?", Number(req.params.id));
-      // Only touch the real workflow if Agent HQ will accept the action too.
+      // Only touch the real workflow if Orbyn will accept the action too.
       if (alert?.status === "open" && actionsFor(db, alert).some((a) => a.id === action) && REMOTE_STATE[action] !== undefined) {
         await setWorkflowActive(db, getAgent(db, alert.agent_id)!, REMOTE_STATE[action]!, fetchImpl);
       }

@@ -1,5 +1,5 @@
 ---
-title: "Cahier des charges — Agent HQ"
+title: "Cahier des charges — Orbyn"
 subtitle: "Le poste de pilotage des agents IA pour les PME et ETI"
 date: "Version 1.0 — 26 octobre 2026"
 lang: fr
@@ -7,7 +7,7 @@ lang: fr
 
 # 1. Objet du document
 
-Ce document décrit le produit **Agent HQ** (nom provisoire ; pistes étudiées : *Régie*, *Mandat*, *Vigie*) : son objectif, ses utilisateurs, ses fonctionnalités, ses exigences techniques et les conditions de sa mise sur le marché.
+Ce document décrit le produit **Orbyn** (appelé « Orbyn » pendant la conception) : son objectif, ses utilisateurs, ses fonctionnalités, ses exigences techniques et les conditions de sa mise sur le marché.
 
 Il sert de référence commune pour le développement, les choix d'hébergement, la facturation et la recette. Il distingue :
 

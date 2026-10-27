@@ -6,11 +6,12 @@
  *                           └─no→ Approval requested? ─yes→ Wait for the green light → Green light? ─yes→ [your action]
  *                                      └─no (refused) → Declined            └─no (declined or timed out) → Declined
  *
- * If Agent HQ cannot be reached, the HTTP node fails and the workflow stops:
+ * If Orbyn cannot be reached, the HTTP node fails and the workflow stops:
  * the sensitive action is NOT executed (fail closed).
  */
 import { randomUUID } from "node:crypto";
 import { tr } from "./i18n.ts";
+import { PRODUCT_NAME } from "./brand.ts";
 
 const condition = (left: string, right: string) => ({
   conditions: {
@@ -43,13 +44,13 @@ export function n8nSnippet(agentHqUrl: string, agentKey: string, opts: SnippetOp
   ].filter(Boolean).join(", ");
 
   const N = {
-    ask: tr("Agent HQ · Ask for permission", "Agent HQ · Demander l'autorisation"),
-    allowed: tr("Agent HQ · Allowed?", "Agent HQ · Autorisé ?"),
-    requested: tr("Agent HQ · Approval requested?", "Agent HQ · Validation demandée ?"),
-    wait: tr("Agent HQ · Wait for the green light", "Agent HQ · Attendre le feu vert"),
-    green: tr("Agent HQ · Green light?", "Agent HQ · Feu vert ?"),
+    ask: tr(`${PRODUCT_NAME} · Ask for permission`, `${PRODUCT_NAME} · Demander l'autorisation`),
+    allowed: tr(`${PRODUCT_NAME} · Allowed?`, `${PRODUCT_NAME} · Autorisé ?`),
+    requested: tr(`${PRODUCT_NAME} · Approval requested?`, `${PRODUCT_NAME} · Validation demandée ?`),
+    wait: tr(`${PRODUCT_NAME} · Wait for the green light`, `${PRODUCT_NAME} · Attendre le feu vert`),
+    green: tr(`${PRODUCT_NAME} · Green light?`, `${PRODUCT_NAME} · Feu vert ?`),
     action: tr("Your sensitive action (replace me)", "Votre action sensible (à remplacer)"),
-    refused: tr("Agent HQ · Declined", "Agent HQ · Refusé"),
+    refused: tr(`${PRODUCT_NAME} · Declined`, `${PRODUCT_NAME} · Refusé`),
   };
 
   const nodes = [

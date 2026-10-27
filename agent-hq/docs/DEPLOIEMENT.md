@@ -1,6 +1,6 @@
-# Mettre Agent HQ en ligne
+# Mettre Orbyn en ligne
 
-Ce guide met Agent HQ sur Internet, en **https**, avec sauvegardes automatiques. Comptez environ 30 minutes la première fois. On copie-colle des commandes, il n'y a pas de code à écrire.
+Ce guide met Orbyn sur Internet, en **https**, avec sauvegardes automatiques. Comptez environ 30 minutes la première fois. On copie-colle des commandes, il n'y a pas de code à écrire.
 
 ## Ce qu'il vous faut
 
@@ -14,7 +14,7 @@ Ce guide met Agent HQ sur Internet, en **https**, avec sauvegardes automatiques.
 
 **Où louer le serveur :** si vos clients sont **aux États-Unis**, prenez un serveur aux États-Unis (Virginie, Oregon, New York…). Pour des clients **européens**, prenez l'Europe : les données restent dans l'UE (RGPD).
 
-**Un serveur par client pilote.** Agent HQ n'a pas encore de comptes séparés par client : tout le monde partage un même espace et un même code d'accès. En attendant, donnez à chaque agence pilote **son propre serveur et son propre sous-domaine** (`agence1.votre-hq.com`, `agence2.votre-hq.com`…). Leurs données restent ainsi totalement séparées.
+**Un serveur par client pilote.** Orbyn n'a pas encore de comptes séparés par client : tout le monde partage un même espace et un même code d'accès. En attendant, donnez à chaque agence pilote **son propre serveur et son propre sous-domaine** (`agence1.votre-hq.com`, `agence2.votre-hq.com`…). Leurs données restent ainsi totalement séparées.
 
 ## 1. Créer le serveur
 
@@ -30,7 +30,7 @@ Chez votre registraire de domaine (OVH, Gandi, GoDaddy, Cloudflare…), ajoutez 
 
 Attendez quelques minutes. Vérifiez depuis votre ordinateur : `ping hq.votre-agence.com` doit répondre avec l'IP du serveur.
 
-> Sur Cloudflare, laissez le nuage **gris** (« DNS only ») : c'est Agent HQ qui obtient son certificat https.
+> Sur Cloudflare, laissez le nuage **gris** (« DNS only ») : c'est Orbyn qui obtient son certificat https.
 
 ## 3. Installer Docker sur le serveur
 
@@ -43,7 +43,7 @@ curl -fsSL https://get.docker.com | sh
 ufw allow OpenSSH && ufw allow 80 && ufw allow 443 && ufw --force enable
 ```
 
-## 4. Récupérer Agent HQ
+## 4. Récupérer Orbyn
 
 ```bash
 git clone --branch ccr-8f87a8f4-j058oi https://github.com/izo22/CleanConnect-Mobile.git
@@ -52,7 +52,7 @@ cd CleanConnect-Mobile/agent-hq
 
 Le dépôt est privé : GitHub demande votre nom d'utilisateur, puis un **jeton d'accès** à la place du mot de passe. Créez ce jeton sur github.com → Settings → Developer settings → Personal access tokens, avec la seule permission *Contents : Read-only* sur ce dépôt.
 
-## 5. Régler Agent HQ
+## 5. Régler Orbyn
 
 ```bash
 cp .env.example .env
@@ -66,7 +66,7 @@ Remplissez au minimum :
 |---|---|
 | `DOMAIN=` | votre adresse, **sans** `https://` (ex. `hq.votre-agence.com`) |
 | `APP_LANGUAGE=` | `en` pour un client américain (anglais, dollars), `fr` pour un client français (français, euros) |
-| `ADMIN_TOKEN=` | le code généré juste avant (16 caractères minimum, sinon Agent HQ refuse de démarrer) |
+| `ADMIN_TOKEN=` | le code généré juste avant (16 caractères minimum, sinon Orbyn refuse de démarrer) |
 | `ANTHROPIC_API_KEY=` | votre clé Claude (facultatif : sans clé, la relecture IA est coupée) |
 | `NOTIFY_WEBHOOK_URL=` | un webhook Slack ou Teams pour être prévenu (facultatif) |
 
@@ -100,11 +100,11 @@ Le certificat https est obtenu et renouvelé tout seul (Caddy et Let's Encrypt).
 | Changer le code d'accès | modifier `ADMIN_TOKEN` dans `.env`, puis `docker compose up -d` |
 | Voir les sauvegardes | `docker compose exec app ls -l /data/backups` |
 
-Une mise à jour ou un redémarrage ne fait rien perdre : les données sont dans un volume Docker séparé, et Agent HQ termine les requêtes en cours avant de s'arrêter.
+Une mise à jour ou un redémarrage ne fait rien perdre : les données sont dans un volume Docker séparé, et Orbyn termine les requêtes en cours avant de s'arrêter.
 
 ## Sauvegardes
 
-**Automatiques :** chaque jour, Agent HQ copie sa base dans `/data/backups` et garde les 30 derniers jours (`BACKUP_KEEP_DAYS`). La copie est faite à chaud, sans arrêter le service.
+**Automatiques :** chaque jour, Orbyn copie sa base dans `/data/backups` et garde les 30 derniers jours (`BACKUP_KEEP_DAYS`). La copie est faite à chaud, sans arrêter le service.
 
 **Hors du serveur :** ces copies sont sur le même serveur. Si le serveur disparaît, elles disparaissent avec lui. Faites donc aussi l'une de ces deux choses :
 
@@ -130,14 +130,14 @@ docker compose run --rm --no-deps app sh -c 'cp /data/backups/agent-hq-2026-10-2
 docker compose start app
 ```
 
-Agent HQ repart exactement dans l'état de cette sauvegarde.
+Orbyn repart exactement dans l'état de cette sauvegarde.
 
 ## Données et sécurité
 
-- **Code d'accès obligatoire :** en ligne, Agent HQ refuse de démarrer sans `ADMIN_TOKEN` d'au moins 16 caractères. Les essais de code sont comparés en temps constant, et le code n'apparaît jamais dans les journaux.
+- **Code d'accès obligatoire :** en ligne, Orbyn refuse de démarrer sans `ADMIN_TOKEN` d'au moins 16 caractères. Les essais de code sont comparés en temps constant, et le code n'apparaît jamais dans les journaux.
 - **Conservation :** l'activité détaillée des agents est effacée après 90 jours (`RETENTION_DAYS`). Les alertes, les décisions et le journal des actions humaines sont gardés.
 - **Protections du navigateur :** https forcé (HSTS), page impossible à intégrer dans un autre site, scripts externes interdits.
-- **Sorties :** Agent HQ n'envoie ses messages automatiques (Zapier, réponses aux workflows en attente) qu'à des adresses https publiques ou à votre serveur n8n connecté, jamais aux adresses internes du serveur.
+- **Sorties :** Orbyn n'envoie ses messages automatiques (Zapier, réponses aux workflows en attente) qu'à des adresses https publiques ou à votre serveur n8n connecté, jamais aux adresses internes du serveur.
 - **Ce qui manque encore :** un code d'accès partagé par toute l'équipe, sans comptes nominatifs. Le journal ne sait donc pas encore *quel* humain a cliqué.
 
 ## Vérifier que tout va bien
@@ -152,8 +152,8 @@ Avant d'inviter un client pilote :
 
 ## Ensuite : brancher les outils des clients
 
-- **n8n :** dans Agent HQ, **Connexions → Connecter un serveur n8n**. Voir [INTEGRATION-N8N.md](INTEGRATION-N8N.md).
-- **Zapier :** maintenant qu'Agent HQ a une adresse https publique, l'application privée peut être publiée et testée dans Zapier. Voir [INTEGRATION-ZAPIER.md](INTEGRATION-ZAPIER.md).
+- **n8n :** dans Orbyn, **Connexions → Connecter un serveur n8n**. Voir [INTEGRATION-N8N.md](INTEGRATION-N8N.md).
+- **Zapier :** maintenant qu'Orbyn a une adresse https publique, l'application privée peut être publiée et testée dans Zapier. Voir [INTEGRATION-ZAPIER.md](INTEGRATION-ZAPIER.md).
 - **Clients américains :** envoyez-leur les guides en anglais, [en/connect-n8n.md](en/connect-n8n.md) et [en/connect-zapier.md](en/connect-zapier.md).
 
 ## Ce qui a été vérifié
@@ -175,7 +175,7 @@ Le certificat Let's Encrypt réel, lui, ne peut être obtenu qu'avec votre vrai 
 
 Google offre une petite machine (« e2-micro ») **gratuite sans limite de durée** dans trois régions des États-Unis. Elle remplace les étapes 1 à 3 ci-dessus ; la suite (étapes 4, 5 et 6) est identique.
 
-**Ce qu'elle vaut :** 1 Go de mémoire (assez pour Agent HQ ; on ajoute de la mémoire de secours pour l'installation), 30 Go de disque, 1 Go de trafic sortant gratuit par mois (au-delà, quelques centimes). Il n'y a pas de support. Une seule machine gratuite par compte. Pour un client qui paie, passez sur un serveur payant : le déménagement consiste à copier une sauvegarde.
+**Ce qu'elle vaut :** 1 Go de mémoire (assez pour Orbyn ; on ajoute de la mémoire de secours pour l'installation), 30 Go de disque, 1 Go de trafic sortant gratuit par mois (au-delà, quelques centimes). Il n'y a pas de support. Une seule machine gratuite par compte. Pour un client qui paie, passez sur un serveur payant : le déménagement consiste à copier une sauvegarde.
 
 ### G1. Créer le compte
 
