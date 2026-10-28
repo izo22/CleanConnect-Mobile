@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy Policy · Orvanta</title>
+  <meta name="description" content="What Orvanta collects, why, where it is stored and how long it is kept." />
+  <meta name="theme-color" content="#F6F3EE" />
+  <link rel="icon" href="/img/icon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="/site.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="top">
+    <div class="wrap top-in">
+      <a class="brand" href="/" aria-label="Orvanta home">
+        <img src="/img/icon.svg" width="34" height="34" alt="" />
+        <span>Orvanta</span>
+      </a>
+      <div class="top-cta">
+        <a class="btn ghost" data-app-link href="https://app.orvantahq.io">Log in</a>
+        <a class="btn primary" data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Sign up</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="wrap legal">
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: October 28, 2026</p>
+
+    <p>This policy explains what personal information Orvanta collects when you use orvantahq.io and app.orvantahq.io (the “Service”), why, where it is stored and how long it is kept. Questions: <a href="mailto:hello@orvantahq.io">hello@orvantahq.io</a>.</p>
+
+    <h2>What we collect</h2>
+    <ul>
+      <li><b>Your account:</b> your name and e-mail address. If you sign up with a password, we store only a scrambled (hashed) version of it. If you sign in with Google, Google gives us your name and e-mail address; we never see your Google password.</li>
+      <li><b>Your workspaces:</b> the people you invite (name, e-mail, role), your agents' names and missions, your guardrails, your approval decisions and the activity log.</li>
+      <li><b>What your agents send:</b> their activity (actions, results, errors, costs) and, when you choose to send them, the texts an agent received and produced. These texts can contain personal information about your own customers; you decide what is sent.</li>
+      <li><b>Connections you set up:</b> your n8n address and API key (to read your workflows), and the chat webhook address where we post your alerts.</li>
+      <li><b>The website form:</b> the name, e-mail, company and message you send us when you ask for help.</li>
+      <li><b>Technical data:</b> IP addresses and request details in our server logs, used for security and to limit abuse.</li>
+    </ul>
+
+    <h2>Cookies</h2>
+    <p>We use one cookie, to keep you signed in, and a short-lived one during Google sign-in. No advertising cookies, no tracking, no analytics tools.</p>
+
+    <h2>How we use it</h2>
+    <p>Only to run the Service for you: show your agents' activity, apply your guardrails, send your alerts, keep the Service secure, and talk to you about your account. We do not sell or rent personal information, we do not use it for advertising, and we do not use it to train AI models.</p>
+
+    <h2>Who processes it for us</h2>
+    <ul>
+      <li><b>Google Cloud</b> hosts the Service and its backups, in the United States (Iowa).</li>
+      <li><b>Anthropic</b> (Claude) re-reads agents' texts when the AI review or the AI check is on. Only the texts being checked, the agent's mission and its instructions are sent. Under its commercial terms, Anthropic does not train its models on this data.</li>
+      <li><b>Google</b> handles “Continue with Google” sign-in, if you use it.</li>
+      <li><b>Cloudflare</b> provides our domain name service.</li>
+      <li><b>Tools you connect yourself</b> (n8n, Zapier, Slack, Microsoft Teams, Google Chat, Discord) receive what you ask us to send them.</li>
+    </ul>
+
+    <h2>How long we keep it</h2>
+    <ul>
+      <li>Detailed agent activity: 90 days, then deleted automatically.</li>
+      <li>Alerts, decisions and the activity log: as long as your workspace exists.</li>
+      <li>Daily backups: 30 days.</li>
+      <li>When you ask us to delete your account, we delete it and your workspaces' data within 30 days; copies in backups disappear as backups expire.</li>
+    </ul>
+
+    <h2>Security</h2>
+    <p>The Service is only reachable over https. Passwords are hashed, sign-in attempts are limited, and every request is checked against your workspace, so one customer can never see another's data.</p>
+
+    <h2>Your rights</h2>
+    <p>You can ask us at any time to access, correct, export or delete your personal information, or object to how we use it, by writing to <a href="mailto:hello@orvantahq.io">hello@orvantahq.io</a>. We answer within 30 days. If you are in the European Union or the United Kingdom, your data is transferred to the United States to provide the Service, and you can also complain to your data protection authority. If you are in California, we do not sell or share your personal information.</p>
+    <p>If your customers' personal information is in texts your agents send us, you decide what is sent and we process it on your behalf; ask us if you need a data processing agreement.</p>
+
+    <h2>Changes</h2>
+    <p>If we change this policy in a way that matters, we will tell you by e-mail or in the app before it applies.</p>
+  </main>
+
+  <footer class="wrap foot">
+    <a class="brand" href="/"><img src="/img/icon.svg" width="28" height="28" alt="" /><span>Orvanta</span></a>
+    <span>© 2026 Orvanta</span>
+    <nav aria-label="Footer"><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a data-app-link href="https://app.orvantahq.io">Log in</a><a data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Sign up</a></nav>
+  </footer>
+
+  <script src="/site.js" defer></script>
+</body>
+</html>

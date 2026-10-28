@@ -46,10 +46,12 @@ function GoogleG() {
 }
 
 /** Full-page navigation: Google sends the person back to the server, which signs them in. */
-function GoogleButton() {
+function GoogleButton({ consent = false }: { consent?: boolean }) {
   return (
     <>
       <a className="btn-google" href="/api/auth/google/start"><GoogleG /> {tr("Continue with Google", "Continuer avec Google")}</a>
+      {/* From the log-in page, Google can also create an account. */}
+      {consent && <Consent />}
       <div className="or" role="separator"><span>{tr("or with your email", "ou avec votre e-mail")}</span></div>
     </>
   );
@@ -65,6 +67,23 @@ export function authErrorMessage(code: string) {
     case "busy": return tr("Too many sign-ups right now. Please try again in an hour.", "Trop d'inscriptions pour le moment. Réessayez dans une heure.");
     default: return tr("Google didn't answer. Please try again.", "Google n'a pas répondu. Réessayez.");
   }
+}
+
+/** The legal pages live on the public site: app.example.com → example.com. */
+const siteUrl = (path: string) => {
+  const host = window.location.hostname;
+  return host.startsWith("app.") ? `https://${host.slice(4)}${path}` : `https://orvantahq.io${path}`;
+};
+
+function Consent() {
+  return (
+    <span className="muted" style={{ fontSize: 12, lineHeight: 1.5 }}>
+      {tr("By creating an account, you agree to the ", "En créant un compte, vous acceptez les ")}
+      <a href={siteUrl("/terms")} target="_blank" rel="noreferrer">{tr("Terms of Service", "conditions d'utilisation")}</a>
+      {tr(" and the ", " et la ")}
+      <a href={siteUrl("/privacy")} target="_blank" rel="noreferrer">{tr("Privacy Policy", "politique de confidentialité")}</a>.
+    </span>
+  );
 }
 
 const passwordHint = () => tr(`At least ${MIN_PASSWORD} characters. A short sentence is easy to remember.`, `Au moins ${MIN_PASSWORD} caractères. Une petite phrase se retient facilement.`);
@@ -119,7 +138,7 @@ export function Login({ onDone, signup, google, notice }: { onDone: (me: Me) => 
   const { busy, error, submit } = useSubmit(() => api<Me>("/api/auth/login", { method: "POST", body: f }), onDone);
   return (
     <AuthCard title={tr("Log in", "Connexion")} error={error || notice} onSubmit={submit}>
-      {google && <GoogleButton />}
+      {google && <GoogleButton consent={signup} />}
       <Field id="login-email" label={tr("Email", "E-mail")} type="email" required autoComplete="username" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
       <Field id="login-password" label={tr("Password", "Mot de passe")} type="password" required autoComplete="current-password" value={f.password}
         onChange={(e) => setF({ ...f, password: e.target.value })} />
@@ -163,6 +182,7 @@ export function Signup({ onDone, google }: { onDone: (me: Me) => void; google: b
       {/* Hidden from people; bots fill it in. */}
       <input className="hp" tabIndex={-1} aria-hidden="true" autoComplete="off" value={f.website} onChange={(e) => setF({ ...f, website: e.target.value })} />
       <button type="submit" className="btn primary big" disabled={busy}>{busy ? "…" : tr("Create my account", "Créer mon compte")}</button>
+      <Consent />
       <span style={{ fontSize: 14 }}>
         {tr("Already have an account? ", "Déjà un compte ? ")}<a href="#/">{tr("Log in", "Connectez-vous")}</a>
       </span>
@@ -246,6 +266,7 @@ export function LinkPage({ token, onDone }: { token: string; onDone: (me: Me, wo
           <Field id="join-password" label={tr("Choose a password", "Choisissez un mot de passe")} type="password" required minLength={MIN_PASSWORD} autoComplete="new-password"
             value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} hint={passwordHint()} />
           <button type="submit" className="btn primary big" disabled={busy}>{busy ? "…" : tr("Create my account and join", "Créer mon compte et rejoindre")}</button>
+          <Consent />
         </>
       )}
     </AuthCard>

@@ -27,14 +27,18 @@ The tests run the app with Zapier's own `appTester` against a live Orvanta, and 
 
 Orvanta must be reachable from the internet over **https** (Zapier's servers call it, and Orvanta only pushes hooks to public https addresses).
 
+The CLI command is `zapier-platform` (version 19). Without Node.js on the machine, run it in a throwaway container from `agent-hq/`:
+
 ```bash
-npm install -g zapier-platform-cli
-zapier login                    # your Zapier account
-cd agent-hq/zapier
-zapier register "Orvanta"      # once: creates the private integration
-zapier push                     # uploads version 1.0.0
-zapier users:links              # invite link to share with pilot users
-# or: zapier users:add someone@agency.com 1.0.0
+sudo docker run --rm -it -v "$PWD/zapier":/app -w /app node:22 bash
+npm install -g zapier-platform-cli && npm install
+zapier-platform login --sso            # paste a deploy key from developer.zapier.com → Deploy Keys
+zapier-platform register "Orvanta"     # once: creates the private integration
+zapier-platform push                   # uploads the version in package.json
+zapier-platform users:links            # invite link to share with pilot users
+# or: zapier-platform users:add someone@agency.com 1.1.0
 ```
+
+Version 1.1.0 adds **Text Received** and **Text About to Be Sent** to Ask Permission, for Orvanta's AI check. After pushing it, move existing users to it with `zapier-platform migrate 1.0.0 1.1.0`. Delete the deploy key once you are done.
 
 Private integrations need no review by Zapier. Publishing publicly later is done from the Developer Platform (Publish → Submit for Review).

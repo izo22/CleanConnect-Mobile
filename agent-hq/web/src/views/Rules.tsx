@@ -43,6 +43,17 @@ function Sentence({ rule, save }: { rule: RuleView; save: (params: object) => vo
       return fr
         ? <>Dépense IA totale plafonnée à {amount("Plafond mensuel")} par mois</>
         : <>Total AI spend capped at {amount("Monthly cap")} per month</>;
+    case "ai_check": {
+      const hold = (
+        <select aria-label={tr("What waits for a human", "Ce qui attend un humain")} value={String(rule.params.hold_on ?? "doubt")} onChange={(e) => save({ hold_on: e.target.value })}>
+          <option value="doubt">{fr ? "tout ce qui est douteux" : "anything doubtful"}</option>
+          <option value="error">{fr ? "seulement ce qui est faux" : "only what is clearly wrong"}</option>
+        </select>
+      );
+      return fr
+        ? <>Vérification IA de chaque {rule.label} avant l'envoi : {hold} attend un humain</>
+        : <>AI check of every {rule.label} before it goes out: {hold} waits for a human</>;
+    }
     case "repeat_pause": {
       const count = <NumberInput label={tr("Number of repeated actions", "Nombre d'actions en double")} value={p.count} onSave={(v) => save({ count: Math.max(1, v) })} />;
       const minutes = <NumberInput label={tr("Duration in minutes", "Durée en minutes")} value={p.window_min} onSave={(v) => save({ window_min: Math.max(1, v) })} />;
@@ -83,10 +94,16 @@ export function Rules() {
         <fieldset disabled={!operate} className="plain" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {data.map((r) => {
             const hot = r.kind === "repeat_pause" && !r.enabled;
+            const explain = r.kind === "ai_check"
+              ? r.unavailable
+                ? tr("Not running: the AI key isn't set on this server yet.", "Inactive : la clé IA n'est pas encore configurée sur ce serveur.")
+                : tr("Works when the agent sends what it is about to send (Ask Permission → “Text About to Be Sent”).", "Fonctionne quand l'agent envoie ce qu'il s'apprête à envoyer (Ask Permission → « Text About to Be Sent »).")
+              : null;
             return (
               <div key={r.id} className={"rule" + (hot ? " hot" : "")}>
                 <div className="body">
                   <span className="sentence"><Sentence rule={r} save={(params) => update(r, { params }, tr("Rule updated.", "Règle mise à jour."))} /></span>
+                  {explain && <span className="stat">{explain}</span>}
                   <span className="stat">
                     {hot
                       ? tr("Recommended: stops an agent stuck in a loop before it writes to your customers.", "Recommandé : arrête un agent qui part en boucle avant qu'il n'écrive à vos clients.")

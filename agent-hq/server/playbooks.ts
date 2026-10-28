@@ -7,7 +7,7 @@ import { get, run, tx, type DB } from "./db.ts";
 import { resolveAlert } from "./engine.ts";
 import { money, tr } from "./i18n.ts";
 import { firstName, getAgent, logActivity, type AgentRow, type AlertRow } from "./model.ts";
-import { notify } from "./notify.ts";
+import { notifyWorkspace } from "./notify.ts";
 
 export type PlaybookId = "pause" | "resume" | "rollback" | "handoff" | "notify_owner" | "autonomy0" | "economy" | "raise_budget" | "dismiss";
 
@@ -89,11 +89,11 @@ export function applyToAgent(db: DB, agent: AgentRow, id: PlaybookId, actor: str
     }
     case "handoff":
       run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", tr(`tasks handed over to ${agent.owner_name}`, `tâches confiées à ${agent.owner_name}`), agent.id);
-      notify(tr(`${actor} is handing you the ongoing tasks of the agent “${agent.name}”.`, `${actor} vous confie les tâches en cours de l'agent « ${agent.name} ».`), agent.owner_email);
+      notifyWorkspace(db, agent.workspace_id, tr(`${actor} is handing you the ongoing tasks of the agent “${agent.name}”.`, `${actor} vous confie les tâches en cours de l'agent « ${agent.name} ».`), { to: agent.owner_email, path: `/#/team/${encodeURIComponent(agent.id)}` });
       message = tr(`${agent.name}'s tasks handed over to ${agent.owner_name}. The agent is paused.`, `Tâches de ${agent.name} confiées à ${agent.owner_name}. L'agent est en pause.`);
       break;
     case "notify_owner":
-      notify(tr(`The agent “${agent.name}” needs you: ${actor} is asking you to step in.`, `L'agent « ${agent.name} » a besoin de vous : ${actor} vous demande d'intervenir.`), agent.owner_email);
+      notifyWorkspace(db, agent.workspace_id, tr(`The agent “${agent.name}” needs you: ${actor} is asking you to step in.`, `L'agent « ${agent.name} » a besoin de vous : ${actor} vous demande d'intervenir.`), { to: agent.owner_email, path: `/#/team/${encodeURIComponent(agent.id)}` });
       message = tr(`Request sent to ${agent.owner_name}.`, `Demande envoyée à ${agent.owner_name}.`);
       break;
     case "autonomy0":

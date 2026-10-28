@@ -14,7 +14,7 @@ export const ROLES: Role[] = ["owner", "member", "viewer"];
 export const ROLE_RANK: Record<Role, number> = { viewer: 0, member: 1, owner: 2 };
 
 export interface UserRow { id: number; email: string; name: string; password_hash: string; is_admin: number; email_verified: number; created_at: number }
-export interface WorkspaceRow { id: string; name: string; created_at: number }
+export interface WorkspaceRow { id: string; name: string; notify_url: string | null; created_at: number }
 export interface LinkRow {
   id: number; kind: "invite" | "reset"; email: string; workspace_id: string | null; role: Role | null;
   created_by: number | null; created_at: number; expires_at: number; used_at: number | null;
@@ -153,11 +153,22 @@ export function addDefaultRules(db: DB, workspaceId: string, now: number) {
   rule("quiet-hours", "quiet_hours", tr("customer email", "e-mail client"), { action_prefix: "email.send", start_hour: 22, end_hour: 7, timezone: timezone() }, false);
   rule("monthly-budget", "global_budget", "budget", { max_cents: 100000 }, true);
   rule("repeat-pause", "repeat_pause", tr("duplicates", "doublons"), { count: 10, window_min: 60 }, true);
+  rule("ai-check", "ai_check", tr("outgoing message", "message sortant"), { action_prefix: "*", hold_on: "doubt" }, true);
 }
 
-/** The first workspace gets the default guardrails too when it has none (fresh install without demo). */
+/**
+ * The first workspace gets the default guardrails too when it has none (fresh
+ * install without demo), and every workspace gets guardrail kinds added later.
+ */
 export function ensureMainRules(db: DB, now: number) {
   if (!get(db, "SELECT 1 FROM rules WHERE workspace_id = ?", MAIN_WORKSPACE)) addDefaultRules(db, MAIN_WORKSPACE, now);
+  for (const w of all<{ id: string }>(db, "SELECT id FROM workspaces w WHERE NOT EXISTS (SELECT 1 FROM rules r WHERE r.workspace_id = w.id AND r.kind = 'ai_check')")) {
+    run(
+      db,
+      "INSERT OR IGNORE INTO rules (id, workspace_id, kind, label, params, enabled, trigger_count, created_at) VALUES (?, ?, 'ai_check', ?, ?, 1, 0, ?)",
+      `${w.id}:ai-check`, w.id, tr("outgoing message", "message sortant"), JSON.stringify({ action_prefix: "*", hold_on: "doubt" }), now,
+    );
+  }
 }
 
 export function createWorkspace(db: DB, name: string, now: number): WorkspaceRow {

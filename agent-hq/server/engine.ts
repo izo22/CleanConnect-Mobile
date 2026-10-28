@@ -23,6 +23,7 @@ import { lang, locale, many, money, num, timezone, tr } from "./i18n.ts";
 import { describeRule } from "./rules.ts";
 import { actionLabel, classifyError, languageName, toolLabel, translateError } from "./translate.ts";
 import { PRODUCT_NAME } from "./brand.ts";
+import { notifyWorkspace } from "./notify.ts";
 
 interface Finding {
   kind: string;
@@ -51,6 +52,8 @@ export function upsertAlert(db: DB, agentId: string, f: Finding, now: number): {
     agentId, f.kind, f.severity, f.title, f.cause, f.impact, Math.min(now, f.since ?? now), now,
   );
   logActivity(db, PRODUCT_NAME, tr(`New alert: ${f.title}`, `Nouvelle alerte : ${f.title}`), agentId, now);
+  const agent = getAgent(db, agentId);
+  if (agent) notifyWorkspace(db, agent.workspace_id, `${f.severity === "warning" ? "🟠" : "🔴"} ${agent.name}: ${f.title}`, { path: "/#/alerts" });
   return { id: Number(res.lastInsertRowid), created: true };
 }
 

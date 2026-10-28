@@ -226,7 +226,7 @@ describe("client data stays in its workspace", () => {
     const { alice } = await setup();
     const ws = (await alice.send("POST", "/api/workspaces", { name: "Initech" })).json().id;
     const rules = (await alice.in(ws).get("/api/rules")).json();
-    expect(rules.map((r: { kind: string }) => r.kind).sort()).toEqual(["approval_amount", "global_budget", "quiet_hours", "repeat_pause"]);
+    expect(rules.map((r: { kind: string }) => r.kind).sort()).toEqual(["ai_check", "approval_amount", "global_budget", "quiet_hours", "repeat_pause"]);
     const journal = (await alice.in(ws).get("/api/activity")).json();
     expect(journal.map((e: { message: string }) => e.message)).toEqual(["Workspace “Initech” created."]);
   });
@@ -351,7 +351,7 @@ describe("self sign-up", () => {
 
     const dana = browser(app, cookieOf(res), me.workspaces[0].id);
     expect((await dana.get("/api/agents")).json()).toEqual([]);
-    expect((await dana.get("/api/rules")).json()).toHaveLength(4);
+    expect((await dana.get("/api/rules")).json()).toHaveLength(5);
     expect((await dana.in("main").get("/api/agents")).statusCode).toBe(403);
     expect((await dana.get("/api/admin/workspaces")).statusCode).toBe(403);
     // The administrator sees the new client in the list.

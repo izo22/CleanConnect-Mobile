@@ -42,7 +42,8 @@ import { MAIN_WORKSPACE, all, get, run, tx, type DB } from "./db.ts";
 import { rateLimiter } from "./early-access.ts";
 import { tr } from "./i18n.ts";
 import { DAY, HOUR, MINUTE, logActivity, notifyChange } from "./model.ts";
-import { notify } from "./notify.ts";
+import { notify, postToWebhook } from "./notify.ts";
+import { safeOutboundUrl } from "./hooks.ts";
 
 interface Deps {
   db: DB;
@@ -379,13 +380,40 @@ export function registerAccountRoutes(app: FastifyInstance, { db, adminToken, no
       you: req.ctx.user.id,
       members: members(db, req.ctx.ws),
       invites: req.ctx.role === "owner" ? pendingInvites(db, req.ctx.ws, now()) : [],
+      // The webhook address is a secret of the channel: owners only.
+      notify_url: req.ctx.role === "owner" ? getWorkspace(db, req.ctx.ws)?.notify_url ?? null : null,
     }));
 
-    team.patch<{ Body: { name: string } }>("/api/workspace", body({ name: NAME }, ["name"]), async (req) => {
+    team.patch<{ Body: { name?: string; notify_url?: string } }>(
+      "/api/workspace",
+      body({ name: NAME, notify_url: { type: "string", maxLength: 500 } }, []),
+      async (req) => {
+        need(req, "owner");
+        if (req.body.name !== undefined) {
+          run(db, "UPDATE workspaces SET name = ? WHERE id = ?", req.body.name.trim(), req.ctx.ws);
+          notifyChange();
+          return { message: tr("Workspace renamed.", "Espace renommé.") };
+        }
+        const url = req.body.notify_url?.trim() ?? "";
+        if (url && !safeOutboundUrl(url)) throw httpError(400, tr("Paste the webhook address given by Slack, Teams, Google Chat or Discord (it starts with https://).", "Collez l'adresse de webhook donnée par Slack, Teams, Google Chat ou Discord (elle commence par https://)."));
+        run(db, "UPDATE workspaces SET notify_url = ? WHERE id = ?", url || null, req.ctx.ws);
+        logActivity(db, req.ctx.actor, url ? tr("Notifications channel set.", "Canal de notifications réglé.") : tr("Notifications channel removed.", "Canal de notifications retiré."), null, now(), req.ctx.ws);
+        notifyChange();
+        return { message: url ? tr("Saved. Alerts and approval requests will be posted there.", "Enregistré. Les alertes et demandes de validation y seront envoyées.") : tr("Notifications turned off.", "Notifications désactivées.") };
+      },
+    );
+
+    team.post("/api/workspace/notify-test", async (req) => {
       need(req, "owner");
-      run(db, "UPDATE workspaces SET name = ? WHERE id = ?", req.body.name.trim(), req.ctx.ws);
-      notifyChange();
-      return { message: tr("Workspace renamed.", "Espace renommé.") };
+      const url = getWorkspace(db, req.ctx.ws)?.notify_url;
+      if (!url) throw httpError(400, tr("Save a webhook address first.", "Enregistrez d'abord une adresse de webhook."));
+      const status = await postToWebhook(url, tr(`✅ Orvanta is connected: alerts and approval requests for “${req.ctx.wsName}” will arrive here.`, `✅ Orvanta est connecté : les alertes et demandes de validation de « ${req.ctx.wsName} » arriveront ici.`), fetchImpl);
+      if (status < 200 || status >= 300) {
+        throw httpError(502, status
+          ? tr(`The chat tool refused the message (error ${status}). Check the webhook address.`, `L'outil de discussion a refusé le message (erreur ${status}). Vérifiez l'adresse du webhook.`)
+          : tr("The webhook address can't be reached.", "L'adresse du webhook est injoignable."));
+      }
+      return { message: tr("Test message sent. Check your channel.", "Message de test envoyé. Regardez votre canal.") };
     });
 
     team.post<{ Body: { email: string; role: Role } }>("/api/workspace/invites", body({ email: EMAIL, role: ROLE }, ["email", "role"]), async (req, reply) => {

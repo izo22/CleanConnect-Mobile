@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { api, useData, type AgentDetail, type AgentSummary } from "../api.ts";
-import { currencyAffix, money, num, pct, shortTime } from "../format.ts";
+import { ago, currencyAffix, money, num, pct, shortTime } from "../format.ts";
 import { lang, tr } from "../i18n.ts";
 import { Avatar, ErrorBox, Icon, Skeleton, Sparkline, StatusPill, Trust, useAction, useToast } from "../components/ui.tsx";
 import { Exchange, ReportModal, VerdictPill } from "../components/quality.tsx";
@@ -97,7 +97,7 @@ function AgentCard({ agent: a, selected, onSelect }: { agent: AgentSummary; sele
       <p className="mission">{a.mission}</p>
       <ControlChip control={a.control} />
       <div className="line"><StatusPill status={a.status} /><Trust level={a.autonomy} /></div>
-      <Sparkline values={a.sparkline} width={214} height={30} color={a.status === "ok" ? "#5B3DF5" : a.status === "paused" ? "#9C97A3" : "#FF7A45"} />
+      <Sparkline values={a.sparkline} width={214} height={30} color={a.status === "ok" ? "#5B3DF5" : a.status === "paused" || a.status === "waiting" ? "#9C97A3" : "#FF7A45"} />
       <div className="minis">
         <div><span>{tr("Success", "Réussite")}</span><b>{pct(a.success_rate)}</b></div>
         <div><span>{tr("Tasks 24 h", "Tâches 24 h")}</span><b>{num(a.tasks_24h)}</b></div>
@@ -164,6 +164,8 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
         <div className="fact"><span>{tr("Platform", "Plateforme")}</span><b>{data.platform}</b></div>
       </div>
       {data.pause_reason && <span className="note">{tr("Paused: ", "En pause : ")}{data.pause_reason}</span>}
+
+      {!(data.setup.activity && data.setup.permission) && <SetupChecklist agent={data} />}
 
       {operate && <ControlBlock agent={data} />}
 
@@ -286,6 +288,46 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
 }
 
 const RATES = [0, 0.05, 0.1, 0.25, 1];
+
+/** What is wired so far: a pilot sees at a glance whether their connection works. */
+function SetupChecklist({ agent }: { agent: AgentDetail }) {
+  const n8n = agent.source === "n8n";
+  const steps = [
+    { done: true, title: tr("Added to Orvanta", "Ajouté à Orvanta"), hint: null },
+    {
+      done: agent.setup.activity,
+      title: agent.setup.activity
+        ? tr(`Activity received · last ${ago(agent.last_activity_at!)}`, `Activité reçue · dernière ${ago(agent.last_activity_at!)}`)
+        : tr("No activity received yet", "Aucune activité reçue pour l'instant"),
+      hint: agent.setup.activity ? null : n8n
+        ? tr("It shows up after the workflow's next run (n8n is read every 30 seconds).", "Elle apparaît après la prochaine exécution du workflow (n8n est lu toutes les 30 secondes).")
+        : tr("Add a “Report Activity” step at the end of the Zap, or send events with the connection key below.", "Ajoutez une étape « Report Activity » en fin de Zap, ou envoyez des événements avec la clé de connexion ci-dessous."),
+    },
+    {
+      done: agent.setup.permission,
+      title: agent.setup.permission
+        ? tr("Asks permission before acting", "Demande la permission avant d'agir")
+        : tr("Doesn't ask permission yet (optional)", "Ne demande pas encore la permission (facultatif)"),
+      hint: agent.setup.permission ? null : n8n
+        ? tr("Needed for approvals and the AI check: add the “Ask for permission” block below to the workflow.", "Nécessaire pour les validations et la vérification IA : ajoutez au workflow le bloc « Demander l'autorisation » ci-dessous.")
+        : tr("Needed for approvals and the AI check: add an “Ask Permission” step before the sensitive action in the Zap.", "Nécessaire pour les validations et la vérification IA : ajoutez une étape « Ask Permission » avant l'action sensible dans le Zap."),
+    },
+  ];
+  return (
+    <div className="setup" aria-label={tr("Connection checklist", "Liste de vérification de la connexion")}>
+      <span className="block-title">{tr("Is it connected?", "Est-ce que c'est branché ?")}</span>
+      {steps.map((s) => (
+        <div key={s.title} className={"step" + (s.done ? " done" : "")}>
+          <span className="mark" aria-hidden="true">{s.done ? <Icon name="tick" size={14} stroke={3} /> : null}</span>
+          <span className="text">
+            <b>{s.title}</b>
+            {s.hint && <small>{s.hint}</small>}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function QualityBlock({ data, onReport, onRate }: { data: AgentDetail; onReport: (eventId: number, excerpt: string | null) => void; onRate?: (rate: number) => void }) {
   const q = data.quality;

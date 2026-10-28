@@ -12,7 +12,8 @@ export function Brief({ go }: { go: (v: View) => void }) {
   if (!data) return <Skeleton />;
 
   const { counts, alerts, approvals } = data;
-  if (counts.total === 0) return <GettingStarted go={go} />;
+  // No agent, or none heard from yet: the next step is wiring them, not a dashboard of zeros.
+  if (counts.total === counts.waiting) return <GettingStarted go={go} agents={counts.total} />;
   const todo = alerts.length + approvals.length;
   const hours = data.minutes_saved_24h / 60;
   const delta = data.cost_avg_day_cents ? (data.cost_24h_cents - data.cost_avg_day_cents) / data.cost_avg_day_cents : 0;
@@ -34,9 +35,11 @@ export function Brief({ go }: { go: (v: View) => void }) {
             </h1>
             <span className="fleet">
               {tr(`${counts.attention} need a look`, `${counts.attention} à surveiller`)} · {plural(counts.blocked, tr("blocked", "bloqué"), tr("blocked", "bloqués"))} · {tr(`${counts.paused} paused`, `${counts.paused} en pause`)}
+              {counts.waiting > 0 && <> · {tr(`${counts.waiting} waiting for data`, `${counts.waiting} en attente de données`)}</>}
             </span>
           </div>
-          <Ring value={counts.ok} total={counts.total} label={tr("healthy", "en forme")} />
+          {/* Agents not heard from yet are neither healthy nor failing: left out of the ring. */}
+          <Ring value={counts.ok} total={counts.total - counts.waiting} label={tr("healthy", "en forme")} />
         </section>
         <div className="kpis">
           <div className="kpi violet">
@@ -56,7 +59,7 @@ export function Brief({ go }: { go: (v: View) => void }) {
           </div>
           <div className="kpi white">
             <span className="k">{tr("At work", "Au travail")}</span>
-            <span className="v">{counts.total - counts.paused - counts.blocked}<small> /{counts.total}</small></span>
+            <span className="v">{counts.total - counts.paused - counts.blocked - counts.waiting}<small> /{counts.total}</small></span>
             <span className="h">{tr("active agents", "agents actifs")}</span>
           </div>
         </div>
@@ -120,7 +123,7 @@ export function Brief({ go }: { go: (v: View) => void }) {
 }
 
 /** A new workspace has no agents yet: show the three ways to bring them in. */
-function GettingStarted({ go }: { go: (v: View) => void }) {
+function GettingStarted({ go, agents }: { go: (v: View) => void; agents: number }) {
   const { me, ws, can } = useAccount();
   const steps: Array<{ title: string; text: string; action: string; view: View }> = [
     {
@@ -136,6 +139,12 @@ function GettingStarted({ go }: { go: (v: View) => void }) {
       view: "team",
     },
     {
+      title: tr("Get alerts in your chat", "Recevoir les alertes dans votre messagerie"),
+      text: tr("Paste a Slack, Teams, Google Chat or Discord webhook: alerts and approval requests arrive there, with a link to act.", "Collez un webhook Slack, Teams, Google Chat ou Discord : alertes et demandes de validation y arrivent, avec un lien pour agir."),
+      action: tr("Set up notifications", "Régler les notifications"),
+      view: "members",
+    },
+    {
       title: tr("Invite your team", "Inviter votre équipe"),
       text: tr("Colleagues or clients get their own sign-in. Viewers can approve decisions without touching settings.", "Collègues ou clients ont leur propre connexion. Les lecteurs approuvent les décisions sans toucher aux réglages."),
       action: tr("Invite people", "Inviter"),
@@ -148,16 +157,21 @@ function GettingStarted({ go }: { go: (v: View) => void }) {
         <div className="titles">
           <h1 className="h1">{tr(`Welcome, ${me.user.name.split(" ")[0]}`, `Bienvenue, ${me.user.name.split(" ")[0]}`)}</h1>
           <span className="sub">
-            {tr(
-              `“${ws.name}” has no agents yet. Bring them in and ${PRODUCT_NAME} starts watching right away.`,
-              `« ${ws.name} » n'a pas encore d'agents. Ajoutez-les et ${PRODUCT_NAME} commence à les surveiller tout de suite.`,
-            )}
+            {agents
+              ? tr(
+                `${plural(agents, "agent", "agents")} added, waiting for their first activity. Open an agent's page to see what is left to connect.`,
+                `${plural(agents, "agent ajouté", "agents ajoutés")}, en attente de leur première activité. Ouvrez la fiche d'un agent pour voir ce qu'il reste à brancher.`,
+              )
+              : tr(
+                `“${ws.name}” has no agents yet. Bring them in and ${PRODUCT_NAME} starts watching right away.`,
+                `« ${ws.name} » n'a pas encore d'agents. Ajoutez-les et ${PRODUCT_NAME} commence à les surveiller tout de suite.`,
+              )}
           </span>
         </div>
       </header>
       <div className="grid-cards">
         {steps.map((s, i) => (
-          <article key={s.view} className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <article key={s.title} className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <span className="step-num">{i + 1}</span>
             <h2 className="h2" style={{ fontSize: 20 }}>{s.title}</h2>
             <p className="sub" style={{ fontSize: 14, lineHeight: 1.5 }}>{s.text}</p>

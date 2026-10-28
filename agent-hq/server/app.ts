@@ -19,9 +19,10 @@ import {
   type RuleRow,
 } from "./model.ts";
 import { PlaybookError, actionsFor, applyToAgent, runPlaybook, type PlaybookId } from "./playbooks.ts";
-import { notify } from "./notify.ts";
+import { notify, notifyWorkspace } from "./notify.ts";
 import { describeRule } from "./rules.ts";
-import { shouldSample } from "./reviewer.ts";
+import { shouldSample, type Judge } from "./reviewer.ts";
+import { aiPrecheck } from "./precheck.ts";
 import { deliverDecision, validCallbackUrl } from "./callbacks.ts";
 import { currency, lang, tr } from "./i18n.ts";
 import { N8nClient, N8nError, getIntegration, setWorkflowActive, syncIntegration, type IntegrationRow } from "./n8n.ts";
@@ -47,6 +48,8 @@ export interface AppOptions {
   signup?: boolean;
   /** "Continue with Google" (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET). */
   google?: { clientId: string; clientSecret: string };
+  /** Reads an answer before it goes out (the AI check). Null when no AI key is set. */
+  judge?: Judge | null;
 }
 
 
@@ -119,7 +122,7 @@ const slug = (s: string) =>
 /** Which state the real workflow must be in after a playbook action. */
 const REMOTE_STATE: Partial<Record<PlaybookId, boolean>> = { pause: false, handoff: false, resume: true, rollback: true };
 
-export function buildApp({ db, adminToken, now = Date.now, logger = false, fetchImpl = fetch, trustProxy = false, signup = false, google }: AppOptions) {
+export function buildApp({ db, adminToken, now = Date.now, logger = false, fetchImpl = fetch, trustProxy = false, signup = false, google, judge = null }: AppOptions) {
   const app = Fastify({ logger: logOptions(logger), bodyLimit: 2 * 1024 * 1024, trustProxy, ajv: { customOptions: { allowUnionTypes: true } } });
 
   app.addHook("onSend", async (req, reply) => {
@@ -271,6 +274,8 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
             sensitive: { type: "boolean" },
             payload: {},
             callback_url: { type: "string", maxLength: 2000 },
+            input: { type: "string", maxLength: 20_000 },
+            output: { type: "string", maxLength: 20_000 },
           },
         },
       },
@@ -287,8 +292,14 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         }
         if (!integration && !safeOutboundUrl(cb)) throw Object.assign(new Error(tr("callback_url must be a public https address.", "callback_url doit être une adresse https publique.")), { statusCode: 400 });
       }
-      const result = tx(db, () => check(db, agent, req.body, now()));
+      let result = tx(db, () => check(db, agent, req.body, now()));
+      // The guardrails allowed it: if the agent sent its answer, the AI reads it before it goes out.
+      if (result.decision === "allow" && judge) result = (await aiPrecheck(db, agent, req.body, judge, now())) ?? result;
       if (result.decision !== "allow") notifyChange();
+      if (result.decision === "needs_approval") {
+        const a = get<{ title: string; reason: string }>(db, "SELECT title, reason FROM approvals WHERE id = ?", result.approval_id);
+        if (a) notifyWorkspace(db, agent.workspace_id, tr(`⏳ ${agent.name} is waiting for your approval: ${a.title} (${a.reason})`, `⏳ ${agent.name} attend votre validation : ${a.title} (${a.reason})`), { path: "/#/decisions" });
+      }
       // Plain booleans make no-code filters ("only continue if allowed") easy.
       return { ...result, allowed: result.decision === "allow", needs_approval: result.decision === "needs_approval" };
     },
@@ -433,7 +444,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
           logActivity(db, author, tr(`Mistake reported on ${agent.name}: ${description.trim()}`, `Erreur signalée sur ${agent.name} : ${description.trim()}`), agent.id, t);
           evaluateReports(db, agent.id, t);
         });
-        notify(tr(`${author} reported a mistake by the agent “${agent.name}”: ${description.trim()}`, `${author} a signalé une erreur de l'agent « ${agent.name} » : ${description.trim()}`), agent.owner_email);
+        notifyWorkspace(db, agent.workspace_id, tr(`${author} reported a mistake by the agent “${agent.name}”: ${description.trim()}`, `${author} a signalé une erreur de l'agent « ${agent.name} » : ${description.trim()}`), { to: agent.owner_email, path: `/#/team/${encodeURIComponent(agent.id)}` });
         notifyChange();
         const owner = agent.owner_name || tr("The owner", "Le responsable");
         return reply.code(201).send({ message: tr(`Thanks, noted. ${owner} has been alerted.`, `Merci, c'est noté. ${owner} est prévenu.`) });

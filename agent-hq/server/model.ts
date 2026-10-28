@@ -4,7 +4,7 @@ import { MAIN_WORKSPACE, all, get, run, type DB } from "./db.ts";
 
 export type Autonomy = 0 | 1 | 2;
 export type Severity = "critical" | "warning" | "blocked";
-export type AgentStatus = "ok" | "attention" | "blocked" | "paused";
+export type AgentStatus = "ok" | "attention" | "blocked" | "paused" | "waiting";
 
 export interface AgentRow {
   id: string;
@@ -74,7 +74,7 @@ export interface RuleRow {
   created_at: number;
 }
 
-export type RuleKind = "approval_amount" | "quiet_hours" | "global_budget" | "repeat_pause";
+export type RuleKind = "approval_amount" | "quiet_hours" | "global_budget" | "repeat_pause" | "ai_check";
 
 export type Verdict = "ok" | "doubt" | "error";
 
@@ -140,12 +140,13 @@ export function openAlerts(db: DB, workspaceId: string) {
   );
 }
 
-export function statusOf(agent: AgentRow, alerts: AlertRow[]): AgentStatus {
+/** `heardFrom`: the agent has reported or asked permission at least once. Silence is not health. */
+export function statusOf(agent: AgentRow, alerts: AlertRow[], heardFrom = true): AgentStatus {
   if (agent.paused) return "paused";
   const mine = alerts.filter((a) => a.agent_id === agent.id);
   if (mine.some((a) => a.severity === "blocked")) return "blocked";
   if (mine.length) return "attention";
-  return "ok";
+  return heardFrom ? "ok" : "waiting";
 }
 
 export function startOfMonth(now: number) {

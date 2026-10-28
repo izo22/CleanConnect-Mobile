@@ -36,6 +36,10 @@ export interface CheckRequest {
   context?: string;
   sensitive?: boolean;
   payload?: unknown;
+  /** What the agent received (e.g. the customer's e-mail): read by the AI check. */
+  input?: string;
+  /** What the agent is about to send: the AI check reads it before it goes out. */
+  output?: string;
 }
 
 export type CheckResult =

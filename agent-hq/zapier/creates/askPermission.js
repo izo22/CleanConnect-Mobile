@@ -17,6 +17,9 @@ const perform = async (z, bundle) => {
       // Kept by Orvanta and handed back with the decision, so the
       // "Decision Made" Zap can perform the action without looking anything up.
       payload: input.data || undefined,
+      // Read by the AI check before the action goes out.
+      input: input.text_received || undefined,
+      output: input.text_to_send || undefined,
     },
   });
   const result = response.data;
@@ -58,6 +61,20 @@ module.exports = {
       { key: 'amount', label: 'Amount', type: 'number', required: false, helpText: 'In your currency, e.g. `340.00`. Used by amount thresholds.' },
       { key: 'context', label: 'Details for the Approver', type: 'text', required: false },
       { key: 'target', label: 'Customer or Recipient', required: false },
+      {
+        key: 'text_received',
+        label: 'Text Received',
+        type: 'text',
+        required: false,
+        helpText: 'What the Zap is answering, e.g. the customer\'s e-mail. Lets the AI check spot answers that contradict it.',
+      },
+      {
+        key: 'text_to_send',
+        label: 'Text About to Be Sent',
+        type: 'text',
+        required: false,
+        helpText: 'The reply, quote or message the next step will send. Orvanta\'s AI reads it first; anything doubtful waits for your approval.',
+      },
       {
         key: 'data',
         label: 'Data to Keep for the Approved Action',

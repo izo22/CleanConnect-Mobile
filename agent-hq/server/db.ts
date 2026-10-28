@@ -229,6 +229,8 @@ const ADDED_COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   // 0 = created by self sign-up with a password, email never proven. Google
   // sign-in proves it (and then takes the account back from whoever typed it).
   ["users", "email_verified", "INTEGER NOT NULL DEFAULT 1"],
+  // The workspace's own chat webhook (Slack, Teams, Google Chat, Discord).
+  ["workspaces", "notify_url", "TEXT"],
   ["events", "input", "TEXT"],
   ["events", "output", "TEXT"],
   // NULL = not sampled, 'pending' = waiting for the AI reviewer, 'done' = reviewed.

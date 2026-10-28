@@ -12,6 +12,10 @@ export function describeRule(kind: RuleKind, subject: string, p: Record<string, 
     }
     case "global_budget":
       return tr(`Total AI spend capped at ${money(Number(p.max_cents))} per month`, `Dépense IA totale plafonnée à ${money(Number(p.max_cents))} par mois`);
+    case "ai_check":
+      return p.hold_on === "error"
+        ? tr(`AI check of every ${subject} before it goes out: anything clearly wrong waits for a human`, `Vérification IA de chaque ${subject} avant l'envoi : tout ce qui est faux attend un humain`)
+        : tr(`AI check of every ${subject} before it goes out: anything doubtful waits for a human`, `Vérification IA de chaque ${subject} avant l'envoi : tout ce qui est douteux attend un humain`);
     case "repeat_pause":
       return tr(
         `Automatic pause if an agent repeats more than ${p.count} actions in ${p.window_min} minutes`,

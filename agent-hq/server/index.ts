@@ -10,7 +10,7 @@ import { tr } from "./i18n.ts";
 import { dailyMaintenance } from "./maintenance.ts";
 import { HOUR, notifyChange } from "./model.ts";
 import { syncAll } from "./n8n.ts";
-import { startReviewer } from "./reviewer.ts";
+import { claudeJudge, reviewerEnabled, startReviewer } from "./reviewer.ts";
 import { seed } from "./seed.ts";
 import { PRODUCT_NAME } from "./brand.ts";
 
@@ -47,6 +47,7 @@ const app = buildApp({
   logger: production,
   trustProxy: process.env.TRUST_PROXY === "true",
   signup: env("SIGNUP", "open") !== "closed",
+  judge: reviewerEnabled() ? claudeJudge : null,
   google: process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
     ? { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET }
     : undefined,

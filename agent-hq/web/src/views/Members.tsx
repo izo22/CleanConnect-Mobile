@@ -12,6 +12,7 @@ interface WorkspaceView {
   you: number;
   members: Array<{ user_id: number; name: string; email: string; role: Role; created_at: number }>;
   invites: Array<{ id: number; email: string; role: Role; created_at: number; expires_at: number }>;
+  notify_url: string | null;
 }
 
 const ROLES: Role[] = ["owner", "member", "viewer"];
@@ -81,6 +82,8 @@ export function Members() {
 
           {owner && <Invite invites={data.invites} onChange={reload} />}
 
+          {owner && <Notifications current={data.notify_url} onChange={reload} />}
+
           <section className="card" aria-labelledby="roles-h" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <h2 id="roles-h" className="h2" style={{ fontSize: 20 }}>{tr("What each role can do", "Ce que chaque rôle permet")}</h2>
             <div className="explain">
@@ -108,6 +111,46 @@ function Rename({ current, onDone }: { current: string; onDone: () => void }) {
       </div>
       <button type="submit" className="btn" disabled={busy !== null || !name.trim() || name.trim() === current}>{tr("Rename", "Renommer")}</button>
     </form>
+  );
+}
+
+/** Where alerts and approval requests are posted: the client's own chat channel. */
+function Notifications({ current, onChange }: { current: string | null; onChange: () => void }) {
+  const [url, setUrl] = useState(current ?? "");
+  const { run, busy } = useAction();
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    if (await run("save", "/api/workspace", { notify_url: url.trim() }, "PATCH")) onChange();
+  };
+  return (
+    <section className="card" aria-labelledby="notify-h" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <h2 id="notify-h" className="h2" style={{ fontSize: 22 }}>{tr("Notifications", "Notifications")}</h2>
+        <span className="sub" style={{ fontSize: 14 }}>
+          {tr(
+            "Get new alerts, approval requests and reported mistakes in your team's chat, with a link to act. Works with Slack, Microsoft Teams, Google Chat and Discord.",
+            "Recevez les nouvelles alertes, demandes de validation et erreurs signalées dans la messagerie de l'équipe, avec un lien pour agir. Fonctionne avec Slack, Microsoft Teams, Google Chat et Discord.",
+          )}
+        </span>
+      </div>
+      <form className="inline-form" onSubmit={save}>
+        <div className="field grow">
+          <label htmlFor="notify-url">{tr("Webhook address", "Adresse du webhook")}</label>
+          <input id="notify-url" type="url" autoComplete="off" placeholder="https://hooks.slack.com/services/…" value={url} onChange={(e) => setUrl(e.target.value)} />
+        </div>
+        <button type="submit" className="btn primary big" disabled={busy !== null || url.trim() === (current ?? "")}>{tr("Save", "Enregistrer")}</button>
+        {current && <button type="button" className="btn big" disabled={busy !== null} onClick={() => run("test", "/api/workspace/notify-test")}>{tr("Send a test", "Envoyer un test")}</button>}
+      </form>
+      <details className="more-ex">
+        <summary>{tr("Where do I find this address?", "Où trouver cette adresse ?")}</summary>
+        <div className="explain" style={{ marginTop: 8 }}>
+          <span><strong>Slack:</strong> {tr("api.slack.com/apps → Create an app → Incoming Webhooks → On → Add New Webhook → pick the channel → copy.", "api.slack.com/apps → Create an app → Incoming Webhooks → On → Add New Webhook → choisissez le canal → copiez.")}</span>
+          <span><strong>Microsoft Teams:</strong> {tr("in the channel, ⋯ → Workflows → “Post to a channel when a webhook request is received” → copy the address.", "dans le canal, ⋯ → Workflows → « Post to a channel when a webhook request is received » → copiez l'adresse.")}</span>
+          <span><strong>Google Chat:</strong> {tr("in the space, Apps & integrations → Webhooks → Add → copy.", "dans l'espace, Applications et intégrations → Webhooks → Ajouter → copiez.")}</span>
+          <span><strong>Discord:</strong> {tr("channel settings → Integrations → Webhooks → New webhook → Copy URL.", "paramètres du salon → Intégrations → Webhooks → Nouveau webhook → Copier l'URL.")}</span>
+        </div>
+      </details>
+    </section>
   );
 }
 

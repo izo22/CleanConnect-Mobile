@@ -61,6 +61,7 @@ export const STATUS = {
   attention: { get label() { return tr("Needs a look", "À surveiller"); }, fg: "#9A3412", bg: "#FFE9DF", dot: "#FF7A45" },
   blocked: { get label() { return tr("Blocked", "Bloqué"); }, fg: "#4A3AA8", bg: "#EDE8FF", dot: "#7C5CFF" },
   paused: { get label() { return tr("Paused", "En pause"); }, fg: "#45424C", bg: "#F1EDE7", dot: "#9C97A3" },
+  waiting: { get label() { return tr("Waiting for data", "En attente de données"); }, fg: "#2F4A8A", bg: "#E7EEFF", dot: "#6B8DE3" },
 } as const;
 
 export function StatusPill({ status }: { status: keyof typeof STATUS }) {

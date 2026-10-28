@@ -7,6 +7,7 @@
  */
 import { MAIN_WORKSPACE, run, tx, type DB } from "./db.ts";
 import { evaluateAll } from "./engine.ts";
+import { muteNotifications } from "./notify.ts";
 import { lang, tr } from "./i18n.ts";
 import { DAY, HOUR, MINUTE, logActivity, newApiKey, startOfMonth } from "./model.ts";
 
@@ -272,7 +273,17 @@ export function buildAgents(c: DemoContent = content()): SeedAgent[] {
   return [...c.named(c.owners), ...generated];
 }
 
+/** The demo's alerts are not news: nobody's chat channel is pinged for them. */
 export function seed(db: DB, now = Date.now()) {
+  muteNotifications(true);
+  try {
+    fill(db, now);
+  } finally {
+    muteNotifications(false);
+  }
+}
+
+function fill(db: DB, now: number) {
   const c = content();
   const { ids } = c;
   const rand = rng(42);

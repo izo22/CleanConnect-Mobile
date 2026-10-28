@@ -23,7 +23,7 @@ import { REVIEW_MODEL, pendingCount, reviewerEnabled } from "./reviewer.ts";
 import { controlLevel } from "./n8n.ts";
 
 const SEVERITY_ORDER = { critical: 0, blocked: 1, warning: 2 } as const;
-const STATUS_ORDER: Record<AgentStatus, number> = { blocked: 0, attention: 1, paused: 2, ok: 3 };
+const STATUS_ORDER: Record<AgentStatus, number> = { blocked: 0, attention: 1, paused: 2, waiting: 3, ok: 4 };
 
 interface Stats { agent_id: string; n: number; ok: number; tasks: number; cost: number }
 
@@ -65,8 +65,15 @@ function monthSpendByAgent(db: DB, ws: string, now: number) {
   return new Map(rows.map((r) => [r.agent_id, r.c]));
 }
 
+/** Last event of each agent (the index on agent and time makes this cheap). */
+function lastActivity(db: DB, ws: string) {
+  const rows = all<{ id: string; last: number | null }>(db, "SELECT a.id, (SELECT MAX(ts) FROM events e WHERE e.agent_id = a.id) last FROM agents a WHERE a.workspace_id = ?", ws);
+  return new Map(rows.map((r) => [r.id, r.last]));
+}
+
 export function agentSummaries(db: DB, ws: string, now = Date.now()) {
   const agents = all<AgentRow>(db, "SELECT * FROM agents WHERE workspace_id = ?", ws);
+  const last = lastActivity(db, ws);
   const alerts = openAlerts(db, ws);
   const stats = statsByAgent(db, ws, now - DAY);
   const sparks = sparklines(db, ws, now);
@@ -82,7 +89,8 @@ export function agentSummaries(db: DB, ws: string, now = Date.now()) {
         platform: a.platform,
         source: a.source,
         control: controlLevel(a, now),
-        status: statusOf(a, alerts),
+        status: statusOf(a, alerts, last.get(a.id) != null || a.last_check_at != null),
+        last_activity_at: last.get(a.id) ?? null,
         autonomy: a.autonomy,
         paused: !!a.paused,
         pause_reason: a.pause_reason,
@@ -165,7 +173,7 @@ export function overview(db: DB, ws: string, now = Date.now()) {
   const approvals = approvalsView(db, ws).pending;
   return {
     now,
-    counts: { total: agents.length, ok: count("ok"), attention: count("attention"), blocked: count("blocked"), paused: count("paused") },
+    counts: { total: agents.length, ok: count("ok"), attention: count("attention"), blocked: count("blocked"), paused: count("paused"), waiting: count("waiting") },
     tasks_24h: agents.reduce((s, a) => s + a.tasks_24h, 0),
     minutes_saved_24h: Math.round(agents.reduce((s, a) => s + a.minutes_saved_24h, 0)),
     cost_24h_cents: Math.round(cost24),
@@ -199,6 +207,8 @@ export function agentDetail(db: DB, ws: string, id: string, now = Date.now()) {
     integration_id: agent.integration_id,
     external_id: agent.external_id,
     last_check_at: agent.last_check_at,
+    // What is wired so far, for the setup checklist on the agent's page.
+    setup: { activity: summary.last_activity_at != null, permission: agent.last_check_at != null },
     prompts: all<PromptVersionRow>(db, "SELECT * FROM prompt_versions WHERE agent_id = ? ORDER BY version DESC", id),
     alerts: all<AlertRow>(db, "SELECT * FROM alerts WHERE agent_id = ? ORDER BY created_at DESC LIMIT 10", id).map((a) => alertView(db, a)),
     review_rate: agent.review_rate,
@@ -210,7 +220,9 @@ export function agentDetail(db: DB, ws: string, id: string, now = Date.now()) {
 export function rulesView(db: DB, ws: string) {
   return getRules(db, ws).map((r) => {
     const params = JSON.parse(r.params);
-    return { ...r, enabled: !!r.enabled, params, sentence: describeRule(r.kind, r.label, params) };
+    // The AI check needs the AI key on the server; say so instead of pretending it runs.
+    const unavailable = r.kind === "ai_check" && !reviewerEnabled();
+    return { ...r, enabled: !!r.enabled, params, sentence: describeRule(r.kind, r.label, params), unavailable };
   });
 }
 

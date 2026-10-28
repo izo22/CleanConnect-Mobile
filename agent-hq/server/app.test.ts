@@ -247,3 +247,19 @@ describe("human reports and AI review", () => {
     expect(shouldSample(trainee, false, 0)).toBe(false);
   });
 });
+
+describe("connection status", () => {
+  it("shows an agent nobody has heard from as waiting, not healthy", async () => {
+    const app = buildApp({ db, now: () => NOW });
+    const a = addAgent(db, "silent");
+    const status = async () => (await app.inject({ url: "/api/agents/silent" })).json() as { status: string; setup: { activity: boolean; permission: boolean } };
+    expect(await status()).toMatchObject({ status: "waiting", setup: { activity: false, permission: false } });
+    expect((await app.inject({ url: "/api/overview" })).json().counts).toMatchObject({ total: 1, ok: 0, waiting: 1 });
+
+    await app.inject({ method: "POST", url: "/api/v1/check", headers: { authorization: `Bearer ${a.api_key}` }, payload: { action: "email.send" } });
+    expect(await status()).toMatchObject({ status: "ok", setup: { activity: false, permission: true } });
+
+    addEvent(db, "silent", NOW - MINUTE, {});
+    expect(await status()).toMatchObject({ status: "ok", setup: { activity: true, permission: true }, last_activity_at: NOW - MINUTE });
+  });
+});

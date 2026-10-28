@@ -1,6 +1,6 @@
 {
   "name": "agent-hq-zapier",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Orvanta for Zapier: ask permission before sensitive actions, act on human decisions, report activity.",
   "main": "index.js",
   "private": true,

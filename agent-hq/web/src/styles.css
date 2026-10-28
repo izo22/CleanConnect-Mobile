@@ -240,6 +240,8 @@ details.prompt p { font-size: 13px; line-height: 1.5; color: var(--ink-2); paddi
 .rule .sentence { font-size: 15px; font-weight: 600; line-height: 1.6; }
 .rule .sentence input { width: 84px; min-height: 34px; padding: 0 10px; margin: 0 4px; border: 2px solid var(--line); border-radius: 10px; background: var(--sunken); font-weight: 700; text-align: center; }
 .rule .sentence input:focus { border-color: var(--accent); outline: none; }
+.rule .sentence select { min-height: 34px; padding: 0 8px; margin: 0 4px; border: 2px solid var(--line); border-radius: 10px; background: var(--sunken); font-weight: 700; }
+.rule .sentence select:focus { border-color: var(--accent); outline: none; }
 .rule .stat { font-size: 13px; color: var(--muted); }
 .rule.hot .stat { color: var(--warn-text); font-weight: 600; }
 .switch { appearance: none; -webkit-appearance: none; width: 48px; height: 28px; border-radius: 999px; background: #e4dfd7; position: relative; cursor: pointer; flex: none; margin: 0; transition: background 0.2s; }
@@ -336,3 +338,10 @@ fieldset.plain:disabled input { opacity: 0.6; cursor: not-allowed; }
 .btn-google:hover { background: var(--sunken); }
 .or { display: flex; align-items: center; gap: 12px; color: var(--faint); font-size: 12px; }
 .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.setup { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 18px; background: #f3f6ff; }
+.setup .step { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--ink-2); }
+.setup .mark { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #c5d1f0; display: inline-flex; align-items: center; justify-content: center; background: #fff; }
+.setup .step.done .mark { border-color: var(--ok); background: var(--ok); color: #fff; }
+.setup .text { display: flex; flex-direction: column; gap: 2px; }
+.setup .text b { color: var(--ink); font-weight: 700; }
+.setup .text small { font-size: 12px; color: var(--muted); line-height: 1.45; }

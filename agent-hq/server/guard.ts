@@ -23,6 +23,10 @@ export interface CheckRequest {
    * of a "Wait" node here, so the workflow sleeps until someone decides.
    */
   callback_url?: string;
+  /** What the agent received (e.g. the customer's e-mail): read by the AI check. */
+  input?: string;
+  /** What the agent is about to send or do: read by the AI check before it goes out. */
+  output?: string;
 }
 
 export type CheckResult =
@@ -50,7 +54,7 @@ function bump(db: DB, rule: RuleRow) {
   run(db, "UPDATE rules SET trigger_count = trigger_count + 1 WHERE id = ?", rule.id);
 }
 
-function requestApproval(db: DB, agent: AgentRow, req: CheckRequest, reason: string, now: number): number {
+export function requestApproval(db: DB, agent: AgentRow, req: CheckRequest, reason: string, now: number): number {
   const title = req.summary?.trim() || `${req.action}${req.amount_cents ? " · " + money(req.amount_cents) : ""}`;
   const res = run(
     db,
