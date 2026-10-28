@@ -163,6 +163,23 @@ grep '^ADMIN_TOKEN' .env       # votre code d'installation
 
 Ouvrez l'application : elle demande de créer le premier compte avec ce code. Toutes les données existantes (agents, alertes, règles, connexions) se retrouvent dans votre premier espace ; renommez-le depuis **Membres** si besoin. Les scripts qui utilisaient `x-admin-token` continuent de fonctionner sur ce premier espace.
 
+## Un n8n de test sur le même serveur
+
+Pour essayer l'intégration n8n sans abonnement n8n (l'essai gratuit de n8n Cloud ne donne pas accès à l'API dont Orvanta a besoin) :
+
+1. Chez Cloudflare, un enregistrement `A` : nom `n8n`, valeur l'IP du serveur, nuage **gris**.
+2. Sur le serveur :
+
+   ```bash
+   cd ~/CleanConnect-Mobile/agent-hq
+   echo "N8N_DOMAIN=n8n.orvantahq.io" >> .env
+   sudo docker compose -f docker-compose.yml -f docker-compose.n8n.yml up -d
+   ```
+
+3. Ouvrez `https://n8n.orvantahq.io` et créez le compte propriétaire de ce n8n.
+
+Il utilise environ 300 Mo de mémoire : arrêtez-le après vos essais avec `sudo docker compose -f docker-compose.yml -f docker-compose.n8n.yml stop n8n`.
+
 ## Au quotidien
 
 | Pour… | Commande (dans `CleanConnect-Mobile/agent-hq`) |

@@ -27,6 +27,12 @@
 	}
 }
 
+# Optional test n8n (docker-compose.n8n.yml), e.g. n8n.orvantahq.io.
+{$N8N_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy n8n:5678
+}
+
 www.{$SITE_DOMAIN} {
 	redir https://{$SITE_DOMAIN}{uri} permanent
 }

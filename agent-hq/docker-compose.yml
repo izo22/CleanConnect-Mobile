@@ -32,6 +32,8 @@ services:
       DOMAIN: ${DOMAIN}
       # Public website (optional); a local name keeps Caddy quiet when unset.
       SITE_DOMAIN: ${SITE_DOMAIN:-site.localhost}
+      # Test n8n (docker-compose.n8n.yml), optional.
+      N8N_DOMAIN: ${N8N_DOMAIN:-n8n.localhost}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./site:/srv/site:ro
