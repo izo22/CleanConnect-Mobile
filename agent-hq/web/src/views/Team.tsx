@@ -20,6 +20,13 @@ const levels = () => [
   { label: tr("Level 2 · Autonomous", "Niveau 2 · Autonome"), desc: tr("It acts alone; your guardrails always apply.", "Il agit seul ; vos garde-fous s'appliquent toujours.") },
 ];
 
+/** When failures raise an alert: the three choices on the agent's page. */
+const sensitivities = (): Array<{ id: "normal" | "high" | "strict"; label: string; desc: string }> => [
+  { id: "normal", label: tr("Normal", "Normale"), desc: tr("Alert when half its tasks fail over 30 minutes. A failure now and then is ignored.", "Alerte quand la moitié de ses tâches échouent sur 30 minutes. Un échec de temps en temps est ignoré.") },
+  { id: "high", label: tr("Alert at the first failure", "Alerte au premier échec"), desc: tr("For an important agent: you know as soon as one task fails.", "Pour un agent important : vous le savez dès qu'une tâche échoue.") },
+  { id: "strict", label: tr("Alert, then pause after 3 failures", "Alerte, puis pause après 3 échecs"), desc: tr("For a critical agent: it stops itself after 3 failures in a row.", "Pour un agent critique : il s'arrête tout seul après 3 échecs d'affilée.") },
+];
+
 const PAGE = 24;
 
 export function Team({ selected, onSelect }: { selected: string | null; onSelect: (id: string | null) => void }) {
@@ -177,6 +184,19 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
               onClick={() => data.autonomy !== i && patch({ autonomy: i }, tr(`${data.name} moves to level ${i}.`, `${data.name} passe au niveau ${i}.`))}>
               <span className="radio" />
               <span><b>{l.label}</b><small>{l.desc}</small></span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <span className="block-title">{tr("When it fails", "Quand il échoue")}</span>
+        <div className="levels" role="group" aria-label={tr("When it fails", "Quand il échoue")}>
+          {sensitivities().map((s) => (
+            <button key={s.id} type="button" className="level" aria-pressed={data.alert_sensitivity === s.id} disabled={!operate}
+              onClick={() => data.alert_sensitivity !== s.id && patch({ alert_sensitivity: s.id }, tr(`Failure alerts for ${data.name}: ${s.label.toLowerCase()}.`, `Alertes d'échec pour ${data.name} : ${s.label.toLowerCase()}.`))}>
+              <span className="radio" />
+              <span><b>{s.label}</b><small>{s.desc}</small></span>
             </button>
           ))}
         </div>

@@ -15,6 +15,7 @@ import {
   notifyChange,
   type AgentRow,
   type AlertRow,
+  type AlertSensitivity,
   type ApprovalRow,
   type RuleRow,
 } from "./model.ts";
@@ -499,6 +500,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         access: { type: "array", maxItems: 30, items: { type: "string", maxLength: 80 } },
         minutes_per_task: { type: "number", minimum: 0, maximum: 600 },
         review_rate: { type: "number", minimum: 0, maximum: 1 },
+        alert_sensitivity: { enum: ["normal", "high", "strict"] },
         prompt: { type: "string", maxLength: 50_000 },
       },
     } as const;
@@ -506,6 +508,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     type AgentBody = Partial<{
       name: string; mission: string; owner_name: string; owner_email: string; platform: string; autonomy: number;
       budget_cents: number; expected_language: string | null; access: string[]; minutes_per_task: number; prompt: string; review_rate: number;
+      alert_sensitivity: AlertSensitivity;
     }>;
 
     admin.post<{ Body: AgentBody }>("/api/agents", { schema: { body: { ...agentBody, required: ["name"] } } }, async (req, reply) => {
@@ -543,6 +546,10 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         }
         if (rest.autonomy !== undefined && rest.autonomy !== agent.autonomy) {
           logActivity(db, req.ctx.actor, tr(`${agent.name} moves to trust level ${rest.autonomy}.`, `${agent.name} passe au niveau de confiance ${rest.autonomy}.`), agent.id, t);
+        }
+        if (rest.alert_sensitivity !== undefined && rest.alert_sensitivity !== agent.alert_sensitivity) {
+          const label = { normal: tr("normal", "normale"), high: tr("alert at the first failure", "alerte au premier échec"), strict: tr("alert at the first failure, pause after 3 in a row", "alerte au premier échec, pause après 3 d'affilée") }[rest.alert_sensitivity];
+          logActivity(db, req.ctx.actor, tr(`${agent.name}: failure sensitivity set to ${label}.`, `${agent.name} : sensibilité aux échecs réglée sur ${label}.`), agent.id, t);
         }
         if (rest.budget_cents !== undefined && rest.budget_cents !== agent.budget_cents) {
           logActivity(db, req.ctx.actor, tr(`${agent.name}'s budget changed.`, `Budget de ${agent.name} modifié.`), agent.id, t);

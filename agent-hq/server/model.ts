@@ -28,8 +28,17 @@ export interface AgentRow {
   external_id: string | null;
   last_check_at: number | null;
   workspace_id: string;
+  alert_sensitivity: AlertSensitivity;
   created_at: number;
 }
+
+/**
+ * When failures raise an alert. normal: half its tasks fail over 30 minutes.
+ * high: from the first failure. strict: from the first failure, and it is
+ * paused after STRICT_FAILURES failures in a row.
+ */
+export type AlertSensitivity = "normal" | "high" | "strict";
+export const STRICT_FAILURES = 3;
 
 export interface AlertRow {
   id: number;

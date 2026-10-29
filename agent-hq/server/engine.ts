@@ -9,6 +9,7 @@ import {
   DAY,
   HOUR,
   MINUTE,
+  STRICT_FAILURES,
   activePrompt,
   getAgent,
   getRules,
@@ -127,15 +128,27 @@ function detectDuplicates(db: DB, agent: AgentRow, now: number): Finding | null 
   };
 }
 
+/** Success (true) or failure of the agent's latest events, newest first. */
+function lastResults(db: DB, agentId: string, count: number): boolean[] {
+  return all<{ success: number }>(db, "SELECT success FROM events WHERE agent_id = ? ORDER BY ts DESC, id DESC LIMIT ?", agentId, count).map((r) => !!r.success);
+}
+
 function detectErrors(db: DB, agent: AgentRow, now: number): Finding | "healthy" | null {
   const from = since(db, agent.id, ERROR_FAMILY_KINDS, now - ERROR_WINDOW);
   const stats = get<{ n: number; f: number | null }>(db, "SELECT COUNT(*) n, SUM(success = 0) f FROM events WHERE agent_id = ? AND ts >= ?", agent.id, from);
   const n = stats?.n ?? 0;
   const f = stats?.f ?? 0;
-  if (n < 5) return null;
-  const rate = f / n;
-  if (rate < 0.2) return "healthy";
-  if (rate < 0.5) return null;
+  const rate = n ? f / n : 0;
+  if (agent.alert_sensitivity === "normal") {
+    // A failure now and then is noise: only a trend raises an alert.
+    if (n < 5) return null;
+    if (rate < 0.2) return "healthy";
+    if (rate < 0.5) return null;
+  } else {
+    // A sensitive agent is flagged from its first failure, and clear once it works again.
+    if (n === 0) return null;
+    if (f === 0 || lastResults(db, agent.id, 3).every((ok) => ok)) return "healthy";
+  }
   const top = get<{ error_code: string | null; error_message: string | null; action: string | null; first: number }>(
     db,
     `SELECT error_code, error_message, action, COUNT(*) c, MIN(ts) first FROM events
@@ -173,7 +186,9 @@ function detectErrors(db: DB, agent: AgentRow, now: number): Finding | "healthy"
   return {
     kind: "errors",
     severity: "warning",
-    title: tr(`${pct}% of its tasks are failing`, `${pct} % de ses tâches échouent`),
+    title: rate >= 0.5
+      ? tr(`${pct}% of its tasks are failing`, `${pct} % de ses tâches échouent`)
+      : tr(`${f} failed task${f === 1 ? "" : "s"} in the last 30 minutes`, `${f} tâche${f === 1 ? "" : "s"} échouée${f === 1 ? "" : "s"} ces 30 dernières minutes`),
     since: top?.first,
     cause: t.cause,
     impact: tr(`${f} of ${n} tasks failed in the last 30 minutes.`, `${f} tâches échouées sur ${n} ces 30 dernières minutes.`),
@@ -340,6 +355,15 @@ export function evaluateAgent(db: DB, agentId: string, now = Date.now()): void {
     for (const k of ERROR_FAMILY_KINDS.filter((k) => k !== err.kind)) {
       const other = get<AlertRow>(db, "SELECT * FROM alerts WHERE agent_id = ? AND kind = ? AND status = 'open'", agent.id, k);
       if (other) resolveAlert(db, other.id, tr("Replaced by a more recent diagnosis.", "Remplacée par un diagnostic plus récent."), now);
+    }
+    // Strict agents stop themselves instead of failing again and again.
+    const last = lastResults(db, agent.id, STRICT_FAILURES);
+    if (agent.alert_sensitivity === "strict" && !agent.paused && last.length === STRICT_FAILURES && last.every((ok) => !ok)) {
+      const why = tr(`Paused automatically: ${STRICT_FAILURES} failures in a row`, `Mis en pause automatiquement : ${STRICT_FAILURES} échecs d'affilée`);
+      run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", why, agent.id);
+      run(db, "UPDATE alerts SET resolution = ? WHERE agent_id = ? AND kind = ? AND status = 'open'", tr(`${PRODUCT_NAME} paused it automatically.`, `${PRODUCT_NAME} l'a mis en pause automatiquement.`), agent.id, err.kind);
+      logActivity(db, PRODUCT_NAME, tr(`${agent.name} paused automatically after ${STRICT_FAILURES} failures in a row.`, `${agent.name} mis en pause automatiquement après ${STRICT_FAILURES} échecs d'affilée.`), agent.id, now);
+      notifyWorkspace(db, agent.workspace_id, tr(`⏸ ${agent.name} was paused automatically after ${STRICT_FAILURES} failures in a row.`, `⏸ ${agent.name} a été mis en pause automatiquement après ${STRICT_FAILURES} échecs d'affilée.`), { path: `/#/team/${encodeURIComponent(agent.id)}` });
     }
   }
 

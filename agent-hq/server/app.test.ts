@@ -279,3 +279,48 @@ describe("removing the demo", () => {
     expect(get(db, "SELECT workspace_id FROM agents WHERE id = 'client-bot'")).toEqual({ workspace_id: "ws_client" });
   });
 });
+
+describe("failure sensitivity", () => {
+  const fail = (id: string, minutesAgo: number) => addEvent(db, id, NOW - minutesAgo * MINUTE, { kind: "error", success: false, code: "ECONNREFUSED", message: "connect failed", action: "http.request" });
+  const ok = (id: string, minutesAgo: number) => addEvent(db, id, NOW - minutesAgo * MINUTE, {});
+
+  it("waits for a trend by default, alerts at the first failure when sensitive", () => {
+    for (const id of ["calm", "watchful"]) {
+      addAgent(db, id);
+      for (let m = 20; m > 1; m--) ok(id, m);
+      fail(id, 1);
+    }
+    run(db, "UPDATE agents SET alert_sensitivity = 'high' WHERE id = 'watchful'");
+    evaluateAgent(db, "calm", NOW);
+    evaluateAgent(db, "watchful", NOW);
+    expect(openAlertKinds(db, "calm")).toEqual([]);
+    expect(openAlertKinds(db, "watchful")).toEqual(["errors"]);
+    expect(get(db, "SELECT title FROM alerts WHERE agent_id = 'watchful'")).toEqual({ title: "1 failed task in the last 30 minutes" });
+
+    // Working again: the alert closes on its own.
+    for (let m = 0; m < 3; m++) addEvent(db, "watchful", NOW + m * MINUTE, {});
+    evaluateAgent(db, "watchful", NOW + 3 * MINUTE);
+    expect(openAlertKinds(db, "watchful")).toEqual([]);
+  });
+
+  it("pauses a strict agent after 3 failures in a row", () => {
+    addAgent(db, "strict");
+    run(db, "UPDATE agents SET alert_sensitivity = 'strict' WHERE id = 'strict'");
+    ok("strict", 5);
+    fail("strict", 3);
+    fail("strict", 2);
+    evaluateAgent(db, "strict", NOW);
+    expect(getAgent(db, "strict")!.paused).toBe(0);
+    fail("strict", 1);
+    evaluateAgent(db, "strict", NOW);
+    expect(getAgent(db, "strict")).toMatchObject({ paused: 1, pause_reason: "Paused automatically: 3 failures in a row" });
+  });
+
+  it("can be changed from the agent's page", async () => {
+    const app = buildApp({ db, now: () => NOW });
+    addAgent(db, "a");
+    const res = await app.inject({ method: "PATCH", url: "/api/agents/a", payload: { alert_sensitivity: "strict" } });
+    expect(res.json().alert_sensitivity).toBe("strict");
+    expect((await app.inject({ method: "PATCH", url: "/api/agents/a", payload: { alert_sensitivity: "panic" } })).statusCode).toBe(400);
+  });
+});

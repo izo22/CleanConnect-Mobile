@@ -212,6 +212,7 @@ export function agentDetail(db: DB, ws: string, id: string, now = Date.now()) {
     prompts: all<PromptVersionRow>(db, "SELECT * FROM prompt_versions WHERE agent_id = ? ORDER BY version DESC", id),
     alerts: all<AlertRow>(db, "SELECT * FROM alerts WHERE agent_id = ? ORDER BY created_at DESC LIMIT 10", id).map((a) => alertView(db, a)),
     review_rate: agent.review_rate,
+    alert_sensitivity: agent.alert_sensitivity,
     quality: agentQuality(db, id, now),
     activity: activity(db, ws, 15, id),
   };

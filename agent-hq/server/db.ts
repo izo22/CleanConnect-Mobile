@@ -231,6 +231,7 @@ const ADDED_COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   ["users", "email_verified", "INTEGER NOT NULL DEFAULT 1"],
   // The workspace's own chat webhook (Slack, Teams, Google Chat, Discord).
   ["workspaces", "notify_url", "TEXT"],
+  ["agents", "alert_sensitivity", "TEXT NOT NULL DEFAULT 'normal'"],
   ["events", "input", "TEXT"],
   ["events", "output", "TEXT"],
   // NULL = not sampled, 'pending' = waiting for the AI reviewer, 'done' = reviewed.
