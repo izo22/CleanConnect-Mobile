@@ -263,3 +263,19 @@ describe("connection status", () => {
     expect(await status()).toMatchObject({ status: "ok", setup: { activity: true, permission: true }, last_activity_at: NOW - MINUTE });
   });
 });
+
+describe("removing the demo", () => {
+  it("empties only the first workspace and gives it the usual guardrails", async () => {
+    const { seed, clearDemo } = await import("./seed.ts");
+    seed(db, NOW);
+    run(db, "INSERT INTO workspaces (id, name, created_at) VALUES ('ws_client', 'Client', ?)", NOW);
+    addAgent(db, "client-bot");
+    run(db, "UPDATE agents SET workspace_id = 'ws_client' WHERE id = 'client-bot'");
+    clearDemo(db, NOW);
+    expect(get(db, "SELECT COUNT(*) n FROM agents WHERE workspace_id = 'main'")).toEqual({ n: 0 });
+    expect(get(db, "SELECT COUNT(*) n FROM approvals")).toEqual({ n: 0 });
+    expect(get(db, "SELECT name FROM workspaces WHERE id = 'main'")).toEqual({ name: "My workspace" });
+    expect(get(db, "SELECT COUNT(*) n FROM rules WHERE workspace_id = 'main'")).toEqual({ n: 5 });
+    expect(get(db, "SELECT workspace_id FROM agents WHERE id = 'client-bot'")).toEqual({ workspace_id: "ws_client" });
+  });
+});

@@ -163,6 +163,17 @@ grep '^ADMIN_TOKEN' .env       # votre code d'installation
 
 Ouvrez l'application : elle demande de créer le premier compte avec ce code. Toutes les données existantes (agents, alertes, règles, connexions) se retrouvent dans votre premier espace ; renommez-le depuis **Membres** si besoin. Les scripts qui utilisaient `x-admin-token` continuent de fonctionner sur ce premier espace.
 
+## Supprimer la démo
+
+Le premier espace contient la démo de 100 agents si `SEED_DEMO=true`. Pour le vider définitivement (les comptes, les membres et les autres espaces ne bougent pas, une sauvegarde est faite avant) :
+
+```bash
+cd ~/CleanConnect-Mobile/agent-hq
+sed -i 's/^SEED_DEMO=.*/SEED_DEMO=false/' .env
+sudo docker compose up -d --build
+sudo docker compose exec app node --import tsx server/clear-demo.ts
+```
+
 ## Un n8n de test sur le même serveur
 
 Pour essayer l'intégration n8n sans abonnement n8n (l'essai gratuit de n8n Cloud ne donne pas accès à l'API dont Orvanta a besoin) :

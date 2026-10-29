@@ -6,6 +6,7 @@
  * instance language: a US company in English, a French one in French.
  */
 import { MAIN_WORKSPACE, run, tx, type DB } from "./db.ts";
+import { addDefaultRules } from "./auth.ts";
 import { evaluateAll } from "./engine.ts";
 import { muteNotifications } from "./notify.ts";
 import { lang, tr } from "./i18n.ts";
@@ -273,6 +274,23 @@ export function buildAgents(c: DemoContent = content()): SeedAgent[] {
   return [...c.named(c.owners), ...generated];
 }
 
+/** Only the first workspace holds the demo: client workspaces are never touched. Members and connections stay. */
+function emptyFirstWorkspace(db: DB) {
+  const demoAgents = "SELECT id FROM agents WHERE workspace_id = ?";
+  for (const t of ["reviews", "reports", "events", "alerts", "approvals", "prompt_versions", "hooks"]) run(db, `DELETE FROM ${t} WHERE agent_id IN (${demoAgents})`, MAIN_WORKSPACE);
+  for (const t of ["activity", "rules", "agents"]) run(db, `DELETE FROM ${t} WHERE workspace_id = ?`, MAIN_WORKSPACE);
+}
+
+/** Removes the demo for good: the first workspace starts over empty, with the usual guardrails. */
+export function clearDemo(db: DB, now = Date.now()) {
+  tx(db, () => {
+    emptyFirstWorkspace(db);
+    addDefaultRules(db, MAIN_WORKSPACE, now);
+    run(db, "UPDATE workspaces SET name = ? WHERE id = ?", tr("My workspace", "Mon espace"), MAIN_WORKSPACE);
+    logActivity(db, "Orvanta", tr("Demo removed: this workspace starts empty.", "Démo supprimée : cet espace repart à vide."), null, now, MAIN_WORKSPACE);
+  });
+}
+
 /** The demo's alerts are not news: nobody's chat channel is pinged for them. */
 export function seed(db: DB, now = Date.now()) {
   muteNotifications(true);
@@ -296,10 +314,7 @@ function fill(db: DB, now: number) {
     insertEvent.run(agentId, Math.round(ts), kind, action, target, ok ? 1 : 0, cost, Math.round(800 + rand() * 6000), language, code, msg);
 
   tx(db, () => {
-    // Only the first workspace holds the demo: client workspaces are never touched.
-    const demoAgents = "SELECT id FROM agents WHERE workspace_id = ?";
-    for (const t of ["reviews", "reports", "events", "alerts", "approvals", "prompt_versions", "hooks"]) run(db, `DELETE FROM ${t} WHERE agent_id IN (${demoAgents})`, MAIN_WORKSPACE);
-    for (const t of ["activity", "rules", "agents"]) run(db, `DELETE FROM ${t} WHERE workspace_id = ?`, MAIN_WORKSPACE);
+    emptyFirstWorkspace(db);
     run(db, "UPDATE workspaces SET name = ? WHERE id = ?", tr("Demo workspace", "Espace de démonstration"), MAIN_WORKSPACE);
 
     for (const a of agents) {
