@@ -81,7 +81,13 @@ export function Team({ selected, onSelect }: { selected: string | null; onSelect
               </div>
             )}
           </div>
-          {selected && <AgentDrawer id={selected} onClose={() => onSelect(null)} />}
+          {selected && (
+            <>
+              {/* The agent's page slides over the team; clicking outside or Escape closes it. */}
+              <div className="drawer-bg" onClick={() => onSelect(null)} aria-hidden="true" />
+              <AgentDrawer id={selected} onClose={() => onSelect(null)} />
+            </>
+          )}
         </div>
       )}
       {creating && <CreateAgent onClose={() => setCreating(false)} onCreated={(id) => { setCreating(false); onSelect(id); }} />}
@@ -133,6 +139,11 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   const operate = useCan()("member");
 
   useEffect(() => { setEditing(false); setShowKey(false); setReporting(null); }, [id]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !reporting && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose, reporting]);
 
   if (error) return <aside className="drawer"><ErrorBox message={error.message} /></aside>;
   if (!data) return <aside className="drawer"><div className="skeleton" /></aside>;
@@ -167,7 +178,7 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
         <div className="fact" style={{ background: "transparent", padding: "12px 0" }}><span>{tr("Status", "Statut")}</span><StatusPill status={data.status} /></div>
         <div className="fact"><span>{tr("Tasks (24 h)", "Tâches (24 h)")}</span><b>{num(data.tasks_24h)}</b></div>
         <div className="fact"><span>{tr("Success", "Réussite")}</span><b>{pct(data.success_rate)}</b></div>
-        <div className="fact"><span>{tr("Time saved (24 h)", "Temps gagné (24 h)")}</span><b>{tr(`${num(data.minutes_saved_24h / 60)} hrs`, `${num(data.minutes_saved_24h / 60)} h`)}</b></div>
+        <div className="fact"><span>{tr("Time saved (24 h)", "Temps gagné (24 h)")}</span><b>{tr(`${num(data.minutes_saved_24h / 60)} hr${Math.round(data.minutes_saved_24h / 60) === 1 ? "" : "s"}`, `${num(data.minutes_saved_24h / 60)} h`)}</b></div>
         <div className="fact"><span>{tr("Platform", "Plateforme")}</span><b>{data.platform}</b></div>
       </div>
       {data.pause_reason && <span className="note">{tr("Paused: ", "En pause : ")}{data.pause_reason}</span>}
