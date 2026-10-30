@@ -28,6 +28,8 @@ import { deliverDecision, validCallbackUrl } from "./callbacks.ts";
 import { currency, lang, tr } from "./i18n.ts";
 import { N8nClient, N8nError, getIntegration, setWorkflowActive, syncIntegration, type IntegrationRow } from "./n8n.ts";
 import { n8nSnippet } from "./n8n-template.ts";
+import { listSteps, protectStep, undoLastProtection } from "./n8n-protect.ts";
+import { PRODUCT_NAME } from "./brand.ts";
 import { agentStatePayload, decisionPayload, fireAgentState, fireDecision, safeOutboundUrl, subscribe, unsubscribe } from "./hooks.ts";
 import { activity, agentDetail, agentSummaries, alertsView, approvalsView, overview, qualityView, rulesView } from "./queries.ts";
 import { EARLY_ACCESS_INPUT, earlyAccessList, rateLimiter, saveEarlyAccess, type EarlyAccessIn } from "./early-access.ts";
@@ -277,6 +279,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
             callback_url: { type: "string", maxLength: 2000 },
             input: { type: "string", maxLength: 20_000 },
             output: { type: "string", maxLength: 20_000 },
+            require_approval: { type: "boolean" },
           },
         },
       },
@@ -715,6 +718,21 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       return { ...integrationView(getIntegration(db, integration.id)!), sync: result, message };
     });
 
+    // A new key (e.g. with more permissions) without disconnecting: the agents and their history stay as they are.
+    admin.patch<{ Params: { id: string }; Body: { api_key: string } }>(
+      "/api/integrations/:id",
+      { schema: { body: { type: "object", required: ["api_key"], additionalProperties: false, properties: { api_key: { type: "string", minLength: 10, maxLength: 2000 } } } } },
+      async (req) => {
+        need(req, "member");
+        const integration = integrationHere(req, Number(req.params.id));
+        await new N8nClient(integration.base_url, req.body.api_key, fetchImpl).listWorkflows();
+        run(db, "UPDATE integrations SET api_key = ?, last_error = NULL WHERE id = ?", req.body.api_key, integration.id);
+        logActivity(db, req.ctx.actor, tr(`New API key for n8n “${integration.name}”.`, `Nouvelle clé API pour n8n « ${integration.name} ».`), null, now(), req.ctx.ws);
+        notifyChange();
+        return { message: tr("Key changed and tested: the connection works.", "Clé changée et testée : la connexion fonctionne.") };
+      },
+    );
+
     admin.delete<{ Params: { id: string } }>("/api/integrations/:id", async (req) => {
       need(req, "member");
       const integration = integrationHere(req, Number(req.params.id));
@@ -737,6 +755,49 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       const agent = agentHere(req, req.params.id);
       const host = `${req.protocol}://${req.headers.host}`;
       return n8nSnippet(process.env.PUBLIC_URL ?? host, agent.api_key);
+    });
+
+    // "Protect a step": Orvanta inserts the permission check into the n8n workflow itself.
+    admin.get<{ Params: { id: string } }>("/api/agents/:id/n8n/steps", async (req) => {
+      need(req, "member");
+      return listSteps(db, agentHere(req, req.params.id), fetchImpl);
+    });
+
+    admin.post<{ Params: { id: string }; Body: { step: string; always: boolean; amount_field?: string; max_amount?: number } }>(
+      "/api/agents/:id/n8n/protect",
+      {
+        schema: {
+          body: {
+            type: "object", required: ["step", "always"], additionalProperties: false,
+            properties: {
+              step: { type: "string", minLength: 1, maxLength: 200 }, always: { type: "boolean" },
+              amount_field: { type: "string", maxLength: 100 }, max_amount: { type: "number", minimum: 0, maximum: 10_000_000 },
+            },
+          },
+        },
+      },
+      async (req) => {
+        need(req, "member");
+        const agent = agentHere(req, req.params.id);
+        const orvantaUrl = process.env.PUBLIC_URL ?? `${req.protocol}://${req.headers.host}`;
+        const { step, always, amount_field, max_amount } = req.body;
+        const settings = { always, amountField: amount_field, maxAmountCents: max_amount === undefined ? undefined : Math.round(max_amount * 100) };
+        await protectStep(db, agent, step, settings, { orvantaUrl, actor: req.ctx.actor, now: now(), fetchImpl });
+        notifyChange();
+        return {
+          message: tr(
+            `“${req.body.step}” is protected. Next time the workflow reaches it, it asks ${PRODUCT_NAME} first.`,
+            `« ${req.body.step} » est protégée. La prochaine fois que le workflow y arrive, il demande d'abord à ${PRODUCT_NAME}.`,
+          ),
+        };
+      },
+    );
+
+    admin.post<{ Params: { id: string } }>("/api/agents/:id/n8n/undo", async (req) => {
+      need(req, "member");
+      await undoLastProtection(db, agentHere(req, req.params.id), { actor: req.ctx.actor, now: now(), fetchImpl });
+      notifyChange();
+      return { message: tr("Done: the workflow is back as it was before.", "C'est fait : le workflow est revenu comme avant.") };
     });
   });
 

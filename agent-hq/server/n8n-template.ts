@@ -13,7 +13,7 @@ import { randomUUID } from "node:crypto";
 import { tr } from "./i18n.ts";
 import { PRODUCT_NAME } from "./brand.ts";
 
-const condition = (left: string, right: string) => ({
+export const condition = (left: string, right: string) => ({
   conditions: {
     options: { caseSensitive: true, leftValue: "", typeValidation: "strict", version: 2 },
     conditions: [{ id: randomUUID(), leftValue: left, rightValue: right, operator: { type: "string", operation: "equals" } }],

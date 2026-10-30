@@ -27,6 +27,8 @@ export interface CheckRequest {
   input?: string;
   /** What the agent is about to send or do: read by the AI check before it goes out. */
   output?: string;
+  /** This step always waits for a human (set when a step is protected with "always ask"). */
+  require_approval?: boolean;
 }
 
 export type CheckResult =
@@ -97,6 +99,11 @@ export function check(db: DB, agent: AgentRow, req: CheckRequest, now = Date.now
           `Pas d'envoi entre ${hourLabel(p.start_hour)} et ${hourLabel(p.end_hour)}. Réessayez plus tard.`,
         ), rule_id: rule.id };
     }
+  }
+
+  if (req.require_approval) {
+    const id = requestApproval(db, agent, req, tr("this step always waits for a human decision.", "cette étape attend toujours une décision humaine."), now);
+    return { decision: "needs_approval", reason: tr("This step always needs a human approval.", "Cette étape demande toujours une validation humaine."), approval_id: id };
   }
 
   if (agent.autonomy === 0) {

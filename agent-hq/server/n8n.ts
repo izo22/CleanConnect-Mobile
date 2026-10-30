@@ -8,6 +8,8 @@
  *    resuming reactivates it. An execution already running finishes.
  * 3. Control before acting — the workflow calls /api/v1/check before a
  *    sensitive step and waits (n8n "Wait" node) for the human decision.
+ *    Orvanta can insert that check itself (n8n-protect.ts) when the key may
+ *    update workflows.
  */
 import { all, get, run, tx, type DB } from "./db.ts";
 import { evaluateAgent } from "./engine.ts";
@@ -15,7 +17,12 @@ import { DAY, HOUR, logActivity, newApiKey, notifyChange, type AgentRow } from "
 import { tr } from "./i18n.ts";
 import { PRODUCT_NAME } from "./brand.ts";
 
-export interface N8nWorkflow { id: string; name: string; active: boolean; isArchived?: boolean; nodes?: Array<{ type: string; name: string }> }
+export interface N8nNode { name: string; type: string; typeVersion?: number; position: [number, number]; parameters?: Record<string, unknown>; disabled?: boolean; [key: string]: unknown }
+export type N8nConnections = Record<string, { main?: Array<Array<{ node: string; type: string; index: number }> | null>; [type: string]: unknown }>;
+export interface N8nWorkflow {
+  id: string; name: string; active: boolean; isArchived?: boolean;
+  nodes?: N8nNode[]; connections?: N8nConnections; settings?: Record<string, unknown>;
+}
 
 export interface N8nExecution {
   id: string | number;
@@ -57,12 +64,13 @@ export class N8nClient {
     this.base = baseUrl.replace(/\/+$/, "");
   }
 
-  private async call<T>(path: string, method = "GET"): Promise<T> {
+  private async call<T>(path: string, method = "GET", payload?: unknown): Promise<T> {
     let res: Response;
     try {
       res = await this.fetchImpl(`${this.base}/api/v1${path}`, {
         method,
-        headers: { "X-N8N-API-KEY": this.apiKey, accept: "application/json" },
+        headers: { "X-N8N-API-KEY": this.apiKey, accept: "application/json", ...(payload ? { "content-type": "application/json" } : {}) },
+        body: payload ? JSON.stringify(payload) : undefined,
         signal: AbortSignal.timeout(15_000),
       });
     } catch (err) {
@@ -111,7 +119,18 @@ export class N8nClient {
   deactivate(workflowId: string) {
     return this.call<N8nWorkflow>(`/workflows/${workflowId}/deactivate`, "POST");
   }
+
+  getWorkflow(workflowId: string) {
+    return this.call<N8nWorkflow>(`/workflows/${workflowId}`);
+  }
+
+  updateWorkflow(workflowId: string, wf: Pick<N8nWorkflow, "name" | "nodes" | "connections" | "settings">) {
+    return this.call<N8nWorkflow>(`/workflows/${workflowId}`, "PUT", wf);
+  }
 }
+
+/** Workflows Orvanta is rewriting right now: briefly switched off on purpose, not by someone in n8n. */
+export const updatingWorkflows = new Set<string>();
 
 export const clientFor = (i: IntegrationRow, fetchImpl?: Fetch) => new N8nClient(i.base_url, i.api_key, fetchImpl);
 
@@ -175,7 +194,7 @@ export async function syncIntegration(db: DB, integration: IntegrationRow, clien
           continue;
         }
         if (existing.name !== wf.name) run(db, "UPDATE agents SET name = ? WHERE id = ?", wf.name, existing.id);
-        if (!existing.paused && !wf.active) {
+        if (!existing.paused && !wf.active && !updatingWorkflows.has(wf.id)) {
           // Switched off in n8n by someone: respect it and show it.
           run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", tr(...OFF_IN_N8N), existing.id);
           logActivity(db, "n8n", tr(`${existing.name} was switched off in n8n.`, `${existing.name} a été désactivé dans n8n.`), existing.id, now);

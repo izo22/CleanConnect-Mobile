@@ -340,7 +340,7 @@ function SetupChecklist({ agent }: { agent: AgentDetail }) {
         ? tr("Asks permission before acting", "Demande la permission avant d'agir")
         : tr("Doesn't ask permission yet (optional)", "Ne demande pas encore la permission (facultatif)"),
       hint: agent.setup.permission ? null : n8n
-        ? tr("Needed for approvals and the AI check: add the “Ask for permission” block below to the workflow.", "Nécessaire pour les validations et la vérification IA : ajoutez au workflow le bloc « Demander l'autorisation » ci-dessous.")
+        ? tr("Needed for approvals and the AI check: below, “Ask me before a step” adds it for you.", "Nécessaire pour les validations et la vérification IA : plus bas, « Me demander avant une étape » l'ajoute pour vous.")
         : tr("Needed for approvals and the AI check: add an “Ask Permission” step before the sensitive action in the Zap.", "Nécessaire pour les validations et la vérification IA : ajoutez une étape « Ask Permission » avant l'action sensible dans le Zap."),
     },
   ];

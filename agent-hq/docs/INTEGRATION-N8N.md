@@ -10,7 +10,7 @@ Ce guide s'adresse à la personne qui construit et maintient les workflows n8n (
 |---|---|---|---|
 | **1. Voir** | Donner une clé API n8n à Orvanta | Chaque workflow devient un agent. Ses réussites, ses échecs et le message d'erreur remontent toutes les 30 secondes. Les incidents sont expliqués en langage courant (anglais ou français selon l'instance). | n8n ne transmet pas le coût des appels d'IA. |
 | **2. Arrêter** | Rien de plus | « Mettre en pause » **désactive vraiment le workflow** dans n8n (mesuré : moins de 0,3 s). « Reprendre » le réactive. Si quelqu'un le réactive dans n8n alors qu'il est en pause dans Orvanta, Orvanta le coupe à nouveau. | Une exécution **déjà en cours** au moment de la pause va jusqu'au bout. |
-| **3. Contrôler** | Coller le bloc « Demander l'autorisation » avant l'étape sensible | Le workflow **s'arrête et attend** votre feu vert dans Orvanta avant de rembourser, payer ou envoyer. Approuvé : il continue. Refusé : il s'arrête. | Seules les étapes protégées par le bloc sont contrôlées. |
+| **3. Contrôler** | Dans Orvanta, choisir l'étape sensible (« Me demander avant une étape »), ou coller le bloc à la main | Le workflow **s'arrête et attend** votre feu vert dans Orvanta avant de rembourser, payer ou envoyer. Approuvé : il continue. Refusé : il s'arrête. | Seules les étapes protégées sont contrôlées. |
 
 Dans Orvanta, chaque agent affiche le niveau dont il bénéficie réellement : *Supervision + arrêt d'urgence* ou *Contrôle avant action*.
 
@@ -18,15 +18,26 @@ Dans Orvanta, chaque agent affiche le niveau dont il bénéficie réellement : *
 
 1. Dans n8n : **Settings → n8n API → Create an API key**.
 2. Donnez-lui **uniquement** ces droits :
-   `workflow:list`, `workflow:read`, `workflow:activate`, `workflow:deactivate`, `execution:list`, `execution:read`.
-   Orvanta n'a besoin ni de créer, ni de modifier, ni de supprimer vos workflows.
+   `workflow:list`, `workflow:read`, `workflow:update`, `workflow:activate`, `workflow:deactivate`, `execution:list`, `execution:read`.
+   `workflow:update` sert uniquement à « Me demander avant une étape » : Orvanta n'ajoute que son contrôle, garde une copie de l'ancienne version et ne crée ni ne supprime jamais de workflow. Sans ce droit, tout le reste fonctionne.
 3. Dans Orvanta : **Connexions → Connecter un serveur n8n**, collez l'adresse de n8n et la clé, puis **Tester et connecter**.
 
 Les workflows apparaissent dans **Mon équipe IA**. Renseignez le responsable et le budget de chacun dans sa fiche.
 
 ## Niveau 3 : faire attendre le feu vert
 
-1. Dans Orvanta, ouvrez la fiche de l'agent (le workflow), puis cliquez sur **Copier le bloc « Demander l'autorisation » pour n8n**.
+### Le plus simple : depuis Orvanta, sans ouvrir n8n
+
+1. Dans Orvanta, ouvrez la fiche de l'agent (le workflow), section **Me demander avant une étape**, puis **Choisir une étape**.
+2. Choisissez l'étape sensible (l'envoi du devis, le paiement…). Le déclencheur et les étapes à plusieurs entrées ne peuvent pas être choisis.
+3. Choisissez **À chaque fois** (rien ne part sans votre clic), ou **Seulement au-dessus d'un montant** : indiquez le nom du champ qui contient le montant dans n8n (par exemple `amount`) et le seuil. Ce seuil devient un garde-fou ordinaire, visible et modifiable dans **Garde-fous**.
+4. Cliquez sur **Protéger**. Orvanta coupe le workflow une seconde, ajoute 7 nœuds « Orvanta · … » juste avant l'étape, puis le réactive. L'étape reçoit exactement les mêmes données qu'avant.
+
+**Annuler la dernière modification** remet le workflow comme avant (Orvanta garde les 10 dernières versions).
+
+### À la main, dans n8n
+
+1. Dans Orvanta, ouvrez la fiche de l'agent (le workflow), dépliez **Vous préférez ajouter le bloc à la main dans n8n ?**, puis cliquez sur **Copier le bloc « Demander l'autorisation » pour n8n**.
    *Sur une instance en anglais, le bouton et les étapes s'appellent « Copy the “Ask for permission” block for n8n », « Allowed? », « Wait for the green light »… Le fonctionnement est identique.*
 2. Dans n8n, ouvrez le workflow et collez le bloc (Ctrl+V ou Cmd+V). Il contient 7 nœuds :
 
@@ -61,6 +72,9 @@ Demander l'autorisation → Autorisé ? ──oui──────────�
 - Orvanta n'accepte de rappeler que le serveur n8n connecté : une `callback_url` qui pointe ailleurs est refusée.
 
 ## Ce qui a été vérifié
+
+« Me demander avant une étape » a été testé contre un **vrai n8n** (2.44.7) : un workflow « devis » est protégé depuis Orvanta, la demande attend dans Décisions avec les détails, l'approbation envoie le devis avec ses données d'origine, un refus n'envoie rien, l'annulation remet les 3 nœuds d'origine, et avec un seuil de 5 000 un petit devis part tout de suite tandis qu'un gros attend.
+
 
 Le script `npm run verify:n8n` rejoue tout le parcours contre un **vrai n8n** (version 2.44 lors du dernier passage). Il crée trois workflows de test, connecte Orvanta, puis vérifie 16 points, dont :
 

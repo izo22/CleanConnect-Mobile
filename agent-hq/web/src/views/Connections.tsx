@@ -16,13 +16,15 @@ interface Integration {
   agents: number;
 }
 
-const SCOPES = ["workflow:list", "workflow:read", "workflow:activate", "workflow:deactivate", "execution:list", "execution:read"];
+const SCOPES = ["workflow:list", "workflow:read", "workflow:update", "workflow:activate", "workflow:deactivate", "execution:list", "execution:read"];
 
 export function Connections() {
   const { data, error, reload } = useData<Integration[]>("/api/integrations");
   const { run, busy } = useAction();
   const toast = useToast();
   const [form, setForm] = useState({ name: "", base_url: "", api_key: "" });
+  const [rekey, setRekey] = useState<number | null>(null);
+  const [newKey, setNewKey] = useState("");
   const [saving, setSaving] = useState(false);
   const operate = useCan()("member");
 
@@ -79,8 +81,22 @@ export function Connections() {
               </div>
               {operate && <div className="actions">
                 <button type="button" className="btn" disabled={busy !== null} onClick={() => run("s" + i.id, `/api/integrations/${i.id}/sync`).then(reload)}>{tr("Sync", "Synchroniser")}</button>
+                <button type="button" className="btn" disabled={busy !== null} aria-expanded={rekey === i.id} onClick={() => { setRekey(rekey === i.id ? null : i.id); setNewKey(""); }}>{tr("Change the key", "Changer la clé")}</button>
                 <button type="button" className="btn" disabled={busy !== null} onClick={() => run("d" + i.id, `/api/integrations/${i.id}`, undefined, "DELETE").then(reload)}>{tr("Disconnect", "Déconnecter")}</button>
               </div>}
+              {operate && rekey === i.id && (
+                <form className="inline-form" style={{ flex: "1 1 100%" }} onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (await run("k" + i.id, `/api/integrations/${i.id}`, { api_key: newKey.trim() }, "PATCH")) { setRekey(null); setNewKey(""); reload(); }
+                }}>
+                  <div className="field grow">
+                    <label htmlFor={`rekey-${i.id}`}>{tr("New n8n API key", "Nouvelle clé API n8n")}</label>
+                    <input id={`rekey-${i.id}`} type="password" required minLength={10} autoComplete="off" value={newKey} onChange={(e) => setNewKey(e.target.value)} />
+                    <span className="hint">{tr("Your agents and their history stay as they are.", "Vos agents et leur historique restent tels quels.")}</span>
+                  </div>
+                  <button type="submit" className="btn primary" disabled={busy !== null || newKey.trim().length < 10}>{tr("Test and save", "Tester et enregistrer")}</button>
+                </form>
+              )}
             </div>
           ))}
         </div>

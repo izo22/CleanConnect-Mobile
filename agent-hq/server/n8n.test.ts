@@ -88,6 +88,16 @@ describe("n8n integration", () => {
     expect(again.json().sync.imported).toBe(0);
   });
 
+  it("changes the key without disconnecting: a wrong key is refused, the agents stay", async () => {
+    await connect();
+    const wrong = await app.inject({ method: "PATCH", url: "/api/integrations/1", payload: { api_key: "wrong-key-123" } });
+    expect(wrong.statusCode).toBe(502);
+    expect(get<{ api_key: string }>(db, "SELECT api_key FROM integrations WHERE id = 1")!.api_key).toBe("good-key-123");
+    const ok = await app.inject({ method: "PATCH", url: "/api/integrations/1", payload: { api_key: "good-key-123" } });
+    expect(ok.statusCode).toBe(200);
+    expect(getAgent(db, agentId("wf1"))!.integration_id).toBe(1);
+  });
+
   it("pausing an n8n agent deactivates the workflow first; if n8n is down nothing changes", async () => {
     await connect();
     const ok = await app.inject({ method: "POST", url: `/api/agents/${agentId("wf1")}/actions/pause` });

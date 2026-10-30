@@ -203,6 +203,15 @@ CREATE TABLE IF NOT EXISTS early_access (
   created_at INTEGER NOT NULL
 );
 
+-- The n8n workflow as it was before Orvanta inserted a permission check, to undo it.
+CREATE TABLE IF NOT EXISTS workflow_backups (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  workflow TEXT NOT NULL,
+  label TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS activity (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ts INTEGER NOT NULL,

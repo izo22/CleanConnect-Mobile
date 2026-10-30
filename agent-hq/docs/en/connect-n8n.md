@@ -8,7 +8,7 @@ This guide is for the person who builds and maintains the n8n workflows (agency 
 |---|---|---|---|
 | **1. See** | Give Orvanta an n8n API key | Each workflow becomes an agent. Its successes, failures and error messages come in every 30 seconds. Incidents are explained in plain English. | n8n does not report the cost of AI calls. |
 | **2. Stop** | Nothing more | **Pause** really **switches the workflow off** in n8n (measured: under 0.3 s). **Resume** switches it back on. If someone turns it back on in n8n while it is paused in Orvanta, Orvanta switches it off again. | An execution **already running** when you pause goes to the end. |
-| **3. Control** | Paste the "Ask for permission" block before the sensitive step | The workflow **stops and waits** for your go-ahead in Orvanta before it refunds, pays or sends. Approved: it continues. Declined: it stops. | Only the steps protected by the block are controlled. |
+| **3. Control** | In Orvanta, pick the sensitive step ("Ask me before a step"), or paste the block by hand | The workflow **stops and waits** for your go-ahead in Orvanta before it refunds, pays or sends. Approved: it continues. Declined: it stops. | Only the protected steps are controlled. |
 
 In Orvanta, each agent shows the level it really has: *Monitoring + emergency stop* or *Checked before acting*.
 
@@ -16,15 +16,26 @@ In Orvanta, each agent shows the level it really has: *Monitoring + emergency st
 
 1. In n8n: **Settings → n8n API → Create an API key**.
 2. Give it **only** these permissions:
-   `workflow:list`, `workflow:read`, `workflow:activate`, `workflow:deactivate`, `execution:list`, `execution:read`.
-   Orvanta never needs to create, edit or delete your workflows.
+   `workflow:list`, `workflow:read`, `workflow:update`, `workflow:activate`, `workflow:deactivate`, `execution:list`, `execution:read`.
+   `workflow:update` is only used by "Ask me before a step": Orvanta only adds its check, keeps a copy of the previous version and never creates or deletes a workflow. Without it, everything else works.
 3. In Orvanta: **Connections → Connect an n8n server**, paste the n8n address and the key, then click **Test and connect**.
 
 The workflows show up in **My AI team**. Fill in each one's owner and budget on its page.
 
 ## Level 3: make a workflow wait for the go-ahead
 
-1. In Orvanta, open the agent's page (the workflow), then click **Copy the "Ask for permission" block for n8n**.
+### The easy way: from Orvanta, without opening n8n
+
+1. In Orvanta, open the agent's page (the workflow), section **Ask me before a step**, then **Choose a step**.
+2. Pick the sensitive step (sending the quote, the payment…). The trigger and steps with several inputs can't be picked.
+3. Choose **Every time** (nothing goes out without your click), or **Only above an amount**: type the name of the field that holds the amount in n8n (for example `amount`) and the threshold. The threshold becomes an ordinary guardrail, visible and editable in **Guardrails**.
+4. Click **Protect**. Orvanta switches the workflow off for a second, adds 7 "Orvanta · …" nodes right before the step, then switches it back on. The step receives exactly the same data as before.
+
+**Undo the last change** puts the workflow back as it was (Orvanta keeps the last 10 versions).
+
+### By hand, in n8n
+
+1. In Orvanta, open the agent's page (the workflow), open **Prefer to add the block by hand in n8n?**, then click **Copy the "Ask for permission" block for n8n**.
 2. In n8n, open the workflow and paste the block (Ctrl+V or Cmd+V). It contains 7 nodes:
 
 ```
@@ -58,6 +69,9 @@ Ask for permission → Allowed? ──yes─────────────
 - Orvanta only calls back the connected n8n server: a `callback_url` pointing anywhere else is refused.
 
 ## What we tested
+
+"Ask me before a step" was tested against a **real n8n** (2.44.7): a "quote" workflow is protected from Orvanta, the request waits in Decisions with the details, approving sends the quote with its original data, declining sends nothing, undo restores the 3 original nodes, and with a 5,000 threshold a small quote goes out at once while a big one waits.
+
 
 The whole flow is replayed automatically against a **real n8n** (version 2.44 at the last run): three test workflows, 16 checks, including:
 

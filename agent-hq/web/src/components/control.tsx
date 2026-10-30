@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { api, type AgentDetail, type AgentSummary } from "../api.ts";
+import { currencyAffix, parseNumber } from "../format.ts";
 import { lang, tr } from "../i18n.ts";
 import { useToast } from "./ui.tsx";
 import { PRODUCT_NAME } from "../../../server/brand.ts";
@@ -74,9 +75,12 @@ export function ControlBlock({ agent }: { agent: AgentDetail }) {
           )}
         </span>
       )}
+      {agent.source === "n8n" && <ProtectSteps agent={agent} />}
       {agent.source === "n8n" && (
-        <>
-          <button type="button" className="btn primary" style={{ alignSelf: "stretch", whiteSpace: "normal", lineHeight: 1.3, padding: "10px 18px" }} onClick={copy}>
+        <details className="more-ex">
+          <summary>{tr("Prefer to add the block by hand in n8n?", "Vous préférez ajouter le bloc à la main dans n8n ?")}</summary>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
+          <button type="button" className="btn" style={{ alignSelf: "stretch", whiteSpace: "normal", lineHeight: 1.3, padding: "10px 18px" }} onClick={copy}>
             {tr("Copy the “Ask for permission” block for n8n", "Copier le bloc « Demander l'autorisation » pour n8n")}
           </button>
           <button type="button" className="link-btn" style={{ alignSelf: "flex-start", padding: 0, background: "transparent", color: "#4A3AA8" }} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
@@ -103,11 +107,165 @@ export function ControlBlock({ agent }: { agent: AgentDetail }) {
               )}
             </ol>
           )}
-          <span className="muted" style={{ fontSize: 12 }}>
-            {tr(`If ${PRODUCT_NAME} cannot be reached, the workflow stops without running the action (to be safe).`, `Si ${PRODUCT_NAME} est injoignable, le workflow s'arrête sans exécuter l'action (par sécurité).`)}
-          </span>
-        </>
+          </div>
+        </details>
       )}
     </div>
   );
+}
+
+interface StepView { name: string; type: string; protected: boolean; protectable: boolean; reason: string | null }
+
+/**
+ * "Ask me before this step": the owner picks a step of the n8n workflow and
+ * Orvanta inserts the permission check there, so nobody has to open n8n.
+ */
+function ProtectSteps({ agent }: { agent: AgentDetail }) {
+  const toast = useToast();
+  const [data, setData] = useState<{ steps: StepView[]; can_undo: boolean } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState<string | null>(null);
+  const [always, setAlways] = useState(true);
+  const [field, setField] = useState("");
+  const [above, setAbove] = useState("");
+  const { before, after } = currencyAffix();
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      setData(await api(`/api/agents/${agent.id}/n8n/steps`));
+    } catch (e) {
+      toast((e as Error).message, true);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const send = async (path: string, body: object) => {
+    setBusy(true);
+    try {
+      const res = await api<{ message: string }>(`/api/agents/${agent.id}/n8n/${path}`, { method: "POST", body });
+      toast(res.message);
+      setStep(null);
+      await load();
+    } catch (e) {
+      toast((e as Error).message, true);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const amount = parseNumber(above);
+  const amountOk = always || (field.trim() !== "" && above.trim() !== "" && Number.isFinite(amount) && amount >= 0);
+  const protect = (e: FormEvent) => {
+    e.preventDefault();
+    if (!step || !amountOk) return;
+    void send("protect", always ? { step, always } : { step, always, amount_field: field.trim(), max_amount: amount });
+  };
+  const undo = () => {
+    if (window.confirm(tr("Put the workflow back as it was before the last protection?", "Remettre le workflow comme avant la dernière protection ?"))) void send("undo", {});
+  };
+  const shielded = data?.steps.filter((s) => s.protected) ?? [];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 16, border: "2px solid var(--line)" }}>
+      <span style={{ fontSize: 14, fontWeight: 700 }}>{tr("Ask me before a step", "Me demander avant une étape")}</span>
+      <span style={{ fontSize: 13, lineHeight: 1.5, color: "#45424C" }}>
+        {tr(
+          `Pick the step that must not run without your OK (sending an email, a payment…). ${PRODUCT_NAME} adds the check to the n8n workflow for you: nothing to do in n8n. Requests then wait in Decisions.`,
+          `Choisissez l'étape qui ne doit pas s'exécuter sans votre accord (envoi d'un e-mail, paiement…). ${PRODUCT_NAME} ajoute le contrôle dans le workflow n8n pour vous : rien à faire dans n8n. Les demandes attendent ensuite dans Décisions.`,
+        )}
+      </span>
+      {!data && (
+        <button type="button" className="btn primary" style={{ alignSelf: "flex-start" }} disabled={loading} onClick={load}>
+          {loading ? "…" : tr("Choose a step", "Choisir une étape")}
+        </button>
+      )}
+      {data && (
+        <form onSubmit={protect} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="levels" role="radiogroup" aria-label={tr("Steps of the workflow", "Étapes du workflow")}>
+            {data.steps.map((s) => (
+              <button key={s.name} type="button" role="radio" className="level" aria-checked={step === s.name} aria-pressed={step === s.name}
+                disabled={!s.protectable || busy} style={!s.protectable ? { opacity: s.protected ? 1 : 0.6, cursor: "default" } : undefined}
+                onClick={() => setStep(s.name)}>
+                {s.protected ? <span aria-hidden="true" style={{ width: 18, textAlign: "center", flex: "none" }}>🛡</span> : <span className="radio" />}
+                <span>
+                  <b>{s.name}</b>
+                  <small>
+                    {s.protected
+                      ? tr(`Protected: asks ${PRODUCT_NAME} first.`, `Protégée : demande d'abord à ${PRODUCT_NAME}.`)
+                      : s.reason ?? stepKind(s.type)}
+                  </small>
+                </span>
+              </button>
+            ))}
+          </div>
+          {data.steps.length === 0 && <span className="muted" style={{ fontSize: 13 }}>{tr("This workflow has no steps yet.", "Ce workflow n'a pas encore d'étapes.")}</span>}
+
+          {step && (
+            <>
+              <span className="block-title" style={{ marginTop: 4 }}>{tr(`When should “${step}” ask you?`, `Quand « ${step} » doit-elle vous demander ?`)}</span>
+              <div className="levels" role="radiogroup" aria-label={tr("When to ask", "Quand demander")}>
+                <button type="button" role="radio" className="level" aria-checked={always} aria-pressed={always} onClick={() => setAlways(true)}>
+                  <span className="radio" />
+                  <span><b>{tr("Every time", "À chaque fois")}</b><small>{tr("Nothing goes out before you click Approve.", "Rien ne part avant votre clic sur Approuver.")}</small></span>
+                </button>
+                <button type="button" role="radio" className="level" aria-checked={!always} aria-pressed={!always} onClick={() => setAlways(false)}>
+                  <span className="radio" />
+                  <span><b>{tr("Only above an amount", "Seulement au-dessus d'un montant")}</b><small>{tr("Small amounts go through, big ones wait for you. Your other guardrails apply too.", "Les petits montants passent, les gros vous attendent. Vos autres garde-fous s'appliquent aussi.")}</small></span>
+                </button>
+              </div>
+              {!always && (
+                <div className="inline-form">
+                  <div className="field grow">
+                    <label htmlFor="protect-field">{tr("Name of the amount field in n8n", "Nom du champ du montant dans n8n")}</label>
+                    <input id="protect-field" required value={field} onChange={(e) => setField(e.target.value)} placeholder={tr("amount", "montant")} autoComplete="off" />
+                  </div>
+                  <div className="field" style={{ flex: "1 1 120px" }}>
+                    <label htmlFor="protect-above">{tr("Ask me above", "Me demander au-dessus de")}{after ? ` (${after.trim()})` : before ? ` (${before})` : ""}</label>
+                    <input id="protect-above" required inputMode="decimal" value={above} onChange={(e) => setAbove(e.target.value)} placeholder="5000" autoComplete="off" />
+                  </div>
+                </div>
+              )}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <button type="submit" className="btn primary" disabled={busy || !amountOk} style={{ whiteSpace: "normal", lineHeight: 1.3 }}>
+                  {busy ? "…" : tr(`Protect “${step}”`, `Protéger « ${step} »`)}
+                </button>
+                <button type="button" className="btn" disabled={busy} onClick={() => setStep(null)}>{tr("Cancel", "Annuler")}</button>
+              </div>
+              <span className="muted" style={{ fontSize: 12 }}>
+                {tr(
+                  `The workflow is switched off for a second while ${PRODUCT_NAME} saves it, then back on. If ${PRODUCT_NAME} cannot be reached, the step does not run (to be safe).`,
+                  `Le workflow est coupé une seconde pendant qu'${PRODUCT_NAME} l'enregistre, puis réactivé. Si ${PRODUCT_NAME} est injoignable, l'étape ne s'exécute pas (par sécurité).`,
+                )}
+              </span>
+            </>
+          )}
+
+          {!step && shielded.length > 0 && (
+            <span style={{ fontSize: 13, color: "#0E6B3F" }}>
+              {tr(`Next time the workflow reaches ${shielded.map((s) => `“${s.name}”`).join(", ")}, it waits for the answer in Decisions.`, `La prochaine fois que le workflow arrive à ${shielded.map((s) => `« ${s.name} »`).join(", ")}, il attend la réponse dans Décisions.`)}
+            </span>
+          )}
+          {data.can_undo && !step && (
+            <button type="button" className="link-btn" style={{ alignSelf: "flex-start", padding: 0, background: "transparent", color: "#4A3AA8" }} disabled={busy} onClick={undo}>
+              {tr("Undo the last change", "Annuler la dernière modification")}
+            </button>
+          )}
+        </form>
+      )}
+    </div>
+  );
+}
+
+/** A short plain-language description of an n8n node type. */
+function stepKind(type: string) {
+  const t = type.toLowerCase();
+  if (/gmail|email|smtp|outlook|sendgrid|mailchimp/.test(t)) return tr("Sends an email", "Envoie un e-mail");
+  if (/slack|telegram|whatsapp|discord|twilio|teams/.test(t)) return tr("Sends a message", "Envoie un message");
+  if (/stripe|paypal|quickbooks|invoice/.test(t)) return tr("Payments or invoices", "Paiements ou factures");
+  if (/httprequest/.test(t)) return tr("Calls another service", "Appelle un autre service");
+  if (/openai|anthropic|agent|lmchat|langchain/.test(t)) return tr("AI step", "Étape d'IA");
+  if (/sheets|airtable|notion|postgres|mysql|supabase|hubspot|salesforce|pipedrive/.test(t)) return tr("Writes to a tool or database", "Écrit dans un outil ou une base");
+  if (/\.set$|\.if$|\.code$|\.merge$|\.filter$|\.switch$/.test(t)) return tr("Prepares data", "Prépare des données");
+  return t.split(".").pop() ?? t;
 }
