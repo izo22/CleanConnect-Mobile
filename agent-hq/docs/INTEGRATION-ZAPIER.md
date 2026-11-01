@@ -2,61 +2,58 @@
 
 > English version for US clients: [en/connect-zapier.md](en/connect-zapier.md).
 
-L'application **Orvanta pour Zapier** est une intégration **privée** : elle ne passe pas par la validation de Zapier et se partage par lien d'invitation avec vos clients pilotes.
+Avec la version **1.2.0** de l'application Orvanta pour Zapier, une seule clé suffit pour tous les Zaps d'un espace, et chaque Zap devient un agent dans Orvanta, comme les workflows n8n. Tout se règle depuis **Connexions → Zapier**, qui guide pas à pas.
 
-## Ce qu'elle permet
+## Ce que ça fait
 
-| Niveau | Comment | Résultat |
-|---|---|---|
-| **Contrôler** (le plus important) | Étape **Orvanta · Ask Permission** juste avant l'action sensible, puis un 2e Zap qui part de **Orvanta · Decision Made** | L'action ne s'exécute **jamais** sans être autorisée. Sous vos seuils, elle passe tout de suite. Au-dessus, elle attend votre « Approuver » dans Orvanta. Si Orvanta est injoignable, l'étape échoue et rien ne part. |
-| **Voir** | Étape **Orvanta · Report Activity** à la fin du Zap (et en cas d'échec) | Tâches, échecs, coût, alertes en langage courant, relecture IA si vous envoyez la question et la réponse. |
-| **Arrêter** | Un petit Zap : **Orvanta · Agent Paused or Resumed** → **Zapier Manager · Turn Zap On/Off** | « Mettre en pause » dans Orvanta coupe le Zap concerné. Une pause est aussi refusée directement par « Ask Permission ». |
+| Fonction | Comment |
+|---|---|
+| **Voir les erreurs** de tous les Zaps | Un Zap à installer une fois : *Zapier Manager → New Zap Error* → *Orvanta → Report a Zap Error*. Chaque Zap qui plante crée ou met à jour son agent, avec l'alerte. |
+| **Voir les réussites** | Étape *Orvanta → Report Activity* en fin de Zap (c'est la seule chose que Zapier ne signale jamais tout seul). |
+| **Demander la permission** | Étape *Orvanta → Ask Permission* juste avant l'action sensible. Le Zap **attend** votre clic dans Décisions (jusqu'à 30 jours), puis continue tout seul ; refusé, il s'arrête. Seuils de montant, heures interdites, « Je valide tout » et vérification IA s'appliquent. |
+| **Arrêt d'urgence** | Un Zap à installer une fois : *Orvanta → Agent Paused or Resumed* (Agent vide = tous) → *Zapier Manager*, action qui éteint un Zap. Même sans lui, les étapes Ask Permission d'un agent en pause sont refusées. |
 
-**Différence avec n8n :** Zapier ne laisse pas Orvanta lire vos Zaps de lui-même (il faut l'accès partenaire, plus tard). La supervision passe donc par l'étape « Report Activity » que vous ajoutez, et l'arrêt d'urgence par le petit Zap ci-dessus.
+**Pourquoi des étapes à ajouter, alors que n8n se branche tout seul ?** Zapier ne laisse aucun outil extérieur lire ou modifier les Zaps d'un client. Orvanta ne voit que ce que les Zaps lui envoient. Les Zaps modèles (liens « copier ce Zap ») évitent au patron de les monter lui-même.
 
-## Recette 1 : un remboursement qui attend votre feu vert
+## La clé Zapier et le champ « Agent »
 
-**Zap n° 1 : « Demander »**
-1. Déclencheur : votre déclencheur habituel (nouveau ticket, formulaire…).
-2. **Orvanta · Ask Permission** :
-   - *Action* : `stripe.refund` (c'est ce nom que vos garde-fous comparent) ;
-   - *Summary* : `Rembourser {{montant}} € à {{client}}` (la phrase que vous lirez) ;
-   - *Amount* : `{{montant}}` ;
-   - *Data to Keep for the Approved Action* : tout ce dont l'action aura besoin (n° de commande, e-mail du client, montant…).
-3. L'action de remboursement (Stripe…).
+- **Connexions → Zapier → Créer ma clé Zapier** (propriétaire de l'espace). La clé commence par `ozk_`.
+- Dans Zapier, la première étape Orvanta demande l'**adresse Orvanta** et cette **clé**. Une seule connexion pour tous les Zaps.
+- Chaque étape Orvanta a un champ **Agent** : choisissez un agent existant, ou tapez un nom (conseil : celui du Zap) et Orvanta crée l'agent la première fois.
+- La clé d'un agent (`ahq_…`) marche toujours : le champ Agent n'apparaît alors pas.
+- **Créer une nouvelle clé** invalide l'ancienne : à faire seulement si elle a fuité.
 
-→ **Sous le seuil**, l'étape 3 s'exécute tout de suite. **Au-dessus**, le Zap s'arrête proprement (statut *halted* dans Zapier) et la demande apparaît dans **Décisions**.
+## Recette : un devis qui attend votre feu vert
 
-**Zap n° 2 : « Exécuter après accord »**
-1. Déclencheur : **Orvanta · Decision Made**, avec *Only Approved Requests* = oui et *Only for This Action* = `stripe.refund`.
-2. L'action de remboursement, avec les données de *Payload* (n° de commande, e-mail…).
+```
+1. Gmail : nouvel e-mail de demande de devis
+2. ChatGPT : rédige le devis
+3. Orvanta : Ask Permission      ← Agent : « Devis panneaux solaires »
+                                    Summary : « Devis pour {client} : {montant} € »
+                                    Amount : {montant}
+                                    Text Received / Text About to Be Sent : pour la vérification IA
+                                    When Your Approval Is Needed : Wait for the decision, then go on
+4. Gmail : envoie le devis       ← ne s'exécute qu'une fois autorisé
+5. Orvanta : Report Activity     ← facultatif, pour compter les réussites
+```
 
-→ Quand vous cliquez « Approuver » dans Orvanta, ce Zap part en quelques secondes. « Refuser » : rien ne se passe.
+- Sous vos seuils : Orvanta répond « autorisé » tout de suite, le Zap continue.
+- Au-dessus, ou avec « Je valide tout » : la demande attend dans **Décisions**. **Approuver** : le Zap reprend à l'étape 4. **Refuser** : il s'arrête.
+- Orvanta injoignable : l'étape échoue, donc l'e-mail ne part pas.
 
-## Recette 2 : arrêt d'urgence
+L'ancien mode (« Stop this Zap » + un second Zap qui démarre sur *Decision Made*) reste disponible, et les étapes créées avant la 1.2.0 le gardent, pour ne jamais faire une action deux fois.
 
-1. Déclencheur : **Orvanta · Agent Paused or Resumed**, *When the Agent Is* = *Paused*.
-2. Action : **Zapier Manager · Turn Zap On/Off** → le Zap de l'agent, *Off*.
+## Ce que fait l'administrateur d'Orvanta (une fois pour tous les clients)
 
-Faites un 2e Zap identique avec *Resumed* → *On* si vous voulez que « Reprendre » le rallume.
+1. Publier la version 1.2.0 de l'application : voir [zapier/README.md](../zapier/README.md).
+2. Créer dans son propre Zapier les Zaps modèles « Surveiller tous mes Zaps » et « Arrêt d'urgence » (et, si voulu, un exemple avec Ask Permission), puis copier leur lien de partage (*Zap → ⋯ → Share*).
+3. Les coller avec le lien d'invitation dans **Administration → Liens Zapier**. Ils apparaissent alors dans Connexions → Zapier de chaque espace ; sans lien, les clients voient comment faire à la main.
 
-## Installer l'application (une fois)
-
-Voir [zapier/README.md](../zapier/README.md) : `zapier login`, `zapier register "Orvanta"`, `zapier push`, puis `zapier users:links` pour obtenir le lien d'invitation à envoyer aux pilotes.
-
-**Prérequis :** Orvanta doit être accessible sur Internet en **https** (voir [DEPLOIEMENT.md](DEPLOIEMENT.md)). Les serveurs de Zapier l'appellent, et Orvanta ne prévient que des adresses https publiques.
+**Prérequis :** Orvanta accessible sur Internet en **https** (les serveurs de Zapier l'appellent, et Orvanta ne rappelle que des adresses https publiques).
 
 ## Ce qui a été vérifié, et ce qui ne l'a pas été
 
-- ✅ **12 vérifications** avec le moteur de test officiel de Zapier (*appTester*) contre un vrai serveur Orvanta :
-  - connexion, et refus d'une mauvaise clé ;
-  - 45 € autorisés ;
-  - 340 € qui arrêtent le Zap et créent une demande ;
-  - approbation transmise avec les données gardées, refus qui ne déclenche rien ;
-  - pause transmise, agent en pause refusé ;
-  - Orvanta injoignable, donc rien n'est exécuté ;
-  - remontée d'activité et alerte créée ;
-  - désabonnement.
-- ✅ Structure de l'application validée par l'outil officiel `zapier validate`.
-- ❌ **Pas encore testée dans Zapier lui-même** : il faut un compte Zapier et Orvanta en ligne. Le premier pilote servira de test réel.
-- ✅ Orvanta est en anglais et en dollars par défaut (`APP_LANGUAGE=fr` pour une instance en français et en euros).
+- ✅ **16 vérifications** avec le moteur de test officiel de Zapier (*appTester*) contre un vrai serveur Orvanta, dont : clé d'espace, liste des agents, agent créé à partir d'un nouveau nom, Ask Permission qui attend puis reprend (approuvé) ou s'arrête (refusé), erreur de Zap remontée, pause d'un agent transmise à l'abonnement de tout l'espace.
+- ✅ 7 tests côté Orvanta : clé, agents par nom, rappel de Zapier même si la décision arrive avant, refus des adresses privées et des demandes d'un autre espace, liens administrateur.
+- ✅ Structure validée par l'outil officiel de Zapier.
+- ❌ **Pas encore testé dans Zapier lui-même.** À vérifier sur un vrai compte : l'attente d'Ask Permission (« callback »), les noms exacts des déclencheurs et actions de *Zapier Manager*, et s'ils demandent une formule payante.

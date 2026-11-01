@@ -1,6 +1,6 @@
 'use strict';
 
-const { baseUrl, isTrue } = require('../utils');
+const { baseUrl, agentField, isTrue } = require('../utils');
 
 const filterOf = (bundle) => ({
   approved: isTrue(bundle.inputData.only_approved, true) ? true : undefined,
@@ -40,7 +40,7 @@ module.exports = {
   display: {
     label: 'Decision Made',
     description:
-      'Triggers when someone approves (or refuses) in Orvanta a request made with **Ask Permission**. Use it to perform the approved action.',
+      'Triggers when someone approves (or refuses) in Orvanta a request made with **Ask Permission** set to “Stop this Zap”. Most Zaps don\'t need it: Ask Permission can simply wait for the decision.',
   },
   operation: {
     type: 'hook',
@@ -49,6 +49,7 @@ module.exports = {
     performSubscribe,
     performUnsubscribe,
     inputFields: [
+      agentField(false),
       {
         key: 'only_approved',
         label: 'Only Approved Requests',
@@ -61,7 +62,7 @@ module.exports = {
         key: 'action',
         label: 'Only for This Action',
         required: false,
-        helpText: 'Same name as in **Ask Permission**, e.g. `stripe.refund`. Empty = every action of this agent.',
+        helpText: 'Same name as in **Ask Permission**, e.g. `stripe.refund`. Empty = every action.',
       },
     ],
     sample: {
@@ -80,6 +81,7 @@ module.exports = {
     },
     outputFields: [
       { key: 'approval_id', label: 'Approval Request ID', type: 'integer' },
+      { key: 'agent_name', label: 'Agent Name' },
       { key: 'decision', label: 'Decision (approved, rejected)' },
       { key: 'approved', label: 'Approved', type: 'boolean' },
       { key: 'decided_by', label: 'Decided By' },

@@ -3,6 +3,7 @@ import { api, type AgentDetail, type AgentSummary } from "../api.ts";
 import { currencyAffix, parseNumber } from "../format.ts";
 import { lang, tr } from "../i18n.ts";
 import { useToast } from "./ui.tsx";
+import { ZapierAgentBlock } from "./zapier.tsx";
 import { PRODUCT_NAME } from "../../../server/brand.ts";
 
 type Control = AgentSummary["control"];
@@ -76,6 +77,7 @@ export function ControlBlock({ agent }: { agent: AgentDetail }) {
         </span>
       )}
       {agent.source === "n8n" && <ProtectSteps agent={agent} />}
+      {agent.source === "zapier" && <ZapierAgentBlock />}
       {agent.source === "n8n" && (
         <details className="more-ex">
           <summary>{tr("Prefer to add the block by hand in n8n?", "Vous préférez ajouter le bloc à la main dans n8n ?")}</summary>

@@ -4,6 +4,7 @@ import { useAccount } from "../account.tsx";
 import { plural } from "../format.ts";
 import { locale, tr } from "../i18n.ts";
 import { CopyLink, ErrorBox, Skeleton, useToast } from "../components/ui.tsx";
+import { ZapierLinksAdmin } from "../components/zapier.tsx";
 
 interface WorkspaceRow { id: string; name: string; created_at: number; members: number; agents: number; owners: string | null }
 
@@ -48,6 +49,7 @@ export function Admin() {
         </section>
       )}
       <ResetLink />
+      <ZapierLinksAdmin />
     </>
   );
 }

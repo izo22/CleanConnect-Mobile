@@ -6,6 +6,8 @@ const askPermission = require('./creates/askPermission');
 const reportActivity = require('./creates/reportActivity');
 const decisionMade = require('./triggers/decisionMade');
 const agentStateChanged = require('./triggers/agentStateChanged');
+const agentList = require('./triggers/agentList');
+const reportZapError = require('./creates/reportZapError');
 
 module.exports = {
   version: require('./package.json').version,
@@ -18,10 +20,12 @@ module.exports = {
   triggers: {
     [decisionMade.key]: decisionMade,
     [agentStateChanged.key]: agentStateChanged,
+    [agentList.key]: agentList,
   },
   creates: {
     [askPermission.key]: askPermission,
     [reportActivity.key]: reportActivity,
+    [reportZapError.key]: reportZapError,
   },
   searches: {},
 };

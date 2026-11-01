@@ -1,6 +1,6 @@
 'use strict';
 
-const { baseUrl, toCents } = require('../utils');
+const { baseUrl, agentField, toCents } = require('../utils');
 
 const perform = async (z, bundle) => {
   const input = bundle.inputData;
@@ -35,6 +35,7 @@ module.exports = {
   operation: {
     perform,
     inputFields: [
+      agentField(true),
       { key: 'action', label: 'Action', required: true, helpText: 'e.g. `zendesk.reply`, `hubspot.update`.' },
       { key: 'status', label: 'Status', required: true, choices: { success: 'Success', failure: 'Failure' }, default: 'success' },
       { key: 'error_message', label: 'Error Message', required: false, helpText: 'Only for failures.' },

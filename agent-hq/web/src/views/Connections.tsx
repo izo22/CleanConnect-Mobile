@@ -4,6 +4,7 @@ import { ago } from "../format.ts";
 import { lang, tr } from "../i18n.ts";
 import { ErrorBox, Skeleton, useAction, useToast } from "../components/ui.tsx";
 import { useCan } from "../account.tsx";
+import { ZapierSetup } from "../components/zapier.tsx";
 import { PRODUCT_NAME } from "../../../server/brand.ts";
 
 interface Integration {
@@ -102,37 +103,7 @@ export function Connections() {
         </div>
       )}
 
-      <section className="card" aria-labelledby="zapier-h" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span className="avatar" style={{ width: 46, height: 46, background: "#FFE9DF", color: "#9A3412", fontSize: 12 }}>Zap</span>
-          <h2 id="zapier-h" className="h2" style={{ fontSize: 22 }}>Zapier</h2>
-        </div>
-        {lang() === "fr" ? (
-          <>
-            <p className="sub" style={{ fontSize: 14 }}>
-              Ajoutez l'application <b>{PRODUCT_NAME}</b> dans vos Zaps (lien d'invitation fourni par votre administrateur), puis connectez-la avec la <b>clé de l'agent</b> (fiche de l'agent → Connexion).
-            </p>
-            <div className="explain">
-              <span><strong>Contrôler :</strong> étape « Ask Permission » avant l'action sensible + un Zap qui part de « Decision Made » pour l'exécuter après votre accord.</span>
-              <span><strong>Voir :</strong> étape « Report Activity » en fin de Zap.</span>
-              <span><strong>Arrêter :</strong> Zap « Agent Paused or Resumed » → Zapier Manager « Turn Zap On/Off ».</span>
-              <span><strong>Limite :</strong> Zapier ne laisse pas {PRODUCT_NAME} lire vos Zaps lui-même tant que nous ne sommes pas partenaire ; seules les étapes {PRODUCT_NAME} ajoutées remontent.</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="sub" style={{ fontSize: 14 }}>
-              Add the <b>{PRODUCT_NAME}</b> app to your Zaps (invite link provided by your administrator), then connect it with the <b>agent's key</b> (agent page → Connection).
-            </p>
-            <div className="explain">
-              <span><strong>Control:</strong> an “Ask Permission” step before the sensitive action, plus a Zap that starts from “Decision Made” to run it once you approve.</span>
-              <span><strong>See:</strong> a “Report Activity” step at the end of the Zap.</span>
-              <span><strong>Stop:</strong> an “Agent Paused or Resumed” Zap → Zapier Manager “Turn Zap On/Off”.</span>
-              <span><strong>Limit:</strong> Zapier doesn't let {PRODUCT_NAME} read your Zaps on its own until we are a partner; only the {PRODUCT_NAME} steps you add report back.</span>
-            </div>
-          </>
-        )}
-      </section>
+      <ZapierSetup />
 
       {operate && <section className="card" aria-labelledby="add-n8n" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <h2 id="add-n8n" className="h2" style={{ fontSize: 22 }}>{tr("Connect an n8n server", "Connecter un serveur n8n")}</h2>

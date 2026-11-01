@@ -191,6 +191,22 @@ CREATE TABLE IF NOT EXISTS hooks (
   created_at INTEGER NOT NULL
 );
 
+-- Zapier subscriptions made with the workspace's Zapier key: about every agent of the workspace.
+CREATE TABLE IF NOT EXISTS workspace_hooks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  event TEXT NOT NULL CHECK (event IN ('decision', 'agent_state')),
+  target_url TEXT NOT NULL,
+  filter TEXT,
+  created_at INTEGER NOT NULL
+);
+
+-- Settings of the whole service, set by its administrator (e.g. the Zapier invite link).
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
 -- Requests sent from the public site's "Request early access" form.
 CREATE TABLE IF NOT EXISTS early_access (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -235,6 +251,8 @@ export const MAIN_WORKSPACE = "main";
 
 /** Columns added after the first release; ALTER them into older databases. */
 const ADDED_COLUMNS: Array<[table: string, column: string, ddl: string]> = [
+  // One key for every Zap of the workspace (each Zap then says which agent it is).
+  ["workspaces", "zapier_key", "TEXT"],
   // 0 = created by self sign-up with a password, email never proven. Google
   // sign-in proves it (and then takes the account back from whoever typed it).
   ["users", "email_verified", "INTEGER NOT NULL DEFAULT 1"],
@@ -273,6 +291,7 @@ function migrate(db: DB) {
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS events_external ON events (agent_id, external_ref) WHERE external_ref IS NOT NULL");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS agents_external ON agents (integration_id, external_id) WHERE external_id IS NOT NULL");
   db.exec("CREATE INDEX IF NOT EXISTS agents_workspace ON agents (workspace_id)");
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS workspaces_zapier_key ON workspaces (zapier_key) WHERE zapier_key IS NOT NULL");
   db.exec("CREATE INDEX IF NOT EXISTS rules_workspace ON rules (workspace_id)");
   db.exec("CREATE INDEX IF NOT EXISTS activity_workspace ON activity (workspace_id, ts)");
   db.prepare("INSERT OR IGNORE INTO workspaces (id, name, created_at) VALUES (?, 'Main workspace', ?)").run(MAIN_WORKSPACE, Date.now());

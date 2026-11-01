@@ -1,6 +1,6 @@
 'use strict';
 
-const { baseUrl } = require('../utils');
+const { baseUrl, agentField } = require('../utils');
 
 const filterOf = (bundle) => ({ state: bundle.inputData.state && bundle.inputData.state !== 'any' ? bundle.inputData.state : undefined });
 
@@ -31,7 +31,7 @@ module.exports = {
   display: {
     label: 'Agent Paused or Resumed',
     description:
-      'Triggers when the agent is paused or resumed in Orvanta (by a person or a guardrail). Pair it with **Zapier Manager → Turn Zap On/Off** to stop the real Zap.',
+      'Triggers when an agent is paused or resumed in Orvanta (by a person or a guardrail). Pair it with Zapier Manager to switch the real Zap off: the emergency stop.',
   },
   operation: {
     type: 'hook',
@@ -40,6 +40,7 @@ module.exports = {
     performSubscribe,
     performUnsubscribe,
     inputFields: [
+      agentField(false),
       { key: 'state', label: 'When the Agent Is', required: false, choices: { paused: 'Paused', running: 'Resumed', any: 'Paused or resumed' }, default: 'any' },
     ],
     sample: {
@@ -53,6 +54,7 @@ module.exports = {
     },
     outputFields: [
       { key: 'agent_name', label: 'Agent Name' },
+      { key: 'zap_id', label: 'Zap ID' },
       { key: 'paused', label: 'Paused', type: 'boolean' },
       { key: 'state', label: 'State (paused, running)' },
       { key: 'reason', label: 'Reason' },

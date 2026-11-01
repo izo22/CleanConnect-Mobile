@@ -31,7 +31,8 @@ import { N8nClient, N8nError, getIntegration, setWorkflowActive, syncIntegration
 import { n8nSnippet } from "./n8n-template.ts";
 import { listSteps, protectStep, undoLastProtection } from "./n8n-protect.ts";
 import { PRODUCT_NAME } from "./brand.ts";
-import { agentStatePayload, decisionPayload, fireAgentState, fireDecision, safeOutboundUrl, subscribe, unsubscribe } from "./hooks.ts";
+import { agentStatePayload, decisionPayload, fireAgentState, fireDecision, safeOutboundUrl, subscribe, subscribeWorkspace, unsubscribe, unsubscribeWorkspace } from "./hooks.ts";
+import { ZAPIER_LINKS, isZapierKey, renewZapierKey, saveZapierLinks, workspaceOfZapierKey, zapAgent, zapierLinks, zapierView, type ZapierLinks } from "./zapier.ts";
 import { activity, agentDetail, agentSummaries, alertsView, approvalsView, overview, qualityView, rulesView } from "./queries.ts";
 import { EARLY_ACCESS_INPUT, earlyAccessList, rateLimiter, saveEarlyAccess, type EarlyAccessIn } from "./early-access.ts";
 import { httpError, makeGuards, sameSecret } from "./context.ts";
@@ -164,12 +165,34 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     if (host !== req.headers.host && host !== forwarded) return reply.code(403).send({ error: tr("Request refused.", "Requête refusée.") });
   });
 
-  const agentOf = (req: FastifyRequest): AgentRow => {
+  /**
+   * Who is calling the agent API: an agent with its own key, or a Zap with the
+   * workspace's Zapier key, naming its agent in the X-Agent header (an agent
+   * id, or a name: an unknown name creates the agent).
+   */
+  const callerOf = (req: FastifyRequest, create = true): { ws: string; wsName: string | null; agent: AgentRow | null; shared: boolean } => {
     const auth = req.headers.authorization ?? "";
     const key = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+    if (key && isZapierKey(key)) {
+      const ws = workspaceOfZapierKey(db, key);
+      if (!ws) throw Object.assign(new Error(tr("Invalid Zapier key: copy it again from Connections → Zapier.", "Clé Zapier invalide : recopiez-la depuis Connexions → Zapier.")), { statusCode: 401 });
+      const header = (name: string) => {
+        const v = req.headers[name];
+        const raw = Array.isArray(v) ? v[0] : v;
+        try { return raw ? decodeURIComponent(raw).trim() : ""; } catch { return raw?.trim() ?? ""; }
+      };
+      const ref = header("x-agent");
+      return { ws: ws.id, wsName: ws.name, agent: ref ? zapAgent(db, ws.id, ref, header("x-zap-id") || null, now(), create) : null, shared: true };
+    }
     const agent = key ? getAgentByKey(db, key) : undefined;
     if (!agent) throw Object.assign(new Error(tr("Invalid agent key.", "Clé d'agent invalide.")), { statusCode: 401 });
-    return agent;
+    return { ws: agent.workspace_id, wsName: null, agent, shared: false };
+  };
+
+  const agentOf = (req: FastifyRequest): AgentRow => {
+    const caller = callerOf(req);
+    if (!caller.agent) throw Object.assign(new Error(tr("Choose the agent (the Zap) in the “Agent” field of this Orvanta step.", "Choisissez l'agent (le Zap) dans le champ « Agent » de cette étape Orvanta.")), { statusCode: 400 });
+    return caller.agent;
   };
 
   const notFound = (en: string, fr: string) => Object.assign(new Error(tr(`${en} not found.`, `${fr} introuvable.`)), { statusCode: 404 });
@@ -317,7 +340,40 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     return { id: a.id, status: a.status, decided_by: a.decided_by, decided_at: a.decided_at };
   });
 
-  app.get("/api/v1/config", async (req) => control(agentOf(req)));
+  app.get("/api/v1/config", async (req) => {
+    const caller = callerOf(req, false);
+    // Zapier tests a workspace connection without an agent: name the connection after the workspace.
+    if (!caller.agent) return { workspace_id: caller.ws, name: `${PRODUCT_NAME} · ${caller.wsName}`, workspace: true };
+    return control(caller.agent);
+  });
+
+  /** The agents a Zap can say it is (Zapier's "Agent" list). */
+  app.get("/api/v1/agents", async (req) => {
+    const caller = callerOf(req, false);
+    if (!caller.shared && caller.agent) return [{ id: caller.agent.id, name: caller.agent.name }];
+    return all<{ id: string; name: string }>(db, "SELECT id, name FROM agents WHERE workspace_id = ? ORDER BY name", caller.ws);
+  });
+
+  /**
+   * Zapier's "Ask Permission" waits for the decision: it gives the address at
+   * which Zapier resumes the Zap, called as soon as a human decides.
+   */
+  app.post<{ Params: { id: string }; Body: { callback_url: string } }>(
+    "/api/v1/approvals/:id/callback",
+    { schema: { body: { type: "object", required: ["callback_url"], additionalProperties: false, properties: { callback_url: { type: "string", minLength: 8, maxLength: 2000 } } } } },
+    async (req) => {
+      const caller = callerOf(req);
+      const a = get<ApprovalRow & { workspace_id: string }>(
+        db, "SELECT ap.*, ag.workspace_id FROM approvals ap JOIN agents ag ON ag.id = ap.agent_id WHERE ap.id = ?", Number(req.params.id),
+      );
+      if (!a || a.workspace_id !== caller.ws || (caller.agent && !caller.shared && a.agent_id !== caller.agent.id)) throw notFound("Request", "Demande");
+      if (!safeOutboundUrl(req.body.callback_url)) throw Object.assign(new Error(tr("callback_url must be a public https address.", "callback_url doit être une adresse https publique.")), { statusCode: 400 });
+      run(db, "UPDATE approvals SET callback_url = ?, callback_status = NULL WHERE id = ?", req.body.callback_url, a.id);
+      // Decided in the meantime: wake the Zap up right away.
+      if (a.status !== "pending") void deliverDecision(db, a.id, fetchImpl).then(() => notifyChange());
+      return { ok: true };
+    },
+  );
 
   // ---------- REST hooks (Zapier) ----------
 
@@ -338,30 +394,41 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       },
     },
     async (req, reply) => {
-      const agent = agentOf(req);
+      const caller = callerOf(req);
       if (!safeOutboundUrl(req.body.target_url)) throw Object.assign(new Error(tr("target_url must be a public https address.", "target_url doit être une adresse https publique.")), { statusCode: 400 });
-      const id = subscribe(db, agent.id, req.body.event, req.body.target_url, req.body.filter ?? null, now());
+      const filter = req.body.filter ?? null;
+      // With the Zapier key and no agent chosen: about every agent of the workspace.
+      const id = caller.agent
+        ? subscribe(db, caller.agent.id, req.body.event, req.body.target_url, filter, now())
+        : subscribeWorkspace(db, caller.ws, req.body.event, req.body.target_url, filter, now());
       return reply.code(201).send({ id });
     },
   );
 
   app.delete<{ Params: { id: string } }>("/api/v1/hooks/:id", async (req) => {
-    const agent = agentOf(req);
-    if (!unsubscribe(db, agent.id, Number(req.params.id))) throw notFound("Subscription", "Abonnement");
+    const caller = callerOf(req);
+    const ok = caller.shared ? unsubscribeWorkspace(db, caller.ws, Number(req.params.id)) : unsubscribe(db, caller.agent!.id, Number(req.params.id));
+    if (!ok) throw notFound("Subscription", "Abonnement");
     return { ok: true };
   });
 
   /** Latest decisions for this agent: Zapier uses it for samples and as a polling fallback. */
   app.get<{ Querystring: { only_approved?: string; action?: string } }>("/api/v1/decisions", async (req) => {
-    const agent = agentOf(req);
-    const rows = all<ApprovalRow>(db, "SELECT * FROM approvals WHERE agent_id = ? AND status != 'pending' ORDER BY decided_at DESC LIMIT 25", agent.id);
+    const caller = callerOf(req);
+    const rows = caller.agent
+      ? all<ApprovalRow>(db, "SELECT * FROM approvals WHERE agent_id = ? AND status != 'pending' ORDER BY decided_at DESC LIMIT 25", caller.agent.id)
+      : all<ApprovalRow>(db, "SELECT ap.* FROM approvals ap JOIN agents ag ON ag.id = ap.agent_id WHERE ag.workspace_id = ? AND ap.status != 'pending' ORDER BY ap.decided_at DESC LIMIT 25", caller.ws);
     return rows
-      .map(decisionPayload)
+      .map((a) => decisionPayload(db, a))
       .filter((d) => req.query.only_approved !== "true" || d.approved)
       .filter((d) => !req.query.action || d.action === req.query.action);
   });
 
-  app.get("/api/v1/agent-state", async (req) => [agentStatePayload(db, agentOf(req).id)]);
+  app.get("/api/v1/agent-state", async (req) => {
+    const caller = callerOf(req);
+    if (caller.agent) return [agentStatePayload(db, caller.agent.id)];
+    return all<{ id: string }>(db, "SELECT id FROM agents WHERE workspace_id = ? ORDER BY paused DESC, name LIMIT 25", caller.ws).map((a) => agentStatePayload(db, a.id));
+  });
 
   // ---------- Accounts, workspaces, members ----------
 
@@ -370,6 +437,20 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
   app.register(async (platform) => {
     platform.addHook("onRequest", requireAdmin);
     platform.get("/api/early-access", async () => earlyAccessList(db));
+
+    // Links every client sees on Connections → Zapier: the invite to the private app, the ready-to-copy Zaps.
+    platform.get("/api/admin/zapier-links", async () => zapierLinks(db));
+    platform.put<{ Body: ZapierLinks }>(
+      "/api/admin/zapier-links",
+      { schema: { body: { type: "object", additionalProperties: false, properties: Object.fromEntries(ZAPIER_LINKS.map((k) => [k, { type: "string", maxLength: 1000 }])) } } },
+      async (req) => {
+        for (const v of Object.values(req.body)) {
+          if (v?.trim() && !/^https:\/\//.test(v.trim())) throw Object.assign(new Error(tr("Links must start with https://", "Les liens doivent commencer par https://")), { statusCode: 400 });
+        }
+        saveZapierLinks(db, req.body);
+        return { message: tr("Zapier links saved.", "Liens Zapier enregistrés.") };
+      },
+    );
   });
 
   // Server-sent events: the dashboard refetches when something changes.
@@ -733,6 +814,28 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         return { message: tr("Key changed and tested: the connection works.", "Clé changée et testée : la connexion fonctionne.") };
       },
     );
+
+    // ---------- Zapier: one key for every Zap of the workspace ----------
+
+    admin.get("/api/zapier", async (req) => {
+      need(req, "member");
+      return zapierView(db, req.ctx.ws);
+    });
+
+    admin.post("/api/zapier/key", async (req) => {
+      need(req, "owner");
+      const had = !!zapierView(db, req.ctx.ws).key;
+      const key = renewZapierKey(db, req.ctx.ws);
+      logActivity(db, req.ctx.actor, had
+        ? tr("New Zapier key: Zaps connected with the old one must be reconnected.", "Nouvelle clé Zapier : les Zaps branchés avec l'ancienne doivent être reconnectés.")
+        : tr("Zapier key created.", "Clé Zapier créée."), null, now(), req.ctx.ws);
+      return {
+        key,
+        message: had
+          ? tr("New key created. The old one no longer works: update the Orvanta connection in Zapier.", "Nouvelle clé créée. L'ancienne ne marche plus : mettez à jour la connexion Orvanta dans Zapier.")
+          : tr("Zapier key created.", "Clé Zapier créée."),
+      };
+    });
 
     admin.delete<{ Params: { id: string } }>("/api/integrations/:id", async (req) => {
       need(req, "member");

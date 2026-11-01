@@ -320,6 +320,8 @@ function Freedom({ agent, operate, onPick }: { agent: AgentDetail; operate: bool
         <span style={{ fontSize: 13, lineHeight: 1.5, color: "#45424C" }}>
           {n8n
             ? tr("Before each protected step, it asks you first. Choose what happens then.", "Avant chaque étape protégée, il vous demande d'abord. Choisissez ce qui se passe alors.")
+            : agent.source === "zapier"
+            ? tr("At each “Ask Permission” step, the Zap asks you first. Choose what happens then.", "À chaque étape « Ask Permission », le Zap vous demande d'abord. Choisissez ce qui se passe alors.")
             : tr("Before its sensitive actions, it asks you first. Choose what happens then.", "Avant ses actions sensibles, il vous demande d'abord. Choisissez ce qui se passe alors.")}
         </span>
       ) : (
@@ -327,6 +329,8 @@ function Freedom({ agent, operate, onPick }: { agent: AgentDetail; operate: bool
           {tr("For now, this agent never asks your permission: it acts without you, whatever you choose below. ", "Pour l'instant, cet agent ne vous demande jamais la permission : il agit sans vous, quel que soit votre choix ci-dessous. ")}
           {n8n
             ? tr("To make it stop before an action, use “Ask me before a step” above. Just did? This changes the next time the workflow reaches that step.", "Pour qu'il s'arrête avant une action, utilisez « Me demander avant une étape » plus haut. C'est déjà fait ? Cela change au prochain passage du workflow sur cette étape.")
+            : agent.source === "zapier"
+            ? tr(`To make it stop before an action, add the “${PRODUCT_NAME} → Ask Permission” step in the Zap (see “Ask me before a step” above).`, `Pour qu'il s'arrête avant une action, ajoutez l'étape « ${PRODUCT_NAME} → Ask Permission » dans le Zap (voir « Me demander avant une étape » plus haut).`)
             : tr(`It must first check with ${PRODUCT_NAME} before acting (Zapier step “${PRODUCT_NAME} · Ask Permission”, or the SDK).`, `Il doit d'abord consulter ${PRODUCT_NAME} avant d'agir (étape Zapier « ${PRODUCT_NAME} · Ask Permission », ou le SDK).`)}
         </span>
       )}
@@ -354,6 +358,8 @@ function SetupChecklist({ agent }: { agent: AgentDetail }) {
         : tr("No activity received yet", "Aucune activité reçue pour l'instant"),
       hint: agent.setup.activity ? null : n8n
         ? tr("It shows up after the workflow's next run (n8n is read every 30 seconds).", "Elle apparaît après la prochaine exécution du workflow (n8n est lu toutes les 30 secondes).")
+        : agent.source === "zapier"
+        ? tr("Failures show up once “Watch all your Zaps” is set (Connections → Zapier). For successes too, add a “Report Activity” step at the end of the Zap.", "Les échecs remontent dès que « Surveiller tous vos Zaps » est en place (Connexions → Zapier). Pour voir aussi les réussites, ajoutez une étape « Report Activity » en fin de Zap.")
         : tr("Add a “Report Activity” step at the end of the Zap, or send events with the connection key below.", "Ajoutez une étape « Report Activity » en fin de Zap, ou envoyez des événements avec la clé de connexion ci-dessous."),
     },
     {

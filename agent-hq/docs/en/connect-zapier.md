@@ -1,63 +1,57 @@
 # Connect Zapier to Orvanta
 
-The **Orvanta app for Zapier** is a private integration: you get access through an invite link from your Orvanta contact. Once you accept it, the Orvanta steps appear in the Zap editor like any other app.
+With version **1.2.0** of the Orvanta app for Zapier, one key covers every Zap of a workspace, and each Zap becomes an agent in Orvanta, like n8n workflows. Everything is set from **Connections → Zapier**, step by step.
 
 ## What it does
 
-| Level | How | Result |
-|---|---|---|
-| **Control** (the most important) | An **Orvanta · Ask Permission** step right before the sensitive action, plus a second Zap that starts from **Orvanta · Decision Made** | The action **never** runs without being allowed. Under your thresholds, it goes through right away. Above them, it waits for your **Approve** in Orvanta. If Orvanta cannot be reached, the step fails and nothing goes out. |
-| **See** | An **Orvanta · Report Activity** step at the end of the Zap (and on failure paths) | Tasks, failures, cost, plain-English alerts, and AI review of the answers if you send the question and the answer. |
-| **Stop** | A small Zap: **Orvanta · Agent Paused or Resumed** → **Zapier Manager · Turn Zap On/Off** | **Pause** in Orvanta switches the matching Zap off. A paused agent is also refused directly by **Ask Permission**. |
+| Feature | How |
+|---|---|
+| **See failures** of every Zap | One Zap to set up once: *Zapier Manager → New Zap Error* → *Orvanta → Report a Zap Error*. Each failing Zap creates or updates its agent, with the alert. |
+| **See successes** | An *Orvanta → Report Activity* step at the end of the Zap (the one thing Zapier never reports on its own). |
+| **Ask permission** | An *Orvanta → Ask Permission* step right before the sensitive action. The Zap **waits** for your click in Decisions (up to 30 days), then goes on by itself; declined, it stops. Amount thresholds, quiet hours, "I approve everything" and the AI check apply. |
+| **Emergency stop** | One Zap to set up once: *Orvanta → Agent Paused or Resumed* (Agent empty = all) → *Zapier Manager*, the action that turns a Zap off. Even without it, a paused agent's Ask Permission steps are refused. |
 
-**Difference with n8n:** Zapier does not let Orvanta read your Zaps on its own (that requires partner access, coming later). Monitoring therefore goes through the **Report Activity** step you add, and the emergency stop through the small Zap above.
+**Why steps to add, when n8n connects by itself?** Zapier doesn't let outside tools read or change a customer's Zaps. Orvanta only sees what Zaps send it. Ready-to-copy Zaps (share links) spare the owner from building them.
 
-## Connect the app (once per agent)
+## The Zapier key and the "Agent" field
 
-1. In Orvanta, open the agent that the Zap represents (create it in **My AI team → Add an agent** if needed), then **Connection → Show the connection key**.
-2. In Zapier, add any Orvanta step and click **Sign in**:
-   - *Orvanta Address*: the address you use to open Orvanta, for example `https://hq.your-company.com`;
-   - *Agent Connection Key*: the key from step 1.
+- **Connections → Zapier → Create my Zapier key** (workspace owner). The key starts with `ozk_`.
+- In Zapier, the first Orvanta step asks for the **Orvanta address** and this **key**. One connection for every Zap.
+- Every Orvanta step has an **Agent** field: pick an existing agent, or type a name (tip: the Zap's) and Orvanta creates the agent the first time.
+- An agent's own key (`ahq_…`) still works: the Agent field then doesn't show.
+- **Create a new key** invalidates the old one: only if it leaked.
 
-Each agent has its own key, so each agent gets its own Zapier connection. The connection is named after the agent.
+## Recipe: a quote that waits for your go-ahead
 
-## Recipe 1: a refund that waits for your go-ahead
+```
+1. Gmail: new quote request
+2. ChatGPT: writes the quote
+3. Orvanta: Ask Permission       ← Agent: "Solar quotes"
+                                    Summary: "Quote for {customer}: ${amount}"
+                                    Amount: {amount}
+                                    Text Received / Text About to Be Sent: for the AI check
+                                    When Your Approval Is Needed: Wait for the decision, then go on
+4. Gmail: sends the quote        ← only runs once allowed
+5. Orvanta: Report Activity      ← optional, to count successes
+```
 
-**Zap 1: "Ask"**
-1. Trigger: your usual trigger (new ticket, form…).
-2. **Orvanta · Ask Permission**:
-   - *Action*: `stripe.refund` (your guardrails match on this name);
-   - *Summary*: `Refund ${{amount}} to {{customer}}` (the sentence you will read);
-   - *Amount*: `{{amount}}`;
-   - *Data to Keep for the Approved Action*: everything the action will need (order ID, customer email, amount…).
-3. The refund action (Stripe…).
+- Under your thresholds: Orvanta answers "allowed" at once, the Zap goes on.
+- Over them, or with "I approve everything": the request waits in **Decisions**. **Approve**: the Zap resumes at step 4. **Decline**: it stops.
+- Orvanta unreachable: the step fails, so the email is not sent.
 
-→ **Under the threshold**, step 3 runs right away. **Above it**, the Zap stops cleanly (status *halted* in Zapier, with the message "Waiting for approval in Orvanta") and the request shows up in **Decisions**.
+The former mode ("Stop this Zap" + a second Zap starting from *Decision Made*) is still available, and steps created before 1.2.0 keep it, so an action is never done twice.
 
-**Zap 2: "Run once approved"**
-1. Trigger: **Orvanta · Decision Made**, with *Only Approved Requests* = yes and *Only for This Action* = `stripe.refund`.
-2. The refund action, using the fields under *Payload* (order ID, email…).
+## What the Orvanta administrator does (once for all clients)
 
-→ When you click **Approve** in Orvanta, this Zap runs within seconds. **Decline**: nothing happens.
+1. Push version 1.2.0 of the app: see [zapier/README.md](../../zapier/README.md).
+2. Build the "Watch all my Zaps" and "Emergency stop" Zaps in their own Zapier (and, optionally, an Ask Permission example), then copy their share links (*Zap → ⋯ → Share*).
+3. Paste them, with the invite link, in **Administration → Zapier links**. They then show on every workspace's Connections → Zapier; without links, clients see how to do it by hand.
 
-## Recipe 2: emergency stop
+**Requirement:** Orvanta reachable from the internet over **https** (Zapier's servers call it, and Orvanta only calls back public https addresses).
 
-1. Trigger: **Orvanta · Agent Paused or Resumed**, *When the Agent Is* = *Paused*.
-2. Action: **Zapier Manager · Turn Zap On/Off** → the agent's Zap, *Off*.
+## What was tested, and what was not
 
-Build a second identical Zap with *Resumed* → *On* if you want **Resume** to switch it back on.
-
-## Recipe 3: see what the agent does
-
-Add **Orvanta · Report Activity** as the last step of the Zap:
-
-- *Action*: what the Zap did, for example `zendesk.reply`;
-- *Status*: *Success* (add a second Report Activity on the error path with *Failure* and the *Error Message*);
-- *What the Agent Received* and *What the Agent Answered or Did*: needed for the AI review to spot wrong or made-up answers;
-- *Cost*: the AI cost of the task, if you know it.
-
-## Good to know
-
-- **Requirement:** Orvanta must be reachable on the internet over **https**. Zapier's servers call it, and Orvanta only sends notifications to public https addresses.
-- **Ask Permission without stopping:** set *Stop the Zap Unless Allowed* to false if you prefer to keep the Zap running and decide with a Filter step on the *Allowed* field.
-- **What we tested:** 12 automated checks with Zapier's own test engine against a real Orvanta server (connection and wrong key, $45 allowed, $340 held for approval, approval delivered with the kept data, decline that triggers nothing, pause delivered, paused agent refused, Orvanta unreachable so nothing runs, activity and alerts, unsubscribing). The app also passes Zapier's official `zapier validate` check.
+- ✅ **16 checks** with Zapier's official test runtime (*appTester*) against a live Orvanta, including: workspace key, agent list, agent created from a new name, Ask Permission waiting then resuming (approved) or stopping (declined), Zap error reported, an agent's pause reaching a workspace-wide subscription.
+- ✅ 7 tests on the Orvanta side: key, agents by name, Zapier called back even when the decision comes first, private addresses and other workspaces refused, administrator links.
+- ✅ Structure validated by Zapier's official tool.
+- ❌ **Not yet tested in Zapier itself.** To check on a real account: Ask Permission's waiting ("callback"), the exact names of *Zapier Manager*'s triggers and actions, and whether they need a paid plan.

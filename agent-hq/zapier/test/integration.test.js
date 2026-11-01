@@ -195,3 +195,79 @@ test('Unsubscribing removes the hook: no more pushes', async () => {
   await appTester(App.triggers.decision_made.operation.performUnsubscribe, { authData, subscribeData: decisionHook });
   await assert.rejects(appTester(App.triggers.decision_made.operation.performUnsubscribe, { authData, subscribeData: decisionHook }), /not found/);
 });
+
+// ---------- One Zapier key for the whole workspace (version 1.2.0) ----------
+
+let wsAuth;
+const zapName = `Zap Quotes ${Date.now()}`;
+
+test('workspace key: the connection is named after the workspace, and steps ask which agent the Zap is', async () => {
+  const { key } = await admin('/api/zapier/key', { method: 'POST', body: {} });
+  wsAuth = { base_url: HQ, api_key: key };
+  const result = await appTester(App.authentication.test, { authData: wsAuth });
+  assert.match(App.authentication.connectionLabel(null, { inputData: result }), /^Orvanta · /);
+
+  const fieldsFor = (auth) => App.creates.ask_permission.operation.inputFields[0](null, { authData: auth });
+  assert.strictEqual(fieldsFor(wsAuth)[0].key, 'agent');
+  assert.deepStrictEqual(fieldsFor(authData), [], 'an agent key needs no Agent field');
+
+  const list = await appTester(App.triggers.agent_list.operation.perform, { authData: wsAuth, inputData: {} });
+  assert.ok(list.some((a) => a.id === agentId), 'existing agents are offered in the dropdown');
+});
+
+test('Ask Permission (wait): the Zap pauses, a new name becomes an agent, and the decision resumes it', async () => {
+  const waiting = await appTester(App.creates.ask_permission.operation.perform, {
+    authData: wsAuth,
+    inputData: { agent: zapName, action: 'stripe.refund', amount: '340', summary: 'Refund $340 to Dune Bakery', when_approval_needed: 'wait' },
+  });
+  assert.strictEqual(waiting.waiting, true);
+  assert.strictEqual(waiting.decision, 'needs_approval');
+
+  const agents = await admin('/api/agents');
+  const created = agents.find((a) => a.name === zapName);
+  assert.ok(created && created.platform === 'Zapier', 'the Zap became an agent by itself');
+  const pending = (await admin('/api/approvals')).pending.find((p) => p.title === 'Refund $340 to Dune Bakery');
+  assert.ok(pending, 'the request waits in Orvanta');
+
+  // Orvanta calls back with the decision: approved → the next steps run.
+  const approved = await appTester(App.creates.ask_permission.operation.performResume, {
+    authData: wsAuth,
+    inputData: { stop_unless_allowed: true },
+    outputData: waiting,
+    cleanedRequest: { approved: true, decision: 'approved', decided_by: 'Julie' },
+  });
+  assert.strictEqual(approved.approved, true);
+  assert.strictEqual(approved.decided_by, 'Julie');
+
+  // Declined → the Zap stops.
+  await assert.rejects(
+    appTester(App.creates.ask_permission.operation.performResume, {
+      authData: wsAuth,
+      inputData: {},
+      outputData: waiting,
+      cleanedRequest: { approved: false, decision: 'rejected', decided_by: 'Julie' },
+    }),
+    (err) => err.name === 'HaltedError' && /Declined in Orvanta by Julie/.test(err.message),
+  );
+});
+
+test('Report a Zap Error: a failed Zap shows up on its agent', async () => {
+  const res = await appTester(App.creates.report_zap_error.operation.perform, {
+    authData: wsAuth,
+    inputData: { agent: zapName, error_message: 'Gmail: invalid recipient', step: 'Gmail · Send Email' },
+  });
+  assert.strictEqual(res.accepted, 1);
+});
+
+test('Agent Paused or Resumed (all agents): pausing any agent reaches the emergency-stop Zap', async () => {
+  const hook = await appTester(App.triggers.agent_state_changed.operation.performSubscribe, {
+    authData: wsAuth,
+    inputData: { state: 'paused' },
+    targetUrl: `http://localhost:${CATCHER_PORT}/ws-state`,
+  });
+  const agent = (await admin('/api/agents')).find((a) => a.name === zapName);
+  await admin(`/api/agents/${agent.id}/actions/pause`, { method: 'POST', body: {} });
+  const hit = await waitFor('workspace pause push', () => received.find((r) => r.path === '/ws-state'));
+  assert.strictEqual(hit.body.agent_name, zapName);
+  await appTester(App.triggers.agent_state_changed.operation.performUnsubscribe, { authData: wsAuth, inputData: {}, subscribeData: hook });
+});
