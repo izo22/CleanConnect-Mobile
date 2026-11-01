@@ -12,8 +12,6 @@ import type { Judge, Judgement } from "./reviewer.ts";
 
 export interface AiCheckParams {
   action_prefix: string;
-  /** The owner's own rules, one per line, e.g. "never promise a discount over 10%". */
-  instructions?: string;
   /** "doubt": hold anything doubtful or wrong; "error": hold only what is clearly wrong. */
   hold_on: "doubt" | "error";
 }
@@ -37,9 +35,13 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
  */
 export async function aiPrecheck(db: DB, agent: AgentRow, req: CheckRequest, judge: Judge, now: number, timeoutMs = AI_CHECK_TIMEOUT_MS): Promise<CheckResult | null> {
   if (!req.output?.trim()) return null;
-  const rule = getRules(db, agent.workspace_id).find((r) => r.enabled && r.kind === "ai_check" && ruleAppliesTo(r, agent.id) && matches(req.action, ruleParams<AiCheckParams>(r).action_prefix));
-  if (!rule) return null;
-  const p = ruleParams<AiCheckParams>(rule);
+  const rules = getRules(db, agent.workspace_id).filter((r) => r.enabled && ruleAppliesTo(r, agent.id));
+  const rule = rules.find((r) => r.kind === "ai_check" && matches(req.action, ruleParams<AiCheckParams>(r).action_prefix));
+  // Rules the owner wrote in their own words ("never promise a discount over 10%"): the AI checks them too.
+  const written = rules.filter((r) => r.kind === "written");
+  if (!rule && !written.length) return null;
+  // Without the general AI check, only a message that breaks a written rule waits.
+  const p: Pick<AiCheckParams, "hold_on"> = rule ? ruleParams<AiCheckParams>(rule) : { hold_on: "error" };
 
   let j: Judgement | null = null;
   try {
@@ -49,7 +51,7 @@ export async function aiPrecheck(db: DB, agent: AgentRow, req: CheckRequest, jud
         mission: agent.mission,
         instructions: [
           activePrompt(db, agent.id)?.content,
-          p.instructions?.trim() && `${tr("Rules set by the business owner (anything breaking them is an error)", "Règles fixées par le patron (tout ce qui les enfreint est une erreur)")}:\n${p.instructions.trim()}`,
+          written.length && `${tr("Rules set by the business owner (anything breaking one is an error)", "Règles fixées par le patron (tout ce qui en enfreint une est une erreur)")}:\n${written.map((r) => `- ${ruleParams<{ text: string }>(r).text}`).join("\n")}`,
         ].filter(Boolean).join("\n\n") || null,
         expectedLanguage: agent.expected_language,
         action: req.action,
@@ -65,7 +67,7 @@ export async function aiPrecheck(db: DB, agent: AgentRow, req: CheckRequest, jud
   const hold = !j || j.verdict === "error" || (p.hold_on === "doubt" && j.verdict === "doubt");
   if (!hold) return null;
 
-  run(db, "UPDATE rules SET trigger_count = trigger_count + 1 WHERE id = ?", rule.id);
+  for (const r of rule ? [rule] : written) run(db, "UPDATE rules SET trigger_count = trigger_count + 1 WHERE id = ?", r.id);
   const found = j
     ? [j.summary, ...j.issues.map((i) => `• ${i.detail}`)].join("\n")
     : tr("The AI check could not run in time, so a human decides.", "La vérification IA n'a pas pu se faire à temps : un humain décide.");
@@ -83,6 +85,6 @@ export async function aiPrecheck(db: DB, agent: AgentRow, req: CheckRequest, jud
     decision: "needs_approval",
     reason: j ? tr(`AI check: ${j.summary}`, `Vérification IA : ${j.summary}`) : tr("AI check unavailable: human approval required.", "Vérification IA indisponible : validation humaine requise."),
     approval_id: id,
-    rule_id: rule.id,
+    rule_id: (rule ?? written[0]).id,
   };
 }

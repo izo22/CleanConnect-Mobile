@@ -71,10 +71,12 @@ describe("rules the owner adds", () => {
   });
 });
 
-describe("the owner's rules for the AI check", () => {
-  it("are given to the AI with the agent's instructions", async () => {
+describe("rules the owner writes in their own words", () => {
+  it("are given to the AI, and a message breaking one waits for a human", async () => {
     const quotes = await newAgent("Devis");
-    await app.inject({ method: "PATCH", url: "/api/rules/main:ai-check", payload: { params: { instructions: "Ne jamais promettre une remise de plus de 10 %" } } });
+    const added = await addRule({ kind: "written", text: "Ne jamais promettre une remise de plus de 10 %" });
+    expect(added.statusCode).toBe(201);
+    expect(added.json()).toMatchObject({ kind: "written", sentence: "Ne jamais promettre une remise de plus de 10 %", deletable: true });
     let seen: ReviewInput | null = null;
     const judge: Judge = async (input) => { seen = input; return { verdict: "error", score: 20, summary: "Remise de 25 % promise", issues: [] }; };
     const res = await aiPrecheck(db, getAgent(db, quotes.id)!, { action: "email.send", output: "Bonjour, je vous fais 25 % de remise." }, judge, Date.now());
@@ -82,8 +84,18 @@ describe("the owner's rules for the AI check", () => {
     expect(res?.decision).toBe("needs_approval");
   });
 
-  it("stay short", async () => {
-    const res = await app.inject({ method: "PATCH", url: "/api/rules/main:ai-check", payload: { params: { instructions: "x".repeat(2001) } } });
-    expect(res.statusCode).toBe(400);
+  it("still apply when the general AI check is off, and only for the agents chosen", async () => {
+    const quotes = await newAgent("Devis");
+    const support = await newAgent("Support");
+    await app.inject({ method: "PATCH", url: "/api/rules/main:ai-check", payload: { enabled: false } });
+    await addRule({ kind: "written", text: "Toujours vouvoyer", agents: [quotes.id] });
+    const judge: Judge = async () => ({ verdict: "error", score: 10, summary: "Tutoiement", issues: [] });
+    expect((await aiPrecheck(db, getAgent(db, quotes.id)!, { action: "email.send", output: "Salut, ça va ?" }, judge, Date.now()))?.decision).toBe("needs_approval");
+    expect(await aiPrecheck(db, getAgent(db, support.id)!, { action: "email.send", output: "Salut, ça va ?" }, judge, Date.now())).toBeNull();
+  });
+
+  it("must say something, in one sentence", async () => {
+    expect((await addRule({ kind: "written", text: "   " })).statusCode).toBe(400);
+    expect((await addRule({ kind: "written", text: "x".repeat(501) })).statusCode).toBe(400);
   });
 });

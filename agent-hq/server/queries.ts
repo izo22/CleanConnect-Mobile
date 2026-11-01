@@ -222,7 +222,7 @@ export function rulesView(db: DB, ws: string) {
   return getRules(db, ws).map((r) => {
     const params = JSON.parse(r.params);
     // The AI check needs the AI key on the server; say so instead of pretending it runs.
-    const unavailable = r.kind === "ai_check" && !reviewerEnabled();
+    const unavailable = (r.kind === "ai_check" || r.kind === "written") && !reviewerEnabled();
     return { ...r, enabled: !!r.enabled, params, sentence: describeRule(r.kind, r.label, params), unavailable, deletable: ruleDeletable(r) };
   });
 }

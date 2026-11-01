@@ -21,6 +21,8 @@ export function describeRule(kind: RuleKind, subject: string, p: Record<string, 
       return p.hold_on === "error"
         ? tr(`AI check of every ${subject} before it goes out: anything clearly wrong waits for a human`, `Vérification IA de chaque ${subject} avant l'envoi : tout ce qui est faux attend un humain`)
         : tr(`AI check of every ${subject} before it goes out: anything doubtful waits for a human`, `Vérification IA de chaque ${subject} avant l'envoi : tout ce qui est douteux attend un humain`);
+    case "written":
+      return String(p.text ?? "");
     case "daily_total":
       return tr(`At most ${money(Number(p.max_cents))} per day in total without my approval`, `Pas plus de ${money(Number(p.max_cents))} par jour au total sans ma validation`);
     case "repeat_pause":

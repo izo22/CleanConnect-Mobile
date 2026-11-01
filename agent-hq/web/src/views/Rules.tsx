@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { api, useData, type AgentSummary, type RuleView } from "../api.ts";
 import { ErrorBox, Skeleton, useToast } from "../components/ui.tsx";
 import { currencyAffix, parseNumber } from "../format.ts";
@@ -57,6 +57,8 @@ function Sentence({ rule, save }: { rule: RuleView; save: (params: object) => vo
         ? <>Vérification IA de chaque {rule.label} avant l'envoi : {hold} attend un humain</>
         : <>AI check of every {rule.label} before it goes out: {hold} waits for a human</>;
     }
+    case "written":
+      return <>« {String(rule.params.text ?? "")} »</>;
     case "daily_total":
       return fr
         ? <>Pas plus de {amount("Plafond par jour")} par jour au total sans ma validation</>
@@ -91,55 +93,41 @@ function Scope({ rule, agents, save }: { rule: RuleView; agents: AgentSummary[];
   );
 }
 
-/** The owner's own rules for the AI check, one per line. */
-function AiInstructions({ rule, save }: { rule: RuleView; save: (text: string) => void }) {
-  const current = String((rule.params as { instructions?: string }).instructions ?? "");
-  const [text, setText] = useState(current);
-  useEffect(() => setText(current), [current]);
-  return (
-    <div className="field" style={{ marginTop: 4 }}>
-      <label htmlFor={`ai-rules-${rule.id}`}>{tr("Your rules for the AI (one per line)", "Vos consignes pour l'IA (une par ligne)")}</label>
-      <textarea id={`ai-rules-${rule.id}`} maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} style={{ minHeight: 90 }}
-        placeholder={tr("Never promise a discount over 10%\nNever give an installation date\nAlways write formally", "Ne jamais promettre une remise de plus de 10 %\nNe jamais donner de date d'installation\nToujours vouvoyer le client")} />
-      <span className="hint">{tr("A message that breaks one of them waits for you, with the reason.", "Un message qui enfreint l'une d'elles vous attend, avec la raison.")}</span>
-      {text.trim() !== current.trim() && (
-        <button type="button" className="btn primary small" style={{ alignSelf: "flex-start" }} onClick={() => save(text.trim())}>{tr("Save my rules", "Enregistrer mes consignes")}</button>
-      )}
-    </div>
-  );
-}
-
-/** "+ Add a rule": the two guardrails an owner adds most, for any action. */
+/** "+ Add a rule": the owner writes it in their own words, the AI checks it before every message goes out. */
 function AddRule({ onAdded }: { onAdded: () => void }) {
   const toast = useToast();
+  const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
-  const add = async (kind: "approval_amount" | "daily_total", max_cents: number) => {
+  const add = async (e: FormEvent) => {
+    e.preventDefault();
     setBusy(true);
     try {
-      await api("/api/rules", { method: "POST", body: { kind, max_cents } });
-      toast(tr("Rule added: change the amount and the agents in it.", "Règle ajoutée : changez le montant et les agents dans la règle."));
+      await api("/api/rules", { method: "POST", body: { kind: "written", text: text.trim() } });
+      toast(tr("Rule added.", "Règle ajoutée."));
+      setText("");
       onAdded();
-    } catch (e) {
-      toast((e as Error).message, true);
+    } catch (err) {
+      toast((err as Error).message, true);
     } finally {
       setBusy(false);
     }
   };
   return (
-    <section className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <form className="card" onSubmit={add} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <h2 className="h2" style={{ fontSize: 20 }}>{tr("+ Add a rule", "+ Ajouter une règle")}</h2>
-      <div className="levels">
-        <button type="button" className="level" disabled={busy} onClick={() => add("approval_amount", 100000)}>
-          <span className="radio" />
-          <span><b>{tr("Over an amount, I approve", "Au-dessus d'un montant, je valide")}</b><small>{tr("For any action with an amount: quote, payment, order, refund…", "Pour toute action avec un montant : devis, paiement, commande, remboursement…")}</small></span>
-        </button>
-        <button type="button" className="level" disabled={busy} onClick={() => add("daily_total", 100000)}>
-          <span className="radio" />
-          <span><b>{tr("At most this much per day", "Pas plus de tant par jour")}</b><small>{tr("Above this total for the day, everything waits for you. Stops a series of small mistakes.", "Au-delà de ce total sur la journée, tout vous attend. Arrête une série de petites erreurs.")}</small></span>
-        </button>
+      <div className="field">
+        <label htmlFor="new-rule">{tr("Write your rule in one sentence", "Écrivez votre règle en une phrase")}</label>
+        <textarea id="new-rule" maxLength={500} value={text} onChange={(e) => setText(e.target.value)} style={{ minHeight: 70 }}
+          placeholder={tr("e.g. Never promise a discount over 10%", "ex. : Ne jamais promettre une remise de plus de 10 %")} />
+        <span className="hint">
+          {tr(
+            "Other examples: “Never give an installation date”, “Always write formally”, “Never send a quote without the full address”. Before each message goes out, the AI checks it; one that breaks your rule waits for you, with the reason.",
+            "Autres exemples : « Ne jamais donner de date d'installation », « Toujours vouvoyer le client », « Ne jamais envoyer de devis sans adresse complète ». Avant chaque envoi, l'IA vérifie le message ; s'il enfreint votre règle, il vous attend, avec la raison.",
+          )}
+        </span>
       </div>
-      <span className="muted" style={{ fontSize: 13 }}>{tr("Amounts come from the agents: the Amount field of Ask Permission (Zapier), or the amount field chosen when protecting an n8n step.", "Les montants viennent des agents : champ « Amount » d'Ask Permission (Zapier), ou champ du montant choisi en protégeant une étape n8n.")}</span>
-    </section>
+      <button type="submit" className="btn primary" style={{ alignSelf: "flex-start" }} disabled={busy || !text.trim()}>{busy ? "…" : tr("Add this rule", "Ajouter cette règle")}</button>
+    </form>
   );
 }
 
@@ -184,17 +172,18 @@ export function Rules() {
         <fieldset disabled={!operate} className="plain" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {data.map((r) => {
             const hot = r.kind === "repeat_pause" && !r.enabled;
-            const explain = r.kind === "ai_check"
-              ? r.unavailable
-                ? tr("Not running: the AI key isn't set on this server yet.", "Inactive : la clé IA n'est pas encore configurée sur ce serveur.")
-                : tr("Works when the agent sends what it is about to send (Ask Permission → “Text About to Be Sent”).", "Fonctionne quand l'agent envoie ce qu'il s'apprête à envoyer (Ask Permission → « Text About to Be Sent »).")
-              : null;
+            const explain = r.unavailable
+              ? tr("Not running: the AI key isn't set on this server yet.", "Inactive : la clé IA n'est pas encore configurée sur ce serveur.")
+              : r.kind === "ai_check"
+                ? tr("Works when the agent sends what it is about to send (Ask Permission → “Text About to Be Sent”).", "Fonctionne quand l'agent envoie ce qu'il s'apprête à envoyer (Ask Permission → « Text About to Be Sent »).")
+                : r.kind === "written"
+                  ? tr("Your rule, checked by the AI before each message goes out (when the agent sends its text).", "Votre règle, vérifiée par l'IA avant chaque envoi (quand l'agent envoie son texte).")
+                  : null;
             return (
               <div key={r.id} className={"rule" + (hot ? " hot" : "")}>
                 <div className="body">
                   <span className="sentence"><Sentence rule={r} save={(params) => update(r, { params }, tr("Rule updated.", "Règle mise à jour."))} /></span>
                   {explain && <span className="stat">{explain}</span>}
-                  {r.kind === "ai_check" && <AiInstructions rule={r} save={(instructions) => update(r, { params: { instructions } }, tr("Your rules for the AI are saved.", "Vos consignes pour l'IA sont enregistrées."))} />}
                   {r.kind !== "global_budget" && agents && agents.length > 0 && (
                     <Scope rule={r} agents={agents} save={(list) => update(r, { params: { agents: list } }, tr("Agents of this rule updated.", "Agents de la règle mis à jour."))} />
                   )}

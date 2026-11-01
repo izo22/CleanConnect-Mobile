@@ -88,7 +88,7 @@ export interface RuleRow {
   created_at: number;
 }
 
-export type RuleKind = "approval_amount" | "quiet_hours" | "global_budget" | "repeat_pause" | "ai_check" | "daily_total";
+export type RuleKind = "approval_amount" | "quiet_hours" | "global_budget" | "repeat_pause" | "ai_check" | "daily_total" | "written";
 
 /** A rule covers every agent, or only those listed in its "agents" parameter. */
 export function ruleAppliesTo(rule: RuleRow, agentId: string) {

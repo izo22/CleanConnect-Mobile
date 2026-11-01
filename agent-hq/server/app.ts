@@ -728,29 +728,37 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
           throw invalid("Unknown agent in this rule.", "Agent inconnu dans cette règle.");
         }
       }
-      if (params.instructions !== undefined && (typeof params.instructions !== "string" || params.instructions.length > 2000)) {
-        throw invalid("Your rules for the AI check must be under 2,000 characters.", "Vos consignes pour la vérification IA doivent faire moins de 2 000 caractères.");
+      if (params.text !== undefined && (typeof params.text !== "string" || !params.text.trim() || params.text.length > 500)) {
+        throw invalid("Write the rule in one sentence (500 characters at most).", "Écrivez la règle en une phrase (500 caractères au plus).");
       }
     };
 
-    // A guardrail added by the owner: "over X, I approve" or "at most X per day", for any action.
-    admin.post<{ Body: { kind: "approval_amount" | "daily_total"; max_cents: number; agents?: string[] } }>(
+    // A guardrail added by the owner: a rule in their own words (checked by the AI), or "over X, I approve" / "at most X per day".
+    admin.post<{ Body: { kind: "approval_amount" | "daily_total" | "written"; max_cents?: number; text?: string; agents?: string[] } }>(
       "/api/rules",
       {
         schema: {
           body: {
-            type: "object", required: ["kind", "max_cents"], additionalProperties: false,
-            properties: { kind: { enum: ["approval_amount", "daily_total"] }, max_cents: { type: "integer", minimum: 0 }, agents: { type: "array", items: { type: "string" }, maxItems: 200 } },
+            type: "object", required: ["kind"], additionalProperties: false,
+            properties: {
+              kind: { enum: ["approval_amount", "daily_total", "written"] }, max_cents: { type: "integer", minimum: 0 },
+              text: { type: "string", maxLength: 500 }, agents: { type: "array", items: { type: "string" }, maxItems: 200 },
+            },
           },
         },
       },
       async (req, reply) => {
         need(req, "member");
         const b = req.body;
-        const params = { action_prefix: "*", max_cents: b.max_cents, ...(b.agents?.length ? { agents: b.agents } : {}) };
+        const scope = b.agents?.length ? { agents: b.agents } : {};
+        let params: Record<string, unknown>;
+        if (b.kind === "written") params = { text: b.text?.trim() ?? "", ...scope };
+        else if (b.max_cents === undefined) throw invalid("Give the amount.", "Indiquez le montant.");
+        else params = { action_prefix: "*", max_cents: b.max_cents, ...scope };
+        if (b.kind === "written" && !String(params.text)) throw invalid("Write the rule first.", "Écrivez d'abord la règle.");
         checkRuleParams(req.ctx.ws, params);
         const id = `${req.ctx.ws}:custom:${randomUUID().slice(0, 8)}`;
-        const label = b.kind === "daily_total" ? tr("actions with an amount", "actions avec un montant") : tr("action", "action");
+        const label = b.kind === "written" ? tr("written rule", "règle écrite") : b.kind === "daily_total" ? tr("actions with an amount", "actions avec un montant") : tr("action", "action");
         run(db, "INSERT INTO rules (id, workspace_id, kind, label, params, enabled, trigger_count, created_at) VALUES (?, ?, ?, ?, ?, 1, 0, ?)",
           id, req.ctx.ws, b.kind, label, JSON.stringify(params), now());
         logActivity(db, req.ctx.actor, tr(`Rule added: ${describeRule(b.kind, label, params)}`, `Règle ajoutée : ${describeRule(b.kind, label, params)}`), null, now(), req.ctx.ws);
