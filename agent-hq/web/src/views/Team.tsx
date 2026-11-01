@@ -95,12 +95,13 @@ function AgentCard({ agent: a, selected, onSelect }: { agent: AgentSummary; sele
   const { run, busy } = useAction();
   const can = useCan();
   return (
-    <article className={"agent-card" + (selected ? " selected" : "")}>
-      <button type="button" className="head" onClick={onSelect} aria-label={tr(`Open ${a.name}'s page`, `Ouvrir la fiche de ${a.name}`)}>
+    // The whole card opens the agent's page (the Pause button keeps its own job); the name stays the keyboard target.
+    <article className={"agent-card" + (selected ? " selected" : "")} onClick={(e) => !(e.target as HTMLElement).closest("button:not(.head)") && onSelect()}>
+      <button type="button" className="head" aria-label={tr(`Open ${a.name}'s page`, `Ouvrir la fiche de ${a.name}`)}>
         <Avatar id={a.id} name={a.name} size={46} />
         <span style={{ minWidth: 0 }}>
           <span className="n">{a.name}</span>
-          <span className="o">{a.source === "n8n" ? tr("n8n workflow", "Workflow n8n") : a.owner_name}</span>
+          <span className="o">{a.source === "n8n" ? tr("n8n workflow", "Workflow n8n") : a.source === "zapier" ? "Zap" : a.owner_name}</span>
         </span>
       </button>
       <p className="mission">{a.mission}</p>
