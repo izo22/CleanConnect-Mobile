@@ -6,12 +6,14 @@
  */
 import { tr } from "./i18n.ts";
 import { requestApproval, type CheckRequest, type CheckResult } from "./guard.ts";
-import { activePrompt, getRules, ruleParams, type AgentRow } from "./model.ts";
+import { activePrompt, getRules, ruleAppliesTo, ruleParams, type AgentRow } from "./model.ts";
 import { run, type DB } from "./db.ts";
 import type { Judge, Judgement } from "./reviewer.ts";
 
 export interface AiCheckParams {
   action_prefix: string;
+  /** The owner's own rules, one per line, e.g. "never promise a discount over 10%". */
+  instructions?: string;
   /** "doubt": hold anything doubtful or wrong; "error": hold only what is clearly wrong. */
   hold_on: "doubt" | "error";
 }
@@ -35,7 +37,7 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
  */
 export async function aiPrecheck(db: DB, agent: AgentRow, req: CheckRequest, judge: Judge, now: number, timeoutMs = AI_CHECK_TIMEOUT_MS): Promise<CheckResult | null> {
   if (!req.output?.trim()) return null;
-  const rule = getRules(db, agent.workspace_id).find((r) => r.enabled && r.kind === "ai_check" && matches(req.action, ruleParams<AiCheckParams>(r).action_prefix));
+  const rule = getRules(db, agent.workspace_id).find((r) => r.enabled && r.kind === "ai_check" && ruleAppliesTo(r, agent.id) && matches(req.action, ruleParams<AiCheckParams>(r).action_prefix));
   if (!rule) return null;
   const p = ruleParams<AiCheckParams>(rule);
 
@@ -45,7 +47,10 @@ export async function aiPrecheck(db: DB, agent: AgentRow, req: CheckRequest, jud
       judge({
         agentName: agent.name,
         mission: agent.mission,
-        instructions: activePrompt(db, agent.id)?.content ?? null,
+        instructions: [
+          activePrompt(db, agent.id)?.content,
+          p.instructions?.trim() && `${tr("Rules set by the business owner (anything breaking them is an error)", "Règles fixées par le patron (tout ce qui les enfreint est une erreur)")}:\n${p.instructions.trim()}`,
+        ].filter(Boolean).join("\n\n") || null,
         expectedLanguage: agent.expected_language,
         action: req.action,
         input: req.input ?? null,

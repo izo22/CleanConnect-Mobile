@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import Fastify, { type FastifyRequest } from "fastify";
 import { all, get, run, tx, type DB } from "./db.ts";
 import { evaluateAgent, evaluateReports } from "./engine.ts";
-import { check, type CheckRequest } from "./guard.ts";
+import { check, recordAllowed, type CheckRequest } from "./guard.ts";
 import {
   DAY,
   HOUR,
@@ -19,10 +20,11 @@ import {
   type AlertSensitivity,
   type ApprovalRow,
   type RuleRow,
+  ruleParams,
 } from "./model.ts";
 import { PlaybookError, actionsFor, applyToAgent, runPlaybook, type PlaybookId } from "./playbooks.ts";
 import { notify, notifyWorkspace } from "./notify.ts";
-import { describeRule } from "./rules.ts";
+import { describeRule, ruleDeletable } from "./rules.ts";
 import { shouldSample, type Judge } from "./reviewer.ts";
 import { aiPrecheck } from "./precheck.ts";
 import { deliverDecision, validCallbackUrl } from "./callbacks.ts";
@@ -323,6 +325,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       let result = tx(db, () => check(db, agent, req.body, now()));
       // The guardrails allowed it: if the agent sent its answer, the AI reads it before it goes out.
       if (result.decision === "allow" && judge) result = (await aiPrecheck(db, agent, req.body, judge, now())) ?? result;
+      if (result.decision === "allow") recordAllowed(db, agent, req.body, now());
       if (result.decision !== "allow") notifyChange();
       if (result.decision === "needs_approval") {
         const a = get<{ title: string; reason: string }>(db, "SELECT title, reason FROM approvals WHERE id = ?", result.approval_id);
@@ -713,6 +716,60 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       },
     );
 
+    const invalid = (en: string, fr: string) => Object.assign(new Error(tr(en, fr)), { statusCode: 400 });
+    /** Numbers stay positive, "agents" lists agents of this workspace, the owner's AI rules stay short. */
+    const checkRuleParams = (ws: string, params: Record<string, unknown>) => {
+      for (const v of Object.values(params)) {
+        if (typeof v === "number" && (!Number.isFinite(v) || v < 0)) throw invalid("Invalid value.", "Valeur invalide.");
+      }
+      if (params.agents !== undefined) {
+        const list = params.agents;
+        if (!Array.isArray(list) || list.some((a) => typeof a !== "string" || !get(db, "SELECT 1 FROM agents WHERE id = ? AND workspace_id = ?", a, ws))) {
+          throw invalid("Unknown agent in this rule.", "Agent inconnu dans cette règle.");
+        }
+      }
+      if (params.instructions !== undefined && (typeof params.instructions !== "string" || params.instructions.length > 2000)) {
+        throw invalid("Your rules for the AI check must be under 2,000 characters.", "Vos consignes pour la vérification IA doivent faire moins de 2 000 caractères.");
+      }
+    };
+
+    // A guardrail added by the owner: "over X, I approve" or "at most X per day", for any action.
+    admin.post<{ Body: { kind: "approval_amount" | "daily_total"; max_cents: number; agents?: string[] } }>(
+      "/api/rules",
+      {
+        schema: {
+          body: {
+            type: "object", required: ["kind", "max_cents"], additionalProperties: false,
+            properties: { kind: { enum: ["approval_amount", "daily_total"] }, max_cents: { type: "integer", minimum: 0 }, agents: { type: "array", items: { type: "string" }, maxItems: 200 } },
+          },
+        },
+      },
+      async (req, reply) => {
+        need(req, "member");
+        const b = req.body;
+        const params = { action_prefix: "*", max_cents: b.max_cents, ...(b.agents?.length ? { agents: b.agents } : {}) };
+        checkRuleParams(req.ctx.ws, params);
+        const id = `${req.ctx.ws}:custom:${randomUUID().slice(0, 8)}`;
+        const label = b.kind === "daily_total" ? tr("actions with an amount", "actions avec un montant") : tr("action", "action");
+        run(db, "INSERT INTO rules (id, workspace_id, kind, label, params, enabled, trigger_count, created_at) VALUES (?, ?, ?, ?, ?, 1, 0, ?)",
+          id, req.ctx.ws, b.kind, label, JSON.stringify(params), now());
+        logActivity(db, req.ctx.actor, tr(`Rule added: ${describeRule(b.kind, label, params)}`, `Règle ajoutée : ${describeRule(b.kind, label, params)}`), null, now(), req.ctx.ws);
+        notifyChange();
+        return reply.code(201).send(rulesView(db, req.ctx.ws).find((r) => r.id === id));
+      },
+    );
+
+    admin.delete<{ Params: { id: string } }>("/api/rules/:id", async (req) => {
+      need(req, "member");
+      const rule = get<RuleRow>(db, "SELECT * FROM rules WHERE id = ? AND workspace_id = ?", req.params.id, req.ctx.ws);
+      if (!rule) throw notFound("Rule", "Règle");
+      if (!ruleDeletable(rule)) throw invalid("The built-in rules can be turned off, not deleted.", "Les règles de base se désactivent, elles ne se suppriment pas.");
+      run(db, "DELETE FROM rules WHERE id = ?", rule.id);
+      logActivity(db, req.ctx.actor, tr(`Rule deleted: ${describeRule(rule.kind, rule.label, ruleParams(rule))}`, `Règle supprimée : ${describeRule(rule.kind, rule.label, ruleParams(rule))}`), null, now(), req.ctx.ws);
+      notifyChange();
+      return { message: tr("Rule deleted.", "Règle supprimée.") };
+    });
+
     admin.patch<{ Params: { id: string }; Body: { enabled?: boolean; params?: Record<string, unknown>; label?: string } }>(
       "/api/rules/:id",
       {
@@ -730,9 +787,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         if (!rule) throw notFound("Rule", "Règle");
         const b = req.body;
         const params = b.params ? { ...JSON.parse(rule.params), ...b.params } : JSON.parse(rule.params);
-        for (const v of Object.values(params)) {
-          if (typeof v === "number" && (!Number.isFinite(v) || v < 0)) throw Object.assign(new Error(tr("Invalid value.", "Valeur invalide.")), { statusCode: 400 });
-        }
+        checkRuleParams(req.ctx.ws, params);
         const enabled = b.enabled ?? !!rule.enabled;
         const label = b.label ?? rule.label;
         run(db, "UPDATE rules SET enabled = ?, params = ?, label = ? WHERE id = ?", enabled ? 1 : 0, JSON.stringify(params), label, rule.id);

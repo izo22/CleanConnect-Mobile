@@ -18,7 +18,7 @@ import {
 } from "./model.ts";
 import { actionsFor } from "./playbooks.ts";
 import type { GlobalBudgetParams } from "./guard.ts";
-import { describeRule } from "./rules.ts";
+import { describeRule, ruleDeletable } from "./rules.ts";
 import { REVIEW_MODEL, pendingCount, reviewerEnabled } from "./reviewer.ts";
 import { controlLevel } from "./n8n.ts";
 
@@ -223,7 +223,7 @@ export function rulesView(db: DB, ws: string) {
     const params = JSON.parse(r.params);
     // The AI check needs the AI key on the server; say so instead of pretending it runs.
     const unavailable = r.kind === "ai_check" && !reviewerEnabled();
-    return { ...r, enabled: !!r.enabled, params, sentence: describeRule(r.kind, r.label, params), unavailable };
+    return { ...r, enabled: !!r.enabled, params, sentence: describeRule(r.kind, r.label, params), unavailable, deletable: ruleDeletable(r) };
   });
 }
 

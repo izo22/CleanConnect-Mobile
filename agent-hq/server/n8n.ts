@@ -78,6 +78,13 @@ export class N8nClient {
     }
     const body = (await res.json().catch(() => ({}))) as T & { message?: string };
     if (res.status === 401 || res.status === 403) throw new N8nError(tr("n8n refuses the API key (invalid or expired key).", "n8n refuse la clé API (clé invalide ou expirée)."), res.status);
+    // 502/503/504: the server in front of n8n is up, n8n itself is not (stopped, restarting, overloaded).
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      throw new N8nError(tr(
+        `n8n doesn't answer (it may be stopped or restarting). ${PRODUCT_NAME} tries again every 30 seconds.`,
+        `n8n ne répond pas (il est peut-être éteint ou en train de redémarrer). ${PRODUCT_NAME} réessaie toutes les 30 secondes.`,
+      ), res.status);
+    }
     if (!res.ok) throw new N8nError(tr(`n8n answered ${res.status}${body.message ? ": " + body.message : ""}.`, `n8n a répondu ${res.status}${body.message ? " : " + body.message : ""}.`), res.status);
     return body;
   }
@@ -293,7 +300,7 @@ export function controlLevel(agent: Pick<AgentRow, "source" | "last_check_at">, 
   if (recent) {
     return {
       level: "control" as const,
-      label: tr("Checked before acting", "Contrôle avant action"),
+      label: tr("Connected: asks before acting", "Branché : demande avant d'agir"),
       detail: tr(`It asks for permission before its sensitive actions: ${PRODUCT_NAME} can block them.`, `Il demande la permission avant ses actions sensibles : ${PRODUCT_NAME} peut les bloquer.`),
     };
   }

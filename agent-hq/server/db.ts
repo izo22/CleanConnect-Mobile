@@ -201,6 +201,16 @@ CREATE TABLE IF NOT EXISTS workspace_hooks (
   created_at INTEGER NOT NULL
 );
 
+-- Amounts let through by the guardrails, for the "at most this much per day" rule.
+CREATE TABLE IF NOT EXISTS allowed_amounts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  action TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  ts INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS allowed_amounts_ts ON allowed_amounts (ts);
+
 -- Settings of the whole service, set by its administrator (e.g. the Zapier invite link).
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,

@@ -7,7 +7,7 @@ export type Autonomy = 0 | 1 | 2;
 
 /** The agent's freedom (its "autonomy"), in the words the business owner sees. */
 export const autonomyName = (level: number) =>
-  [tr("I approve everything", "Je valide tout"), tr("I approve what's sensitive", "Je valide le sensible"), tr("It acts alone, within my rules", "Il agit seul, dans mes règles")][level] ?? String(level);
+  [tr("I approve everything", "Je valide tout"), tr("I approve what's sensitive", "Je valide le sensible"), tr("My rules decide", "Mes règles décident")][level] ?? String(level);
 export type Severity = "critical" | "warning" | "blocked";
 export type AgentStatus = "ok" | "attention" | "blocked" | "paused" | "waiting";
 
@@ -88,7 +88,13 @@ export interface RuleRow {
   created_at: number;
 }
 
-export type RuleKind = "approval_amount" | "quiet_hours" | "global_budget" | "repeat_pause" | "ai_check";
+export type RuleKind = "approval_amount" | "quiet_hours" | "global_budget" | "repeat_pause" | "ai_check" | "daily_total";
+
+/** A rule covers every agent, or only those listed in its "agents" parameter. */
+export function ruleAppliesTo(rule: RuleRow, agentId: string) {
+  const agents = (JSON.parse(rule.params) as { agents?: string[] }).agents;
+  return !agents?.length || agents.includes(agentId);
+}
 
 export type Verdict = "ok" | "doubt" | "error";
 

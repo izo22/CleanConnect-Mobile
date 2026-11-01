@@ -4,8 +4,9 @@
  * back allow / deny / needs_approval, with a reason in plain words.
  */
 import { run, type DB } from "./db.ts";
-import { hourLabel, money, tr } from "./i18n.ts";
-import { getRules, logActivity, monthSpendCents, ruleParams, type AgentRow, type RuleRow } from "./model.ts";
+import { hourLabel, money, timezone, tr } from "./i18n.ts";
+import { all, get } from "./db.ts";
+import { getRules, logActivity, monthSpendCents, ruleAppliesTo, ruleParams, type AgentRow, type RuleRow } from "./model.ts";
 
 export interface CheckRequest {
   action: string;
@@ -39,6 +40,34 @@ export type CheckResult =
 export interface ApprovalAmountParams { action_prefix: string; max_cents: number }
 export interface QuietHoursParams { action_prefix: string; start_hour: number; end_hour: number; timezone: string }
 export interface GlobalBudgetParams { max_cents: number }
+export interface DailyTotalParams { action_prefix: string; max_cents: number; agents?: string[] }
+
+/** Midnight today, in the given time zone. */
+export function dayStart(tz: string, now: number): number {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "numeric", minute: "numeric", second: "numeric", hourCycle: "h23" })
+      .formatToParts(new Date(now)).map((x) => [x.type, Number(x.value)]),
+  );
+  return now - ((parts.hour % 24) * 3600 + parts.minute * 60 + parts.second) * 1000 - (now % 1000);
+}
+
+/** What the agents a "per day" rule covers already did today: amounts let through, plus requests a human approved. */
+export function spentToday(db: DB, ws: string, rule: RuleRow, now: number): number {
+  const p = ruleParams<DailyTotalParams>(rule);
+  const from = dayStart(timezone(), now);
+  const scope = p.agents?.length ? p.agents : all<{ id: string }>(db, "SELECT id FROM agents WHERE workspace_id = ?", ws).map((a) => a.id);
+  if (!scope.length) return 0;
+  const marks = scope.map(() => "?").join(", ");
+  const prefix = p.action_prefix === "*" ? "" : p.action_prefix;
+  const allowed = get<{ s: number | null }>(db, `SELECT SUM(amount_cents) s FROM allowed_amounts WHERE ts >= ? AND agent_id IN (${marks}) AND action LIKE ? || '%'`, from, ...scope, prefix)?.s ?? 0;
+  const approved = get<{ s: number | null }>(db, `SELECT SUM(amount_cents) s FROM approvals WHERE status = 'approved' AND decided_at >= ? AND amount_cents IS NOT NULL AND agent_id IN (${marks}) AND action LIKE ? || '%'`, from, ...scope, prefix)?.s ?? 0;
+  return allowed + approved;
+}
+
+/** Remembers an amount the guardrails let through, for the "per day" rules. */
+export function recordAllowed(db: DB, agent: AgentRow, req: CheckRequest, now: number) {
+  if (req.amount_cents) run(db, "INSERT INTO allowed_amounts (agent_id, action, amount_cents, ts) VALUES (?, ?, ?, ?)", agent.id, req.action, req.amount_cents, now);
+}
 
 const matches = (action: string, prefix: string) => prefix === "*" || action.startsWith(prefix);
 
@@ -76,7 +105,7 @@ export function check(db: DB, agent: AgentRow, req: CheckRequest, now = Date.now
     return { decision: "deny", reason: tr(`Agent paused${reason}.`, `Agent en pause${reason}.`) };
   }
 
-  const rules = getRules(db, agent.workspace_id).filter((r) => r.enabled);
+  const rules = getRules(db, agent.workspace_id).filter((r) => r.enabled && ruleAppliesTo(r, agent.id));
 
   for (const rule of rules.filter((r) => r.kind === "global_budget")) {
     const p = ruleParams<GlobalBudgetParams>(rule);
@@ -118,6 +147,21 @@ export function check(db: DB, agent: AgentRow, req: CheckRequest, now = Date.now
       const limit = money(p.max_cents);
       const id = requestApproval(db, agent, req, tr(`the amount is over your ${limit} threshold.`, `le montant dépasse votre seuil de ${limit}.`), now);
       return { decision: "needs_approval", reason: tr(`Over ${limit}: approval required.`, `Au-dessus de ${limit} : validation requise.`), approval_id: id, rule_id: rule.id };
+    }
+  }
+
+  for (const rule of rules.filter((r) => r.kind === "daily_total")) {
+    const p = ruleParams<DailyTotalParams>(rule);
+    if (req.amount_cents === undefined || !matches(req.action, p.action_prefix)) continue;
+    const today = spentToday(db, agent.workspace_id, rule, now);
+    if (today + req.amount_cents > p.max_cents) {
+      bump(db, rule);
+      const limit = money(p.max_cents);
+      const id = requestApproval(db, agent, req, tr(
+        `with it, today's total would reach ${money(today + req.amount_cents)}, over your ${limit} per day.`,
+        `avec elle, le total du jour atteindrait ${money(today + req.amount_cents)}, au-delà de vos ${limit} par jour.`,
+      ), now);
+      return { decision: "needs_approval", reason: tr(`Over ${limit} today: approval required.`, `Plus de ${limit} aujourd'hui : validation requise.`), approval_id: id, rule_id: rule.id };
     }
   }
 
