@@ -56,7 +56,7 @@ Ask for permission → Allowed? ──yes─────────────
 ### What happens next
 
 - **Under your thresholds** (for example a $45 refund): Orvanta answers "allowed" right away and the workflow goes on without waiting.
-- **Over your thresholds**, or for an agent at trust level 0: the request shows up in **Decisions**, marked "The workflow is on hold". The n8n execution is paused and uses nothing while it waits.
+- **Over your thresholds**, or for an agent set to "I approve everything": the request shows up in **Decisions**, marked "The workflow is on hold". The n8n execution is paused and uses nothing while it waits.
 - **Approve**: Orvanta wakes the execution up; it goes through "Green light? → yes" and runs your step.
 - **Decline**: the execution wakes up and ends on "Declined".
 - **Nobody answers within 24 hours**: the execution wakes up on its own and ends on "Declined". You can change this delay in "Wait for the green light".

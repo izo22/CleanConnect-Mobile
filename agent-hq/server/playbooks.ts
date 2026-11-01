@@ -98,7 +98,7 @@ export function applyToAgent(db: DB, agent: AgentRow, id: PlaybookId, actor: str
       break;
     case "autonomy0":
       run(db, "UPDATE agents SET autonomy = 0 WHERE id = ?", agent.id);
-      message = tr(`${agent.name} moves to level 0: every action will be approved by a human.`, `${agent.name} passe au niveau 0 : chaque action sera validée par un humain.`);
+      message = tr(`${agent.name}: you now approve everything it asks to do.`, `${agent.name} : vous validez désormais tout ce qu'il demande à faire.`);
       break;
     case "economy":
       run(db, "UPDATE agents SET model_tier = 'economy' WHERE id = ?", agent.id);

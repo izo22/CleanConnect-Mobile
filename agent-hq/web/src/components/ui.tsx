@@ -85,12 +85,31 @@ export function SeverityPill({ severity }: { severity: keyof typeof SEVERITY }) 
   return <span className="pill" style={{ background: s.bg, color: s.fg }}>{s.label}</span>;
 }
 
+/**
+ * The agent's freedom ("autonomy" in the API), worded from the owner's side:
+ * what happens when the agent asks permission before an action.
+ */
+export const freedomLevels = () => [
+  {
+    label: tr("I approve everything", "Je valide tout"),
+    short: tr("You approve all", "Vous validez tout"),
+    desc: tr("Every time it asks, you decide. Even for $10. Best for a new agent.", "Chaque fois qu'il demande, c'est vous qui décidez. Même pour 10 €. Idéal pour un agent tout neuf."),
+  },
+  {
+    label: tr("I approve what's sensitive", "Je valide le sensible"),
+    short: tr("You approve sensitive", "Vous validez le sensible"),
+    desc: tr("It does the routine alone. What's marked sensitive, or above your guardrails, waits for you.", "Il fait seul le courant. Ce qui est marqué sensible, ou dépasse vos garde-fous, vous attend."),
+  },
+  {
+    label: tr("It acts alone, within my rules", "Il agit seul, dans mes règles"),
+    short: tr("Acts alone", "Agit seul"),
+    desc: tr("What respects your guardrails (amounts, hours…) goes through. The rest waits for you.", "Ce qui respecte vos garde-fous (montants, horaires…) passe. Le reste vous attend."),
+  },
+];
+
 export function Trust({ level }: { level: number }) {
-  return (
-    <span className="trust" title={tr(`Trust level ${level} of 2`, `Niveau de confiance ${level} sur 2`)}>
-      {tr("Trust", "Confiance")} <i className={level >= 0 ? "on" : ""} /><i className={level >= 1 ? "on" : ""} /><i className={level >= 2 ? "on" : ""} />
-    </span>
-  );
+  const f = freedomLevels()[level];
+  return <span className="trust" title={f?.label}>{f?.short ?? level}</span>;
 }
 
 export function Sparkline({ values, width = 120, height = 28, color = "#5B3DF5" }: { values: number[]; width?: number; height?: number; color?: string }) {

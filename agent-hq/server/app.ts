@@ -7,6 +7,7 @@ import {
   HOUR,
   MINUTE,
   activePrompt,
+  autonomyName,
   bus,
   getAgent,
   getAgentByKey,
@@ -548,7 +549,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
           run(db, `UPDATE agents SET ${keys.map((k) => `${k} = ?`).join(", ")} WHERE id = ?`, ...keys.map((k) => fields[k]), agent.id);
         }
         if (rest.autonomy !== undefined && rest.autonomy !== agent.autonomy) {
-          logActivity(db, req.ctx.actor, tr(`${agent.name} moves to trust level ${rest.autonomy}.`, `${agent.name} passe au niveau de confiance ${rest.autonomy}.`), agent.id, t);
+          logActivity(db, req.ctx.actor, tr(`${agent.name}: freedom set to “${autonomyName(rest.autonomy)}”.`, `${agent.name} : liberté réglée sur « ${autonomyName(rest.autonomy)} ».`), agent.id, t);
         }
         if (rest.alert_sensitivity !== undefined && rest.alert_sensitivity !== agent.alert_sensitivity) {
           const label = { normal: tr("normal", "normale"), high: tr("alert at the first failure", "alerte au premier échec"), strict: tr("alert at the first failure, pause after 3 in a row", "alerte au premier échec, pause après 3 d'affilée") }[rest.alert_sensitivity];

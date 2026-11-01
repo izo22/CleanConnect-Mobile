@@ -107,8 +107,8 @@ export function check(db: DB, agent: AgentRow, req: CheckRequest, now = Date.now
   }
 
   if (agent.autonomy === 0) {
-    const id = requestApproval(db, agent, req, tr("this agent is at level 0 (in training): every action is approved.", "cet agent est au niveau 0 (en formation) : chaque action est validée."), now);
-    return { decision: "needs_approval", reason: tr("Level 0: human approval required.", "Niveau 0 : validation humaine requise."), approval_id: id };
+    const id = requestApproval(db, agent, req, tr("you chose to approve everything this agent does.", "vous avez choisi de valider tout ce que fait cet agent."), now);
+    return { decision: "needs_approval", reason: tr("You approve everything for this agent.", "Vous validez tout pour cet agent."), approval_id: id };
   }
 
   for (const rule of rules.filter((r) => r.kind === "approval_amount")) {
@@ -122,8 +122,8 @@ export function check(db: DB, agent: AgentRow, req: CheckRequest, now = Date.now
   }
 
   if (agent.autonomy === 1 && req.sensitive) {
-    const id = requestApproval(db, agent, req, tr("this agent is at level 1: sensitive actions are approved.", "cet agent est au niveau 1 : les actions sensibles sont validées."), now);
-    return { decision: "needs_approval", reason: tr("Sensitive action: approval required at level 1.", "Action sensible : validation requise au niveau 1."), approval_id: id };
+    const id = requestApproval(db, agent, req, tr("this action is marked sensitive, and you approve what's sensitive for this agent.", "cette action est marquée sensible, et vous validez le sensible pour cet agent."), now);
+    return { decision: "needs_approval", reason: tr("Sensitive action: you approve it.", "Action sensible : vous la validez."), approval_id: id };
   }
 
   return { decision: "allow" };

@@ -59,7 +59,7 @@ Demander l'autorisation → Autorisé ? ──oui──────────�
 ### Ce qui se passe ensuite
 
 - **Sous vos seuils** (par exemple un remboursement de 45 €) : Orvanta répond « autorisé » tout de suite, le workflow continue sans attendre.
-- **Au-dessus de vos seuils**, ou pour un agent au niveau de confiance 0 : la demande apparaît dans **Décisions** avec la mention « le workflow est en attente ». L'exécution n8n est en pause : elle ne consomme rien.
+- **Au-dessus de vos seuils**, ou pour un agent réglé sur « Je valide tout » : la demande apparaît dans **Décisions** avec la mention « le workflow est en attente ». L'exécution n8n est en pause : elle ne consomme rien.
 - **Approuver** : Orvanta réveille l'exécution, qui passe par « Feu vert ? → oui » et exécute votre étape.
 - **Refuser** : l'exécution se réveille et se termine sur « Refusé ».
 - **Personne ne répond sous 24 h** : l'exécution se réveille seule et se termine sur « Refusé ». Vous pouvez changer ce délai dans « Attendre le feu vert ».

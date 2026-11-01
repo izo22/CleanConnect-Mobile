@@ -1,8 +1,13 @@
 import { EventEmitter } from "node:events";
 import { randomBytes } from "node:crypto";
 import { MAIN_WORKSPACE, all, get, run, type DB } from "./db.ts";
+import { tr } from "./i18n.ts";
 
 export type Autonomy = 0 | 1 | 2;
+
+/** The agent's freedom (its "autonomy"), in the words the business owner sees. */
+export const autonomyName = (level: number) =>
+  [tr("I approve everything", "Je valide tout"), tr("I approve what's sensitive", "Je valide le sensible"), tr("It acts alone, within my rules", "Il agit seul, dans mes règles")][level] ?? String(level);
 export type Severity = "critical" | "warning" | "blocked";
 export type AgentStatus = "ok" | "attention" | "blocked" | "paused" | "waiting";
 

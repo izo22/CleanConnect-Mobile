@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { PRODUCT_NAME } from "../../../server/brand.ts";
 import { api, useData, type AgentDetail, type AgentSummary } from "../api.ts";
 import { ago, currencyAffix, money, num, pct, shortTime } from "../format.ts";
 import { lang, tr } from "../i18n.ts";
-import { Avatar, ErrorBox, Icon, Skeleton, Sparkline, StatusPill, Trust, useAction, useToast } from "../components/ui.tsx";
+import { Avatar, ErrorBox, Icon, Skeleton, Sparkline, StatusPill, Trust, freedomLevels, useAction, useToast } from "../components/ui.tsx";
 import { Exchange, ReportModal, VerdictPill } from "../components/quality.tsx";
 import { ControlBlock, ControlChip } from "../components/control.tsx";
 import { useCan, viewOnlyNote } from "../account.tsx";
@@ -14,11 +15,6 @@ const filters = (): Array<{ id: Filter; label: string; test: (a: AgentSummary) =
   { id: "paused", label: tr("Paused", "En pause"), test: (a) => a.status === "paused" },
 ];
 
-const levels = () => [
-  { label: tr("Level 0 · In training", "Niveau 0 · En formation"), desc: tr("It proposes, a human approves every action.", "Il propose, un humain valide chaque action.") },
-  { label: tr("Level 1 · Trusted", "Niveau 1 · Confirmé"), desc: tr("It handles routine work alone and escalates sensitive actions.", "Il gère le courant seul et vous remonte les actions sensibles.") },
-  { label: tr("Level 2 · Autonomous", "Niveau 2 · Autonome"), desc: tr("It acts alone; your guardrails always apply.", "Il agit seul ; vos garde-fous s'appliquent toujours.") },
-];
 
 /** When failures raise an alert: the three choices on the agent's page. */
 const sensitivities = (): Array<{ id: "normal" | "high" | "strict"; label: string; desc: string }> => [
@@ -49,7 +45,7 @@ export function Team({ selected, onSelect }: { selected: string | null; onSelect
       <header className="page-head">
         <div className="titles">
           <h1 className="h1">{tr("My AI team", "Mon équipe IA")}</h1>
-          <span className="sub">{tr("Each agent has a mission, an owner, a budget and a trust level.", "Chaque agent a une mission, un responsable, un budget et un niveau de confiance.")}</span>
+          <span className="sub">{tr("Each agent has a mission, an owner, a budget and the freedom you give it.", "Chaque agent a une mission, un responsable, un budget et la liberté que vous lui donnez.")}</span>
         </div>
         {can("member") && <button type="button" className="btn dark big" onClick={() => setCreating(true)}><Icon name="plus" size={16} /> {tr("Add an agent", "Ajouter un agent")}</button>}
       </header>
@@ -187,18 +183,7 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
 
       {operate && <ControlBlock agent={data} />}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <span className="block-title">{tr("Trust level", "Niveau de confiance")}</span>
-        <div className="levels" role="group" aria-label={tr("Trust level", "Niveau de confiance")}>
-          {levels().map((l, i) => (
-            <button key={i} type="button" className="level" aria-pressed={data.autonomy === i} disabled={!operate}
-              onClick={() => data.autonomy !== i && patch({ autonomy: i }, tr(`${data.name} moves to level ${i}.`, `${data.name} passe au niveau ${i}.`))}>
-              <span className="radio" />
-              <span><b>{l.label}</b><small>{l.desc}</small></span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <Freedom agent={data} operate={operate} onPick={(i) => patch({ autonomy: i }, tr(`${data.name}: “${freedomLevels()[i].label}”.`, `${data.name} : « ${freedomLevels()[i].label} ».`))} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <span className="block-title">{tr("When it fails", "Quand il échoue")}</span>
@@ -320,6 +305,43 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
 
 const RATES = [0, 0.05, 0.1, 0.25, 1];
 
+/**
+ * How free the agent is when it asks permission, and whether that choice does
+ * anything yet: an agent that never asks acts alone whatever is picked here.
+ */
+function Freedom({ agent, operate, onPick }: { agent: AgentDetail; operate: boolean; onPick: (level: number) => void }) {
+  const n8n = agent.source === "n8n";
+  // Steps protected from Orvanta don't mark themselves sensitive: for n8n the middle choice would act like the last one.
+  const shown = freedomLevels().map((l, i) => ({ ...l, i })).filter((l) => !n8n || l.i !== 1 || agent.autonomy === 1);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <span className="block-title">{tr("When it asks your permission", "Quand il vous demande la permission")}</span>
+      {agent.setup.permission ? (
+        <span style={{ fontSize: 13, lineHeight: 1.5, color: "#45424C" }}>
+          {n8n
+            ? tr("Before each protected step, it asks you first. Choose what happens then.", "Avant chaque étape protégée, il vous demande d'abord. Choisissez ce qui se passe alors.")
+            : tr("Before its sensitive actions, it asks you first. Choose what happens then.", "Avant ses actions sensibles, il vous demande d'abord. Choisissez ce qui se passe alors.")}
+        </span>
+      ) : (
+        <span style={{ fontSize: 13, lineHeight: 1.5, padding: "10px 12px", borderRadius: 14, background: "#FFF4E5", color: "#7A4100" }}>
+          {tr("For now, this agent never asks your permission: it acts without you, whatever you choose below. ", "Pour l'instant, cet agent ne vous demande jamais la permission : il agit sans vous, quel que soit votre choix ci-dessous. ")}
+          {n8n
+            ? tr("To make it stop before an action, use “Ask me before a step” above. Just did? This changes the next time the workflow reaches that step.", "Pour qu'il s'arrête avant une action, utilisez « Me demander avant une étape » plus haut. C'est déjà fait ? Cela change au prochain passage du workflow sur cette étape.")
+            : tr(`It must first check with ${PRODUCT_NAME} before acting (Zapier step “${PRODUCT_NAME} · Ask Permission”, or the SDK).`, `Il doit d'abord consulter ${PRODUCT_NAME} avant d'agir (étape Zapier « ${PRODUCT_NAME} · Ask Permission », ou le SDK).`)}
+        </span>
+      )}
+      <div className="levels" role="group" aria-label={tr("When it asks your permission", "Quand il vous demande la permission")}>
+        {shown.map((l) => (
+          <button key={l.i} type="button" className="level" aria-pressed={agent.autonomy === l.i} disabled={!operate} onClick={() => agent.autonomy !== l.i && onPick(l.i)}>
+            <span className="radio" />
+            <span><b>{l.label}</b><small>{l.desc}</small></span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** What is wired so far: a pilot sees at a glance whether their connection works. */
 function SetupChecklist({ agent }: { agent: AgentDetail }) {
   const n8n = agent.source === "n8n";
@@ -379,7 +401,7 @@ function QualityBlock({ data, onReport, onRate }: { data: AgentDetail; onReport:
         <select id="rate" value={RATES.includes(data.review_rate) ? data.review_rate : 0.1} onChange={(e) => onRate?.(Number(e.target.value))} disabled={data.autonomy === 0 || !onRate}>
           {RATES.map((r) => <option key={r} value={r}>{r === 0 ? tr("None", "Aucune") : r === 1 ? tr("All", "Toutes") : pct(r)}</option>)}
         </select>
-        {data.autonomy === 0 && <span className="hint">{tr("At level 0, all its answers are reviewed.", "Au niveau 0, toutes ses réponses sont relues.")}</span>}
+        {data.autonomy === 0 && <span className="hint">{tr("With “I approve everything”, all its answers are reviewed.", "Avec « Je valide tout », toutes ses réponses sont relues.")}</span>}
       </div>
       {q.recent.map((x) => (
         <div key={x.review_id} className="mini-ex">
@@ -430,7 +452,7 @@ function CreateAgent({ onClose, onCreated }: { onClose: () => void; onCreated: (
           expected_language: form.language || null, ...(form.prompt.trim() ? { prompt: form.prompt.trim() } : {}),
         },
       });
-      toast(tr(`${created.name} joined the team. It starts at level ${created.autonomy}.`, `${created.name} a rejoint l'équipe. Il démarre au niveau ${created.autonomy}.`));
+      toast(tr(`${created.name} joined the team: “${freedomLevels()[created.autonomy].label}”.`, `${created.name} a rejoint l'équipe : « ${freedomLevels()[created.autonomy].label} ».`));
       onCreated(created.id);
     } catch (err) {
       toast((err as Error).message, true);
@@ -472,11 +494,11 @@ function CreateAgent({ onClose, onCreated }: { onClose: () => void; onCreated: (
           </div>
         </div>
         <div className="two">
-          <div className="field"><label htmlFor="a">{tr("Starting trust level", "Niveau de confiance au départ")}</label>
+          <div className="field"><label htmlFor="a">{tr("When it asks permission, at first", "Quand il demande la permission, au début")}</label>
             <select id="a" value={form.autonomy} onChange={set("autonomy")}>
-              {levels().map((l, i) => <option key={i} value={String(i)}>{l.label}</option>)}
+              {freedomLevels().map((l, i) => <option key={i} value={String(i)}>{l.label}</option>)}
             </select>
-            <span className="hint">{tr("Tip: start at level 0, move up once it has proven itself.", "Conseil : commencez au niveau 0, montez quand il a fait ses preuves.")}</span>
+            <span className="hint">{tr("Tip: start with “I approve everything”, give it more freedom once it has proven itself.", "Conseil : commencez par « Je valide tout », donnez-lui plus de liberté quand il a fait ses preuves.")}</span>
           </div>
           <div className="field"><label htmlFor="l">{tr("Expected language", "Langue attendue")}</label>
             <select id="l" value={form.language} onChange={set("language")}>
