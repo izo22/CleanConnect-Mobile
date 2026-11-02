@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How Orvanta works</title>
+  <meta name="description" content="How Orvanta lets your AI agents and automations ask before they act: a real example, your settings, connecting n8n or Zapier, and the pilot program." />
+  <meta name="theme-color" content="#F6F3EE" />
+  <link rel="icon" href="/img/icon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="/site.css" />
+  <style>
+    /* This page only: one reading column, the approval drawn as a real sequence of steps. */
+    .hiw { max-width: 860px; padding-top: 48px; padding-bottom: 72px; display: flex; flex-direction: column; gap: 56px; }
+    .hiw h1 { font-family: var(--display); font-size: clamp(34px, 6vw, 52px); line-height: 1.05; letter-spacing: -0.03em; text-wrap: balance; }
+    .hiw h2 { font-family: var(--display); font-size: clamp(24px, 4vw, 32px); letter-spacing: -0.02em; line-height: 1.15; text-wrap: balance; }
+    .hiw h3 { font-family: var(--display); font-size: 18px; letter-spacing: -0.01em; }
+    .hiw p { max-width: 65ch; color: var(--ink-2); }
+    .hiw section, .hiw .intro { display: flex; flex-direction: column; gap: 16px; }
+    .hiw .lead { font-size: 19px; }
+    .hiw .kicker { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-ink); }
+    .hiw .muted { color: var(--muted); }
+    .hiw .verbs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .hiw .box { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    .hiw .box b.big { font-family: var(--display); font-size: 20px; }
+    .hiw .box ul, .hiw .box ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); font-size: 15px; }
+    .hiw .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+    .hiw .flow { list-style: none; margin: 0; padding: 0; }
+    .hiw .flow li { display: grid; grid-template-columns: 44px 1fr; gap: 14px; }
+    .hiw .dot { display: flex; flex-direction: column; align-items: center; }
+    .hiw .dot span { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; background: var(--accent-soft); color: var(--accent-ink); flex: none; }
+    .hiw .dot::after { content: ""; flex: 1; width: 2px; background: var(--line); margin-block: 4px; }
+    .hiw .flow li:last-child .dot::after { display: none; }
+    .hiw .flow .txt { padding-bottom: 22px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .hiw .who { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+    .hiw .flow li.orv .dot span { background: var(--accent); color: #fff; }
+    .hiw .flow li.you .dot span { background: var(--ok); color: #fff; }
+    .hiw .decision { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 10px; max-width: 520px; box-shadow: var(--shadow); margin-top: 6px; }
+    .hiw .decision .from { font-size: 13px; font-weight: 700; }
+    .hiw .decision .title { font-family: var(--display); font-size: 19px; font-weight: 700; }
+    .hiw .decision .why { background: var(--accent-soft); color: var(--accent-ink); border-radius: 12px; padding: 8px 12px; font-size: 14px; }
+    .hiw .decision .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .hiw .decision .btns span { text-align: center; padding: 10px; border-radius: 999px; font-weight: 700; font-size: 14px; background: var(--sunken); border: 1px solid var(--line); }
+    .hiw .decision .btns span:last-child { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .hiw .table { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+    .hiw table { width: 100%; border-collapse: collapse; font-size: 15px; }
+    .hiw th, .hiw td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .hiw th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+    .hiw tr:last-child td { border-bottom: 0; }
+    .hiw td:first-child { font-weight: 700; white-space: nowrap; }
+    .hiw .pill { align-self: flex-start; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 4px 10px; background: var(--ok-soft); color: #0e6b3f; }
+    .hiw .pill.warn { background: #ffe9df; color: #9a3412; }
+    .hiw details { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+    .hiw details + details { margin-top: 8px; }
+    .hiw summary { cursor: pointer; font-weight: 700; }
+    .hiw details p { margin-top: 8px; }
+    .hiw .pilot { background: var(--accent-soft); border-radius: 22px; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+    .hiw .pilot ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); }
+    .hiw .cta { display: flex; flex-wrap: wrap; gap: 10px; }
+    @media (max-width: 560px) { .hiw { padding-top: 32px; } .hiw td:first-child { white-space: normal; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="top">
+    <div class="wrap top-in">
+      <a class="brand" href="/" aria-label="Orvanta home">
+        <img src="/img/icon.svg" width="34" height="34" alt="" />
+        <span>Orvanta</span>
+      </a>
+      <div class="top-cta">
+        <a class="btn ghost" data-app-link href="https://app.orvantahq.io">Log in</a>
+        <a class="btn primary" data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Sign up</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="wrap hiw">
+    <div class="intro">
+      <span class="kicker">How Orvanta works</span>
+      <h1>Your automations do the work. You keep the final say.</h1>
+      <p class="lead">Orvanta is the control room for your AI agents and your n8n or Zapier automations. You see what they do, you can stop them, and they ask your permission before the actions that matter.</p>
+    </div>
+
+    <section>
+      <span class="kicker">The problem</span>
+      <h2>An AI agent doesn't wait for anyone</h2>
+      <p>Your automations send quotes, answer customers, issue refunds and chase invoices on their own. When the AI gets a price wrong, makes a promise you never would, or gets stuck in a loop, you often find out from the customer. Orvanta sits right before the sensitive actions, so nothing important goes out without your OK.</p>
+    </section>
+
+    <section>
+      <span class="kicker">What Orvanta does</span>
+      <div class="verbs">
+        <div class="box"><b class="big">See</b><span class="muted">Each workflow or Zap becomes an "agent". Its successes, failures and incidents show up, explained in plain English.</span></div>
+        <div class="box"><b class="big">Stop</b><span class="muted">One Pause button per agent. For n8n, the workflow is really switched off, in under a second.</span></div>
+        <div class="box"><b class="big">Control</b><span class="muted">Before a sensitive action, the agent asks for permission. Depending on your rules, it goes through, or it waits for you.</span></div>
+      </div>
+    </section>
+
+    <section>
+      <span class="kicker">A real example</span>
+      <h2>An $18,400 quote that waits for your OK</h2>
+      <p class="muted">A solar installer automated its quotes: a form comes in, the AI sizes the system and writes the quote, the quote goes to the customer. They protected the "Send the quote" step and set one rule: over $10,000, I approve.</p>
+      <ol class="flow">
+        <li><div class="dot"><span>1</span></div><div class="txt"><span class="who">9:00 am · The customer</span><b>Mr. Carter asks for a quote for his 430 sq ft roof.</b></div></li>
+        <li><div class="dot"><span>2</span></div><div class="txt"><span class="who">9:01 am · The AI</span><b>It writes a quote: 12 panels, $18,400.</b></div></li>
+        <li class="orv"><div class="dot"><span>3</span></div><div class="txt"><span class="who">9:01 am · Orvanta</span><b>The workflow asks for permission. $18,400 is over your threshold, so it pauses.</b><span class="muted">The quote is not sent. You're notified in Orvanta, and in Slack or Teams if you connected them.</span></div></li>
+        <li class="you"><div class="dot"><span>4</span></div><div class="txt"><span class="who">10:30 am · You</span><b>You open Decisions, on your laptop or your phone.</b>
+          <div class="decision" aria-label="Example of a request in Decisions">
+            <span class="from">Solar quotes asks</span>
+            <span class="title">Quote for Mr. Carter: $18,400</span>
+            <span class="muted" style="font-size:14px">430 sq ft roof, 12 panels, Phoenix, AZ</span>
+            <span class="why"><b>Why I'm asking:</b> the amount is over your $10,000 threshold.</span>
+            <div class="btns"><span>Decline</span><span>Approve</span></div>
+          </div>
+        </div></li>
+        <li class="orv"><div class="dot"><span>5</span></div><div class="txt"><span class="who">10:30 am · Orvanta</span><b>Approved: the workflow resumes and the quote goes out as written. Declined: it stops, nothing is sent.</b><span class="muted">A $3,000 quote, under your threshold, would have gone out at 9:01 am without bothering you.</span></div></li>
+      </ol>
+    </section>
+
+    <section>
+      <span class="kicker">Your settings</span>
+      <h2>You decide when you're asked</h2>
+      <div class="two">
+        <div class="box"><h3>Protected steps</h3><p>You choose where the agent stops to ask: sending an email, a payment, a post. Every other step runs as usual.</p></div>
+        <div class="box">
+          <h3>Each agent's freedom</h3>
+          <ul>
+            <li><b>I approve everything</b>: every request waits for you, even for $10. Best at the start.</li>
+            <li><b>My rules decide</b>: what respects your guardrails goes through on its own; the rest waits for you.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="table">
+        <table>
+          <thead><tr><th>Guardrail</th><th>What it prevents</th></tr></thead>
+          <tbody>
+            <tr><td>Amount threshold</td><td>A refund or a quote that's too high, sent by mistake</td></tr>
+            <tr><td>Quiet hours</td><td>A customer email sent at 3 am</td></tr>
+            <tr><td>AI spend cap</td><td>An AI bill that explodes because of a bug</td></tr>
+            <tr><td>Loop pause</td><td>The same message sent 300 times</td></tr>
+            <tr><td>AI check</td><td>An answer that's wrong, made up, or contradicts what the customer asked</td></tr>
+            <tr><td>Your own rules</td><td>What you never want to go out, written in plain English: "Never promise a discount over 10%", "Never give an installation date"</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <span class="kicker">Connecting your tools</span>
+      <h2>With the tools you already use</h2>
+      <div class="two">
+        <div class="box">
+          <span class="pill">The simplest</span>
+          <h3>n8n</h3>
+          <ol>
+            <li>You create an API key in n8n and paste it into Orvanta.</li>
+            <li>Each workflow shows up as an agent.</li>
+            <li>On the agent's page, "Ask me before a step": Orvanta adds the check to the workflow itself. Nothing to do in n8n.</li>
+          </ol>
+        </div>
+        <div class="box">
+          <span class="pill warn">One step to add</span>
+          <h3>Zapier</h3>
+          <ol>
+            <li>You accept the invitation to the Orvanta app and paste your Zapier key.</li>
+            <li>In the Zap, you add the "Ask Permission" step right before the sensitive action.</li>
+            <li>The Zap waits for your click in Decisions, then carries on by itself.</li>
+          </ol>
+          <p class="muted" style="font-size:14px">Zapier doesn't let outside tools edit your Zaps, so this step is added once, by hand. Multi-step Zaps need a paid Zapier plan.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <span class="kicker">Security</span>
+      <h2>When in doubt, nothing goes out</h2>
+      <div class="two">
+        <div class="box"><h3>We never ask for a password</h3><p>You create the keys yourself, on your own screen, and paste them into your own Orvanta account. Nobody at Orvanta needs your n8n or Zapier password.</p></div>
+        <div class="box"><h3>Limited access, easy to cut</h3><p>The n8n key only lets Orvanta read your workflows, pause them and add its check; it can't delete anything. Orvanta can't read or edit your Zaps. Delete the key or disconnect in one click, any time.</p></div>
+        <div class="box"><h3>If Orvanta doesn't answer</h3><p>The protected step doesn't run. An outage blocks the action instead of letting it through unchecked.</p></div>
+        <div class="box"><h3>Your workspace is yours</h3><p>Each customer has a separate workspace. Even our administrators don't see your agents or data unless you invite them. Hosted in the US, backed up daily.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <span class="kicker">Questions</span>
+      <div>
+        <details><summary>Can I edit a quote before approving it?</summary><p>No, it's yes or no. If something is wrong, decline it and fix it yourself. The agent sends nothing.</p></details>
+        <details><summary>What if I don't answer?</summary><p>The action waits: up to 24 hours with n8n, then it's dropped; up to 30 days with Zapier. Nothing ever goes out without your OK.</p></details>
+        <details><summary>Who can approve?</summary><p>The workspace owner and members. You can invite a colleague as a viewer: they see everything but can't decide.</p></details>
+        <details><summary>Does it slow my automations down?</summary><p>No. When an action respects your rules, Orvanta answers in a fraction of a second. Only the actions that need your OK wait.</p></details>
+        <details><summary>Does an AI read my data?</summary><p>Only if you turn on the AI check or write your own rules: an AI then re-reads the message before it goes out. You can turn it off in Guardrails.</p></details>
+      </div>
+    </section>
+
+    <section class="pilot">
+      <span class="kicker">The pilot program</span>
+      <h2>Free during the pilot</h2>
+      <ul>
+        <li><b>A 30-minute video call</b> to set Orvanta up together on one of your automations. You do the clicks on your screen; we guide you. No passwords asked.</li>
+        <li><b>Two short check-ins</b> of 15 minutes, after one week and after one month, to tell us what works and what's missing.</li>
+        <li>Before the call, have ready: admin access to your n8n or Zapier, and one action you no longer want to go out without your OK.</li>
+      </ul>
+      <div class="cta">
+        <a class="btn primary" data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Create my account</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    <a class="brand" href="/"><img src="/img/icon.svg" width="28" height="28" alt="" /><span>Orvanta</span></a>
+    <span>© 2026 Orvanta</span>
+    <nav aria-label="Footer"><a href="/how-it-works">How it works</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a data-app-link href="https://app.orvantahq.io">Log in</a><a data-app-link="/#/signup" href="https://app.orvantahq.io/#/signup">Sign up</a></nav>
+  </footer>
+
+  <script src="/site.js" defer></script>
+</body>
+</html>
