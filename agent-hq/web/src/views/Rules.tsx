@@ -58,7 +58,7 @@ function Sentence({ rule, save }: { rule: RuleView; save: (params: object) => vo
         : <>AI check of every {rule.label} before it goes out: {hold} waits for a human</>;
     }
     case "written":
-      return <>« {String(rule.params.text ?? "")} »</>;
+      return <>{tr(`“${String(rule.params.text ?? "")}”`, `« ${String(rule.params.text ?? "")} »`)}</>;
     case "daily_total":
       return fr
         ? <>Pas plus de {amount("Plafond par jour")} par jour au total sans ma validation</>

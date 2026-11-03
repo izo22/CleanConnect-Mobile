@@ -66,3 +66,9 @@
     }
   });
 })();
+
+// The hero demo video: respect people who ask for less motion.
+(function () {
+  var v = document.querySelector("video.demo");
+  if (v && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) { v.removeAttribute("autoplay"); v.pause(); v.controls = true; }
+})();

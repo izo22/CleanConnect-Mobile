@@ -68,7 +68,8 @@ a { color: var(--accent); }
 .shot-stage { position: relative; width: 100%; margin-top: 56px; }
 .shot { border-radius: 22px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lg); }
 .shot-stage .shot { border-radius: 26px; padding: 10px; }
-.shot-stage .shot img { border-radius: 18px; }
+.shot-stage .shot img, .shot-stage .shot video { border-radius: 18px; }
+.shot video.demo { display: block; width: 100%; height: auto; background: #F6F3EE; }
 .float {
   position: absolute; display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; width: 290px; text-align: left;
   background: var(--surface); border-radius: 20px; box-shadow: var(--shadow-lg); font-size: 13px; color: var(--muted);
