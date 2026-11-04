@@ -29,14 +29,13 @@ export function EarlyAccess() {
                   <span className="name">{r.name}{r.company ? ` · ${r.company}` : ""}</span>
                   <span className="time">{ago(r.created_at)}</span>
                 </div>
-                <a className="btn" style={{ textDecoration: "none" }} href={`mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent("Orvanta early access")}`}>{r.email}</a>
+                <a className="btn" style={{ textDecoration: "none" }} href={`mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent(r.kind === "contact" ? "Re: your message to Orvanta" : "Your Orvanta setup call")}`}>{r.email}</a>
               </div>
-              {(r.tools.length > 0 || r.fleet) && (
-                <div className="tags">
-                  {r.tools.map((t) => <span key={t} className="tag">{t}</span>)}
-                  {r.fleet && <span className="tag">{tr(`${r.fleet} agents`, `${r.fleet} agents`)}</span>}
-                </div>
-              )}
+              <div className="tags">
+                <span className="tag">{r.kind === "contact" ? tr("Contact message", "Message de contact") : tr("Setup call", "Demande d'appel")}</span>
+                {r.tools.map((t) => <span key={t} className="tag">{t}</span>)}
+                {r.fleet && <span className="tag">{r.kind === "contact" ? r.fleet : tr(`${r.fleet} agents`, `${r.fleet} agents`)}</span>}
+              </div>
               {r.message && <p style={{ fontSize: 14, color: "#45424C", whiteSpace: "pre-wrap" }}>{r.message}</p>}
             </article>
           ))}

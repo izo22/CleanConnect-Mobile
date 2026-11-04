@@ -99,3 +99,18 @@ describe("rules the owner writes in their own words", () => {
     expect((await addRule({ kind: "written", text: "x".repeat(501) })).statusCode).toBe(400);
   });
 });
+
+describe("what people decide on each rule", () => {
+  it("counts the requests a rule raised, approved and declined", async () => {
+    const quotes = await newAgent("Devis");
+    const rule = (await addRule({ kind: "approval_amount", max_cents: 100_000 })).json();
+    const ids: number[] = [];
+    for (let i = 0; i < 3; i++) ids.push((await ask(quotes.api_key, { action: "quote.send", amount_cents: 500_000 })).approval_id);
+    await app.inject({ method: "POST", url: `/api/approvals/${ids[0]}/decision`, payload: { approve: true } });
+    await app.inject({ method: "POST", url: `/api/approvals/${ids[1]}/decision`, payload: { approve: false } });
+    const view = (await app.inject({ method: "GET", url: "/api/rules" })).json().find((r: { id: string }) => r.id === rule.id);
+    expect(view.decisions).toEqual({ asked: 3, approved: 1, declined: 1 });
+    const other = (await app.inject({ method: "GET", url: "/api/rules" })).json().find((r: { id: string }) => r.id === "main:refunds");
+    expect(other.decisions).toEqual({ asked: 0, approved: 0, declined: 0 });
+  });
+});

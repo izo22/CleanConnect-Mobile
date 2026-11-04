@@ -12,6 +12,10 @@ export interface EarlyAccessIn {
   tools?: string[];
   fleet?: string;
   message?: string;
+  /** "setup" = Book a setup call, "contact" = the site's Contact form. */
+  kind?: "setup" | "contact";
+  /** Contact form: who is writing (business owner, agency…). */
+  role?: string;
   /** Hidden from people; bots fill it in. */
   website?: string;
 }
@@ -27,6 +31,8 @@ export const EARLY_ACCESS_INPUT = {
     tools: { type: "array", maxItems: 8, items: { type: "string", maxLength: 30 } },
     fleet: { type: "string", maxLength: 30 },
     message: { type: "string", maxLength: 2000 },
+    kind: { enum: ["setup", "contact"] },
+    role: { type: "string", maxLength: 40 },
     website: { type: "string", maxLength: 200 },
   },
 } as const;
@@ -47,13 +53,15 @@ export function rateLimiter(max: number, windowMs: number) {
 export function saveEarlyAccess(db: DB, r: EarlyAccessIn, now: number) {
   run(
     db,
-    "INSERT INTO early_access (name, email, company, tools, fleet, message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    r.name.trim(), r.email.trim().toLowerCase(), r.company?.trim() ?? "", JSON.stringify(r.tools ?? []), r.fleet ?? "", r.message?.trim() ?? "", now,
+    "INSERT INTO early_access (name, email, company, tools, fleet, message, kind, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    r.name.trim(), r.email.trim().toLowerCase(), r.company?.trim() ?? "", JSON.stringify(r.tools ?? []),
+    // The contact form has no "how many agents" question: its "I am…" answer goes in the same column.
+    r.kind === "contact" ? (r.role ?? "") : (r.fleet ?? ""), r.message?.trim() ?? "", r.kind ?? "setup", now,
   );
 }
 
 export function earlyAccessList(db: DB) {
-  return all<{ id: number; name: string; email: string; company: string; tools: string; fleet: string; message: string; created_at: number }>(
+  return all<{ id: number; name: string; email: string; company: string; tools: string; fleet: string; message: string; kind: string; created_at: number }>(
     db,
     "SELECT * FROM early_access ORDER BY created_at DESC, id DESC LIMIT 500",
   ).map((r) => ({ ...r, tools: JSON.parse(r.tools) as string[] }));

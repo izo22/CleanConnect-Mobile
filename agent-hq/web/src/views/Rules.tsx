@@ -74,6 +74,37 @@ function Sentence({ rule, save }: { rule: RuleView; save: (params: object) => vo
 }
 
 /** Which agents a rule covers: all of them, or the ones ticked. */
+/**
+ * What people did with the requests this rule raised. A rule that is never
+ * declined only adds clicks; one that is often declined is catching mistakes.
+ */
+function DecisionsStat({ d }: { d: RuleView["decisions"] }) {
+  const decided = d.approved + d.declined;
+  if (!d.asked) return null;
+  const line = tr(
+    `${d.asked} request${d.asked === 1 ? "" : "s"} · ${d.approved} approved · ${d.declined} declined`,
+    `${d.asked} demande${d.asked === 1 ? "" : "s"} · ${d.approved} approuvée${d.approved > 1 ? "s" : ""} · ${d.declined} refusée${d.declined > 1 ? "s" : ""}`,
+  );
+  let hint: string | null = null;
+  if (decided >= 10 && d.declined === 0) {
+    hint = tr(
+      `Never declined in ${decided} decisions: this limit may be too strict. Raising it saves you clicks.`,
+      `Jamais refusée en ${decided} décisions : cette limite est peut-être trop basse. La relever vous fera gagner des clics.`,
+    );
+  } else if (decided >= 5 && d.declined / decided >= 0.2) {
+    hint = tr(
+      `Declined ${Math.round((d.declined / decided) * 100)}% of the time: this rule is catching real mistakes.`,
+      `Refusée ${Math.round((d.declined / decided) * 100)} % du temps : cette règle arrête de vraies erreurs.`,
+    );
+  }
+  return (
+    <span className="stat decisions-stat">
+      {line}
+      {hint && <span className={"hint" + (d.declined === 0 ? " loose" : " useful")}>{hint}</span>}
+    </span>
+  );
+}
+
 function Scope({ rule, agents, save }: { rule: RuleView; agents: AgentSummary[]; save: (agents: string[]) => void }) {
   const chosen = ((rule.params as { agents?: string[] }).agents ?? []).filter((id) => agents.some((a) => a.id === id));
   const label = chosen.length === 0
@@ -194,6 +225,7 @@ export function Rules() {
                         ? tr(`Triggered ${r.trigger_count} time${r.trigger_count === 1 ? "" : "s"}`, `Déclenchée ${r.trigger_count} fois`)
                         : tr("Never triggered so far", "Jamais déclenchée pour l'instant")}
                   </span>
+                  <DecisionsStat d={r.decisions} />
                 </div>
                 {r.deletable && (
                   <button type="button" className="icon-btn" aria-label={tr(`Delete: ${r.sentence}`, `Supprimer : ${r.sentence}`)} title={tr("Delete", "Supprimer")} onClick={() => remove(r)}>✕</button>

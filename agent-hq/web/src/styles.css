@@ -373,3 +373,9 @@ fieldset.plain:disabled input { opacity: 0.6; cursor: not-allowed; }
 .audit-status.bad .pill { background: #fff; color: #b42318; }
 .audit-status.bad .dot { background: #ff5a4e; }
 .audit-status code { font-size: 12px; }
+
+/* Guardrails: what people decided on each rule's requests */
+.decisions-stat { display: flex; flex-direction: column; gap: 4px; }
+.decisions-stat .hint { font-weight: 600; }
+.decisions-stat .hint.loose { color: var(--warn-text); }
+.decisions-stat .hint.useful { color: var(--ok-text); }

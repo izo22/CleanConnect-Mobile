@@ -259,3 +259,8 @@ form .btn { align-self: flex-start; }
 .legal ul { margin: 12px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
 .foot nav { flex-wrap: wrap; }
 .privacy a { color: inherit; }
+
+/* Contact page */
+.contact-title { font-family: var(--display); font-size: clamp(36px, 5vw, 56px); line-height: 1; letter-spacing: -0.03em; font-weight: 800; }
+.contact-alt { font-size: 15px !important; }
+.contact-alt a { color: #fff; font-weight: 700; }

@@ -43,3 +43,18 @@ describe("early access form", () => {
     expect((await send()).statusCode).toBe(201);
   });
 });
+
+describe("contact form", () => {
+  it("stores the message as a contact, with who is writing, and needs a message", async () => {
+    const app = buildApp({ db: openDb(":memory:"), now: () => NOW });
+    const contact = { kind: "contact", name: "Sam Lee", email: "sam@acme.com", company: "Acme", role: "A business owner", message: "Can it approve refunds from Shopify?" };
+    expect((await app.inject({ method: "POST", url: "/api/public/early-access", payload: { ...contact, message: "  " } })).statusCode).toBe(400);
+    expect((await app.inject({ method: "POST", url: "/api/public/early-access", payload: contact })).statusCode).toBe(201);
+    expect((await app.inject({ method: "POST", url: "/api/public/early-access", payload: form })).statusCode).toBe(201);
+    const list = (await app.inject({ url: "/api/early-access" })).json();
+    expect(list).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "contact", name: "Sam Lee", fleet: "A business owner", message: "Can it approve refunds from Shopify?" }),
+      expect.objectContaining({ kind: "setup", name: "Dana Brooks", fleet: "10-50" }),
+    ]));
+  });
+});

@@ -237,9 +237,17 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     if (!earlyAccessAllowed(req.ip, now())) {
       return reply.code(429).send({ error: tr("Too many requests. Please try again in an hour.", "Trop de demandes. Réessayez dans une heure.") });
     }
+    if (b.kind === "contact" && !b.message?.trim()) {
+      return reply.code(400).send({ error: tr("Please write your message.", "Écrivez votre message.") });
+    }
     saveEarlyAccess(db, b, now());
     const who = `${b.name.trim()}${b.company?.trim() ? ` (${b.company.trim()})` : ""}, ${b.email.trim()}`;
-    notify(tr(`New early access request: ${who}`, `Nouvelle demande d'accès : ${who}`));
+    if (b.kind === "contact") {
+      const msg = b.message!.trim();
+      notify(tr(`New contact message from ${who}${b.role ? ` · ${b.role}` : ""}: ${msg.slice(0, 300)}`, `Nouveau message de contact de ${who}${b.role ? ` · ${b.role}` : ""} : ${msg.slice(0, 300)}`));
+    } else {
+      notify(tr(`New setup call request: ${who}`, `Nouvelle demande d'appel : ${who}`));
+    }
     notifyChange();
     return reply.code(201).send({ ok: true });
   });
@@ -330,7 +338,8 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       // Every permission check, whatever the answer, goes into the tamper-evident record.
       {
         const b = req.body;
-        const r = result as { reason?: string; approval_id?: number };
+        const r = result as { reason?: string; approval_id?: number; rule_id?: string };
+        if (r.approval_id && r.rule_id) run(db, "UPDATE approvals SET rule_id = ? WHERE id = ?", r.rule_id, r.approval_id);
         const verdict = result.decision === "allow"
           ? tr("allowed", "autorisé")
           : result.decision === "needs_approval" ? tr("waiting for a human decision", "en attente d'une décision humaine") : tr("refused", "refusé");

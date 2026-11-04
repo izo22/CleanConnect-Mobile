@@ -301,6 +301,10 @@ const ADDED_COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   // Where to send the human decision (an n8n "Wait" node resume URL).
   ["approvals", "callback_url", "TEXT"],
   ["approvals", "callback_status", "TEXT"],
+  // The guardrail that asked for this approval, to show how often each rule is really declined.
+  ["approvals", "rule_id", "TEXT"],
+  // "setup" = Book a setup call form, "contact" = Contact form of the site.
+  ["early_access", "kind", "TEXT NOT NULL DEFAULT 'setup'"],
   // Accounts: data created before workspaces existed belongs to the first one.
   ["agents", "workspace_id", `TEXT NOT NULL DEFAULT '${MAIN_WORKSPACE}'`],
   ["rules", "workspace_id", `TEXT NOT NULL DEFAULT '${MAIN_WORKSPACE}'`],

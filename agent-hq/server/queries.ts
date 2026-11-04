@@ -219,11 +219,28 @@ export function agentDetail(db: DB, ws: string, id: string, now = Date.now()) {
 }
 
 export function rulesView(db: DB, ws: string) {
+  // What people actually decided on the requests each rule raised: a rule that is
+  // never declined only adds clicks, one that is often declined is earning its keep.
+  const stats = new Map(
+    all<{ rule_id: string; asked: number; approved: number; declined: number }>(
+      db,
+      `SELECT ap.rule_id, COUNT(*) AS asked,
+              SUM(CASE WHEN ap.status = 'approved' THEN 1 ELSE 0 END) AS approved,
+              SUM(CASE WHEN ap.status = 'rejected' THEN 1 ELSE 0 END) AS declined
+       FROM approvals ap JOIN agents a ON a.id = ap.agent_id
+       WHERE a.workspace_id = ? AND ap.rule_id IS NOT NULL
+       GROUP BY ap.rule_id`,
+      ws,
+    ).map((s) => [s.rule_id, { asked: s.asked, approved: s.approved, declined: s.declined }]),
+  );
   return getRules(db, ws).map((r) => {
     const params = JSON.parse(r.params);
     // The AI check needs the AI key on the server; say so instead of pretending it runs.
     const unavailable = (r.kind === "ai_check" || r.kind === "written") && !reviewerEnabled();
-    return { ...r, enabled: !!r.enabled, params, sentence: describeRule(r.kind, r.label, params), unavailable, deletable: ruleDeletable(r) };
+    return {
+      ...r, enabled: !!r.enabled, params, sentence: describeRule(r.kind, r.label, params), unavailable, deletable: ruleDeletable(r),
+      decisions: stats.get(r.id) ?? { asked: 0, approved: 0, declined: 0 },
+    };
   });
 }
 
