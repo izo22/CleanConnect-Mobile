@@ -8,6 +8,7 @@ import { ensureMainRules, purgeExpiredSessions } from "./auth.ts";
 import { evaluateAll } from "./engine.ts";
 import { tr } from "./i18n.ts";
 import { dailyMaintenance } from "./maintenance.ts";
+import { backfillAudit } from "./audit.ts";
 import { HOUR, notifyChange } from "./model.ts";
 import { syncAll } from "./n8n.ts";
 import { claudeJudge, reviewerEnabled, startReviewer } from "./reviewer.ts";
@@ -33,6 +34,11 @@ if (production && (!adminToken || adminToken.length < 16) && process.env.ALLOW_N
 }
 
 const db = openDb(dbPath);
+// The tamper-evident record starts with the log lines written before it existed.
+{
+  const n = backfillAudit(db);
+  if (n) console.log(tr(`Tamper-evident record: ${n} earlier log lines added.`, `Registre infalsifiable : ${n} lignes du journal ajoutées.`));
+}
 // The 100-agent demo is for local trials; a production instance starts empty unless asked.
 const seedDemo = process.env.SEED_DEMO ? process.env.SEED_DEMO === "true" : !production;
 if (seedDemo && !get<{ n: number }>(db, "SELECT COUNT(*) n FROM agents WHERE workspace_id = ?", MAIN_WORKSPACE)?.n) {

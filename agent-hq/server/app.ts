@@ -28,6 +28,7 @@ import { describeRule, ruleDeletable } from "./rules.ts";
 import { shouldSample, type Judge } from "./reviewer.ts";
 import { aiPrecheck } from "./precheck.ts";
 import { deliverDecision, validCallbackUrl } from "./callbacks.ts";
+import { appendAudit, fullAudit, recentAudit, verifyAudit } from "./audit.ts";
 import { currency, lang, tr } from "./i18n.ts";
 import { N8nClient, N8nError, getIntegration, setWorkflowActive, syncIntegration, type IntegrationRow } from "./n8n.ts";
 import { n8nSnippet } from "./n8n-template.ts";
@@ -326,6 +327,20 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       // The guardrails allowed it: if the agent sent its answer, the AI reads it before it goes out.
       if (result.decision === "allow" && judge) result = (await aiPrecheck(db, agent, req.body, judge, now())) ?? result;
       if (result.decision === "allow") recordAllowed(db, agent, req.body, now());
+      // Every permission check, whatever the answer, goes into the tamper-evident record.
+      {
+        const b = req.body;
+        const r = result as { reason?: string; approval_id?: number };
+        const verdict = result.decision === "allow"
+          ? tr("allowed", "autorisé")
+          : result.decision === "needs_approval" ? tr("waiting for a human decision", "en attente d'une décision humaine") : tr("refused", "refusé");
+        appendAudit(db, agent.workspace_id, {
+          ts: now(), kind: "check", actor: agent.name, agentId: agent.id,
+          summary: tr(`Asked permission: ${b.summary || b.action} → ${verdict}`, `Demande de permission : ${b.summary || b.action} → ${verdict}`)
+            + (r.reason ? ` (${r.reason})` : ""),
+          data: { action: b.action, amount_cents: b.amount_cents ?? null, target: b.target ?? null, decision: result.decision, reason: r.reason ?? null, approval_id: r.approval_id ?? null },
+        });
+      }
       if (result.decision !== "allow") notifyChange();
       if (result.decision === "needs_approval") {
         const a = get<{ title: string; reason: string }>(db, "SELECT title, reason FROM approvals WHERE id = ?", result.approval_id);
@@ -507,6 +522,24 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     admin.get("/api/approvals", async (req) => approvalsView(db, req.ctx.ws));
     admin.get("/api/rules", async (req) => rulesView(db, req.ctx.ws));
     admin.get("/api/activity", async (req) => activity(db, req.ctx.ws, 80));
+    // The tamper-evident record: the latest entries, a full check of the chain, and a download.
+    admin.get<{ Querystring: { limit?: string } }>("/api/audit", async (req) => ({
+      entries: recentAudit(db, req.ctx.ws, Math.min(500, Math.max(1, Number(req.query.limit) || 100))),
+      check: verifyAudit(db, req.ctx.ws, now()),
+    }));
+    admin.get("/api/audit/verify", async (req) => verifyAudit(db, req.ctx.ws, now()));
+    admin.get("/api/audit/export", async (req, reply) => {
+      const check = verifyAudit(db, req.ctx.ws, now());
+      const day = new Date(now()).toISOString().slice(0, 10);
+      reply.header("Content-Disposition", `attachment; filename="orvanta-record-${day}.json"`);
+      return {
+        workspace_id: req.ctx.ws,
+        exported_at: new Date(now()).toISOString(),
+        how_to_verify: "Each entry's hash is SHA-256 of: previous hash + newline + JSON [workspace_id, seq, ts, kind, actor, agent_id, summary, data]. The first entry's previous hash is \"orvanta-audit-genesis\".",
+        check,
+        entries: fullAudit(db, req.ctx.ws),
+      };
+    });
     admin.get("/api/quality", async (req) => qualityView(db, req.ctx.ws, now()));
 
     admin.post<{ Params: { id: string }; Body: { description: string; event_id?: number } }>(

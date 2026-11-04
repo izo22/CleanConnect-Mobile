@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 import { randomBytes } from "node:crypto";
 import { MAIN_WORKSPACE, all, get, run, type DB } from "./db.ts";
 import { tr } from "./i18n.ts";
+import { appendAudit } from "./audit.ts";
 
 export type Autonomy = 0 | 1 | 2;
 
@@ -194,12 +195,12 @@ export function monthSpendCents(db: DB, now: number, scope: { agentId: string } 
  * `workspaceId` for actions that concern no agent (rules, connections).
  */
 export function logActivity(db: DB, actor: string, message: string, agentId: string | null = null, now = Date.now(), workspaceId?: string) {
-  run(
-    db,
-    `INSERT INTO activity (ts, actor, agent_id, message, workspace_id)
-     VALUES (?, ?, ?, ?, COALESCE(?, (SELECT workspace_id FROM agents WHERE id = ?), ?))`,
-    now, actor, agentId, message, workspaceId ?? null, agentId, MAIN_WORKSPACE,
-  );
+  const ws = workspaceId
+    ?? (agentId ? get<{ workspace_id: string }>(db, "SELECT workspace_id FROM agents WHERE id = ?", agentId)?.workspace_id : undefined)
+    ?? MAIN_WORKSPACE;
+  run(db, "INSERT INTO activity (ts, actor, agent_id, message, workspace_id) VALUES (?, ?, ?, ?, ?)", now, actor, agentId, message, ws);
+  // Every line of the log also goes into the tamper-evident record.
+  appendAudit(db, ws, { ts: now, kind: "activity", actor, agentId, summary: message });
 }
 
 export function getRules(db: DB, workspaceId: string) {

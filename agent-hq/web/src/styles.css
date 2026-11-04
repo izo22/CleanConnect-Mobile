@@ -358,3 +358,18 @@ fieldset.plain:disabled input { opacity: 0.6; cursor: not-allowed; }
 .setup .text { display: flex; flex-direction: column; gap: 2px; }
 .setup .text b { color: var(--ink); font-weight: 700; }
 .setup .text small { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+/* Tamper-evident record (Log page) */
+.audit-card { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+.audit-head { display: flex; gap: 16px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+.audit-head p { margin-top: 4px; max-width: 640px; font-size: 13px; line-height: 1.5; }
+.audit-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.audit-status { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 16px; font-size: 14px; }
+.audit-status.ok { background: var(--ok-soft); }
+.audit-status.ok .pill { background: #fff; color: var(--ok-text); }
+.audit-status.ok .dot { background: var(--ok); }
+.audit-status.bad { background: #ffe4e1; }
+.audit-status.bad .dot { background: var(--danger); }
+.audit-status.bad .pill { background: #fff; color: #b42318; }
+.audit-status.bad .dot { background: #ff5a4e; }
+.audit-status code { font-size: 12px; }

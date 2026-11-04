@@ -245,6 +245,22 @@ CREATE TABLE IF NOT EXISTS activity (
   agent_id TEXT,
   message TEXT NOT NULL
 );
+
+-- The tamper-evident record: each entry carries the fingerprint of the one before (see audit.ts).
+CREATE TABLE IF NOT EXISTS audit_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  workspace_id TEXT NOT NULL,
+  seq INTEGER NOT NULL,
+  ts INTEGER NOT NULL,
+  kind TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  agent_id TEXT,
+  summary TEXT NOT NULL,
+  data TEXT,
+  prev_hash TEXT NOT NULL,
+  hash TEXT NOT NULL,
+  UNIQUE (workspace_id, seq)
+);
 `;
 
 export function openDb(path = ":memory:"): DB {

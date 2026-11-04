@@ -4,6 +4,7 @@ import { AccountContext, canFor, roleLabel, useAccount, type Account } from "./a
 import { money, shortTime } from "./format.ts";
 import { tr } from "./i18n.ts";
 import { ErrorBox, Icon, Logo, Skeleton, ToastProvider, useToast } from "./components/ui.tsx";
+import { AuditRecord } from "./components/audit.tsx";
 import { Admin } from "./views/Admin.tsx";
 import { Alerts } from "./views/Alerts.tsx";
 import { Brief } from "./views/Brief.tsx";
@@ -385,6 +386,7 @@ function Journal() {
           <span className="sub">{tr("Who did what, humans and agents. Everything is recorded.", "Qui a fait quoi, humains et agents. Tout est tracé.")}</span>
         </div>
       </header>
+      <AuditRecord />
       {error && <ErrorBox message={error.message} />}
       {!data && !error && <Skeleton count={1} />}
       {data && (
