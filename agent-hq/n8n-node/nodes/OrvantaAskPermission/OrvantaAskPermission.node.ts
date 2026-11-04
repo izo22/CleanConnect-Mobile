@@ -3,6 +3,7 @@ import {
 	NodeOperationError,
 	type IDataObject,
 	type IExecuteFunctions,
+	type IHookFunctions,
 	type INodeExecutionData,
 	type INodeType,
 	type INodeTypeDescription,
@@ -23,13 +24,16 @@ export class OrvantaAskPermission implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Orvanta Ask Permission',
 		name: 'orvantaAskPermission',
-		icon: 'file:orvanta.svg',
+		icon: { light: 'file:orvanta.svg', dark: 'file:orvanta.dark.svg' },
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["action"]}}',
 		description:
 			'Ask a human before a risky step. Waits for a one-click approval in Orvanta when your rules require it.',
 		defaults: { name: 'Orvanta Ask Permission' },
+		// Not offered as an AI tool: waiting for a human decision pauses the whole execution,
+		// which a tool call cannot do. Use it as a regular step before the risky one.
+		usableAsTool: undefined,
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main, NodeConnectionTypes.Main],
 		outputNames: ['Approved', 'Declined'],
@@ -143,6 +147,25 @@ export class OrvantaAskPermission implements INodeType {
 				],
 			},
 		],
+	};
+
+	/**
+	 * The only webhook is the execution's resume URL (restartWebhook), which n8n creates
+	 * for each waiting execution. Nothing is registered on Orvanta's side when the
+	 * workflow is activated: Orvanta receives the resume URL with each request.
+	 */
+	webhookMethods = {
+		default: {
+			async checkExists(this: IHookFunctions): Promise<boolean> {
+				return true;
+			},
+			async create(this: IHookFunctions): Promise<boolean> {
+				return true;
+			},
+			async delete(this: IHookFunctions): Promise<boolean> {
+				return true;
+			},
+		},
 	};
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {

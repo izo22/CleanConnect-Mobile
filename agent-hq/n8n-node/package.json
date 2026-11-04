@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-orvanta",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Ask a human before your n8n workflows and AI agents take a risky action. Orvanta checks the owner's rules, waits for a one-click approval when needed, and logs every decision.",
   "keywords": [
     "n8n-community-node-package",

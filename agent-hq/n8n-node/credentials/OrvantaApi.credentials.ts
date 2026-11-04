@@ -11,7 +11,7 @@ export class OrvantaApi implements ICredentialType {
 
 	displayName = 'Orvanta API';
 
-	icon: Icon = 'file:orvanta.svg';
+	icon: Icon = { light: 'file:orvanta.svg', dark: 'file:orvanta.dark.svg' };
 
 	documentationUrl = 'https://orvantahq.io/how-it-works';
 
