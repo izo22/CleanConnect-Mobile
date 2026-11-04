@@ -1,0 +1,55 @@
+{
+  "name": "n8n-nodes-orvanta",
+  "version": "0.1.0",
+  "description": "Ask a human before your n8n workflows and AI agents take a risky action. Orvanta checks the owner's rules, waits for a one-click approval when needed, and logs every decision.",
+  "keywords": [
+    "n8n-community-node-package",
+    "orvanta",
+    "human-in-the-loop",
+    "approval",
+    "ai-agent",
+    "guardrails"
+  ],
+  "license": "MIT",
+  "homepage": "https://orvantahq.io",
+  "author": {
+    "name": "Orvanta",
+    "email": "orvanta.contact@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/izo22/CleanConnect-Mobile.git",
+    "directory": "agent-hq/n8n-node"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && node scripts/copy-icons.mjs",
+    "test": "node --test test/*.test.mjs",
+    "lint": "eslint credentials nodes",
+    "prepublishOnly": "npm run build && npm run lint && npm test"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": true,
+    "credentials": [
+      "dist/credentials/OrvantaApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/OrvantaAskPermission/OrvantaAskPermission.node.js",
+      "dist/nodes/Orvanta/Orvanta.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@typescript-eslint/parser": "^8.72.1",
+    "eslint": "^9.39.5",
+    "eslint-plugin-n8n-nodes-base": "^1.16.7",
+    "n8n-workflow": "2.16.0",
+    "typescript": "5.9.3"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

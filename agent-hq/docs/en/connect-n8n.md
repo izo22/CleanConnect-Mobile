@@ -33,6 +33,10 @@ The workflows show up in **My AI team**. Fill in each one's owner and budget on 
 
 **Undo the last change** puts the workflow back as it was (Orvanta keeps the last 10 versions).
 
+### With the Orvanta node (n8n community node)
+
+Install `n8n-nodes-orvanta` from **Settings → Community Nodes**, add an **Orvanta API** credential with the agent's key, then drop **Orvanta Ask Permission** right before the step to protect and connect that step to its **Approved** output. The node waits for the decision by itself, no Wait or IF node needed. See `n8n-node/README.md`.
+
 ### By hand, in n8n
 
 1. In Orvanta, open the agent's page (the workflow), open **Prefer to add the block by hand in n8n?**, then click **Copy the "Ask for permission" block for n8n**.
