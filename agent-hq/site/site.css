@@ -264,3 +264,10 @@ form .btn { align-self: flex-start; }
 .contact-title { font-family: var(--display); font-size: clamp(36px, 5vw, 56px); line-height: 1; letter-spacing: -0.03em; font-weight: 800; }
 .contact-alt { font-size: 15px !important; }
 .contact-alt a { color: #fff; font-weight: 700; }
+
+/* Demo page */
+.demo-page { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.demo-sub { color: var(--ink-2); font-size: 18px; max-width: 620px; }
+.demo-video { width: 100%; max-width: 960px; aspect-ratio: 16 / 9; border-radius: 18px; background: #1B1A1F; box-shadow: 0 24px 60px rgba(20, 16, 40, 0.18); margin-top: 8px; }
+.demo-cta { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+.demo-note { color: var(--ink-2); font-size: 14px; }
