@@ -182,6 +182,12 @@ p { margin: 0; }
 .decision-card .why { padding: 12px 14px; border-radius: 16px; background: var(--accent-soft); font-size: 13px; color: #3b2f87; }
 .decision-card .row { margin-top: auto; display: flex; gap: 8px; }
 .decision-card .row .btn { flex: 1; min-height: 46px; font-size: 14px; }
+.decision-card .draft { padding: 12px 14px; border-radius: 16px; background: #fff; border: 1px solid var(--line, #ECE7DF); }
+.decision-card .draft p { font-size: 14px; line-height: 1.55; white-space: pre-wrap; max-height: 220px; overflow: auto; }
+.decision-card .draft-label { display: block; font-size: 12px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+.edit-approve { display: flex; flex-direction: column; gap: 10px; }
+.edit-approve textarea { width: 100%; font: inherit; font-size: 14px; line-height: 1.55; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--accent, #7C5CFF); resize: vertical; }
+.edit-approve .row { display: flex; gap: 8px; }
 
 /* ---------- Team ---------- */
 .segmented { display: flex; flex-wrap: wrap; gap: 4px; padding: 5px; border-radius: 999px; background: var(--surface); }

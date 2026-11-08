@@ -89,10 +89,10 @@ export function requestApproval(db: DB, agent: AgentRow, req: CheckRequest, reas
   const title = req.summary?.trim() || `${req.action}${req.amount_cents ? " · " + money(req.amount_cents) : ""}`;
   const res = run(
     db,
-    `INSERT INTO approvals (agent_id, action, title, context, reason, amount_cents, payload, callback_url, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO approvals (agent_id, action, title, context, reason, amount_cents, payload, callback_url, output, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     agent.id, req.action, title, req.context ?? "", reason, req.amount_cents ?? null,
-    req.payload === undefined ? null : JSON.stringify(req.payload), req.callback_url ?? null, now,
+    req.payload === undefined ? null : JSON.stringify(req.payload), req.callback_url ?? null, req.output?.trim() ? req.output : null, now,
   );
   logActivity(db, agent.name, tr(`Approval requested: ${title}`, `Demande de validation : ${title}`), agent.id, now);
   return Number(res.lastInsertRowid);

@@ -735,9 +735,9 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       return { message };
     });
 
-    admin.post<{ Params: { id: string }; Body: { approve: boolean } }>(
+    admin.post<{ Params: { id: string }; Body: { approve: boolean; output?: string } }>(
       "/api/approvals/:id/decision",
-      { schema: { body: { type: "object", required: ["approve"], additionalProperties: false, properties: { approve: { type: "boolean" } } } } },
+      { schema: { body: { type: "object", required: ["approve"], additionalProperties: false, properties: { approve: { type: "boolean" }, output: { type: "string", minLength: 1, maxLength: 20_000 } } } } },
       async (req) => {
         const t = now();
         const message = tx(db, () => {
@@ -745,8 +745,13 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
           if (!a) throw notFound("Request", "Demande");
           if (a.status !== "pending") throw new PlaybookError(tr("This request has already been handled.", "Cette demande a déjà été traitée."));
           const status = req.body.approve ? "approved" : "rejected";
-          run(db, "UPDATE approvals SET status = ?, decided_at = ?, decided_by = ? WHERE id = ?", status, t, req.ctx.actor, a.id);
-          const msg = req.body.approve ? tr(`Approved: ${a.title}`, `Approuvé : ${a.title}`) : tr(`Declined: ${a.title}`, `Refusé : ${a.title}`);
+          // "Edit & approve": only an approval can carry a corrected text, and only when it changed something.
+          const edited = req.body.approve && req.body.output !== undefined && req.body.output !== (a.output ?? "") ? req.body.output : null;
+          if (req.body.output !== undefined && !req.body.approve) throw Object.assign(new Error(tr("Only an approval can carry a corrected text.", "Seule une validation peut porter un texte corrigé.")), { statusCode: 400 });
+          run(db, "UPDATE approvals SET status = ?, decided_at = ?, decided_by = ?, edited_output = ? WHERE id = ?", status, t, req.ctx.actor, edited, a.id);
+          const msg = !req.body.approve ? tr(`Declined: ${a.title}`, `Refusé : ${a.title}`)
+            : edited !== null ? tr(`Approved with changes: ${a.title}`, `Approuvé avec modifications : ${a.title}`)
+            : tr(`Approved: ${a.title}`, `Approuvé : ${a.title}`);
           logActivity(db, req.ctx.actor, msg, a.agent_id, t);
           return msg;
         });

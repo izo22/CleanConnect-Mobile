@@ -76,6 +76,10 @@ export interface ApprovalRow {
   decided_by: string | null;
   callback_url: string | null;
   callback_status: string | null;
+  /** What the agent is about to send, shown to the approver and editable before approving. */
+  output?: string | null;
+  /** The approver's corrected version, when they edited the text before approving. */
+  edited_output?: string | null;
 }
 
 export interface RuleRow {

@@ -303,6 +303,8 @@ const ADDED_COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   ["approvals", "callback_status", "TEXT"],
   // The guardrail that asked for this approval, to show how often each rule is really declined.
   ["approvals", "rule_id", "TEXT"],
+  ["approvals", "output", "TEXT"],
+  ["approvals", "edited_output", "TEXT"],
   // "setup" = Book a setup call form, "contact" = Contact form of the site.
   ["early_access", "kind", "TEXT NOT NULL DEFAULT 'setup'"],
   // Accounts: data created before workspaces existed belongs to the first one.

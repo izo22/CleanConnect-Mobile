@@ -250,14 +250,32 @@ export function AlertCard({ alert, wide = false }: { alert: AlertView; wide?: bo
   );
 }
 
-export function DecisionButtons({ approval, big = false }: { approval: ApprovalView; big?: boolean }) {
+export function DecisionButtons({ approval, big = false, onEdit }: { approval: ApprovalView; big?: boolean; onEdit?: () => void }) {
   const { run, busy } = useAction();
   const decide = (approve: boolean) => run(approve ? "y" : "n", `/api/approvals/${approval.id}/decision`, { approve });
   return (
     <>
       <button type="button" className={"btn" + (big ? " big" : "")} disabled={busy !== null} onClick={() => decide(false)}>{tr("Decline", "Refuser")}</button>
+      {onEdit && <button type="button" className={"btn" + (big ? " big" : "")} disabled={busy !== null} onClick={onEdit}>{tr("Edit", "Modifier")}</button>}
       <button type="button" className={"btn primary" + (big ? " big" : "")} disabled={busy !== null} onClick={() => decide(true)}>{tr("Approve", "Approuver")}</button>
     </>
+  );
+}
+
+/** "Edit & approve": the approver corrects the agent's text, and the workflow receives the corrected version. */
+export function EditAndApprove({ approval, onCancel }: { approval: ApprovalView; onCancel: () => void }) {
+  const { run, busy } = useAction();
+  const [text, setText] = useState(approval.output ?? "");
+  const send = () => run("e", `/api/approvals/${approval.id}/decision`, { approve: true, output: text });
+  return (
+    <div className="edit-approve">
+      <label className="draft-label" htmlFor={`draft-${approval.id}`}>{tr("Your corrected version", "Votre version corrigée")}</label>
+      <textarea id={`draft-${approval.id}`} value={text} rows={7} maxLength={20_000} onChange={(e) => setText(e.target.value)} autoFocus />
+      <div className="row">
+        <button type="button" className="btn big" disabled={busy !== null} onClick={onCancel}>{tr("Cancel", "Annuler")}</button>
+        <button type="button" className="btn primary big" disabled={busy !== null || !text.trim()} onClick={send}>{tr("Approve with changes", "Approuver avec modifications")}</button>
+      </div>
+    </div>
   );
 }
 

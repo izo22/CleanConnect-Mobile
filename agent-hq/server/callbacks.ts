@@ -25,6 +25,10 @@ export function callbackBody(a: ApprovalRow) {
     amount: a.amount_cents === null ? null : a.amount_cents / 100,
     context: a.context,
     payload: a.payload ? JSON.parse(a.payload) : null,
+    // The text to send: the approver's corrected version when they edited it, else the agent's draft.
+    output: a.edited_output ?? a.output ?? null,
+    edited: a.edited_output != null,
+    original_output: a.output ?? null,
   };
 }
 

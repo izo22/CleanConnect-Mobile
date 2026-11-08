@@ -266,6 +266,9 @@ export class OrvantaAskPermission implements INodeType {
 					approval_id: body.approval_id ?? null,
 					decided_by: body.decided_by ?? null,
 					decided_at: body.decided_at ?? null,
+					// The text to send: the approver's corrected version if they edited it ("Edit & approve").
+					output: body.output ?? null,
+					edited: body.edited === true,
 				},
 			},
 			pairedItem: { item: 0 },
