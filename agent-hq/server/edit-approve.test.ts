@@ -16,7 +16,7 @@ async function setup() {
     method: "POST", url: "/api/v1/check", headers: { authorization: `Bearer ${agent.api_key}` },
     payload: { action: "email.send", summary: "Reply to Dana about the delay", ...(output ? { output } : {}) },
   })).json() as { approval_id: number };
-  return { db, app, ask };
+  return { db, app, ask, key: agent.api_key };
 }
 
 describe("edit & approve", () => {
@@ -58,5 +58,14 @@ describe("edit & approve", () => {
     const res = await app.inject({ method: "POST", url: `/api/approvals/${approval_id}/decision`, payload: { approve: false, output: "Other" } });
     expect(res.statusCode).toBe(400);
     expect(get<ApprovalRow>(db, "SELECT * FROM approvals WHERE id = ?", approval_id)!.status).toBe("pending");
+  });
+
+  it("gives the approved text to whoever checks the approval later (WordPress plugin)", async () => {
+    const { app, ask, key } = await setup();
+    const { approval_id } = await ask("Draft article");
+    const read = async () => (await app.inject({ method: "GET", url: `/api/v1/approvals/${approval_id}`, headers: { authorization: `Bearer ${key}` } })).json();
+    expect(await read()).toMatchObject({ status: "pending", action: "email.send", output: "Draft article", edited: false });
+    await app.inject({ method: "POST", url: `/api/approvals/${approval_id}/decision`, payload: { approve: true, output: "Fixed article" } });
+    expect(await read()).toMatchObject({ status: "approved", output: "Fixed article", edited: true });
   });
 });

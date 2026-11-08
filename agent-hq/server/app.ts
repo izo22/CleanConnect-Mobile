@@ -364,7 +364,12 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     const agent = agentOf(req);
     const a = get<ApprovalRow>(db, "SELECT * FROM approvals WHERE id = ? AND agent_id = ?", Number(req.params.id), agent.id);
     if (!a) throw notFound("Request", "Demande");
-    return { id: a.id, status: a.status, decided_by: a.decided_by, decided_at: a.decided_at };
+    // The text to use: the approver's corrected version when they edited it, else the agent's draft.
+    return {
+      id: a.id, status: a.status, decided_by: a.decided_by, decided_at: a.decided_at,
+      action: a.action, title: a.title,
+      output: a.edited_output ?? a.output ?? null, edited: a.edited_output != null,
+    };
   });
 
   app.get("/api/v1/config", async (req) => {
