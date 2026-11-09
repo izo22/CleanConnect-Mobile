@@ -35,7 +35,7 @@ The workflows show up in **My AI team**. Fill in each one's owner and budget on 
 
 ### With the Orvanta node (n8n community node)
 
-Install `n8n-nodes-orvanta` from **Settings → Community Nodes**, add an **Orvanta API** credential with the agent's key, then drop **Orvanta Ask Permission** right before the step to protect and connect that step to its **Approved** output. The node waits for the decision by itself, no Wait or IF node needed. See `n8n-node/README.md`.
+Install `n8n-nodes-orvanta` from **Settings → Community Nodes** and add an **Orvanta API** credential with the agent's key. Put **Orvanta → Ask Permission** right before the step to protect and branch on `orvanta.decision` (`allow`, `needs_approval`, `deny`). When a human decision is needed, a second workflow starting with **Orvanta Trigger** (Decision Made) continues once someone approves. See `n8n-node/README.md`.
 
 ### By hand, in n8n
 

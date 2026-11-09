@@ -7,6 +7,7 @@ const { baseUrlOf, toCents } = require('../dist/nodes/shared.js');
 test('amounts become cents, and no amount stays empty', () => {
 	assert.equal(toCents(18400), 1840000);
 	assert.equal(toCents('340.5'), 34050);
+	assert.equal(toCents(0.29), 29, 'costs are whole cents, not 28.999999999999996');
 	assert.equal(toCents(0), undefined);
 	assert.equal(toCents(''), undefined);
 	assert.equal(toCents('abc'), undefined);

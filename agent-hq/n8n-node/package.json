@@ -1,7 +1,7 @@
 {
   "name": "n8n-nodes-orvanta",
-  "version": "0.1.1",
-  "description": "Ask a human before your n8n workflows and AI agents take a risky action. Orvanta checks the owner's rules, waits for a one-click approval when needed, and logs every decision.",
+  "version": "0.2.0",
+  "description": "Control your n8n workflows and AI agents with Orvanta: ask permission before risky actions, continue when a human decides, and report activity for alerts and a full history.",
   "keywords": [
     "n8n-community-node-package",
     "orvanta",
@@ -37,8 +37,8 @@
       "dist/credentials/OrvantaApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/OrvantaAskPermission/OrvantaAskPermission.node.js",
-      "dist/nodes/Orvanta/Orvanta.node.js"
+      "dist/nodes/Orvanta/Orvanta.node.js",
+      "dist/nodes/OrvantaTrigger/OrvantaTrigger.node.js"
     ]
   },
   "devDependencies": {

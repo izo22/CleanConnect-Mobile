@@ -1,14 +1,16 @@
 # n8n-nodes-orvanta
 
-Ask a human before your n8n workflows and AI agents take a risky action.
+Keep your n8n workflows and AI agents under control with [Orvanta](https://orvantahq.io): ask permission before risky actions, continue when a human decides, and report activity for alerts and a full history.
 
-[Orvanta](https://orvantahq.io) is the control room for the AI agents and automations a business runs. This package adds two nodes to n8n:
+Orvanta is the control center for the AI agents and automations a business runs: see what every workflow does, get alerted when something fails, set rules and budgets, pause any agent in one click, keep a tamper-evident history, and choose the few actions that should wait for an OK.
 
-- **Orvanta Ask Permission**: put it right before a risky step (send a quote, issue a refund, pay a supplier, reply to a customer). Orvanta checks the owner's rules and answers:
-  - **allowed**: the item leaves by the **Approved** output right away;
-  - **needs approval**: the workflow waits until someone clicks **Approve** or **Decline** in Orvanta (or in Slack/Teams), then continues by **Approved** or **Declined**, with the same item it had before;
-  - **refused** (agent paused, out of budget, out of policy): the item leaves by **Declined**.
-- **Orvanta**: report what the workflow did (success or failure, cost, answer), so Orvanta can show it on the dashboard, raise alerts and review answers.
+This package adds two nodes:
+
+- **Orvanta**, with three operations:
+  - **Ask Permission**: before a risky step (send a quote, issue a refund, pay a supplier, reply to a customer), checks the action against your Orvanta rules and returns the answer right away in `orvanta.decision`: `allow`, `needs_approval` or `deny`.
+  - **Get Decision**: reads whether a request was approved, declined, or is still pending.
+  - **Report Activity**: tells Orvanta what the workflow did (success or failure, cost, answer), for the dashboard, alerts and AI review.
+- **Orvanta Trigger**: starts a workflow when someone approves or declines a request in Orvanta (or in Slack/Teams), or when an agent is paused or resumed.
 
 Rules are written in plain English in Orvanta, for example *"Over $5,000, I approve"*, *"No customer email between 10 pm and 7 am"* or *"Never promise a discount over 10%"*. Every decision is logged with who approved it and when.
 
@@ -21,29 +23,37 @@ See the [n8n community nodes documentation](https://docs.n8n.io/integrations/com
 ## Credentials
 
 1. Create a free account at [orvantahq.io](https://orvantahq.io).
-2. In **My AI team**, add an agent for this workflow (source: n8n) and copy its key (`ahq_…`).
+2. Add an agent for this workflow (source: n8n) and copy its key (`ahq_…`).
 3. In n8n, create an **Orvanta API** credential: paste the key. Keep the URL `https://app.orvantahq.io` unless you run your own Orvanta.
 
 ## Usage
 
+Put **Orvanta → Ask Permission** right before the step to protect, then branch on the answer with a **Switch** node (or an **If** node on `{{ $json.orvanta.allowed }}`):
+
 ```
-Trigger → … → Orvanta Ask Permission ─Approved→ Send quote email
-                                      └Declined→ (optional) notify the team
+Trigger → … → Orvanta (Ask Permission) → Switch on {{ $json.orvanta.decision }}
+                                           ├ allow          → Send the quote
+                                           ├ needs_approval → (optional) tell the team it's waiting
+                                           └ deny           → (optional) notify the team
 ```
 
-| Field | What to put |
+When a human decision is needed, finish the job in a second workflow that starts with **Orvanta Trigger** (event *Decision Made*):
+
+```
+Orvanta Trigger (Decision Made, only approved) → Send the quote
+```
+
+The trigger receives the item that was sent with Ask Permission (its JSON), plus `orvanta.approved`, `orvanta.decided_by` and `orvanta.output`. If the approver corrected the text before approving, `orvanta.output` holds the corrected version and `orvanta.edited` is `true`.
+
+Prefer polling? Use **Orvanta → Get Decision** with the `approval_id` returned by Ask Permission, for example after a **Wait** node.
+
+| Ask Permission field | What to put |
 |---|---|
 | Action | What the next step does, e.g. `quote.send`, `stripe.refund`. Rules can target an action name. |
 | Summary | The sentence the approver reads, e.g. `Send a $18,400 quote to {{ $json.customer }}` |
-| Amount | The amount, for rules such as "Over $5,000, I approve". 0 if none. |
-| Options | Always ask me, recipient, details, text about to be sent (read by Orvanta's AI check), maximum wait (default 24 h; after that, the item leaves by Declined). |
+| Options | Amount (for rules such as "Over $5,000, I approve"), always ask me, recipient, details for the approver, text about to be sent (read by Orvanta's AI check), text received, sensitive action. |
 
-The item that reaches **Approved** after a wait is the item the node received: Orvanta keeps a copy of its JSON while it waits. Binary data is not kept across a wait.
-
-**Good to know**
-
-- The node waits for one approval at a time. For a list, put a **Loop Over Items** node (batch size 1) before it.
-- Orvanta wakes the workflow up by calling its resume URL, so your n8n must be reachable over HTTPS (n8n Cloud is).
+The Orvanta Trigger registers itself with Orvanta when the workflow is activated, so your n8n must be reachable over HTTPS (n8n Cloud is).
 
 ## Compatibility
 
