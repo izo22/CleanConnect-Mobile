@@ -1,0 +1,6 @@
+{
+  "version": "0.1.2",
+  "download_url": "https://orvantahq.io/downloads/orvanta-publish-guard.zip",
+  "tested": "6.8",
+  "changelog": "<p><strong>0.1.2</strong>: updates now arrive through the normal WordPress update screen.</p><p><strong>0.1.1</strong>: an approved scheduled post whose title or text changes goes back to Pending.</p>"
+}

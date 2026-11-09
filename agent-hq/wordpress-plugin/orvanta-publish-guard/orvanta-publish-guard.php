@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Orvanta Publish Guard
  * Description:       Nothing goes live without Orvanta's OK. Every publish request (REST API, editor, XML-RPC) is checked with Orvanta first; posts that need a human decision wait as "Pending" and go live once approved. If Orvanta can't be reached, nothing is published.
- * Version:           0.1.1
+ * Version:           0.1.2
  * Requires at least: 5.6
  * Requires PHP:      7.4
  * Author:            Orvanta
@@ -16,6 +16,8 @@ if (!defined('ABSPATH')) {
 }
 
 final class Orvanta_Publish_Guard {
+	const VERSION = '0.1.2';
+	const UPDATE_URL = 'https://orvantahq.io/downloads/orvanta-publish-guard.json';
 	const OPT = 'orvanta_publish_guard';
 	const CRON = 'orvanta_publish_guard_poll';
 	const META_APPROVAL = '_orvanta_approval_id';
@@ -41,6 +43,8 @@ final class Orvanta_Publish_Guard {
 		add_action('admin_notices', array(__CLASS__, 'notice'));
 		add_action('admin_post_orvanta_test', array(__CLASS__, 'test_connection'));
 		add_action('admin_post_orvanta_recheck', array(__CLASS__, 'recheck_now'));
+		add_filter('pre_set_site_transient_update_plugins', array(__CLASS__, 'check_update'));
+		add_filter('plugins_api', array(__CLASS__, 'update_details'), 10, 3);
 		register_activation_hook(__FILE__, array(__CLASS__, 'activate'));
 		register_deactivation_hook(__FILE__, array(__CLASS__, 'deactivate'));
 	}
@@ -349,6 +353,63 @@ final class Orvanta_Publish_Guard {
 			return array('ok' => false, 'body' => $json, 'error' => $msg);
 		}
 		return array('ok' => true, 'body' => is_array($json) ? $json : array(), 'error' => '');
+	}
+
+	// ---------- updates ----------
+
+	/** The latest release, as described by orvantahq.io (cached for 6 hours). */
+	private static function latest() {
+		$cached = get_site_transient('orvanta_publish_guard_latest');
+		if (is_array($cached)) {
+			return $cached;
+		}
+		$r = wp_remote_get(apply_filters('orvanta_publish_guard_update_url', self::UPDATE_URL), array('timeout' => 10));
+		$info = is_wp_error($r) || (int) wp_remote_retrieve_response_code($r) !== 200 ? null : json_decode(wp_remote_retrieve_body($r), true);
+		$info = is_array($info) && !empty($info['version']) && !empty($info['download_url']) ? $info : array();
+		set_site_transient('orvanta_publish_guard_latest', $info, $info ? 6 * HOUR_IN_SECONDS : HOUR_IN_SECONDS);
+		return $info;
+	}
+
+	/** New versions show up in Dashboard → Updates and Plugins, like any other plugin. */
+	public static function check_update($transient) {
+		if (!is_object($transient)) {
+			return $transient;
+		}
+		$info = self::latest();
+		$file = plugin_basename(__FILE__);
+		$item = (object) array(
+			'slug' => 'orvanta-publish-guard',
+			'plugin' => $file,
+			'new_version' => $info['version'] ?? self::VERSION,
+			'url' => 'https://orvantahq.io',
+			'package' => $info['download_url'] ?? '',
+			'tested' => $info['tested'] ?? '',
+			'requires_php' => '7.4',
+		);
+		if ($info && version_compare($info['version'], self::VERSION, '>')) {
+			$transient->response[$file] = $item;
+		} else {
+			$transient->no_update[$file] = $item;
+		}
+		return $transient;
+	}
+
+	/** The "View details" window of the update. */
+	public static function update_details($result, $action, $args) {
+		if ($action !== 'plugin_information' || ($args->slug ?? '') !== 'orvanta-publish-guard') {
+			return $result;
+		}
+		$info = self::latest();
+		return (object) array(
+			'name' => 'Orvanta Publish Guard',
+			'slug' => 'orvanta-publish-guard',
+			'version' => $info['version'] ?? self::VERSION,
+			'author' => '<a href="https://orvantahq.io">Orvanta</a>',
+			'homepage' => 'https://orvantahq.io',
+			'download_link' => $info['download_url'] ?? '',
+			'requires_php' => '7.4',
+			'sections' => array('changelog' => wp_kses_post($info['changelog'] ?? 'See orvantahq.io.')),
+		);
 	}
 
 	// ---------- admin ----------

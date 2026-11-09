@@ -3,7 +3,7 @@ Contributors: orvanta
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.1.1
+Stable tag: 0.1.2
 License: GPLv2 or later
 
 Nothing goes live without Orvanta's OK, even if an AI agent skips its own instructions.
@@ -39,6 +39,10 @@ Your WordPress passwords never leave the site. The plugin only holds the Orvanta
 3. Settings → Orvanta: paste the key. In "Users to guard", enter the WordPress username your agent publishes with (leave empty to check every publish, including people's).
 4. Click "Test the connection".
 5. Give the agent's WordPress user the Editor or Author role, not Administrator, so it cannot turn the plugin off.
+
+== Updates ==
+
+New versions appear in Dashboard → Updates and on the Plugins screen, like any other plugin. Nothing updates without your click (unless you turn on auto-updates for it).
 
 == Limits of this version ==
 
