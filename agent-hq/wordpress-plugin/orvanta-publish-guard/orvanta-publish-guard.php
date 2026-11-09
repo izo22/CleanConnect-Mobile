@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Orvanta Publish Guard
  * Description:       Nothing goes live without Orvanta's OK. Every publish request (REST API, editor, XML-RPC) is checked with Orvanta first; posts that need a human decision wait as "Pending" and go live once approved. If Orvanta can't be reached, nothing is published.
- * Version:           0.1.0
+ * Version:           0.1.1
  * Requires at least: 5.6
  * Requires PHP:      7.4
  * Author:            Orvanta
@@ -98,8 +98,16 @@ final class Orvanta_Publish_Guard {
 		}
 		$id = isset($postarr['ID']) ? (int) $postarr['ID'] : 0;
 		$before = $id ? get_post_status($id) : false;
-		if (in_array($before, array('publish', 'future'), true)) {
+		if ($before === 'publish') {
 			return false; // already live: edits of live posts are not covered by this version
+		}
+		if ($before === 'future') {
+			// Scheduled and already checked: meta, slug or date changes keep the approval;
+			// a new title or text needs a new one.
+			$checked = get_post_meta($id, self::META_HASH, true);
+			if ($checked === '' || $checked === self::fingerprint(wp_unslash($data['post_title']), wp_unslash($data['post_content']))) {
+				return false;
+			}
 		}
 		$users = self::list_of($o['users']);
 		if ($users) {
