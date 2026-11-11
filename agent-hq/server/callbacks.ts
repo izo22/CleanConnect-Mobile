@@ -7,12 +7,16 @@ import { all, run, type DB } from "./db.ts";
 import { tr } from "./i18n.ts";
 import { logActivity, type ApprovalRow } from "./model.ts";
 import { PRODUCT_NAME } from "./brand.ts";
+import { ghlContactFields } from "./gohighlevel.ts";
 
 const RETRY_DELAYS = [0, 2_000, 10_000, 30_000, 120_000];
 
 /** What a workflow receives once a human has decided, including the data it asked to keep. */
 export function callbackBody(a: ApprovalRow) {
+  const payload = a.payload ? JSON.parse(a.payload) : null;
   return {
+    // A GoHighLevel request: the contact's fields at the top, for the Inbound Webhook trigger.
+    ...ghlContactFields(payload),
     id: a.id,
     approval_id: a.id,
     decision: a.status,
@@ -24,7 +28,7 @@ export function callbackBody(a: ApprovalRow) {
     amount_cents: a.amount_cents,
     amount: a.amount_cents === null ? null : a.amount_cents / 100,
     context: a.context,
-    payload: a.payload ? JSON.parse(a.payload) : null,
+    payload,
     // The text to send: the approver's corrected version when they edited it, else the agent's draft.
     output: a.edited_output ?? a.output ?? null,
     edited: a.edited_output != null,

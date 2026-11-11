@@ -29,7 +29,7 @@ export interface AgentRow {
   minutes_per_task: number;
   api_key: string;
   review_rate: number;
-  source: "sdk" | "n8n" | "zapier";
+  source: "sdk" | "n8n" | "zapier" | "ghl";
   integration_id: number | null;
   external_id: string | null;
   last_check_at: number | null;
@@ -148,6 +148,7 @@ export const DAY = 24 * HOUR;
 export const newApiKey = () => "ahq_" + randomBytes(18).toString("base64url");
 /** The workspace's Zapier key: recognisable, so a request can tell it from an agent key. */
 export const newZapierKey = () => "ozk_" + randomBytes(18).toString("base64url");
+export const newGhlKey = () => "ogh_" + randomBytes(24).toString("base64url");
 
 export function getAgent(db: DB, id: string) {
   return get<AgentRow>(db, "SELECT * FROM agents WHERE id = ?", id);

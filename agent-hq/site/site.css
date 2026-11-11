@@ -138,12 +138,13 @@ h3 { font-family: var(--display); font-size: 21px; letter-spacing: -0.02em; line
 .mini p { color: var(--ink-2); font-size: 14px; }
 
 /* Integrations */
-.integrations { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.integrations { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 .int { padding: 26px; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; }
 .int p { color: var(--ink-2); font-size: 15px; }
 .logo { width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-size: 15px; }
 .logo.n8n { background: #ffe1d6; color: #9a3412; }
 .logo.zap { background: #fff0c2; color: #7a4d00; }
+.logo.ghl { background: #ddf0ff; color: #0b4a8b; }
 .logo.code { background: var(--accent-soft); color: var(--accent); }
 .honest { margin: 22px auto 0; max-width: 680px; text-align: center; font-size: 14px; color: var(--muted); }
 

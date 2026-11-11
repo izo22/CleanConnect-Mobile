@@ -101,7 +101,7 @@ function AgentCard({ agent: a, selected, onSelect }: { agent: AgentSummary; sele
         <Avatar id={a.id} name={a.name} size={46} />
         <span style={{ minWidth: 0 }}>
           <span className="n">{a.name}</span>
-          <span className="o">{a.source === "n8n" ? tr("n8n workflow", "Workflow n8n") : a.source === "zapier" ? "Zap" : a.owner_name}</span>
+          <span className="o">{a.source === "n8n" ? tr("n8n workflow", "Workflow n8n") : a.source === "zapier" ? "Zap" : a.source === "ghl" ? tr("GoHighLevel workflow", "Workflow GoHighLevel") : a.owner_name}</span>
         </span>
       </button>
       <p className="mission">{a.mission}</p>
@@ -332,6 +332,8 @@ function Freedom({ agent, operate, onPick }: { agent: AgentDetail; operate: bool
             ? tr("To make it stop before an action, use “Ask me before a step” above. Just did? This changes the next time the workflow reaches that step.", "Pour qu'il s'arrête avant une action, utilisez « Me demander avant une étape » plus haut. C'est déjà fait ? Cela change au prochain passage du workflow sur cette étape.")
             : agent.source === "zapier"
             ? tr(`To make it stop before an action, add the “${PRODUCT_NAME} → Ask Permission” step in the Zap (see “Ask me before a step” above).`, `Pour qu'il s'arrête avant une action, ajoutez l'étape « ${PRODUCT_NAME} → Ask Permission » dans le Zap (voir « Me demander avant une étape » plus haut).`)
+            : agent.source === "ghl"
+            ? tr("To make it stop before an action, add a Webhook to the ask-permission address in the workflow (Connections → GoHighLevel, step 3).", "Pour qu'il s'arrête avant une action, ajoutez dans le workflow un Webhook vers l'adresse de demande de permission (Connexions → GoHighLevel, étape 3).")
             : tr(`It must first check with ${PRODUCT_NAME} before acting (Zapier step “${PRODUCT_NAME} · Ask Permission”, or the SDK).`, `Il doit d'abord consulter ${PRODUCT_NAME} avant d'agir (étape Zapier « ${PRODUCT_NAME} · Ask Permission », ou le SDK).`)}
         </span>
       )}
@@ -361,6 +363,8 @@ function SetupChecklist({ agent }: { agent: AgentDetail }) {
         ? tr("It shows up after the workflow's next run (n8n is read every 30 seconds).", "Elle apparaît après la prochaine exécution du workflow (n8n est lu toutes les 30 secondes).")
         : agent.source === "zapier"
         ? tr("Failures show up once “Watch all your Zaps” is set (Connections → Zapier). For successes too, add a “Report Activity” step at the end of the Zap.", "Les échecs remontent dès que « Surveiller tous vos Zaps » est en place (Connexions → Zapier). Pour voir aussi les réussites, ajoutez une étape « Report Activity » en fin de Zap.")
+        : agent.source === "ghl"
+        ? tr("Add a Webhook action to the activity address after the workflow's important steps (Connections → GoHighLevel, step 2).", "Ajoutez une action Webhook vers l'adresse d'activité après les étapes importantes du workflow (Connexions → GoHighLevel, étape 2).")
         : tr("Add a “Report Activity” step at the end of the Zap, or send events with the connection key below.", "Ajoutez une étape « Report Activity » en fin de Zap, ou envoyez des événements avec la clé de connexion ci-dessous."),
     },
     {

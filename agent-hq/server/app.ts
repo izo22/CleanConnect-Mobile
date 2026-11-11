@@ -35,6 +35,7 @@ import { n8nSnippet } from "./n8n-template.ts";
 import { listSteps, protectStep, undoLastProtection } from "./n8n-protect.ts";
 import { PRODUCT_NAME } from "./brand.ts";
 import { agentStatePayload, decisionPayload, fireAgentState, fireDecision, safeOutboundUrl, subscribe, subscribeWorkspace, unsubscribe, unsubscribeWorkspace } from "./hooks.ts";
+import { ghlAgent, ghlAgentName, ghlCheck, ghlContactFields, ghlContext, ghlEvent, ghlSettings, ghlView, renewGhlKey, workspaceOfGhlKey } from "./gohighlevel.ts";
 import { ZAPIER_LINKS, isZapierKey, renewZapierKey, saveZapierLinks, workspaceOfZapierKey, zapAgent, zapierLinks, zapierView, type ZapierLinks } from "./zapier.ts";
 import { activity, agentDetail, agentSummaries, alertsView, approvalsView, overview, qualityView, rulesView } from "./queries.ts";
 import { EARLY_ACCESS_INPUT, earlyAccessList, rateLimiter, saveEarlyAccess, type EarlyAccessIn } from "./early-access.ts";
@@ -268,8 +269,14 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     },
     async (req) => {
       const agent = agentOf(req);
-      const wasPaused = agent.paused;
       const list = "events" in req.body ? req.body.events : [req.body];
+      return recordEvents(agent, list);
+    },
+  );
+
+  /** Stores what an agent reports, then re-evaluates it (guardrails may pause it). */
+  function recordEvents(agent: AgentRow, list: EventIn[]) {
+      const wasPaused = agent.paused;
       const t = now();
       const stmt = db.prepare(
         `INSERT INTO events (agent_id, ts, kind, action, target, success, cost_cents, duration_ms, language, error_code, error_message, meta, input, output, review_state)
@@ -292,8 +299,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       // A guardrail may just have paused this agent: tell subscribed platforms.
       if (getAgent(db, agent.id)!.paused !== wasPaused) void fireAgentState(db, agent.id, fetchImpl);
       return { accepted: list.length, control: control(agent) };
-    },
-  );
+  }
 
   app.post<{ Body: CheckRequest }>(
     "/api/v1/check",
@@ -319,8 +325,12 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         },
       },
     },
-    async (req) => {
-      const agent = agentOf(req);
+    async (req) => askPermission(agentOf(req), req.body),
+  );
+
+  /** The permission check, shared by the API and the GoHighLevel webhooks. */
+  async function askPermission(agent: AgentRow, body: CheckRequest) {
+      const req = { body };
       const cb = req.body.callback_url;
       if (cb !== undefined) {
         if (!validCallbackUrl(cb)) throw Object.assign(new Error(tr("callback_url must be an http(s) address.", "callback_url doit être une adresse http(s).")), { statusCode: 400 });
@@ -357,8 +367,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       }
       // Plain booleans make no-code filters ("only continue if allowed") easy.
       return { ...result, allowed: result.decision === "allow", needs_approval: result.decision === "needs_approval" };
-    },
-  );
+  }
 
   app.get<{ Params: { id: string } }>("/api/v1/approvals/:id", async (req) => {
     const agent = agentOf(req);
@@ -460,6 +469,68 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     const caller = callerOf(req);
     if (caller.agent) return [agentStatePayload(db, caller.agent.id)];
     return all<{ id: string }>(db, "SELECT id FROM agents WHERE workspace_id = ? ORDER BY paused DESC, name LIMIT 25", caller.ws).map((a) => agentStatePayload(db, a.id));
+  });
+
+  // ---------- GoHighLevel workflows (webhook actions, key in the address) ----------
+
+  app.register(async (ghl) => {
+    // Some GoHighLevel actions post forms rather than JSON.
+    ghl.addContentTypeParser("application/x-www-form-urlencoded", { parseAs: "string" }, (_req, body, done) => {
+      done(null, Object.fromEntries(new URLSearchParams(String(body))));
+    });
+
+    const ghlCaller = (req: FastifyRequest<{ Params: { key: string }; Querystring: Record<string, string> }>) => {
+      const ws = workspaceOfGhlKey(db, req.params.key);
+      if (!ws) throw Object.assign(new Error(tr("Invalid GoHighLevel address: copy it again from Connections → GoHighLevel.", "Adresse GoHighLevel invalide : recopiez-la depuis Connexions → GoHighLevel.")), { statusCode: 401 });
+      const settings = ghlSettings(req.body, req.query ?? {});
+      const ctx = ghlContext(req.body);
+      const agent = ghlAgent(db, ws.id, ghlAgentName(settings, ctx), ctx.workflow.id, now());
+      return { agent, settings, ctx };
+    };
+
+    ghl.post<{ Params: { key: string }; Querystring: Record<string, string> }>("/api/v1/ghl/:key/activity", async (req) => {
+      const { agent, settings, ctx } = ghlCaller(req);
+      const res = recordEvents(agent, [ghlEvent(settings, ctx)]);
+      return { ok: true, agent: agent.name, paused: res.control.paused };
+    });
+
+    ghl.post<{ Params: { key: string }; Querystring: Record<string, string> }>("/api/v1/ghl/:key/check", async (req) => {
+      const { agent, settings, ctx } = ghlCaller(req);
+      const continueUrl = typeof settings.continue_url === "string" ? settings.continue_url.trim() : "";
+      if (continueUrl && !safeOutboundUrl(continueUrl)) {
+        throw Object.assign(new Error(tr("continue_url must be a public https address (the Inbound Webhook of your second workflow).", "continue_url doit être une adresse https publique (l'Inbound Webhook de votre second workflow).")), { statusCode: 400 });
+      }
+      const request: CheckRequest = { ...ghlCheck(settings, ctx, req.body), ...(continueUrl ? { callback_url: continueUrl } : {}) };
+      const result = await askPermission(agent, request);
+      // Decided right away (allowed by the rules, or refused): wake the next workflow now.
+      if (continueUrl && result.decision !== "needs_approval") {
+        const approved = result.decision === "allow";
+        const body = {
+          ...ghlContactFields(request.payload),
+          approved,
+          decision: approved ? "approved" : "rejected",
+          automatic: true,
+          reason: "reason" in result ? result.reason : null,
+          action: request.action,
+          title: request.summary,
+          amount: request.amount_cents === undefined ? null : request.amount_cents / 100,
+          output: request.output ?? null,
+          agent_name: agent.name,
+          payload: request.payload,
+        };
+        void (async () => {
+          for (const delay of [0, 3_000, 15_000]) {
+            if (delay) await new Promise((r) => setTimeout(r, delay));
+            try {
+              const res = await fetchImpl(continueUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(10_000) });
+              if (res.ok) return;
+            } catch { /* retry */ }
+          }
+          logActivity(db, PRODUCT_NAME, tr(`Could not start the next GoHighLevel workflow for “${request.summary}”.`, `Impossible de lancer le workflow GoHighLevel suivant pour « ${request.summary} ».`), agent.id, now());
+        })();
+      }
+      return { ...result, agent: agent.name };
+    });
   });
 
   // ---------- Accounts, workspaces, members ----------
@@ -931,6 +1002,21 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     );
 
     // ---------- Zapier: one key for every Zap of the workspace ----------
+
+    admin.get("/api/gohighlevel", async (req) => {
+      need(req, "member");
+      return ghlView(db, req.ctx.ws);
+    });
+
+    admin.post("/api/gohighlevel/key", async (req) => {
+      need(req, "owner");
+      const had = !!ghlView(db, req.ctx.ws).key;
+      const key = renewGhlKey(db, req.ctx.ws);
+      logActivity(db, req.ctx.actor, had
+        ? tr("New GoHighLevel addresses: webhooks using the old ones must be updated.", "Nouvelles adresses GoHighLevel : les webhooks qui utilisent les anciennes doivent être mis à jour.")
+        : tr("GoHighLevel connected.", "GoHighLevel connecté."), null, now(), req.ctx.ws);
+      return { key };
+    });
 
     admin.get("/api/zapier", async (req) => {
       need(req, "member");

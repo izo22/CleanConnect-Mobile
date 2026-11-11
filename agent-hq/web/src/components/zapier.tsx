@@ -13,7 +13,7 @@ interface ZapierView {
   zaps: Array<{ id: string; name: string; last_check_at: number | null; last_event: number | null }>;
 }
 
-function CopyValue({ label, value, secret = false }: { label: string; value: string; secret?: boolean }) {
+export function CopyValue({ label, value, secret = false }: { label: string; value: string; secret?: boolean }) {
   const toast = useToast();
   const [shown, setShown] = useState(!secret);
   const copy = () =>
@@ -35,7 +35,7 @@ function CopyValue({ label, value, secret = false }: { label: string; value: str
 }
 
 /** One numbered step of the Zapier set-up. */
-function Step({ n, title, done, children }: { n: number; title: string; done?: boolean; children: ReactNode }) {
+export function Step({ n, title, done, children }: { n: number; title: string; done?: boolean; children: ReactNode }) {
   return (
     <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
       <span aria-hidden="true" style={{ width: 28, height: 28, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, background: done ? "#12B76A" : "var(--accent-soft)", color: done ? "#fff" : "var(--accent-text)" }}>
@@ -49,7 +49,7 @@ function Step({ n, title, done, children }: { n: number; title: string; done?: b
   );
 }
 
-const Text = ({ children }: { children: ReactNode }) => <span style={{ fontSize: 14, lineHeight: 1.55, color: "#45424C" }}>{children}</span>;
+export const Text = ({ children }: { children: ReactNode }) => <span style={{ fontSize: 14, lineHeight: 1.55, color: "#45424C" }}>{children}</span>;
 
 /** A ready-to-copy Zap shared by the administrator, or how to build it by hand when there is none yet. */
 function ZapLink({ url, label, recipe }: { url?: string; label: string; recipe: ReactNode }) {

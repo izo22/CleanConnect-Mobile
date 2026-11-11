@@ -5,6 +5,7 @@ import { lang, tr } from "../i18n.ts";
 import { ErrorBox, Skeleton, useAction, useToast } from "../components/ui.tsx";
 import { useCan } from "../account.tsx";
 import { ZapierSetup } from "../components/zapier.tsx";
+import { GhlSetup } from "../components/gohighlevel.tsx";
 import { PRODUCT_NAME } from "../../../server/brand.ts";
 
 interface Integration {
@@ -104,6 +105,8 @@ export function Connections() {
       )}
 
       <ZapierSetup />
+
+      <GhlSetup />
 
       {operate && <section className="card" aria-labelledby="add-n8n" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <h2 id="add-n8n" className="h2" style={{ fontSize: 22 }}>{tr("Connect an n8n server", "Connecter un serveur n8n")}</h2>
