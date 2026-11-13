@@ -8,6 +8,7 @@ import { resolveAlert } from "./engine.ts";
 import { money, tr } from "./i18n.ts";
 import { firstName, getAgent, logActivity, type AgentRow, type AlertRow } from "./model.ts";
 import { notifyWorkspace } from "./notify.ts";
+import { pauseChain, resumeChain } from "./chain.ts";
 
 export type PlaybookId = "pause" | "resume" | "rollback" | "handoff" | "notify_owner" | "autonomy0" | "economy" | "raise_budget" | "dismiss";
 
@@ -65,30 +66,39 @@ export function actionsFor(db: DB, alert: AlertRow): PlaybookAction[] {
     .map((id) => ({ id, label: label(id, agent) }));
 }
 
+const chainNote = (n: number, paused: boolean) =>
+  n === 0 ? "" : paused
+    ? tr(` ${n} agent${n === 1 ? "" : "s"} downstream paused too.`, ` ${n} agent${n === 1 ? "" : "s"} en aval mis en pause aussi.`)
+    : tr(` ${n} agent${n === 1 ? "" : "s"} downstream resumed too.`, ` ${n} agent${n === 1 ? "" : "s"} en aval ont repris aussi.`);
+
 /** Applies one action to an agent. Returns the sentence shown to the user. */
 export function applyToAgent(db: DB, agent: AgentRow, id: PlaybookId, actor: string, now = Date.now()): string {
   let message: string;
   switch (id) {
     case "pause":
       if (agent.paused) return applyToAgent(db, agent, "resume", actor, now);
-      run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", tr(`paused by ${actor}`, `mis en pause par ${actor}`), agent.id);
+      run(db, "UPDATE agents SET paused = 1, pause_reason = ?, paused_by = NULL WHERE id = ?", tr(`paused by ${actor}`, `mis en pause par ${actor}`), agent.id);
       message = tr(`${agent.name} is paused. Its next actions will be refused.`, `${agent.name} est en pause. Ses prochaines actions seront refusées.`);
+      message += chainNote(pauseChain(db, agent, now).length, true);
       break;
     case "resume":
-      run(db, "UPDATE agents SET paused = 0, pause_reason = NULL WHERE id = ?", agent.id);
+      run(db, "UPDATE agents SET paused = 0, pause_reason = NULL, paused_by = NULL WHERE id = ?", agent.id);
       message = tr(`${agent.name} is back at work.`, `${agent.name} a repris le travail.`);
+      message += chainNote(resumeChain(db, agent, now).length, false);
       break;
     case "rollback": {
       const prev = previousPrompt(db, agent.id);
       if (!prev) throw new PlaybookError(tr("No previous version of the instructions.", "Aucune version précédente des consignes."));
       run(db, "UPDATE prompt_versions SET active = 0 WHERE agent_id = ?", agent.id);
       run(db, "UPDATE prompt_versions SET active = 1 WHERE id = ?", prev.id);
-      run(db, "UPDATE agents SET paused = 0, pause_reason = NULL WHERE id = ?", agent.id);
+      run(db, "UPDATE agents SET paused = 0, pause_reason = NULL, paused_by = NULL WHERE id = ?", agent.id);
       message = tr(`Instructions from version ${prev.version} restored; ${agent.name} resumes with them.`, `Consignes de la version ${prev.version} restaurées, ${agent.name} reprend avec.`);
+      message += chainNote(resumeChain(db, agent, now).length, false);
       break;
     }
     case "handoff":
-      run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", tr(`tasks handed over to ${agent.owner_name}`, `tâches confiées à ${agent.owner_name}`), agent.id);
+      run(db, "UPDATE agents SET paused = 1, pause_reason = ?, paused_by = NULL WHERE id = ?", tr(`tasks handed over to ${agent.owner_name}`, `tâches confiées à ${agent.owner_name}`), agent.id);
+      pauseChain(db, agent, now);
       notifyWorkspace(db, agent.workspace_id, tr(`${actor} is handing you the ongoing tasks of the agent “${agent.name}”.`, `${actor} vous confie les tâches en cours de l'agent « ${agent.name} ».`), { to: agent.owner_email, path: `/#/team/${encodeURIComponent(agent.id)}` });
       message = tr(`${agent.name}'s tasks handed over to ${agent.owner_name}. The agent is paused.`, `Tâches de ${agent.name} confiées à ${agent.owner_name}. L'agent est en pause.`);
       break;

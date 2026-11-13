@@ -35,6 +35,7 @@ import { n8nSnippet } from "./n8n-template.ts";
 import { listSteps, protectStep, undoLastProtection } from "./n8n-protect.ts";
 import { PRODUCT_NAME } from "./brand.ts";
 import { agentStatePayload, decisionPayload, fireAgentState, fireDecision, safeOutboundUrl, subscribe, subscribeWorkspace, unsubscribe, unsubscribeWorkspace } from "./hooks.ts";
+import { chainIds, chainStates, validChain } from "./chain.ts";
 import { ghlAgent, ghlAgentName, ghlCheck, ghlContactFields, ghlContext, ghlEvent, ghlSettings, ghlView, renewGhlKey, workspaceOfGhlKey } from "./gohighlevel.ts";
 import { ZAPIER_LINKS, isZapierKey, renewZapierKey, saveZapierLinks, workspaceOfZapierKey, zapAgent, zapierLinks, zapierView, type ZapierLinks } from "./zapier.ts";
 import { activity, agentDetail, agentSummaries, alertsView, approvalsView, overview, qualityView, rulesView } from "./queries.ts";
@@ -199,6 +200,20 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     return caller.agent;
   };
 
+  /**
+   * Agents a pause or resume reached through a chain: switch their n8n workflow
+   * off or on and tell subscribed platforms, like for the agent itself.
+   */
+  const syncChain = (before: Map<string, number>, skip: string) => {
+    for (const [id, was] of before) {
+      if (id === skip) continue;
+      const a = getAgent(db, id);
+      if (!a || !!a.paused === !!was) continue;
+      void setWorkflowActive(db, a, !a.paused, fetchImpl).catch((err) => app.log.warn(`chain pause: ${a.name}: ${(err as Error).message}`));
+      void fireAgentState(db, a.id, fetchImpl);
+    }
+  };
+
   const notFound = (en: string, fr: string) => Object.assign(new Error(tr(`${en} not found.`, `${fr} introuvable.`)), { statusCode: 404 });
 
   const control = (agent: AgentRow) => {
@@ -277,6 +292,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
   /** Stores what an agent reports, then re-evaluates it (guardrails may pause it). */
   function recordEvents(agent: AgentRow, list: EventIn[]) {
       const wasPaused = agent.paused;
+      const chainBefore = chainStates(db, agent.id);
       const t = now();
       const stmt = db.prepare(
         `INSERT INTO events (agent_id, ts, kind, action, target, success, cost_cents, duration_ms, language, error_code, error_message, meta, input, output, review_state)
@@ -298,6 +314,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       notifyChange();
       // A guardrail may just have paused this agent: tell subscribed platforms.
       if (getAgent(db, agent.id)!.paused !== wasPaused) void fireAgentState(db, agent.id, fetchImpl);
+      syncChain(chainBefore, agent.id);
       return { accepted: list.length, control: control(agent) };
   }
 
@@ -708,6 +725,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         review_rate: { type: "number", minimum: 0, maximum: 1 },
         alert_sensitivity: { enum: ["normal", "high", "strict"] },
         prompt: { type: "string", maxLength: 50_000 },
+        pause_chain: { type: "array", maxItems: 50, items: { type: "string", minLength: 1, maxLength: 120 } },
       },
     } as const;
 
@@ -715,6 +733,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       name: string; mission: string; owner_name: string; owner_email: string; platform: string; autonomy: number;
       budget_cents: number; expected_language: string | null; access: string[]; minutes_per_task: number; prompt: string; review_rate: number;
       alert_sensitivity: AlertSensitivity;
+          pause_chain: string[];
     }>;
 
     admin.post<{ Body: AgentBody }>("/api/agents", { schema: { body: { ...agentBody, required: ["name"] } } }, async (req, reply) => {
@@ -741,11 +760,19 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
     admin.patch<{ Params: { id: string }; Body: AgentBody }>("/api/agents/:id", { schema: { body: agentBody } }, async (req) => {
       need(req, "member");
       const agent = agentHere(req, req.params.id);
-      const { prompt, access, ...rest } = req.body;
+      const { prompt, access, pause_chain, ...rest } = req.body;
       const t = now();
       tx(db, () => {
         const fields: Record<string, string | number | null> = { ...rest };
         if (access) fields.access = JSON.stringify(access);
+        if (pause_chain) {
+          const chain = validChain(db, agent, pause_chain);
+          fields.pause_chain = JSON.stringify(chain);
+          const names = chain.map((id) => getAgent(db, id)!.name).join(", ");
+          logActivity(db, req.ctx.actor, chain.length
+            ? tr(`${agent.name}: when it is paused, ${names} will be paused too.`, `${agent.name} : quand il est en pause, ${names} le seront aussi.`)
+            : tr(`${agent.name}: no longer pauses other agents with it.`, `${agent.name} : ne met plus d'autres agents en pause avec lui.`), agent.id, t);
+        }
         const keys = Object.keys(fields);
         if (keys.length) {
           run(db, `UPDATE agents SET ${keys.map((k) => `${k} = ?`).join(", ")} WHERE id = ?`, ...keys.map((k) => fields[k]), agent.id);
@@ -780,9 +807,11 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       if (action === "pause" && agent.paused) action = "resume";
       // Act on the real workflow first: the screen must never say "paused" while n8n runs.
       if (REMOTE_STATE[action] !== undefined) await setWorkflowActive(db, agent, REMOTE_STATE[action]!, fetchImpl);
+      const chainBefore = chainStates(db, agent.id);
       const message = tx(db, () => applyToAgent(db, agent, action, req.ctx.actor, now()));
       notifyChange();
       if (getAgent(db, agent.id)!.paused !== agent.paused) void fireAgentState(db, agent.id, fetchImpl);
+      syncChain(chainBefore, agent.id);
       return { message };
     });
 
@@ -805,8 +834,10 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         await setWorkflowActive(db, getAgent(db, alert.agent_id)!, REMOTE_STATE[action]!, fetchImpl);
       }
       const pausedBefore = alert ? getAgent(db, alert.agent_id)?.paused : undefined;
+      const chainBefore = chainStates(db, alert.agent_id);
       const message = runPlaybook(db, alert.id, action, req.ctx.actor, now());
       if (alert && getAgent(db, alert.agent_id)?.paused !== pausedBefore) void fireAgentState(db, alert.agent_id, fetchImpl);
+      syncChain(chainBefore, alert.agent_id);
       notifyChange();
       return { message };
     });

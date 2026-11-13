@@ -4,6 +4,7 @@
  * looks at events newer than the last time the same kind of alert was
  * resolved, so fixing a problem does not immediately re-open it.
  */
+import { pauseChain } from "./chain.ts";
 import { all, get, run, type DB } from "./db.ts";
 import {
   DAY,
@@ -340,7 +341,8 @@ export function evaluateAgent(db: DB, agentId: string, now = Date.now()): void {
     upsertAlert(db, agent.id, dup, now);
     const rule = getRules(db, agent.workspace_id).find((r) => r.kind === "repeat_pause" && r.enabled && ruleAppliesTo(r, agent.id));
     if (rule && !agent.paused) {
-      run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", tr("Paused automatically: repeated actions", "Mis en pause automatiquement : actions en double"), agent.id);
+      run(db, "UPDATE agents SET paused = 1, pause_reason = ?, paused_by = NULL WHERE id = ?", tr("Paused automatically: repeated actions", "Mis en pause automatiquement : actions en double"), agent.id);
+      pauseChain(db, agent, now);
       run(db, "UPDATE rules SET trigger_count = trigger_count + 1 WHERE id = ?", rule.id);
       run(db, "UPDATE alerts SET resolution = ? WHERE agent_id = ? AND kind = 'duplicates' AND status = 'open'", tr(`${PRODUCT_NAME} paused it automatically.`, `${PRODUCT_NAME} l'a mis en pause automatiquement.`), agent.id);
       const sentence = describeRule(rule.kind, rule.label, ruleParams(rule));
@@ -361,7 +363,8 @@ export function evaluateAgent(db: DB, agentId: string, now = Date.now()): void {
     const last = lastResults(db, agent.id, STRICT_FAILURES);
     if (agent.alert_sensitivity === "strict" && !agent.paused && last.length === STRICT_FAILURES && last.every((ok) => !ok)) {
       const why = tr(`Paused automatically: ${STRICT_FAILURES} failures in a row`, `Mis en pause automatiquement : ${STRICT_FAILURES} échecs d'affilée`);
-      run(db, "UPDATE agents SET paused = 1, pause_reason = ? WHERE id = ?", why, agent.id);
+      run(db, "UPDATE agents SET paused = 1, pause_reason = ?, paused_by = NULL WHERE id = ?", why, agent.id);
+      pauseChain(db, agent, now);
       run(db, "UPDATE alerts SET resolution = ? WHERE agent_id = ? AND kind = ? AND status = 'open'", tr(`${PRODUCT_NAME} paused it automatically.`, `${PRODUCT_NAME} l'a mis en pause automatiquement.`), agent.id, err.kind);
       logActivity(db, PRODUCT_NAME, tr(`${agent.name} paused automatically after ${STRICT_FAILURES} failures in a row.`, `${agent.name} mis en pause automatiquement après ${STRICT_FAILURES} échecs d'affilée.`), agent.id, now);
       notifyWorkspace(db, agent.workspace_id, tr(`⏸ ${agent.name} was paused automatically after ${STRICT_FAILURES} failures in a row.`, `⏸ ${agent.name} a été mis en pause automatiquement après ${STRICT_FAILURES} échecs d'affilée.`), { path: `/#/team/${encodeURIComponent(agent.id)}` });

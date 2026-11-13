@@ -1,4 +1,5 @@
 /** Read models for the dashboard: everything the UI shows, ready to render. */
+import { chainIds } from "./chain.ts";
 import { all, get, type DB } from "./db.ts";
 import {
   DAY,
@@ -213,6 +214,9 @@ export function agentDetail(db: DB, ws: string, id: string, now = Date.now()) {
     alerts: all<AlertRow>(db, "SELECT * FROM alerts WHERE agent_id = ? ORDER BY created_at DESC LIMIT 10", id).map((a) => alertView(db, a)),
     review_rate: agent.review_rate,
     alert_sensitivity: agent.alert_sensitivity,
+    // Agents paused together with this one, and the agent whose pause stopped it.
+    pause_chain: chainIds(agent),
+    paused_by: agent.paused_by ? { id: agent.paused_by, name: getAgent(db, agent.paused_by)?.name ?? agent.paused_by } : null,
     quality: agentQuality(db, id, now),
     activity: activity(db, ws, 15, id),
   };

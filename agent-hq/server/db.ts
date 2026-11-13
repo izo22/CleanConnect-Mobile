@@ -281,6 +281,10 @@ const ADDED_COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   ["workspaces", "zapier_key", "TEXT"],
   // The key in the webhook addresses GoHighLevel workflows call (it cannot send headers).
   ["workspaces", "ghl_key", "TEXT"],
+  // Agents that must stop when this one stops (JSON array of agent ids, same workspace).
+  ["agents", "pause_chain", "TEXT NOT NULL DEFAULT '[]'"],
+  // Set when the agent was paused because an upstream agent was: that agent's id.
+  ["agents", "paused_by", "TEXT"],
   // 0 = created by self sign-up with a password, email never proven. Google
   // sign-in proves it (and then takes the account back from whoever typed it).
   ["users", "email_verified", "INTEGER NOT NULL DEFAULT 1"],

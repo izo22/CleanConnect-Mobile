@@ -22,6 +22,8 @@ export interface AgentRow {
   autonomy: Autonomy;
   paused: number;
   pause_reason: string | null;
+  pause_chain: string;
+  paused_by: string | null;
   budget_cents: number;
   model_tier: string;
   expected_language: string | null;

@@ -199,6 +199,8 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
         </div>
       </div>
 
+      <PauseChain agent={data} operate={operate} onChange={(ids, ok) => patch({ pause_chain: ids }, ok)} />
+
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
           <span className="block-title">{tr("This month's budget", "Budget du mois")}</span>
@@ -529,6 +531,48 @@ function CreateAgent({ onClose, onCreated }: { onClose: () => void; onCreated: (
           <button type="submit" className="btn primary big" disabled={saving || !form.name.trim()}>{saving ? tr("Creating…", "Création…") : tr("Add to the team", "Ajouter à l'équipe")}</button>
         </div>
       </form>
+    </div>
+  );
+}
+
+/** The agents that stop when this one stops: a chain where one bad step would feed the next. */
+function PauseChain({ agent, operate, onChange }: { agent: AgentDetail; operate: boolean; onChange: (ids: string[], ok: string) => void }) {
+  const { data: agents } = useData<AgentSummary[]>("/api/agents");
+  const names = new Map((agents ?? []).map((a) => [a.id, a.name]));
+  const chosen = agent.pause_chain;
+  const others = (agents ?? []).filter((a) => a.id !== agent.id && !chosen.includes(a.id));
+  const nameOf = (id: string) => names.get(id) ?? id;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <span className="block-title">{tr("When it is paused", "Quand il est en pause")}</span>
+      <span style={{ fontSize: 13, lineHeight: 1.5, color: "#45424C" }}>
+        {tr(
+          "Also pause the agents that depend on it, so they don't keep working on bad or missing input. When it resumes, they resume with it.",
+          "Mettre aussi en pause les agents qui dépendent de lui, pour qu'ils ne continuent pas sur des données fausses ou manquantes. Quand il reprend, ils reprennent avec lui.",
+        )}
+      </span>
+      {chosen.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {chosen.map((id) => (
+            <span key={id} className="chip" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999, background: "var(--accent-soft)", fontSize: 13, fontWeight: 600 }}>
+              {nameOf(id)}
+              {operate && (
+                <button type="button" aria-label={tr(`Remove ${nameOf(id)}`, `Retirer ${nameOf(id)}`)} style={{ border: 0, background: "transparent", cursor: "pointer", padding: 0, lineHeight: 1, color: "inherit" }}
+                  onClick={() => onChange(chosen.filter((x) => x !== id), tr(`${nameOf(id)} will no longer stop with ${agent.name}.`, `${nameOf(id)} ne s'arrêtera plus avec ${agent.name}.`))}>×</button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+      {operate && others.length > 0 && (
+        <select aria-label={tr("Add an agent that stops with it", "Ajouter un agent qui s'arrête avec lui")} value=""
+          style={{ padding: "10px 12px", borderRadius: 14, border: "1px solid var(--line)", background: "var(--surface, #fff)", fontSize: 14, fontFamily: "inherit" }}
+          onChange={(e) => e.target.value && onChange([...chosen, e.target.value], tr(`${nameOf(e.target.value)} will now stop with ${agent.name}.`, `${nameOf(e.target.value)} s'arrêtera désormais avec ${agent.name}.`))}>
+          <option value="">{chosen.length ? tr("Add another agent…", "Ajouter un autre agent…") : tr("Choose an agent that depends on it…", "Choisir un agent qui dépend de lui…")}</option>
+          {others.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+      )}
+      {!operate && chosen.length === 0 && <span className="muted" style={{ fontSize: 13 }}>{tr("No other agent stops with it.", "Aucun autre agent ne s'arrête avec lui.")}</span>}
     </div>
   );
 }
