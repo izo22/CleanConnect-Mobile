@@ -6,7 +6,7 @@
 import { mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { run, type DB } from "./db.ts";
-import { DAY } from "./model.ts";
+import { DAY, HOUR } from "./model.ts";
 
 const day = (now: number) => new Date(now).toISOString().slice(0, 10);
 
@@ -34,6 +34,7 @@ export function pruneBackups(dir: string, keepDays: number, now = Date.now()): s
 
 /** Events older than the retention period go; alerts, decisions and the journal stay. */
 export function purgeOldEvents(db: DB, retentionDays: number, now = Date.now()): number {
+  run(db, "DELETE FROM check_hours WHERE hour < ?", Math.floor((now - retentionDays * DAY) / HOUR));
   return Number(run(db, "DELETE FROM events WHERE ts < ?", now - retentionDays * DAY).changes);
 }
 

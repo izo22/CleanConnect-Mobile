@@ -27,6 +27,7 @@ import { describeRule } from "./rules.ts";
 import { actionLabel, classifyError, languageName, toolLabel, translateError } from "./translate.ts";
 import { PRODUCT_NAME } from "./brand.ts";
 import { notifyWorkspace } from "./notify.ts";
+import { quietNow, silenceFinding } from "./silence.ts";
 
 interface Finding {
   kind: string;
@@ -375,6 +376,18 @@ export function evaluateAgent(db: DB, agentId: string, now = Date.now()): void {
     const found = detector(db, agent, now);
     if (found === "healthy") autoResolve(db, agent.id, [kind], tr("Back to normal.", "Revenu à la normale."), now);
     else if (found) upsertAlert(db, agent.id, found, now);
+  }
+
+  // A workflow whose trigger stopped raises no error: it just goes quiet.
+  const quiet = quietNow(db, agent, now);
+  if (quiet) upsertAlert(db, agent.id, silenceFinding(quiet), now);
+  else {
+    const why = agent.paused
+      ? tr("Paused: no activity is expected.", "En pause : aucune activité n'est attendue.")
+      : agent.silence_hours === 0
+        ? tr("Silence alerts turned off for this agent.", "Alertes de silence désactivées pour cet agent.")
+        : tr("Activity resumed.", "L'activité a repris.");
+    autoResolve(db, agent.id, ["silence"], why, now);
   }
 }
 

@@ -9,8 +9,9 @@ import { money, tr } from "./i18n.ts";
 import { firstName, getAgent, logActivity, type AgentRow, type AlertRow } from "./model.ts";
 import { notifyWorkspace } from "./notify.ts";
 import { pauseChain, resumeChain } from "./chain.ts";
+import { lastActivityAt } from "./silence.ts";
 
-export type PlaybookId = "pause" | "resume" | "rollback" | "handoff" | "notify_owner" | "autonomy0" | "economy" | "raise_budget" | "dismiss";
+export type PlaybookId = "pause" | "resume" | "rollback" | "handoff" | "notify_owner" | "autonomy0" | "economy" | "raise_budget" | "dismiss" | "expected";
 
 export interface PlaybookAction { id: PlaybookId; label: string }
 
@@ -24,6 +25,7 @@ const PLAYBOOKS: Record<string, PlaybookId[]> = {
   budget: ["raise_budget", "economy", "pause"],
   quality: ["autonomy0", "rollback", "pause", "dismiss"],
   human_report: ["autonomy0", "rollback", "pause", "dismiss"],
+  silence: ["notify_owner", "expected"],
 };
 
 export class PlaybookError extends Error {}
@@ -50,6 +52,7 @@ export function label(id: PlaybookId, agent: AgentRow): string {
     case "economy": return tr("Switch to the budget model", "Passer au modèle économique");
     case "raise_budget": return `Budget +${money(raiseAmount(agent))}`;
     case "dismiss": return tr("It's fixed", "C'est réglé");
+    case "expected": return tr("This silence is expected", "Ce silence est normal");
   }
 }
 
@@ -116,6 +119,14 @@ export function applyToAgent(db: DB, agent: AgentRow, id: PlaybookId, actor: str
       break;
     case "dismiss":
       message = tr(`Problem marked as fixed for ${agent.name}.`, `Problème marqué comme réglé pour ${agent.name}.`);
+      break;
+    case "expected":
+      // No new alert for this silence; watching starts again with its next activity.
+      run(db, "UPDATE agents SET silence_ack = ? WHERE id = ?", lastActivityAt(db, agent), agent.id);
+      message = tr(
+        `${agent.name}: silence marked as expected. Watching resumes as soon as it is active again.`,
+        `${agent.name} : silence marqué comme normal. La surveillance reprend dès qu'il sera de nouveau actif.`,
+      );
       break;
     case "raise_budget": {
       const next = agent.budget_cents + raiseAmount(agent);

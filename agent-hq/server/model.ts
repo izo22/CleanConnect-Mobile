@@ -37,6 +37,10 @@ export interface AgentRow {
   last_check_at: number | null;
   workspace_id: string;
   alert_sensitivity: AlertSensitivity;
+  /** Silence alert: null = learned from its habits, 0 = off, N = after N hours without activity. */
+  silence_hours: number | null;
+  /** Last activity before a silence marked as expected. */
+  silence_ack: number | null;
   created_at: number;
 }
 

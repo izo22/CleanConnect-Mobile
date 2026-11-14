@@ -199,6 +199,8 @@ function AgentDrawer({ id, onClose }: { id: string; onClose: () => void }) {
         </div>
       </div>
 
+      <QuietSetting agent={data} operate={operate} onChange={(hours, ok) => patch({ silence_hours: hours }, ok)} />
+
       <PauseChain agent={data} operate={operate} onChange={(ids, ok) => patch({ pause_chain: ids }, ok)} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -531,6 +533,64 @@ function CreateAgent({ onClose, onCreated }: { onClose: () => void; onCreated: (
           <button type="submit" className="btn primary big" disabled={saving || !form.name.trim()}>{saving ? tr("Creating…", "Création…") : tr("Add to the team", "Ajouter à l'équipe")}</button>
         </div>
       </form>
+    </div>
+  );
+}
+
+/** When a workflow goes quiet (its trigger stopped, so no error ever comes): learned, fixed delay, or off. */
+function QuietSetting({ agent, operate, onChange }: { agent: AgentDetail; operate: boolean; onChange: (hours: number | null, ok: string) => void }) {
+  const s = agent.silence;
+  const mode = s.setting === "auto" ? "auto" : s.setting === "off" ? "off" : "custom";
+  const [hours, setHours] = useState(typeof s.setting === "number" ? String(s.setting) : "24");
+  useEffect(() => { if (typeof s.setting === "number") setHours(String(s.setting)); }, [s.setting]);
+  const saveHours = () => {
+    const n = Math.round(Number(hours));
+    if (!Number.isFinite(n) || n < 1 || n > 720) return setHours(typeof s.setting === "number" ? String(s.setting) : "24");
+    if (n !== s.setting) onChange(n, tr(`${agent.name}: alert after ${n} hour${n === 1 ? "" : "s"} without activity.`, `${agent.name} : alerte après ${n} heure${n > 1 ? "s" : ""} sans activité.`));
+  };
+  const learned =
+    s.state === "learning" ? tr(`Learning its rhythm: ${s.learning_days_left} more day${s.learning_days_left === 1 ? "" : "s"}.`, `Apprend son rythme : encore ${s.learning_days_left} jour${(s.learning_days_left ?? 0) > 1 ? "s" : ""}.`)
+    : s.state === "waiting" ? tr("Starts after a week of activity.", "Commence après une semaine d'activité.")
+    : s.rhythm ? tr(`Usually active: ${s.rhythm}.`, `Actif d'habitude : ${s.rhythm}.`)
+    : tr("Alert when it stays quiet much longer than usual.", "Alerte quand il reste silencieux bien plus longtemps que d'habitude.");
+  const choices: Array<{ id: "auto" | "custom" | "off"; label: string; desc: string }> = [
+    { id: "auto", label: tr("Learned from its habits", "D'après ses habitudes"), desc: learned },
+    { id: "custom", label: tr("After a fixed time", "Après un délai fixe"), desc: tr("You choose how many hours without activity is too many.", "Vous choisissez combien d'heures sans activité, c'est trop.") },
+    { id: "off", label: tr("No alert", "Pas d'alerte"), desc: tr("For an agent that only runs now and then.", "Pour un agent qui ne tourne que de temps en temps.") },
+  ];
+  const pick = (id: "auto" | "custom" | "off") => {
+    if (id === mode) return;
+    if (id === "auto") onChange(null, tr(`${agent.name}: alert when it goes quiet, learned from its habits.`, `${agent.name} : alerte en cas de silence, d'après ses habitudes.`));
+    else if (id === "off") onChange(0, tr(`${agent.name}: no alert when it goes quiet.`, `${agent.name} : plus d'alerte en cas de silence.`));
+    else onChange(24, tr(`${agent.name}: alert after 24 hours without activity.`, `${agent.name} : alerte après 24 heures sans activité.`));
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <span className="block-title">{tr("When it goes quiet", "Quand il devient silencieux")}</span>
+      <span style={{ fontSize: 13, lineHeight: 1.5, color: "#45424C" }}>
+        {tr(
+          "A workflow whose trigger stops (a disconnected app, an expired connection) makes no error. You are alerted when it stays quiet when it usually works.",
+          "Un workflow dont le déclencheur s'arrête (application déconnectée, connexion expirée) ne fait aucune erreur. Vous êtes alerté quand il reste silencieux alors qu'il travaille d'habitude.",
+        )}
+      </span>
+      <div className="levels" role="group" aria-label={tr("When it goes quiet", "Quand il devient silencieux")}>
+        {choices.map((c) => (
+          <button key={c.id} type="button" className="level" aria-pressed={mode === c.id} disabled={!operate} onClick={() => pick(c.id)}>
+            <span className="radio" />
+            <span><b>{c.label}</b><small>{c.desc}</small></span>
+          </button>
+        ))}
+      </div>
+      {mode === "custom" && (
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+          {tr("Alert after", "Alerte après")}
+          <input type="number" min={1} max={720} value={hours} disabled={!operate} aria-label={tr("Hours without activity", "Heures sans activité")}
+            style={{ width: 80, padding: "8px 10px", borderRadius: 12, border: "1px solid var(--line)", fontSize: 14, fontFamily: "inherit" }}
+            onChange={(e) => setHours(e.target.value)} onBlur={saveHours} onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()} />
+          {tr("hours without activity", "heures sans activité")}
+        </label>
+      )}
+      {s.state === "quiet" && <span className="note">{tr("It is quiet right now: see its alert.", "Il est silencieux en ce moment : voir son alerte.")}</span>}
     </div>
   );
 }

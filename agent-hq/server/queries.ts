@@ -22,6 +22,7 @@ import type { GlobalBudgetParams } from "./guard.ts";
 import { describeRule, ruleDeletable } from "./rules.ts";
 import { REVIEW_MODEL, pendingCount, reviewerEnabled } from "./reviewer.ts";
 import { controlLevel } from "./n8n.ts";
+import { silenceView } from "./silence.ts";
 
 const SEVERITY_ORDER = { critical: 0, blocked: 1, warning: 2 } as const;
 const STATUS_ORDER: Record<AgentStatus, number> = { blocked: 0, attention: 1, paused: 2, waiting: 3, ok: 4 };
@@ -217,6 +218,8 @@ export function agentDetail(db: DB, ws: string, id: string, now = Date.now()) {
     // Agents paused together with this one, and the agent whose pause stopped it.
     pause_chain: chainIds(agent),
     paused_by: agent.paused_by ? { id: agent.paused_by, name: getAgent(db, agent.paused_by)?.name ?? agent.paused_by } : null,
+    // Alert when it goes quiet: the setting, and what Orvanta has learned of its rhythm.
+    silence: silenceView(db, agent, now),
     quality: agentQuality(db, id, now),
     activity: activity(db, ws, 15, id),
   };

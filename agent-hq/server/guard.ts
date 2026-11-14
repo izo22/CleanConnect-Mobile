@@ -7,6 +7,7 @@ import { run, type DB } from "./db.ts";
 import { hourLabel, money, timezone, tr } from "./i18n.ts";
 import { all, get } from "./db.ts";
 import { getRules, logActivity, monthSpendCents, ruleAppliesTo, ruleParams, type AgentRow, type RuleRow } from "./model.ts";
+import { notePulse } from "./silence.ts";
 
 export interface CheckRequest {
   action: string;
@@ -100,6 +101,7 @@ export function requestApproval(db: DB, agent: AgentRow, req: CheckRequest, reas
 
 export function check(db: DB, agent: AgentRow, req: CheckRequest, now = Date.now()): CheckResult {
   run(db, "UPDATE agents SET last_check_at = ? WHERE id = ?", now, agent.id);
+  notePulse(db, agent.id, now);
   if (agent.paused) {
     const reason = agent.pause_reason ? ` (${agent.pause_reason})` : "";
     return { decision: "deny", reason: tr(`Agent paused${reason}.`, `Agent en pause${reason}.`) };

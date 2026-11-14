@@ -246,6 +246,15 @@ CREATE TABLE IF NOT EXISTS activity (
   message TEXT NOT NULL
 );
 
+-- Hours in which each agent asked permission (checks leave no event): with its events,
+-- they tell when it is usually active, so a workflow that goes quiet can be noticed.
+CREATE TABLE IF NOT EXISTS check_hours (
+  agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  hour INTEGER NOT NULL,
+  n INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (agent_id, hour)
+) WITHOUT ROWID;
+
 -- The tamper-evident record: each entry carries the fingerprint of the one before (see audit.ts).
 CREATE TABLE IF NOT EXISTS audit_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -291,6 +300,10 @@ const ADDED_COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   // The workspace's own chat webhook (Slack, Teams, Google Chat, Discord).
   ["workspaces", "notify_url", "TEXT"],
   ["agents", "alert_sensitivity", "TEXT NOT NULL DEFAULT 'normal'"],
+  // Silence alert: NULL = learned from its habits, 0 = off, N = after N hours without activity.
+  ["agents", "silence_hours", "INTEGER"],
+  // Last activity before a silence someone marked as expected: no alert until it is active again.
+  ["agents", "silence_ack", "INTEGER"],
   ["events", "input", "TEXT"],
   ["events", "output", "TEXT"],
   // NULL = not sampled, 'pending' = waiting for the AI reviewer, 'done' = reviewed.

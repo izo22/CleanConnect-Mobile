@@ -724,6 +724,7 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         minutes_per_task: { type: "number", minimum: 0, maximum: 600 },
         review_rate: { type: "number", minimum: 0, maximum: 1 },
         alert_sensitivity: { enum: ["normal", "high", "strict"] },
+        silence_hours: { type: ["integer", "null"], minimum: 0, maximum: 720 },
         prompt: { type: "string", maxLength: 50_000 },
         pause_chain: { type: "array", maxItems: 50, items: { type: "string", minLength: 1, maxLength: 120 } },
       },
@@ -733,7 +734,8 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
       name: string; mission: string; owner_name: string; owner_email: string; platform: string; autonomy: number;
       budget_cents: number; expected_language: string | null; access: string[]; minutes_per_task: number; prompt: string; review_rate: number;
       alert_sensitivity: AlertSensitivity;
-          pause_chain: string[];
+      silence_hours: number | null;
+      pause_chain: string[];
     }>;
 
     admin.post<{ Body: AgentBody }>("/api/agents", { schema: { body: { ...agentBody, required: ["name"] } } }, async (req, reply) => {
@@ -783,6 +785,14 @@ export function buildApp({ db, adminToken, now = Date.now, logger = false, fetch
         if (rest.alert_sensitivity !== undefined && rest.alert_sensitivity !== agent.alert_sensitivity) {
           const label = { normal: tr("normal", "normale"), high: tr("alert at the first failure", "alerte au premier échec"), strict: tr("alert at the first failure, pause after 3 in a row", "alerte au premier échec, pause après 3 d'affilée") }[rest.alert_sensitivity];
           logActivity(db, req.ctx.actor, tr(`${agent.name}: failure sensitivity set to ${label}.`, `${agent.name} : sensibilité aux échecs réglée sur ${label}.`), agent.id, t);
+        }
+        if (rest.silence_hours !== undefined && rest.silence_hours !== agent.silence_hours) {
+          const h = rest.silence_hours;
+          logActivity(db, req.ctx.actor, h === null
+            ? tr(`${agent.name}: alert when it goes quiet, learned from its habits.`, `${agent.name} : alerte en cas de silence, d'après ses habitudes.`)
+            : h === 0
+              ? tr(`${agent.name}: no alert when it goes quiet.`, `${agent.name} : plus d'alerte en cas de silence.`)
+              : tr(`${agent.name}: alert after ${h} hour${h === 1 ? "" : "s"} without activity.`, `${agent.name} : alerte après ${h} heure${h > 1 ? "s" : ""} sans activité.`), agent.id, t);
         }
         if (rest.budget_cents !== undefined && rest.budget_cents !== agent.budget_cents) {
           logActivity(db, req.ctx.actor, tr(`${agent.name}'s budget changed.`, `Budget de ${agent.name} modifié.`), agent.id, t);
